@@ -9,10 +9,9 @@ import {
 import { enqueueIssueUpdate } from "./issue-update-queue";
 
 import { v1IssueUpdateMutation } from "@/lib/api/mutation-options";
-import type { Issue, IssuePatch } from "@/lib/api/types";
-import type { PartialIssue } from "@/lib/client";
-import type { WorkItem } from "@/lib/mock-data";
+import type { Issue, IssuePatch, PartialIssue } from "@/lib/api/types";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import type { WorkItem } from "@/lib/work/model";
 
 function listFieldsFromUpdated(
   updated: Issue,

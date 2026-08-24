@@ -32,8 +32,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { WorkItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import type { WorkItem } from "@/lib/work/model";
 
 const DRAG_THRESHOLD_PX = 4;
 const WORK_COLUMN_PX = 300;

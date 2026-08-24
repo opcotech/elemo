@@ -1,0 +1,58 @@
+SearchResult:
+  title: SearchResult
+  type: object
+  description: A searchable resource the caller is allowed to read.
+  properties:
+    id:
+      type: string
+      description: Resource xid.
+    type:
+      type: string
+      enum:
+        - Organization
+        - Namespace
+        - Project
+        - Issue
+        - Document
+    title:
+      type: string
+    subtitle:
+      type: string
+      description: Display subtitle such as an issue key or document excerpt.
+    key:
+      type: string
+      description: Human-readable key when the resource has one.
+    organization_id:
+      type: string
+      nullable: true
+    namespace_id:
+      type: string
+      nullable: true
+    project_id:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+      nullable: true
+  required:
+    - id
+    - type
+    - title
+    - created_at
+SearchPage:
+  title: SearchPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/SearchResult"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { zFolderCreate } from "@/lib/api/schemas";
 import { v1FolderUpdate } from "@/lib/api/sdk";
 import type { Folder, FolderPatch } from "@/lib/api/types";
-import { zFolderCreate } from "@/lib/client/zod.gen";
 import { invalidateLibraryQueries } from "@/lib/documents/document-queries";
 import { createFormSchema } from "@/lib/forms";
 

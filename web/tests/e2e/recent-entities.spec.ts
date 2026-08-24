@@ -8,9 +8,11 @@ import { DocumentPage, WorkItemPage } from "./pages";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
+import type { RecentEntityType } from "@/lib/ui-store";
+
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 
-async function expectRecentTypePersisted(page: Page, type: string) {
+async function expectRecentTypePersisted(page: Page, type: RecentEntityType) {
   await expect
     .poll(async () =>
       page.evaluate(
@@ -99,7 +101,7 @@ test.describe("@operational Recent sidebar entities", () => {
     await expect(
       sidebar.getByRole("link", { name: workLabel, exact: true })
     ).toBeVisible();
-    await expectRecentTypePersisted(page, "work");
+    await expectRecentTypePersisted(page, "work-item");
 
     await documentPage.goto(documentId);
     await documentPage.waitForLoad();

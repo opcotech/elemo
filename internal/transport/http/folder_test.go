@@ -13,12 +13,13 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func newTestFolderController(t *testing.T, fs service.FolderService) FolderController {
 	t.Helper()
-	c, err := NewFolderController(WithFolderService(fs))
+	c, err := NewFolderController(fs)
 	require.NoError(t, err)
 	return c
 }
@@ -46,14 +47,14 @@ func TestNewFolderController(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c, err := NewFolderController(WithFolderService(service.NewMockFolderService(ctrl)))
+		c, err := NewFolderController(mocksvc.NewMockFolderService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing folder service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewFolderController()
+		_, err := NewFolderController(nil)
 		assert.ErrorIs(t, err, ErrNoFolderService)
 	})
 }
@@ -69,7 +70,7 @@ func TestFolderController_V1NamespacesFoldersCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().Create(gomock.Any(), namespaceID, service.CreateFolderOpts{Name: "Guides"}).Return(folder, nil)
 
 		c := newTestFolderController(t, fs)
@@ -91,7 +92,7 @@ func TestFolderController_V1NamespacesFoldersCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestFolderController(t, service.NewMockFolderService(ctrl))
+		c := newTestFolderController(t, mocksvc.NewMockFolderService(ctrl))
 		resp, err := c.V1NamespacesFoldersCreate(context.Background(), api.V1NamespacesFoldersCreateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1NamespacesFoldersCreateJSONRequestBody{
@@ -115,7 +116,7 @@ func TestFolderController_V1NamespacesFoldersGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().List(gomock.Any(), namespaceID, (*model.ID)(nil), gomock.Any()).Return(service.Page[*service.Folder]{
 			Items: []*service.Folder{folder},
 		}, nil)
@@ -143,7 +144,7 @@ func TestFolderController_V1FolderGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().Get(gomock.Any(), folder.ID).Return(folder, nil)
 
 		c := newTestFolderController(t, fs)
@@ -167,7 +168,7 @@ func TestFolderController_V1FolderDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().Delete(gomock.Any(), folderID).Return(nil)
 
 		c := newTestFolderController(t, fs)
@@ -192,7 +193,7 @@ func TestFolderController_V1FolderUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().Update(gomock.Any(), folder.ID, service.UpdateFolderOpts{
 			Name: optional.Some("Architecture"),
 		}).Return(&updated, nil)
@@ -218,7 +219,7 @@ func TestFolderController_V1FolderUpdate(t *testing.T) {
 		cleared := *folder
 		cleared.Parent = nil
 
-		fs := service.NewMockFolderService(ctrl)
+		fs := mocksvc.NewMockFolderService(ctrl)
 		fs.EXPECT().Update(gomock.Any(), folder.ID, service.UpdateFolderOpts{
 			ParentID: optional.Null[model.ID](),
 		}).Return(&cleared, nil)

@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -23,6 +23,7 @@ type NamespaceController interface {
 // namespaceController is the concrete implementation of NamespaceController.
 type namespaceController struct {
 	*baseController
+	namespaceService service.NamespaceService
 }
 
 func (c *namespaceController) V1NamespacesGet(ctx context.Context, request api.V1NamespacesGetRequestObject) (api.V1NamespacesGetResponseObject, error) {
@@ -36,12 +37,14 @@ func (c *namespaceController) V1NamespacesGet(ctx context.Context, request api.V
 
 	page, err := c.namespaceService.ListAccessible(ctx, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1NamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		default:
+			return api.V1NamespacesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespacesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	namespacesDTO := make([]api.AccessibleNamespace, len(page.Items))
@@ -68,15 +71,16 @@ func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Contex
 
 	namespace, err := c.namespaceService.Create(ctx, organizationID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationsNamespacesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationsNamespacesCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationsNamespacesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationsNamespacesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationsNamespacesCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -100,18 +104,18 @@ func (c *namespaceController) V1OrganizationsNamespacesGet(ctx context.Context, 
 
 	page, err := c.namespaceService.List(ctx, organizationID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationsNamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationsNamespacesGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationsNamespacesGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationsNamespacesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationsNamespacesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	namespacesDTO := make([]api.Namespace, len(page.Items))
@@ -136,15 +140,16 @@ func (c *namespaceController) V1NamespaceGet(ctx context.Context, request api.V1
 
 	namespace, err := c.namespaceService.Get(ctx, namespaceID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NamespaceGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NamespaceGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespaceGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespaceGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NamespaceGet200JSONResponse(namespaceToDTO(namespace)), nil
@@ -163,15 +168,16 @@ func (c *namespaceController) V1NamespaceUpdate(ctx context.Context, request api
 
 	namespace, err := c.namespaceService.Update(ctx, namespaceID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NamespaceUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NamespaceUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespaceUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespaceUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NamespaceUpdate200JSONResponse(namespaceToDTO(namespace)), nil
@@ -187,36 +193,36 @@ func (c *namespaceController) V1NamespaceDelete(ctx context.Context, request api
 	}
 
 	if err := c.namespaceService.Delete(ctx, namespaceID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NamespaceDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NamespaceDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespaceDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespaceDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NamespaceDelete204Response{}, nil
 }
 
 // NewNamespaceController creates a new NamespaceController.
-func NewNamespaceController(opts ...ControllerOption) (NamespaceController, error) {
+func NewNamespaceController(namespaceService service.NamespaceService, opts ...ControllerOption) (NamespaceController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &namespaceController{
-		baseController: c,
-	}
-
-	if controller.namespaceService == nil {
+	if namespaceService == nil {
 		return nil, ErrNoNamespaceService
 	}
 
-	return controller, nil
+	return &namespaceController{
+		baseController:   c,
+		namespaceService: namespaceService,
+	}, nil
 }
 
 func createNamespaceJSONRequestBodyToCreateNamespaceOpts(body *api.V1OrganizationsNamespacesCreateJSONRequestBody) service.CreateNamespaceOpts {

@@ -28,9 +28,15 @@ func CtxUserID(ctx context.Context) string {
 		return string(userID)
 	}
 
-	if userID, ok := ctx.Value(CtxKeyUserID).(model.ID); ok {
+	if userID, ok := CtxUserIDValue(ctx); ok {
 		return userID.String()
 	}
 
 	return ""
+}
+
+// CtxUserIDValue returns the authenticated user ID stored on ctx.
+func CtxUserIDValue(ctx context.Context) (model.ID, bool) {
+	userID, ok := ctx.Value(CtxKeyUserID).(model.ID)
+	return userID, ok
 }

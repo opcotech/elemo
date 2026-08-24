@@ -59,7 +59,9 @@ export function RelationshipExplorerPage({
         entity: { id: focus.id, type: focus.type },
       })
     : [];
-  const relations = directRelations.length ? directRelations : mockRelations;
+  const useExampleGraph =
+    entityType !== "work-item" && directRelations.length === 0;
+  const relations = useExampleGraph ? mockRelations : directRelations;
   const nodes = new Map<string, EntityRef>();
   for (const relation of relations) {
     nodes.set(`${relation.from.type}:${relation.from.id}`, relation.from);
@@ -87,12 +89,16 @@ export function RelationshipExplorerPage({
         title={
           directRelations.length
             ? "Illustrative direct relationships"
-            : "Illustrative relationship graph"
+            : useExampleGraph
+              ? "Illustrative relationship graph"
+              : "No illustrative relationships"
         }
       >
         {directRelations.length
           ? "Nodes and edges come from centralized relation fixtures."
-          : "No direct fixture relations match this focus. The graph shows a clearly labeled example cluster and does not claim these edges belong to the requested entity."}
+          : useExampleGraph
+            ? "No direct fixture relations match this focus. The graph shows a clearly labeled example cluster and does not claim these edges belong to the requested entity."
+            : "No fixture relationships match this entity yet."}
       </MockDataAlert>
 
       <div className="grid min-h-135 flex-1 overflow-hidden rounded-xl border lg:grid-cols-[minmax(0,1fr)_21rem]">

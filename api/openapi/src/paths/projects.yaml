@@ -1,0 +1,139 @@
+"/v1/namespaces/{id}/projects":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get namespace projects
+    tags:
+      - Namespace
+      - Project
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesProjectsGet
+    security:
+      - oauth2:
+          - namespace.read
+          - project.read
+    description: Return a cursor-paginated page of projects that belong to the namespace.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+  post:
+    summary: Create project in namespace
+    operationId: v1NamespacesProjectsCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new project in the namespace.
+    security:
+      - oauth2:
+          - namespace
+          - project
+    tags:
+      - Namespace
+      - Project
+    requestBody:
+      $ref: "#/components/requestBodies/ProjectCreate"
+"/v1/projects/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get project
+    tags:
+      - Project
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1ProjectGet
+    security:
+      - oauth2:
+          - project.read
+    description: Return the requested project by its ID.
+  patch:
+    summary: Update project
+    operationId: v1ProjectUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the project by its ID.
+    security:
+      - oauth2:
+          - project
+    tags:
+      - Project
+    requestBody:
+      $ref: "#/components/requestBodies/ProjectPatch"
+  delete:
+    summary: Delete project
+    operationId: v1ProjectDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete the project by its ID.
+    security:
+      - oauth2:
+          - project
+    tags:
+      - Project

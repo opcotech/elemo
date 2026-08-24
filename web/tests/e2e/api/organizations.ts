@@ -2,17 +2,13 @@ import { withErrorHandling } from "./error-handler";
 import { grantActions } from "./permissions";
 import { getRandomString } from "../utils/random";
 
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 import {
   v1OrganizationGet,
   v1OrganizationMembersAdd,
   v1OrganizationsCreate,
-} from "@/lib/client/sdk.gen";
-import type {
-  Action,
-  Organization,
-  OrganizationCreate,
-} from "@/lib/client/types.gen";
+} from "@/lib/api/sdk";
+import type { Action, Organization, OrganizationCreate } from "@/lib/api/types";
 
 /**
  * Create an organization via API.

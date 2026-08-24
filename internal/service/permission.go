@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -43,14 +42,14 @@ func (o CreateGrantOpts) Validate() error {
 // PermissionService is the single authorization API for request-time checks,
 // listings, and grant administration.
 //
-//go:generate go tool mockgen -destination=permission_mock_gen.go -package=service -mock_names PermissionService=MockPermissionService . PermissionService
+//go:generate go tool mockgen -destination=mock/mock_permission_gen.go -package=mocksvc . PermissionService
 type PermissionService interface {
 	// Has reports whether actor may perform action on resource, walking
 	// MEMBER_OF (depth 0 or 1) and IN_SCOPE_OF ancestry.
 	Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error)
-	// CtxUserHas is Has for the user ID stored in ctx. It returns false when
-	// the user is missing or the check fails.
-	CtxUserHas(ctx context.Context, resource model.ID, action model.Action) bool
+	// CtxUserHas is Has for the user ID stored in ctx. It returns ErrNoUser
+	// when the context has no user ID and propagates repository failures.
+	CtxUserHas(ctx context.Context, resource model.ID, action model.Action) (bool, error)
 	// EffectiveActions returns the union of grant and role-bundle actions the
 	// actor holds on resource, including inherited scopes.
 	EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error)
@@ -99,7 +98,8 @@ type PermissionService interface {
 }
 
 type permissionService struct {
-	*baseService
+	runtime
+	roleRepo       repository.RoleRepository
 	permissionRepo repository.PermissionRepository
 }
 
@@ -137,20 +137,16 @@ func (s *permissionService) Has(ctx context.Context, actor, resource model.ID, a
 	return allowed, nil
 }
 
-func (s *permissionService) CtxUserHas(ctx context.Context, resource model.ID, action model.Action) bool {
+func (s *permissionService) CtxUserHas(ctx context.Context, resource model.ID, action model.Action) (bool, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserHas")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return false
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return false, err
 	}
 
-	allowed, err := s.Has(ctx, userID, resource, action)
-	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
-		return false
-	}
-	return allowed
+	return s.Has(ctx, userID, resource, action)
 }
 
 func (s *permissionService) EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error) {
@@ -168,9 +164,9 @@ func (s *permissionService) CtxUserEffectiveActions(ctx context.Context, resourc
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserEffectiveActions")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, ErrNoUser
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return s.EffectiveActions(ctx, userID, resource)
 }
@@ -201,9 +197,9 @@ func (s *permissionService) CtxUserListGrantScopes(ctx context.Context, action m
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserListGrantScopes")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, ErrNoUser
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return s.ListGrantScopes(ctx, userID, action)
 }
@@ -256,13 +252,13 @@ func (s *permissionService) CtxUserCreate(ctx context.Context, opts CreateGrantO
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserCreate")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrPermissionCreate, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
 	}
 
-	if !s.CtxUserHas(ctx, opts.Scope, model.ActionPermissionManage) {
-		return nil, errors.Join(ErrPermissionCreate, ErrNoPermission)
+	if err := requireAction(ctx, s, opts.Scope, model.ActionPermissionManage); err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
 	}
 
 	held, err := s.heldActions(ctx, userID, opts.Scope)
@@ -346,8 +342,8 @@ func (s *permissionService) CtxUserDelete(ctx context.Context, id model.ID) erro
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserDelete")
 	defer span.End()
 
-	if _, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok {
-		return errors.Join(ErrPermissionDelete, ErrNoUser)
+	if _, err := ctxUserID(ctx); err != nil {
+		return errors.Join(ErrPermissionDelete, err)
 	}
 
 	grant, err := s.Get(ctx, id)
@@ -355,8 +351,8 @@ func (s *permissionService) CtxUserDelete(ctx context.Context, id model.ID) erro
 		return errors.Join(ErrPermissionDelete, err)
 	}
 
-	if !s.CtxUserHas(ctx, grant.Scope, model.ActionPermissionManage) {
-		return errors.Join(ErrPermissionDelete, ErrNoPermission)
+	if err := requireAction(ctx, s, grant.Scope, model.ActionPermissionManage); err != nil {
+		return errors.Join(ErrPermissionDelete, err)
 	}
 
 	return s.Delete(ctx, id)
@@ -416,14 +412,19 @@ func roleTemplateActions(key string) ([]model.Action, error) {
 
 // NewPermissionService creates a PermissionService that evaluates and
 // administers grants through permissionRepo.
-func NewPermissionService(permissionRepo repository.PermissionRepository, opts ...Option) (PermissionService, error) {
-	s, err := newService(opts...)
+func NewPermissionService(
+	permissionRepo repository.PermissionRepository,
+	roleRepo repository.RoleRepository,
+	opts ...Option,
+) (PermissionService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &permissionService{
-		baseService:    s,
+		runtime:        rt,
+		roleRepo:       roleRepo,
 		permissionRepo: permissionRepo,
 	}
 

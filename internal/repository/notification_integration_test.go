@@ -67,7 +67,7 @@ func (s *NotificationRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().WithinDuration(*created.CreatedAt, *notification.CreatedAt, 100*time.Millisecond)
 }
 
-func (s *NotificationRepositoryIntegrationTestSuite) TestGetAllByRecipient() {
+func (s *NotificationRepositoryIntegrationTestSuite) TestListByRecipient() {
 	_, err := s.NotificationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.NotificationRepo.Create(context.Background(), s.createOpts)

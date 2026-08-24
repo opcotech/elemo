@@ -35,7 +35,7 @@ func (s *PermissionServiceIntegrationTestSuite) SetupSuite() {
 	var err error
 	s.permissionService, err = service.NewPermissionService(
 		s.PermissionRepo,
-		service.WithRoleRepository(s.RoleRepo),
+		s.RoleRepo,
 	)
 	s.Require().NoError(err)
 }
@@ -68,7 +68,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestDirectAllowDeny() {
 	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
 
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err := s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 
 	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
 		Principal: guest.ID,
@@ -77,17 +79,25 @@ func (s *PermissionServiceIntegrationTestSuite) TestDirectAllowDeny() {
 	})
 	s.Require().NoError(err)
 
-	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationDelete))
+	allowed, err = s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
+	allowed, err = s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationDelete)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestOrganizationCreateGrant() {
 	user := s.createUser()
 	ctx := s.userCtx(user.ID)
-	s.Assert().False(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
+	allowed, err := s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 
 	s.Require().NoError(testRepo.GrantOrganizationCreate(user.ID, s.Neo4jDB))
-	s.Assert().True(s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate))
+	allowed, err = s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrganizationCreate() {
@@ -109,8 +119,12 @@ func (s *PermissionServiceIntegrationTestSuite) TestOrgAdminDoesNotIncludeOrgani
 	s.Require().NoError(err)
 	s.Require().NoError(s.permissionService.GrantRole(s.ctx, guest.ID, org.ID, role.ID))
 
-	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), model.InstallationID(), model.ActionOrganizationCreate))
+	allowed, err := s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
+	allowed, err = s.permissionService.CtxUserHas(s.userCtx(guest.ID), model.InstallationID(), model.ActionOrganizationCreate)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestAncestorAndChildScope() {
@@ -133,9 +147,15 @@ func (s *PermissionServiceIntegrationTestSuite) TestAncestorAndChildScope() {
 	s.Require().NoError(err)
 
 	ctx := s.userCtx(actor.ID)
-	s.Assert().True(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
-	s.Assert().False(s.permissionService.CtxUserHas(ctx, siblingNS.ID, model.ActionNamespaceRead))
-	s.Assert().False(s.permissionService.CtxUserHas(ctx, org.ID, model.ActionOrganizationRead))
+	allowed, err := s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
+	allowed, err = s.permissionService.CtxUserHas(ctx, siblingNS.ID, model.ActionNamespaceRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
+	allowed, err = s.permissionService.CtxUserHas(ctx, org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestTeamGrant() {
@@ -162,18 +182,26 @@ func (s *PermissionServiceIntegrationTestSuite) TestTeamGrant() {
 	s.Require().NoError(err)
 
 	ctx := s.userCtx(member.ID)
-	s.Assert().False(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	allowed, err := s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 	s.Require().NoError(s.TeamRepo.AddMember(s.ctx, team.ID, member.ID, org.ID))
-	s.Assert().True(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	allowed, err = s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
 	s.Require().NoError(s.TeamRepo.RemoveMember(s.ctx, team.ID, member.ID, org.ID))
-	s.Assert().False(s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead))
+	allowed, err = s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCreatorWithoutGrantDenied() {
 	owner := s.createUser()
 	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
 	s.Require().NoError(err)
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(owner.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err := s.permissionService.CtxUserHas(s.userCtx(owner.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestCtxUserCreateRequiresManageAndHeldActions() {
@@ -234,7 +262,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestCtxUserDeleteRequiresManage(
 
 	s.Require().ErrorIs(s.permissionService.CtxUserDelete(s.userCtx(guest.ID), grant.ID), service.ErrNoPermission)
 	s.Require().NoError(s.permissionService.CtxUserDelete(s.userCtx(owner.ID), grant.ID))
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err := s.permissionService.CtxUserHas(s.userCtx(guest.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestRevokeAndDisableDeny() {
@@ -249,10 +279,14 @@ func (s *PermissionServiceIntegrationTestSuite) TestRevokeAndDisableDeny() {
 		Actions:   []model.Action{model.ActionOrganizationRead},
 	})
 	s.Require().NoError(err)
-	s.Assert().True(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err := s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
 
 	s.Require().NoError(s.permissionService.Delete(s.ctx, grant.ID))
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err = s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 
 	_, err = s.permissionService.Create(s.ctx, service.CreateGrantOpts{
 		Principal: actor.ID,
@@ -264,7 +298,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestRevokeAndDisableDeny() {
 		Status: optional.Some(model.UserStatusInactive),
 	})
 	s.Require().NoError(err)
-	s.Assert().False(s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead))
+	allowed, err = s.permissionService.CtxUserHas(s.userCtx(actor.ID), org.ID, model.ActionOrganizationRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestListDoesNotLeakUngrantedOrgs() {
@@ -282,7 +318,7 @@ func (s *PermissionServiceIntegrationTestSuite) TestListDoesNotLeakUngrantedOrgs
 	})
 	s.Require().NoError(err)
 
-	page, err := s.OrganizationRepo.List(s.ctx, stranger.ID, repository.CursorPage{Size: 20}, repository.OrganizationListProjection())
+	page, err := s.OrganizationRepo.ListForUser(s.ctx, repository.OrganizationListQuery{UserID: stranger.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 20}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
 	ids := make([]model.ID, 0, len(page.Items))
 	for _, org := range page.Items {
@@ -309,7 +345,7 @@ func (s *PermissionServiceIntegrationTestSuite) TestIDORHasWithoutGrant() {
 	s.Assert().False(allowed)
 }
 
-func (s *PermissionServiceIntegrationTestSuite) TestEffectiveActionsExplainAndListVisible() {
+func (s *PermissionServiceIntegrationTestSuite) TestEffectiveActionsExplainAndListGrantScopes() {
 	owner := s.createUser()
 	actor := s.createUser()
 	org, err := s.OrganizationRepo.Create(s.ctx, testModel.NewCreateOrganizationOpts(owner.ID))
@@ -342,9 +378,9 @@ func (s *PermissionServiceIntegrationTestSuite) TestEffectiveActionsExplainAndLi
 	s.Require().NoError(err)
 	s.Assert().True(explained.Allowed)
 
-	ids, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionProjectRead, ns.ID, model.ResourceTypeProject)
+	scopes, err := s.PermissionRepo.ListGrantScopes(s.ctx, actor.ID, model.ActionProjectRead)
 	s.Require().NoError(err)
-	s.Assert().Contains(ids, project.ID)
+	s.Assert().Contains(scopes, ns.ID)
 }
 
 func (s *PermissionServiceIntegrationTestSuite) TestLinkInScopeOfCycle() {

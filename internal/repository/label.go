@@ -62,7 +62,7 @@ func (o UpdateLabelOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=label.go -destination=label_mock_gen.go -package=repository -mock_names "LabelRepository=MockLabelRepository"
+//go:generate go tool mockgen -source=label.go -destination=mock/mock_label_gen.go -package=mockrepo
 type LabelRepository interface {
 	Create(ctx context.Context, opts CreateLabelOpts) (*Label, error)
 	Get(ctx context.Context, id model.ID, proj LabelProjection) (*Label, error)

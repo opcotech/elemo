@@ -26,6 +26,7 @@ import {
   v1OrganizationsNamespacesGetOptions,
   v1PermissionResourceGetOptions,
 } from "@/lib/api/query-options";
+import { zNamespaceCreate } from "@/lib/api/schemas";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type {
   NamespaceCreate,
@@ -34,7 +35,6 @@ import type {
   V1OrganizationsNamespacesCreateData,
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
-import { zNamespaceCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 
 const namespaceFormSchema = createFormSchema(zNamespaceCreate);

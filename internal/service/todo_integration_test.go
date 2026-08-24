@@ -35,19 +35,19 @@ func (s *TodoServiceIntegrationTestSuite) SetupSuite() {
 	container := reflect.TypeOf(s).Elem().String()
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	s.todoService, err = service.NewTodoService(
-		service.WithTodoRepository(s.TodoRepo),
-		service.WithLicenseService(licenseService),
+		s.TodoRepo,
+		licenseService,
 	)
 	s.Require().NoError(err)
 }
@@ -116,7 +116,7 @@ func (s *TodoServiceIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(todo.UpdatedAt)
 }
 
-func (s *TodoServiceIntegrationTestSuite) TestGetAll() {
+func (s *TodoServiceIntegrationTestSuite) TestList() {
 	opts1 := newTestCreateTodoOpts(s.testUser.ID, s.testUser.ID)
 	opts1.Completed = true
 	_, err := s.todoService.Create(s.testUserContext, opts1)

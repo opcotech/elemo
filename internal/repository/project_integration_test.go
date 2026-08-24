@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type ProjectRepositoryIntegrationTestSuite struct {
@@ -98,7 +99,7 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	s.Assert().Equal(int64(1), *project.DocumentCount)
 }
 
-func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *ProjectRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
@@ -106,11 +107,11 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID))
 	s.Require().NoError(err)
 
-	projects, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, nil, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	projects, err := s.ProjectRepo.ListForNamespace(context.Background(), repository.ProjectListQuery{NamespaceID: s.testNamespace.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.ProjectListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Len(projects.Items, 3)
 
-	projects, err = s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, nil, repository.CursorPage{Size: 2}, repository.ProjectListProjection())
+	projects, err = s.ProjectRepo.ListForNamespace(context.Background(), repository.ProjectListQuery{NamespaceID: s.testNamespace.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 2}, Order: repository.SortDirectionDesc, Projection: repository.ProjectListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Len(projects.Items, 2)
 }
@@ -217,12 +218,12 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
-func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *CachedProjectRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, nil, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	original, err := s.ProjectRepo.ListForNamespace(context.Background(), repository.ProjectListQuery{NamespaceID: s.testNamespace.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.ProjectListProjection()})
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.List(context.Background(), s.testNamespace.ID, s.testUser.ID, nil, repository.CursorPage{Size: 10}, repository.ProjectListProjection())
+	usingCache, err := s.projectRepo.ListForNamespace(context.Background(), repository.ProjectListQuery{NamespaceID: s.testNamespace.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.ProjectListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)

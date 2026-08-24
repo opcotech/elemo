@@ -5,12 +5,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/smtp"
 	"os"
 	"strings"
 	"time"
-
-	"log/slog"
 
 	"github.com/Shopify/gomail"
 	authStore "github.com/gabor-boros/go-oauth2-pg"

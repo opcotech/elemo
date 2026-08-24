@@ -15,6 +15,12 @@ bin/
 # TanStack Router runtime route tree — required for typecheck/CI
 !web/src/routeTree.gen.ts
 
+# Cache
+.cache/
+.gocache/
+.gomodcache/
+
 # Misc
 tmp/
+.pnpm-store/
 .DS_Store

@@ -15,12 +15,13 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func newTestProjectController(t *testing.T, ps service.ProjectService) ProjectController {
 	t.Helper()
-	c, err := NewProjectController(WithProjectService(ps))
+	c, err := NewProjectController(ps)
 	require.NoError(t, err)
 	return c
 }
@@ -48,20 +49,14 @@ func TestNewProjectController(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c, err := NewProjectController(WithProjectService(service.NewMockProjectService(ctrl)))
+		c, err := NewProjectController(mocksvc.NewMockProjectService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing project service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewProjectController()
-		assert.ErrorIs(t, err, ErrNoProjectService)
-	})
-
-	t.Run("nil project service option", func(t *testing.T) {
-		t.Parallel()
-		_, err := NewProjectController(WithProjectService(nil))
+		_, err := NewProjectController(nil)
 		assert.ErrorIs(t, err, ErrNoProjectService)
 	})
 }
@@ -77,7 +72,7 @@ func TestProjectController_V1NamespacesProjectsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Create(gomock.Any(), namespaceID, service.CreateProjectOpts{
 			Key:  "ENG",
 			Name: "Engineering",
@@ -102,7 +97,7 @@ func TestProjectController_V1NamespacesProjectsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1NamespacesProjectsCreate(context.Background(), api.V1NamespacesProjectsCreateRequestObject{
 			Id:   "not-a-xid",
 			Body: &api.V1NamespacesProjectsCreateJSONRequestBody{Key: "ENG", Name: "Engineering"},
@@ -118,7 +113,7 @@ func TestProjectController_V1NamespacesProjectsCreate(t *testing.T) {
 		defer ctrl.Finish()
 
 		badStatus := api.ProjectStatus("bogus")
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1NamespacesProjectsCreate(context.Background(), api.V1NamespacesProjectsCreateRequestObject{
 			Id: namespaceID.String(),
 			Body: &api.V1NamespacesProjectsCreateJSONRequestBody{
@@ -137,7 +132,7 @@ func TestProjectController_V1NamespacesProjectsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
@@ -155,7 +150,7 @@ func TestProjectController_V1NamespacesProjectsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, errors.Join(service.ErrProjectCreate, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)
@@ -180,7 +175,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{Items: []*service.Project{project}}, nil)
 
 		c := newTestProjectController(t, ps)
@@ -203,7 +198,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1NamespacesProjectsGet(context.Background(), api.V1NamespacesProjectsGetRequestObject{
 			Id: "bad",
 		})
@@ -217,7 +212,7 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{}, service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
@@ -234,8 +229,8 @@ func TestProjectController_V1NamespacesProjectsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
-		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{}, errors.Join(service.ErrProjectGetAll, repository.ErrNotFound))
+		ps := mocksvc.NewMockProjectService(ctrl)
+		ps.EXPECT().List(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.Project]{}, errors.Join(service.ErrProjectList, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)
 		resp, err := c.V1NamespacesProjectsGet(context.Background(), api.V1NamespacesProjectsGetRequestObject{
@@ -257,7 +252,7 @@ func TestProjectController_V1ProjectGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), project.ID).Return(project, nil)
 
 		c := newTestProjectController(t, ps)
@@ -276,7 +271,7 @@ func TestProjectController_V1ProjectGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1ProjectGet(context.Background(), api.V1ProjectGetRequestObject{Id: "bad"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1ProjectGet400JSONResponse)
@@ -288,7 +283,7 @@ func TestProjectController_V1ProjectGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), project.ID).Return(nil, service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
@@ -303,7 +298,7 @@ func TestProjectController_V1ProjectGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), project.ID).Return(nil, errors.Join(service.ErrProjectGet, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)
@@ -328,7 +323,7 @@ func TestProjectController_V1ProjectUpdate(t *testing.T) {
 		updated := *project
 		updated.Name = name
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Update(gomock.Any(), project.ID, service.UpdateProjectOpts{
 			Name: optional.Some(name),
 		}).Return(&updated, nil)
@@ -349,7 +344,7 @@ func TestProjectController_V1ProjectUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1ProjectUpdate(context.Background(), api.V1ProjectUpdateRequestObject{
 			Id:   "bad",
 			Body: &api.V1ProjectUpdateJSONRequestBody{Name: &name},
@@ -364,7 +359,7 @@ func TestProjectController_V1ProjectUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Update(gomock.Any(), project.ID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
@@ -382,7 +377,7 @@ func TestProjectController_V1ProjectUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Update(gomock.Any(), project.ID, gomock.Any()).Return(nil, errors.Join(service.ErrProjectUpdate, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)
@@ -406,7 +401,7 @@ func TestProjectController_V1ProjectDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Delete(gomock.Any(), projectID).Return(nil)
 
 		c := newTestProjectController(t, ps)
@@ -421,7 +416,7 @@ func TestProjectController_V1ProjectDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestProjectController(t, service.NewMockProjectService(ctrl))
+		c := newTestProjectController(t, mocksvc.NewMockProjectService(ctrl))
 		resp, err := c.V1ProjectDelete(context.Background(), api.V1ProjectDeleteRequestObject{Id: "bad"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1ProjectDelete400JSONResponse)
@@ -433,7 +428,7 @@ func TestProjectController_V1ProjectDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Delete(gomock.Any(), projectID).Return(service.ErrNoPermission)
 
 		c := newTestProjectController(t, ps)
@@ -448,7 +443,7 @@ func TestProjectController_V1ProjectDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ps := service.NewMockProjectService(ctrl)
+		ps := mocksvc.NewMockProjectService(ctrl)
 		ps.EXPECT().Delete(gomock.Any(), projectID).Return(errors.Join(service.ErrProjectDelete, repository.ErrNotFound))
 
 		c := newTestProjectController(t, ps)

@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/opcotech/elemo/internal/service"
@@ -16,6 +17,7 @@ type LabelController interface {
 // labelController is the concrete implementation of LabelController.
 type labelController struct {
 	*baseController
+	labelService service.LabelService
 }
 
 func (c *labelController) V1LabelsGet(ctx context.Context, request api.V1LabelsGetRequestObject) (api.V1LabelsGetResponseObject, error) {
@@ -29,12 +31,14 @@ func (c *labelController) V1LabelsGet(ctx context.Context, request api.V1LabelsG
 
 	page, err := c.labelService.List(ctx, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1LabelsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		default:
+			return api.V1LabelsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1LabelsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	items := make([]api.Label, len(page.Items))
@@ -69,17 +73,18 @@ func labelToDTO(label *service.Label) api.Label {
 }
 
 // NewLabelController creates a new LabelController.
-func NewLabelController(opts ...ControllerOption) (LabelController, error) {
-	controller, err := newController(opts...)
+func NewLabelController(labelService service.LabelService, opts ...ControllerOption) (LabelController, error) {
+	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if controller.labelService == nil {
+	if labelService == nil {
 		return nil, ErrNoLabelService
 	}
 
 	return &labelController{
-		baseController: controller,
+		baseController: c,
+		labelService:   labelService,
 	}, nil
 }

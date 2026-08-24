@@ -6,7 +6,7 @@ var (
 	ErrDocumentCreate   = errors.New("failed to create document")   // failed to create document
 	ErrDocumentDelete   = errors.New("failed to delete document")   // failed to delete document
 	ErrDocumentGet      = errors.New("failed to get document")      // failed to get document
-	ErrDocumentGetAll   = errors.New("failed to get documents")     // failed to get documents
+	ErrDocumentList     = errors.New("failed to list documents")    // failed to list documents
 	ErrDocumentMove     = errors.New("failed to move document")     // failed to move document
 	ErrDocumentRelate   = errors.New("failed to relate document")   // failed to relate document
 	ErrDocumentUnrelate = errors.New("failed to unrelate document") // failed to unrelate document
@@ -15,7 +15,7 @@ var (
 	ErrFolderCreate = errors.New("failed to create folder") // failed to create folder
 	ErrFolderDelete = errors.New("failed to delete folder") // failed to delete folder
 	ErrFolderGet    = errors.New("failed to get folder")    // failed to get folder
-	ErrFolderGetAll = errors.New("failed to get folders")   // failed to get folders
+	ErrFolderList   = errors.New("failed to list folders")  // failed to list folders
 	ErrFolderUpdate = errors.New("failed to update folder") // failed to update folder
 
 	ErrEmailSend                       = errors.New("failed to send email")                         // failed to send email
@@ -27,20 +27,20 @@ var (
 	ErrIssueCreate                     = errors.New("failed to create issue")                       // failed to create issue
 	ErrIssueDelete                     = errors.New("failed to delete issue")                       // failed to delete issue
 	ErrIssueGet                        = errors.New("failed to get issue")                          // failed to get issue
-	ErrIssueGetAll                     = errors.New("failed to get issues")                         // failed to get issues
+	ErrIssueList                       = errors.New("failed to list issues")                        // failed to list issues
 	ErrIssueGetRelations               = errors.New("failed to get issue relations")                // failed to get issue relations
 	ErrIssueRemoveRelation             = errors.New("failed to remove issue relation")              // failed to remove issue relation
 	ErrIssueReservedRelationKind       = errors.New("relation kind is reserved")                    // relation kind is reserved
 	ErrIssueSelfRelation               = errors.New("issue cannot be related to itself")            // issue cannot be related to itself
 	ErrIssueUpdate                     = errors.New("failed to update issue")                       // failed to update issue
 	ErrIssueUpdateRelation             = errors.New("failed to update issue relation")              // failed to update issue relation
-	ErrLabelGetAll                     = errors.New("failed to get labels")                         // failed to get labels
+	ErrLabelList                       = errors.New("failed to list labels")                        // failed to list labels
 	ErrLicenseGet                      = errors.New("failed to get license")                        // failed to get license
 	ErrLicensePing                     = errors.New("failed to ping license")                       // failed to ping license
 	ErrNamespaceCreate                 = errors.New("failed to create namespace")                   // failed to create namespace
 	ErrNamespaceDelete                 = errors.New("failed to delete namespace")                   // failed to delete namespace
 	ErrNamespaceGet                    = errors.New("failed to get namespace")                      // failed to get namespace
-	ErrNamespaceGetAll                 = errors.New("failed to get namespaces")                     // failed to get namespaces
+	ErrNamespaceList                   = errors.New("failed to list namespaces")                    // failed to list namespaces
 	ErrNamespaceUpdate                 = errors.New("failed to update namespace")                   // failed to update namespace
 	ErrNoAssignmentRepository          = errors.New("no assignment repository provided")            // no assignment repository provided
 	ErrNoDocumentRepository            = errors.New("no document repository provided")              // no document repository provided
@@ -74,12 +74,12 @@ var (
 	ErrNotificationCreate              = errors.New("failed to create notification")                // failed to create notification
 	ErrNotificationDelete              = errors.New("failed to delete notification")                // failed to delete notification
 	ErrNotificationGet                 = errors.New("failed to get notification")                   // failed to get notification
-	ErrNotificationGetAllByRecipient   = errors.New("failed to get notifications")                  // failed to get notifications
+	ErrNotificationListByRecipient     = errors.New("failed to list notifications")                 // failed to list notifications
 	ErrNotificationUpdate              = errors.New("failed to update notification")                // failed to update notification
 	ErrOrganizationCreate              = errors.New("failed to create organization")                // failed to create organization
 	ErrOrganizationDelete              = errors.New("failed to delete organization")                // failed to delete organization
 	ErrOrganizationGet                 = errors.New("failed to get organization")                   // failed to get organization
-	ErrOrganizationGetAll              = errors.New("failed to get organizations")                  // failed to get organizations
+	ErrOrganizationList                = errors.New("failed to list organizations")                 // failed to list organizations
 	ErrOrganizationInviteAccept        = errors.New("failed to accept invitation")                  // failed to accept invitation
 	ErrOrganizationInviteRevoke        = errors.New("failed to revoke invitation")                  // failed to revoke invitation
 	ErrOrganizationMemberAdd           = errors.New("failed to add member to organization")         // failed to add member to organization
@@ -101,7 +101,7 @@ var (
 	ErrProjectCreate                   = errors.New("failed to create project")                     // failed to create project
 	ErrProjectDelete                   = errors.New("failed to delete project")                     // failed to delete project
 	ErrProjectGet                      = errors.New("failed to get project")                        // failed to get project
-	ErrProjectGetAll                   = errors.New("failed to get projects")                       // failed to get projects
+	ErrProjectList                     = errors.New("failed to list projects")                      // failed to list projects
 	ErrProjectUpdate                   = errors.New("failed to update project")                     // failed to update project
 	ErrQuotaExceeded                   = errors.New("quota exceeded")                               // quota exceeded
 	ErrQuotaInvalid                    = errors.New("invalid quota")                                // invalid quota
@@ -133,14 +133,14 @@ var (
 	ErrTodoCreate                      = errors.New("failed to create todo")                        // failed to create todo
 	ErrTodoDelete                      = errors.New("failed to delete todo")                        // failed to delete todo
 	ErrTodoGet                         = errors.New("failed to get todo")                           // failed to get todo
-	ErrTodoGetAll                      = errors.New("failed to get todos")                          // failed to get todos
+	ErrTodoList                        = errors.New("failed to list todos")                         // failed to list todos
 	ErrTodoUpdate                      = errors.New("failed to update todo")                        // failed to update todo
 	ErrUserCreate                      = errors.New("failed to create user")                        // failed to create user
 	ErrUserCreateUserToken             = errors.New("failed to create user token")                  // failed to create user token
 	ErrUserDelete                      = errors.New("failed to delete user")                        // failed to delete user
 	ErrUserDeleteUserToken             = errors.New("failed to delete user token")                  // failed to delete user token
 	ErrUserGet                         = errors.New("failed to get user")                           // failed to get user
-	ErrUserGetAll                      = errors.New("failed to get users")                          // failed to get users
+	ErrUserList                        = errors.New("failed to list users")                         // failed to list users
 	ErrUserUpdate                      = errors.New("failed to update user")                        // failed to update user
 	ErrUserVerifyToken                 = errors.New("failed to verify user token")                  // failed to verify user token
 )

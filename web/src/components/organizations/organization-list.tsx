@@ -5,13 +5,12 @@ import { useMemo, useState } from "react";
 
 import { OrganizationRow } from "./organization-row";
 
+import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import {
   CursorPaginator,
   cursorPaginatorProps,
 } from "@/components/shared/cursor-paginator";
 import { Button } from "@/components/ui/button";
-import { ListContainer } from "@/components/ui/list-container";
-import { SearchInput } from "@/components/ui/search-input";
 import {
   Table,
   TableBody,
@@ -19,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TableSkeletonRows } from "@/components/ui/table-skeleton";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import {
   ResourceType,
@@ -29,8 +28,8 @@ import {
 } from "@/hooks/use-permissions";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
+import { zOrganizationStatus } from "@/lib/api/schemas";
 import { Action, can } from "@/lib/auth/permissions";
-import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 const organizationTableSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },
@@ -41,6 +40,7 @@ const organizationTableSkeletonColumns = [
   {
     header: "Actions",
     skeletonClassName: "h-5 w-8",
+    headerClassName: "text-right",
     cellClassName: "text-right",
     srOnly: true,
     count: 3,
@@ -59,14 +59,12 @@ export function OrganizationList() {
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
-  const organizations = organizationsPage?.items;
+  const organizations = organizationsPage?.items ?? [];
 
   const { data: systemPermissions } = usePermissions(
     withResourceType(ResourceType.Installation)
   );
-  const organizationIds = (organizations || []).map(
-    (organization) => organization.id
-  );
+  const organizationIds = organizations.map((organization) => organization.id);
   const organizationPermissionsById = usePermissionsByResourceId(
     ResourceType.Organization,
     organizationIds
@@ -74,7 +72,6 @@ export function OrganizationList() {
   const canCreate = can(systemPermissions, Action.OrganizationCreate);
 
   const sortedOrganizations = useMemo(() => {
-    if (!organizations) return [];
     return [...organizations].sort((a, b) => {
       if (a.status !== b.status) {
         return a.status === zOrganizationStatus.enum.active ? -1 : 1;
@@ -92,60 +89,42 @@ export function OrganizationList() {
   }, [sortedOrganizations, searchTerm]);
 
   const createButton = canCreate ? (
-    <Button render={<Link to="/settings/organizations/new" />}>
+    <Button
+      variant="outline"
+      size="sm"
+      render={<Link to="/settings/organizations/new" />}
+    >
       <Plus className="size-4" />
       Create Organization
     </Button>
   ) : undefined;
 
-  const emptyState =
-    !organizations || organizations.length === 0
-      ? {
-          icon: <Building2 />,
-          title: "No organizations available",
-          description: "Get started by creating your first organization.",
-          action: canCreate ? (
-            <Button
-              variant="outline"
-              size="sm"
-              render={<Link to="/settings/organizations/new" />}
-            >
-              <Plus className="size-4" />
-              Create Organization
-            </Button>
-          ) : undefined,
-        }
-      : filteredOrganizations.length === 0 && searchTerm.trim()
-        ? {
-            icon: <Building2 />,
-            title: "No organizations found",
-            description:
-              "No organizations match your search criteria. Try adjusting your search.",
-          }
-        : undefined;
-
-  const shouldShowSearch =
-    (organizations && organizations.length > 0) || searchTerm.trim() !== "";
-
   return (
-    <ListContainer
-      data-section="organizations"
+    <SettingsResourceTable
+      dataSection="organizations"
       title="Organizations"
       description="View and manage organizations."
       isLoading={isLoading}
       error={error}
-      emptyState={emptyState}
       actionButton={createButton}
-      searchInput={
-        shouldShowSearch ? (
-          <SearchInput
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Search organizations..."
-            disabled={isLoading}
-          />
-        ) : undefined
-      }
+      search={{
+        value: searchTerm,
+        onChange: setSearchTerm,
+        placeholder: "Search organizations...",
+        itemCount: organizations.length,
+      }}
+      empty={{
+        icon: <Building2 />,
+        title: "No organizations available",
+        description: "Get started by creating your first organization.",
+        action: createButton,
+        searchTitle: "No organizations found",
+        searchDescription:
+          "No organizations match your search criteria. Try adjusting your search.",
+        hasItems: organizations.length > 0,
+        hasFilteredItems: filteredOrganizations.length > 0,
+      }}
+      skeleton={<TableSkeleton columns={organizationTableSkeletonColumns} />}
     >
       <Table>
         <TableHeader>
@@ -161,28 +140,22 @@ export function OrganizationList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {isLoading ? (
-            <TableSkeletonRows columns={organizationTableSkeletonColumns} />
-          ) : (
-            <>
-              {filteredOrganizations.map((organization) => {
-                const permissionQuery = organizationPermissionsById.get(
-                  organization.id
-                );
-                return (
-                  <OrganizationRow
-                    key={organization.id}
-                    organization={organization}
-                    permissions={permissionQuery?.data}
-                    isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                  />
-                );
-              })}
-            </>
-          )}
+          {filteredOrganizations.map((organization) => {
+            const permissionQuery = organizationPermissionsById.get(
+              organization.id
+            );
+            return (
+              <OrganizationRow
+                key={organization.id}
+                organization={organization}
+                permissions={permissionQuery?.data}
+                isPermissionsLoading={permissionQuery?.isLoading ?? true}
+              />
+            );
+          })}
         </TableBody>
       </Table>
       <CursorPaginator {...cursorPaginatorProps(organizationsPage, pageNav)} />
-    </ListContainer>
+    </SettingsResourceTable>
   );
 }

@@ -6,9 +6,9 @@ import { WorkLabelBadges } from "./work-label-badges";
 import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import { PropertyList } from "@/components/ui/property-list";
 import { StatusIndicator } from "@/components/ui/status-indicator";
-import type { WorkItem } from "@/lib/mock-data";
 import { issueStatusLabels } from "@/lib/work/issue-adapter";
 import { issueResolutionLabels } from "@/lib/work/issue-resolution";
+import type { WorkItem } from "@/lib/work/model";
 import { workItemPeople } from "@/lib/work/resolve-work-people";
 
 export function WorkItemDetailsReadonly({

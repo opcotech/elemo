@@ -1,4 +1,4 @@
-import type { PageInfo } from "@/lib/client";
+import type { PageInfo } from "@/lib/api/types";
 
 /** Default list page size used by generated list endpoints. */
 export const DEFAULT_LIST_PAGE_SIZE = 100;

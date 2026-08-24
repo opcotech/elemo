@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { V1SearchGetData } from "@/lib/client";
+import type { V1SearchGetData } from "@/lib/api/types";
 import { SEARCH_RESOURCE_TYPES } from "@/lib/search/result";
 
 export const SEARCH_PAGE_SIZE = 20;

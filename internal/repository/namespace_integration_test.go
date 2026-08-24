@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type NamespaceRepositoryIntegrationTestSuite struct {
@@ -81,7 +82,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(int64(1), *ns.DocumentCount)
 }
 
-func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *NamespaceRepositoryIntegrationTestSuite) TestList() {
 	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.ProjectRepo.Create(context.Background(), testModel.NewCreateProjectOpts(created.ID, s.testUser.ID))
@@ -93,7 +94,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	_, err = s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
 	s.Require().NoError(err)
 
-	namespaces, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	namespaces, err := s.NamespaceRepo.ListForOrganization(context.Background(), repository.NamespaceListQuery{OrgID: s.testOrg.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces.Items, 3)
 
@@ -110,7 +111,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NotNil(withRelated.DocumentCount)
 	s.Assert().Equal(int64(1), *withRelated.DocumentCount)
 
-	namespaces, err = s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 2}, repository.NamespaceListProjection())
+	namespaces, err = s.NamespaceRepo.ListForOrganization(context.Background(), repository.NamespaceListQuery{OrgID: s.testOrg.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 2}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Len(namespaces.Items, 2)
 }
@@ -119,7 +120,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestListAccessible() {
 	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
-	accessible, err := s.NamespaceRepo.ListAccessible(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	accessible, err := s.NamespaceRepo.ListAccessible(context.Background(), repository.NamespaceListAccessibleQuery{ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 	s.Require().NoError(err)
 	s.Require().Len(accessible.Items, 1)
 	s.Assert().Equal(created.ID, accessible.Items[0].ID)
@@ -215,12 +216,12 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
-func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.namespaceRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.NamespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	original, err := s.NamespaceRepo.ListForOrganization(context.Background(), repository.NamespaceListQuery{OrgID: s.testOrg.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 	s.Require().NoError(err)
-	usingCache, err := s.namespaceRepo.List(context.Background(), s.testOrg.ID, s.testUser.ID, repository.CursorPage{Size: 10}, repository.NamespaceListProjection())
+	usingCache, err := s.namespaceRepo.ListForOrganization(context.Background(), repository.NamespaceListQuery{OrgID: s.testOrg.ID, ActorID: s.testUser.ID, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)

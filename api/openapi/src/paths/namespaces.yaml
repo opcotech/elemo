@@ -1,0 +1,166 @@
+"/v1/organizations/{id}/namespaces":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get organization namespaces
+    tags:
+      - Organization
+      - Namespace
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamespacePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1OrganizationsNamespacesGet
+    security:
+      - oauth2:
+          - organization.read
+          - namespace.read
+    description: Return the namespaces that belong to the organization.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+  post:
+    summary: Create namespace in organization
+    operationId: v1OrganizationsNamespacesCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new namespace in the organization.
+    security:
+      - oauth2:
+          - organization
+          - namespace
+    tags:
+      - Organization
+      - Namespace
+    requestBody:
+      $ref: "#/components/requestBodies/NamespaceCreate"
+/v1/namespaces:
+  get:
+    summary: List reachable namespaces
+    tags:
+      - Namespace
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessibleNamespacePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesGet
+    security:
+      - oauth2: []
+    description: >
+      Return a cursor-paginated page of namespaces the actor can reach. A namespace is reachable when the actor has namespace.read on it or can read at least one descendant. Organization stubs are included without requiring organization.read.
+
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+"/v1/namespaces/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get namespace
+    tags:
+      - Namespace
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Namespace"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespaceGet
+    security:
+      - oauth2:
+          - namespace.read
+    description: Return the requested namespace by its ID.
+  patch:
+    summary: Update namespace
+    operationId: v1NamespaceUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Namespace"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the namespace by its ID.
+    security:
+      - oauth2:
+          - namespace
+    tags:
+      - Namespace
+    requestBody:
+      $ref: "#/components/requestBodies/NamespacePatch"
+  delete:
+    summary: Delete namespace
+    operationId: v1NamespaceDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete the namespace by its ID.
+    security:
+      - oauth2:
+          - namespace
+    tags:
+      - Namespace

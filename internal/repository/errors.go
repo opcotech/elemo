@@ -13,6 +13,7 @@ var (
 	ErrMalformedResult          = errors.New("malformed result")               // the result is malformed
 	ErrNoBucket                 = errors.New("no bucket")                      // the bucket is missing
 	ErrNoClient                 = errors.New("no client")                      // the client is missing
+	ErrNoCacheBackend           = errors.New("no cache backend")               // the cache backend is missing
 	ErrNoDriver                 = errors.New("no driver")                      // the driver is missing
 	ErrNoLicenseRepository      = errors.New("no license repository provided") // no license repository provided
 	ErrNoPool                   = errors.New("no pool")                        // the pool is nil

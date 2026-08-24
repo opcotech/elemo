@@ -31,7 +31,7 @@ func parseFlags() error {
 }
 
 func writeKeyToFile(key, path string) error {
-	return os.WriteFile(path, []byte(key), 0644) // #nosec
+	return os.WriteFile(path, []byte(key), 0o644) // #nosec
 }
 
 func main() {

@@ -1,0 +1,208 @@
+/v1/users:
+  get:
+    summary: Get all users
+    tags:
+      - User
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1UsersGet
+    description: Returns the paginated list of users
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    security:
+      - oauth2:
+          - user.read
+  post:
+    summary: Create new user
+    tags:
+      - User
+    operationId: v1UsersCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    requestBody:
+      $ref: "#/components/requestBodies/UserCreate"
+    description: Create a new user.
+    security:
+      - oauth2:
+          - user
+"/v1/users/reset":
+  get:
+    summary: Initiate password reset
+    tags:
+      - User
+    parameters:
+      - $ref: "#/components/parameters/user_email"
+    responses:
+      "200":
+        description: OK
+      "400":
+        $ref: "#/components/responses/400"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1UserRequestPasswordReset
+    description: Initiate password reset flow.
+    security: []
+  post:
+    summary: Reset user password
+    tags:
+      - User
+    requestBody:
+      $ref: "#/components/requestBodies/UserPasswordReset"
+    responses:
+      "200":
+        description: OK
+      "204":
+        description: New token generated
+      "400":
+        $ref: "#/components/responses/400"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1UserResetPassword
+    description: Reset the user password.
+    security: []
+"/v1/users/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get user
+    tags:
+      - User
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1UserGet
+    description: Return the requested user by its ID.
+    security:
+      - oauth2:
+          - user.read
+  delete:
+    summary: Delete the user with the given ID.
+    tags:
+      - User
+    operationId: v1UserDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete a user by its ID. The user is not deleted irreversibly until the "force" parameter is set to true.
+    parameters:
+      - $ref: "#/components/parameters/force"
+    security:
+      - oauth2:
+          - user
+  patch:
+    summary: Update user
+    tags:
+      - User
+    operationId: v1UserUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the given user.
+    requestBody:
+      $ref: "#/components/requestBodies/UserPatch"
+    security:
+      - oauth2:
+          - user
+"/v1/users/{id}/issues":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get user issues
+    tags:
+      - User
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialIssuePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1UsersIssuesGet
+    security:
+      - oauth2:
+          - user.read
+          - issue.read
+    description: Return a cursor-paginated page of issues assigned to the user.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/issue_list_q"
+      - $ref: "#/components/parameters/issue_list_status"
+      - $ref: "#/components/parameters/issue_list_priority"
+      - $ref: "#/components/parameters/issue_list_order"

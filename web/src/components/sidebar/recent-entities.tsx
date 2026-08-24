@@ -96,7 +96,7 @@ function RecentEntitiesSection({
 export function RecentWorkItems() {
   return (
     <RecentEntitiesSection
-      type="work"
+      type="work-item"
       label="Recent Work Items"
       icon={ListTodoIcon}
     />

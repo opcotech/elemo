@@ -1,6 +1,7 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, CheckCircle2Icon } from "lucide-react";
+import { useMemo } from "react";
 
 import { NotificationList } from "@/components/notification";
 import { MockDataAlert } from "@/components/shared/app-feedback";
@@ -8,23 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompactWorkList } from "@/components/work/work-list";
-import { cursorPageQuery } from "@/lib/api/cursor-pages";
-import { v1NotificationsGetOptions } from "@/lib/api/query-options";
+import { useAuth } from "@/hooks/use-auth";
+import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
-  getWorkItem,
-  selectAttentionSignals,
-  selectWorkItems,
-} from "@/lib/mock-data";
+  v1NotificationsGetOptions,
+  v1UsersIssuesGetOptions,
+} from "@/lib/api/query-options";
+import { v1UsersIssuesGet } from "@/lib/api/sdk";
+import { selectAttentionSignals } from "@/lib/mock-data";
+import { withRouteErrors } from "@/lib/route-errors";
+import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import { queryWorkItems } from "@/lib/work/query";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   staticData: {
     breadcrumb: "Inbox",
   },
   loader: ({ context }) =>
-    context.queryClient.fetchQuery(
-      v1NotificationsGetOptions({
-        query: cursorPageQuery(),
-      })
+    withRouteErrors(() =>
+      context.queryClient.fetchQuery(
+        v1NotificationsGetOptions({
+          query: cursorPageQuery(),
+        })
+      )
     ),
   component: InboxPage,
 });
@@ -81,12 +88,55 @@ function InboxPage() {
 }
 
 function InboxContent() {
-  const attentionItems = selectAttentionSignals()
-    .map((signal) => getWorkItem(signal.workItemId))
-    .filter((item) => item !== undefined);
-  const watched = selectWorkItems({
-    filters: { statuses: ["blocked", "in progress"] },
+  const { user } = useAuth();
+  const userId = user?.id;
+  const userIssuesOptions = v1UsersIssuesGetOptions({
+    path: { id: userId ?? "" },
+    query: cursorPageQuery(),
   });
+  const { data: issuesPage } = useQuery({
+    ...collectedListQuery(userIssuesOptions, async (pageToken, signal) => {
+      const { data } = await v1UsersIssuesGet({
+        path: { id: userId ?? "" },
+        query: cursorPageQuery(pageToken),
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    }),
+    enabled: Boolean(userId),
+  });
+  const userWorkItems = useMemo(
+    () => issuesToWorkItems(issuesPage?.items ?? []),
+    [issuesPage?.items]
+  );
+  const userWorkItemById = useMemo(
+    () =>
+      new Map(
+        userWorkItems.flatMap((item) => [
+          [item.id, item] as const,
+          [item.key, item] as const,
+        ])
+      ),
+    [userWorkItems]
+  );
+  const attentionItems = useMemo(() => {
+    const items: typeof userWorkItems = [];
+    for (const signal of selectAttentionSignals()) {
+      const item = userWorkItemById.get(signal.workItemId);
+      if (item) {
+        items.push(item);
+      }
+    }
+    return items;
+  }, [userWorkItemById]);
+  const watched = useMemo(
+    () =>
+      queryWorkItems(userWorkItems, {
+        filters: { statuses: ["blocked", "in progress"] },
+      }),
+    [userWorkItems]
+  );
 
   return (
     <>

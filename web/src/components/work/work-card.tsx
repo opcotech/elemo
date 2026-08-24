@@ -6,8 +6,8 @@ import { InternalLink } from "@/components/ui/internal-link";
 import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { internalPath } from "@/lib/internal-url";
-import type { WorkItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import type { WorkItem } from "@/lib/work/model";
 import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
 
 function WorkIdentity({

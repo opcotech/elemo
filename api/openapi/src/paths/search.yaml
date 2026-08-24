@@ -1,0 +1,32 @@
+/v1/search:
+  get:
+    summary: Search resources
+    operationId: v1SearchGet
+    tags:
+      - Search
+    description: >
+      Search indexed resources the caller is allowed to read. Authorization is evaluated with ReBAC grant scopes and confirmed with a per-hit permission check. total_count is never returned.
+
+    security:
+      - oauth2: []
+    parameters:
+      - $ref: "#/components/parameters/search_q"
+      - $ref: "#/components/parameters/search_types"
+      - $ref: "#/components/parameters/search_organization_id"
+      - $ref: "#/components/parameters/search_namespace_id"
+      - $ref: "#/components/parameters/search_project_id"
+      - $ref: "#/components/parameters/search_page_size"
+      - $ref: "#/components/parameters/page_token"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "500":
+        $ref: "#/components/responses/500"

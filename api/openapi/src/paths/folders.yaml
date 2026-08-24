@@ -1,0 +1,209 @@
+"/v1/organizations/{id}/folders":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get organization folders
+    tags:
+      - Organization
+      - Folder
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1OrganizationsFoldersGet
+    security:
+      - oauth2:
+          - organization.read
+          - document.read
+    description: Return a cursor-paginated page of folders at a location in the organization library.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/parent_id"
+  post:
+    summary: Create folder in organization
+    operationId: v1OrganizationsFoldersCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Folder"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new folder in the organization library.
+    security:
+      - oauth2:
+          - organization
+          - document
+    tags:
+      - Organization
+      - Folder
+    requestBody:
+      $ref: "#/components/requestBodies/FolderCreate"
+"/v1/namespaces/{id}/folders":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get namespace folders
+    tags:
+      - Namespace
+      - Folder
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesFoldersGet
+    security:
+      - oauth2:
+          - namespace.read
+          - document.read
+    description: Return a cursor-paginated page of folders at a location in the namespace library.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/parent_id"
+  post:
+    summary: Create folder in namespace
+    operationId: v1NamespacesFoldersCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Folder"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new folder in the namespace library.
+    security:
+      - oauth2:
+          - namespace
+          - document
+    tags:
+      - Namespace
+      - Folder
+    requestBody:
+      $ref: "#/components/requestBodies/FolderCreate"
+"/v1/folders/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get folder
+    tags:
+      - Folder
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Folder"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1FolderGet
+    security:
+      - oauth2:
+          - document.read
+    description: Return the requested folder by its ID.
+  patch:
+    summary: Update folder
+    operationId: v1FolderUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Folder"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the folder by its ID. JSON null parent_id moves it to the library root.
+    security:
+      - oauth2:
+          - document
+    tags:
+      - Folder
+    requestBody:
+      $ref: "#/components/requestBodies/FolderPatch"
+  delete:
+    summary: Delete folder
+    operationId: v1FolderDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete the folder by its ID. Child folders and documents are reparented one level up.
+    security:
+      - oauth2:
+          - document
+    tags:
+      - Folder

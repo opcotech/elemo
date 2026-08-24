@@ -21,13 +21,13 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationsGetOptions,
 } from "@/lib/api/query-options";
+import { zOrganizationCreate, zOrganizationPatch } from "@/lib/api/schemas";
 import { v1OrganizationUpdate } from "@/lib/api/sdk";
 import type {
   Options,
   Organization,
   V1OrganizationUpdateData,
 } from "@/lib/api/types";
-import { zOrganizationCreate, zOrganizationPatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

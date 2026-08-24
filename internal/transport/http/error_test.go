@@ -13,10 +13,10 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	testHttp "github.com/opcotech/elemo/internal/testutil/http"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -55,7 +55,7 @@ func TestHTTPError(t *testing.T) {
 			r, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
 			require.NoError(t, err)
 
-			logger := mock.NewMockLogger(ctrl)
+			logger := mocklog.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
 				logger.EXPECT().Log(gomock.Any(), log.LevelError, tt.args.err.Error(), gomock.Any()).Return()
 			} else {
@@ -115,7 +115,7 @@ func TestHTTPErrorStruct(t *testing.T) {
 			r, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
 			require.NoError(t, err)
 
-			logger := mock.NewMockLogger(ctrl)
+			logger := mocklog.NewMockLogger(ctrl)
 			if tt.args.status >= 500 {
 				logger.EXPECT().Log(gomock.Any(), log.LevelError, tt.args.err.Error(), gomock.Any()).Return()
 			} else {
@@ -147,13 +147,24 @@ func TestClassifyServiceError(t *testing.T) {
 		{name: "self relation", err: service.ErrIssueSelfRelation, status: http.StatusBadRequest},
 		{name: "invalid issue details", err: model.ErrInvalidIssueDetails, status: http.StatusBadRequest},
 		{name: "invalid folder details", err: model.ErrInvalidFolderDetails, status: http.StatusBadRequest},
+		{name: "invalid project details", err: model.ErrInvalidProjectDetails, status: http.StatusBadRequest},
+		{name: "invalid id", err: model.ErrInvalidID, status: http.StatusBadRequest},
+		{name: "no user", err: service.ErrNoUser, status: http.StatusBadRequest},
+		{name: "member already exists", err: service.ErrOrganizationMemberAlreadyExists, status: http.StatusBadRequest},
+		{name: "member invalid status", err: service.ErrOrganizationMemberInvalidStatus, status: http.StatusBadRequest},
 		{name: "folder name conflict", err: repository.ErrFolderNameConflict, status: http.StatusBadRequest},
 		{name: "folder cycle", err: repository.ErrFolderCycle, status: http.StatusBadRequest},
+		{name: "wrapped validation", err: errors.Join(service.ErrProjectList, model.ErrInvalidID), status: http.StatusBadRequest},
+		{name: "privilege escalation", err: model.ErrPrivilegeEscalation, status: http.StatusForbidden},
 		{name: "no permission", err: service.ErrNoPermission, status: http.StatusForbidden},
+		{name: "invalid grant", err: model.ErrInvalidGrant, status: http.StatusBadRequest},
+		{name: "wrapped permission", err: errors.Join(service.ErrProjectGet, service.ErrNoPermission), status: http.StatusForbidden},
 		{name: "license expired", err: license.ErrLicenseExpired, status: http.StatusForbidden},
 		{name: "quota exceeded", err: service.ErrQuotaExceeded, status: http.StatusForbidden},
 		{name: "not found", err: repository.ErrNotFound, status: http.StatusNotFound},
+		{name: "wrapped not found", err: errors.Join(service.ErrProjectGet, repository.ErrNotFound), status: http.StatusNotFound},
 		{name: "unknown", err: errors.New("boom"), status: http.StatusInternalServerError},
+		{name: "wrapped unknown", err: errors.Join(service.ErrProjectGet, errors.New("boom")), status: http.StatusInternalServerError},
 	}
 
 	for _, tt := range tests {

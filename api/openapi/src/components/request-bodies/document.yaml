@@ -1,0 +1,71 @@
+DocumentCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          title:
+            type: string
+            description: Title of the document.
+            minLength: 3
+            maxLength: 120
+            example: Project Plan
+          excerpt:
+            type: string
+            description: Excerpt of the document.
+            maxLength: 500
+            example: Overview of the project plan
+            minLength: 10
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          content:
+            type: string
+            description: Body of the document.
+            example: "# Project Plan\n\nGoals and timeline."
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+        required:
+          - title
+DocumentPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          title:
+            type: string
+            description: Title of the document.
+            minLength: 3
+            maxLength: 120
+            example: Project Plan
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          excerpt:
+            type: string
+            description: Excerpt of the document.
+            maxLength: 500
+            example: Overview of the project plan
+            minLength: 10
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          content:
+            type: string
+            description: Body of the document.
+            example: "# Project Plan\n\nGoals and timeline."
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          library_id:
+            type: string
+            description: Move the document to this organization or namespace library. Clears the folder.
+            example: 9bsv0s46s6s002p9ltq0
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          folder_id:
+            type: string
+            description: Move the document into this folder. JSON null removes it from the folder (library root).
+            example: 9bsv0s46s6s002p9ltq0
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true

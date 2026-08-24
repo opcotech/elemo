@@ -19,6 +19,25 @@ This script generates development configuration files and key.
 Takes the Open API specification in the `api/openapi` directory, and generates
 a TypeScript client from it.
 
+## reset-demo.sh
+
+Wipes a running demo instance and reloads the ACME seed from
+`assets/queries/demo.cypher`. Services are left running.
+
+Clears Neo4j, Redis, Meilisearch, S3 objects, Postgres `user_tokens`,
+`notifications`, and `oauth2_tokens`. Does **not** touch `oauth2_clients`, so
+web `AUTH_CLIENT_ID` / `AUTH_CLIENT_SECRET` stay valid and you do not need to
+re-register an OAuth client or restart the stack.
+
+Requires the Compose stack to already be up (`make start.backend`). Pass
+`--yes` because the wipe is destructive:
+
+```sh
+./scripts/reset-demo.sh --yes
+# or
+make demo.reset
+```
+
 ## setup.sh
 
 This script prepares the whole development environment. Generates a new

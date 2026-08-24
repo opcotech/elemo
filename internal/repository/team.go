@@ -64,7 +64,7 @@ func (o UpdateTeamOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=team.go -destination=team_mock_gen.go -package=repository -mock_names "TeamRepository=MockTeamRepository"
+//go:generate go tool mockgen -source=team.go -destination=mock/mock_team_gen.go -package=mockrepo
 type TeamRepository interface {
 	Create(ctx context.Context, opts CreateTeamOpts) (*Team, error)
 	Get(ctx context.Context, id, belongsTo model.ID, proj TeamProjection) (*Team, error)
@@ -137,7 +137,7 @@ func (r *Neo4jTeamRepository) Create(ctx context.Context, opts CreateTeamOpts) (
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(err, ErrTeamCreate)
+		return nil, errors.Join(ErrTeamCreate, err)
 	}
 
 	return r.Get(ctx, id, opts.BelongsTo, TeamDetailProjection())
@@ -150,7 +150,7 @@ func (r *Neo4jTeamRepository) Get(ctx context.Context, id, belongsTo model.ID, p
 
 	plan, err := CompileQuery(TeamGetQuery{ID: id, BelongsTo: belongsTo, Projection: proj})
 	if err != nil {
-		return nil, errors.Join(err, ErrTeamRead)
+		return nil, errors.Join(ErrTeamRead, err)
 	}
 
 	var team *Team
@@ -160,7 +160,7 @@ func (r *Neo4jTeamRepository) Get(ctx context.Context, id, belongsTo model.ID, p
 		return readErr
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrTeamRead)
+		return nil, errors.Join(ErrTeamRead, err)
 	}
 
 	return team, nil
@@ -276,7 +276,7 @@ func (r *Neo4jTeamRepository) Update(ctx context.Context, id, belongsTo model.ID
 		return &struct{}{}, nil
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrTeamUpdate)
+		return nil, errors.Join(ErrTeamUpdate, err)
 	}
 
 	return r.Get(ctx, id, belongsTo, TeamDetailProjection())

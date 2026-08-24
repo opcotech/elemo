@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
 
@@ -30,6 +31,8 @@ type UserController interface {
 // userController is the concrete implementation of UserController.
 type userController struct {
 	*baseController
+	userService  service.UserService
+	emailService service.EmailService
 }
 
 func (c *userController) V1UsersCreate(ctx context.Context, request api.V1UsersCreateRequestObject) (api.V1UsersCreateResponseObject, error) {
@@ -43,14 +46,14 @@ func (c *userController) V1UsersCreate(ctx context.Context, request api.V1UsersC
 
 	user, err := c.userService.Create(ctx, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1UsersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		return api.V1UsersCreate500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
+		default:
+			return api.V1UsersCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
-			},
-		}, nil
+			}}, nil
+		}
 	}
 
 	return api.V1UsersCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -78,15 +81,16 @@ func (c *userController) V1UserGet(ctx context.Context, request api.V1UserGetReq
 
 	user, err := c.userService.Get(ctx, userID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1UserGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1UserGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1UserGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UserGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1UserGet200JSONResponse(userToDTO(user)), nil
@@ -103,15 +107,16 @@ func (c *userController) V1UsersGet(ctx context.Context, request api.V1UsersGetR
 
 	page, err := c.userService.List(ctx, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1UsersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1UsersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		default:
+			return api.V1UsersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UsersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	usersDTO := make([]api.User, len(page.Items))
@@ -148,15 +153,16 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 	if request.Body.Password != nil && request.Body.NewPassword != nil {
 		user, err := c.userService.Get(ctx, userID)
 		if err != nil {
-			if errors.Is(err, service.ErrNoPermission) {
+			switch classifyServiceError(err) {
+			case http.StatusForbidden:
 				return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-			}
-			if isNotFoundError(err) {
+			case http.StatusNotFound:
 				return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+			default:
+				return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+					Message: err.Error(),
+				}}, nil
 			}
-			return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-				Message: err.Error(),
-			}}, nil
 		}
 
 		if !password.IsPasswordMatching(user.Password, *request.Body.Password) {
@@ -176,15 +182,16 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 
 	user, err := c.userService.Update(ctx, userID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1UserUpdate200JSONResponse(userToDTO(user)), nil
@@ -200,15 +207,16 @@ func (c *userController) V1UserDelete(ctx context.Context, request api.V1UserDel
 	}
 
 	if err := c.userService.Delete(ctx, userID, pkg.DefaultPtr(request.Params.Force, false)); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1UserDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1UserDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UserDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1UserDelete204Response{}, nil
@@ -228,12 +236,14 @@ func (c *userController) V1UserRequestPasswordReset(ctx context.Context, request
 
 	user, err := c.userService.GetByEmail(ctx, string(request.Params.Email))
 	if err != nil {
-		if isNotFoundError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusNotFound:
 			return api.V1UserRequestPasswordReset404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1UserRequestPasswordReset500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UserRequestPasswordReset500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	token, err := c.userService.CreateToken(ctx, user.ID, user.Email, model.UserTokenContextResetPassword, nil)
@@ -274,17 +284,19 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 
 	user, err := c.userService.Get(ctx, userID)
 	if err != nil {
-		if isNotFoundError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusNotFound:
 			return api.V1UserResetPassword404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1UserResetPassword500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1UserResetPassword500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	if verifyErr != nil && errors.Is(verifyErr, service.ErrExpiredToken) {
 		if err := c.userService.DeleteToken(ctx, userID, model.UserTokenContextResetPassword); err != nil {
-			if !isNotFoundError(err) {
+			if classifyServiceError(err) != http.StatusNotFound {
 				return api.V1UserResetPassword500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 					Message: err.Error(),
 				}}, nil
@@ -325,7 +337,7 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 	}
 
 	if err := c.userService.DeleteToken(ctx, userID, model.UserTokenContextResetPassword); err != nil {
-		if !isNotFoundError(err) {
+		if classifyServiceError(err) != http.StatusNotFound {
 			return api.V1UserResetPassword500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
 			}}, nil
@@ -336,25 +348,29 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 }
 
 // NewUserController creates a new UserController.
-func NewUserController(opts ...ControllerOption) (UserController, error) {
+func NewUserController(
+	userService service.UserService,
+	emailService service.EmailService,
+	opts ...ControllerOption,
+) (UserController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &userController{
-		baseController: c,
-	}
-
-	if controller.userService == nil {
+	if userService == nil {
 		return nil, ErrNoUserService
 	}
 
-	if controller.emailService == nil {
+	if emailService == nil {
 		return nil, ErrNoEmailService
 	}
 
-	return controller, nil
+	return &userController{
+		baseController: c,
+		userService:    userService,
+		emailService:   emailService,
+	}, nil
 }
 
 func createUserJSONRequestBodyToCreateUserOpts(body *api.V1UsersCreateJSONRequestBody) (service.CreateUserOpts, error) {

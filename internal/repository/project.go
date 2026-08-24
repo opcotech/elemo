@@ -89,12 +89,12 @@ func (o UpdateProjectOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=project.go -destination=project_mock_gen.go -package=repository -mock_names "ProjectRepository=MockProjectRepository"
+//go:generate go tool mockgen -source=project.go -destination=mock/mock_project_gen.go -package=mockrepo
 type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
 	Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error)
 	GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error)
-	List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error)
+	ListForNamespace(ctx context.Context, query ProjectListQuery) (Page[*Project], error)
 	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -174,7 +174,8 @@ func (r *Neo4jProjectRepository) applyProjectLoaders(
 			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(record *neo4j.Record) (struct {
 				projectID string
 				teamIDs   []model.ID
-			}, error) {
+			}, error,
+			) {
 				projectID, err := Neo4jParseValueFromRecord[string](record, "project_id")
 				if err != nil {
 					return struct {
@@ -335,28 +336,22 @@ func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string, proj 
 	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/List")
+func (r *Neo4jProjectRepository) ListForNamespace(ctx context.Context, query ProjectListQuery) (Page[*Project], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/ListForNamespace")
 	defer span.End()
 
-	normalizedPage, err := page.Normalize()
+	normalizedPage, err := query.Page.Normalize()
 	if err != nil {
 		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
 	}
 
-	plan, err := CompileQuery(ProjectListQuery{
-		NamespaceID: namespaceID,
-		ActorID:     actor,
-		ScopeIDs:    scopeIDs,
-		Page:        normalizedPage,
-		Order:       SortDirectionDesc,
-		Projection:  proj,
-	})
+	query.Page = normalizedPage
+	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
 	}
 
-	projects, err := r.readProjectPlan(ctx, plan, proj)
+	projects, err := r.readProjectPlan(ctx, plan, query.Projection)
 	if err != nil {
 		return Page[*Project]{}, errors.Join(ErrProjectRead, err)
 	}
@@ -435,7 +430,7 @@ func clearProjectsAllByKey(ctx context.Context, r *redisBaseRepository) error {
 }
 
 func clearProjectsAllList(ctx context.Context, r *redisBaseRepository) error {
-	return clearProjectsPattern(ctx, r, "*", "List", "*")
+	return clearProjectsPattern(ctx, r, "*", "ListForNamespace", "*")
 }
 
 func clearProjectsAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -456,37 +451,6 @@ func clearProjectsAllCrossCache(ctx context.Context, r *redisBaseRepository) err
 type RedisCachedProjectRepository struct {
 	cacheRepo   *redisBaseRepository
 	projectRepo ProjectRepository
-}
-
-func projectGetCacheKey(id model.ID, proj ProjectProjection) (string, error) {
-	plan, err := CompileQuery(ProjectGetQuery{ID: id, Projection: proj})
-	if err != nil {
-		return "", err
-	}
-	return plan.CacheKey(model.ResourceTypeProject.String(), "Get", id.String()), nil
-}
-
-func projectGetByKeyCacheKey(key string, proj ProjectProjection) (string, error) {
-	plan, err := CompileQuery(ProjectGetByKeyQuery{Key: key, Projection: proj})
-	if err != nil {
-		return "", err
-	}
-	return plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key), nil
-}
-
-func projectListCacheKey(namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (string, error) {
-	plan, err := CompileQuery(ProjectListQuery{
-		NamespaceID: namespaceID,
-		ActorID:     actor,
-		ScopeIDs:    scopeIDs,
-		Page:        page,
-		Order:       SortDirectionDesc,
-		Projection:  proj,
-	})
-	if err != nil {
-		return "", err
-	}
-	return plan.CacheKey(model.ResourceTypeProject.String(), "List", namespaceID.String()), nil
 }
 
 func (r *RedisCachedProjectRepository) Create(ctx context.Context, opts CreateProjectOpts) (*Project, error) {
@@ -516,10 +480,11 @@ func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID, pro
 	var project *Project
 	var err error
 
-	key, err := projectGetCacheKey(id, proj)
+	plan, err := CompileQuery(ProjectGetQuery{ID: id, Projection: proj})
 	if err != nil {
 		return nil, err
 	}
+	key := plan.CacheKey(model.ResourceTypeProject.String(), "Get", id.String())
 	if err = r.cacheRepo.Get(ctx, key, &project); err != nil {
 		return nil, err
 	}
@@ -543,10 +508,11 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string,
 	var project *Project
 	var err error
 
-	cacheKey, err := projectGetByKeyCacheKey(key, proj)
+	plan, err := CompileQuery(ProjectGetByKeyQuery{Key: key, Projection: proj})
 	if err != nil {
 		return nil, err
 	}
+	cacheKey := plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key)
 	if err = r.cacheRepo.Get(ctx, cacheKey, &project); err != nil {
 		return nil, err
 	}
@@ -566,14 +532,21 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string,
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, actor model.ID, scopeIDs []model.ID, page CursorPage, proj ProjectProjection) (Page[*Project], error) {
+func (r *RedisCachedProjectRepository) ListForNamespace(ctx context.Context, query ProjectListQuery) (Page[*Project], error) {
 	var projects Page[*Project]
 	var err error
 
-	key, err := projectListCacheKey(namespaceID, actor, scopeIDs, page, proj)
+	normalized, err := normalizedPage(query.Page)
 	if err != nil {
 		return Page[*Project]{}, err
 	}
+	query.Page = normalized
+
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*Project]{}, err
+	}
+	key := plan.CacheKey(model.ResourceTypeProject.String(), "ListForNamespace", query.NamespaceID.String())
 	if err = r.cacheRepo.Get(ctx, key, &projects); err != nil {
 		return Page[*Project]{}, err
 	}
@@ -582,7 +555,7 @@ func (r *RedisCachedProjectRepository) List(ctx context.Context, namespaceID, ac
 		return projects, nil
 	}
 
-	if projects, err = r.projectRepo.List(ctx, namespaceID, actor, scopeIDs, page, proj); err != nil {
+	if projects, err = r.projectRepo.ListForNamespace(ctx, query); err != nil {
 		return Page[*Project]{}, err
 	}
 
@@ -599,10 +572,11 @@ func (r *RedisCachedProjectRepository) Update(ctx context.Context, id model.ID, 
 		return nil, err
 	}
 
-	key, err := projectGetCacheKey(id, ProjectDetailProjection())
+	plan, err := CompileQuery(ProjectGetQuery{ID: id, Projection: ProjectDetailProjection()})
 	if err != nil {
 		return nil, err
 	}
+	key := plan.CacheKey(model.ResourceTypeProject.String(), "Get", id.String())
 	if err := r.cacheRepo.Set(ctx, key, project); err != nil {
 		return nil, err
 	}

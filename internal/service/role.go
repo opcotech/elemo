@@ -59,7 +59,7 @@ type UpdateRoleOpts struct {
 
 // RoleService is the interface that provides methods for managing roles.
 //
-//go:generate go tool mockgen -destination=role_mock_gen.go -package=service -mock_names RoleService=MockRoleService . RoleService
+//go:generate go tool mockgen -destination=mock/mock_role_gen.go -package=mocksvc . RoleService
 type RoleService interface {
 	// Create creates a new role in the system and assigns it to a resource it
 	// belongs to. The user who created the role is also assigned as a member
@@ -90,7 +90,12 @@ type RoleService interface {
 
 // roleService implements RoleService interface.
 type roleService struct {
-	*baseService
+	runtime
+	roleRepo            repository.RoleRepository
+	permissionService   PermissionService
+	licenseService      LicenseService
+	organizationRepo    repository.OrganizationRepository
+	notificationService NotificationService
 }
 
 func roleFromRepository(r *repository.Role) *Role {
@@ -131,8 +136,8 @@ func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opt
 		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
-		return nil, errors.Join(ErrRoleCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionRoleManage); err != nil {
+		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
 	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaRoles); !ok || err != nil {
@@ -162,8 +167,8 @@ func (s *roleService) Get(ctx context.Context, id, belongsTo model.ID) (*Role, e
 		return nil, errors.Join(ErrRoleGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionOrganizationRead) {
-		return nil, errors.Join(ErrRoleGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionOrganizationRead); err != nil {
+		return nil, errors.Join(ErrRoleGet, err)
 	}
 
 	role, err := s.roleRepo.Get(ctx, id, belongsTo, repository.RoleDetailProjection())
@@ -187,8 +192,8 @@ func (s *roleService) ListBelongsTo(ctx context.Context, belongsTo model.ID, pag
 		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionOrganizationRead) {
-		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionOrganizationRead); err != nil {
+		return Page[*Role]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
 	roles, err := s.roleRepo.ListBelongsTo(
@@ -216,8 +221,8 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts U
 		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
-		return nil, errors.Join(ErrRoleUpdate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionRoleManage); err != nil {
+		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
 	repoOpts := repository.UpdateRoleOpts{
@@ -258,8 +263,8 @@ func (s *roleService) ListMembers(ctx context.Context, id, belongsTo model.ID, p
 		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionTeamManage) {
-		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionTeamManage); err != nil {
+		return Page[*User]{}, errors.Join(ErrRoleGetBelongsTo, err)
 	}
 
 	members, err := s.roleRepo.ListMembers(ctx, id, belongsTo, normalized)
@@ -286,8 +291,8 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 		return errors.Join(ErrRoleAddMember, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsToID, model.ActionTeamManage) {
-		return errors.Join(ErrRoleAddMember, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsToID, model.ActionTeamManage); err != nil {
+		return errors.Join(ErrRoleAddMember, err)
 	}
 
 	err := s.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
@@ -343,8 +348,8 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsToID, model.ActionTeamManage) {
-		return errors.Join(ErrRoleRemoveMember, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsToID, model.ActionTeamManage); err != nil {
+		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
 	err := s.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
@@ -396,8 +401,8 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 		return errors.Join(ErrRoleDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionRoleManage) {
-		return errors.Join(ErrRoleDelete, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionRoleManage); err != nil {
+		return errors.Join(ErrRoleDelete, err)
 	}
 
 	err := s.roleRepo.Delete(ctx, id, belongsTo)
@@ -410,22 +415,30 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 
 // NewRoleService creates a new RoleService that provides methods
 // for managing roles.
-func NewRoleService(opts ...Option) (RoleService, error) {
-	s, err := newService(opts...)
+func NewRoleService(
+	roleRepo repository.RoleRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	organizationRepo repository.OrganizationRepository,
+	notificationService NotificationService,
+	opts ...Option,
+) (RoleService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &roleService{
-		baseService: s,
+		runtime:             rt,
+		roleRepo:            roleRepo,
+		permissionService:   permissionService,
+		licenseService:      licenseService,
+		organizationRepo:    organizationRepo,
+		notificationService: notificationService,
 	}
 
 	if svc.roleRepo == nil {
 		return nil, ErrNoRoleRepository
-	}
-
-	if svc.userRepo == nil {
-		return nil, ErrNoUserRepository
 	}
 
 	if svc.permissionService == nil {
@@ -434,6 +447,14 @@ func NewRoleService(opts ...Option) (RoleService, error) {
 
 	if svc.licenseService == nil {
 		return nil, ErrNoLicenseService
+	}
+
+	if svc.organizationRepo == nil {
+		return nil, ErrNoOrganizationRepository
+	}
+
+	if svc.notificationService == nil {
+		return nil, ErrNoNotificationService
 	}
 
 	return svc, nil

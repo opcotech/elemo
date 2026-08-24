@@ -18,6 +18,7 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -89,10 +90,30 @@ func (s *server) PreRedirectErrorHandler(_ http.ResponseWriter, r *authServer.Au
 	)
 }
 
-// NewServer creates a new HTTP server.
-func NewServer(opts ...ControllerOption) (StrictServer, error) {
-	var err error
+// ServerDeps holds the required services and auth provider for NewServer.
+type ServerDeps struct {
+	AuthProvider        *authServer.Server
+	OrganizationService service.OrganizationService
+	NamespaceService    service.NamespaceService
+	ProjectService      service.ProjectService
+	IssueService        service.IssueService
+	DocumentService     service.DocumentService
+	FolderService       service.FolderService
+	LabelService        service.LabelService
+	RoleService         service.RoleService
+	TeamService         service.TeamService
+	UserService         service.UserService
+	EmailService        service.EmailService
+	TodoService         service.TodoService
+	SystemService       service.SystemService
+	LicenseService      service.LicenseService
+	PermissionService   service.PermissionService
+	NotificationService service.NotificationService
+	SearchService       service.SearchService
+}
 
+// NewServer creates a new HTTP server.
+func NewServer(deps ServerDeps, opts ...ControllerOption) (StrictServer, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
@@ -102,59 +123,69 @@ func NewServer(opts ...ControllerOption) (StrictServer, error) {
 		baseController: c,
 	}
 
-	if s.AuthController, err = NewAuthController(opts...); err != nil {
+	if s.AuthController, err = NewAuthController(deps.UserService, deps.AuthProvider, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.OrganizationController, err = NewOrganizationController(opts...); err != nil {
+	if s.OrganizationController, err = NewOrganizationController(
+		deps.OrganizationService,
+		deps.RoleService,
+		deps.TeamService,
+		deps.UserService,
+		opts...,
+	); err != nil {
 		return nil, err
 	}
 
-	if s.NamespaceController, err = NewNamespaceController(opts...); err != nil {
+	if s.NamespaceController, err = NewNamespaceController(deps.NamespaceService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.ProjectController, err = NewProjectController(opts...); err != nil {
+	if s.ProjectController, err = NewProjectController(deps.ProjectService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.IssueController, err = NewIssueController(opts...); err != nil {
+	if s.IssueController, err = NewIssueController(deps.IssueService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.DocumentController, err = NewDocumentController(opts...); err != nil {
+	if s.DocumentController, err = NewDocumentController(deps.DocumentService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.FolderController, err = NewFolderController(opts...); err != nil {
+	if s.FolderController, err = NewFolderController(deps.FolderService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.LabelController, err = NewLabelController(opts...); err != nil {
+	if s.LabelController, err = NewLabelController(deps.LabelService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.UserController, err = NewUserController(opts...); err != nil {
+	if s.UserController, err = NewUserController(deps.UserService, deps.EmailService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.TodoController, err = NewTodoController(opts...); err != nil {
+	if s.TodoController, err = NewTodoController(deps.TodoService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.SystemController, err = NewSystemController(opts...); err != nil {
+	if s.SystemController, err = NewSystemController(deps.SystemService, deps.LicenseService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.PermissionController, err = NewPermissionController(opts...); err != nil {
+	if s.PermissionController, err = NewPermissionController(deps.PermissionService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.NotificationController, err = NewNotificationController(opts...); err != nil {
+	if s.NotificationController, err = NewNotificationController(
+		deps.NotificationService,
+		deps.UserService,
+		opts...,
+	); err != nil {
 		return nil, err
 	}
 
-	if s.SearchController, err = NewSearchController(opts...); err != nil {
+	if s.SearchController, err = NewSearchController(deps.SearchService, opts...); err != nil {
 		return nil, err
 	}
 
@@ -167,7 +198,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		return nil, config.ErrNoConfig
 	}
 
-	swagger, err := api.GetSwagger()
+	swagger, err := api.GetSpec()
 	if err != nil {
 		return nil, errors.Join(ErrInvalidSwagger, err)
 	}

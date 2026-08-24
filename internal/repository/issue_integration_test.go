@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 func cacheKeysWithoutIssueListGeneration(keys []string) []string {
@@ -160,7 +161,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetByKeyScopedToNamespace() {
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
-func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
+func (s *IssueRepositoryIntegrationTestSuite) TestListForProject() {
 	_, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.IssueRepo.Create(context.Background(), testModel.NewCreateIssueOpts(s.testProject.ID, s.testUser.ID))
@@ -181,7 +182,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
 	s.Assert().Len(issues.Items, 2)
 }
 
-func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
+func (s *IssueRepositoryIntegrationTestSuite) TestListForNamespace() {
 	_, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
@@ -207,7 +208,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
 	s.Assert().Contains(keys, model.FormatIssueKey(otherProject.Key, 1))
 }
 
-func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
+func (s *IssueRepositoryIntegrationTestSuite) TestListForUser() {
 	assigned, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(
@@ -231,7 +232,7 @@ func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
 	s.Require().NotNil(issues.Items[0].Project)
 }
 
-func (s *IssueRepositoryIntegrationTestSuite) TestGetAllForIssue() {
+func (s *IssueRepositoryIntegrationTestSuite) TestListForIssue() {
 	parent, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 
@@ -433,7 +434,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetByKey() {
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForProject() {
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestListForProject() {
 	_, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	original, err := s.IssueRepo.ListForProject(context.Background(), repository.IssueListQuery{ProjectID: s.testProject.ID, Page: repository.CursorPage{Size: 10}, Projection: repository.IssueListForProjectProjection()})
@@ -478,7 +479,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestUpdateInvalidatesProject
 	s.Assert().Equal(model.IssueStatusDone, page.Items[0].Status)
 }
 
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestListForNamespace() {
 	_, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	original, err := s.IssueRepo.ListForNamespace(context.Background(), repository.IssueListForNamespaceQuery{
@@ -497,7 +498,7 @@ func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForNamespace() {
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
-func (s *CachedIssueRepositoryIntegrationTestSuite) TestGetAllForUser() {
+func (s *CachedIssueRepositoryIntegrationTestSuite) TestListForUser() {
 	created, err := s.issueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.AssignmentRepo.Create(context.Background(), testModel.NewCreateAssignmentOpts(

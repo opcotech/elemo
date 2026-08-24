@@ -128,6 +128,8 @@ func (o *CreateUserTokenOpts) Validate() error {
 
 // UserService serves the business logic of interacting with users in the
 // system.
+//
+//go:generate go tool mockgen -destination=mock/mock_user_gen.go -package=mocksvc . UserService
 type UserService interface {
 	// Create creates a new user in the system. The user's password is not
 	// hashed before being stored in the database. Make sure to hash the
@@ -164,7 +166,10 @@ type UserService interface {
 
 // userService is the concrete implementation of the UserService interface.
 type userService struct {
-	*baseService
+	runtime
+	userRepo       repository.UserRepository
+	userTokenRepo  repository.UserTokenRepository
+	licenseService LicenseService
 }
 
 func userFromRepository(u *repository.User) *User {
@@ -293,12 +298,16 @@ func (s *userService) List(ctx context.Context, page CursorPage) (Page[*User], e
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*User]{}, errors.Join(ErrUserGetAll, err)
+		return Page[*User]{}, errors.Join(ErrUserList, err)
+	}
+
+	if _, err := ctxUserID(ctx); err != nil {
+		return Page[*User]{}, errors.Join(ErrUserList, err)
 	}
 
 	users, err := s.userRepo.List(ctx, normalized, repository.UserListProjection())
 	if err != nil {
-		return Page[*User]{}, errors.Join(ErrUserGetAll, err)
+		return Page[*User]{}, errors.Join(ErrUserList, err)
 	}
 
 	return mapPage(users, userFromRepository), nil
@@ -316,9 +325,9 @@ func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOp
 		return nil, errors.Join(ErrUserUpdate, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrUserUpdate, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrUserUpdate, err)
 	}
 
 	if userID != id {
@@ -368,9 +377,9 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 		return errors.Join(ErrUserDelete, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return errors.Join(ErrUserUpdate, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return errors.Join(ErrUserDelete, err)
 	}
 
 	if userID != id {
@@ -500,14 +509,22 @@ func (s *userService) DeleteToken(ctx context.Context, id model.ID, tokenContext
 }
 
 // NewUserService returns a new instance of the UserService interface.
-func NewUserService(opts ...Option) (UserService, error) {
-	s, err := newService(opts...)
+func NewUserService(
+	userRepo repository.UserRepository,
+	userTokenRepo repository.UserTokenRepository,
+	licenseService LicenseService,
+	opts ...Option,
+) (UserService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &userService{
-		baseService: s,
+		runtime:        rt,
+		userRepo:       userRepo,
+		userTokenRepo:  userTokenRepo,
+		licenseService: licenseService,
 	}
 
 	if svc.userRepo == nil {
@@ -516,10 +533,6 @@ func NewUserService(opts ...Option) (UserService, error) {
 
 	if svc.userTokenRepo == nil {
 		return nil, ErrNoUserTokenRepository
-	}
-
-	if svc.permissionService == nil {
-		return nil, ErrNoPermissionService
 	}
 
 	if svc.licenseService == nil {

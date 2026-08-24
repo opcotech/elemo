@@ -74,30 +74,11 @@ describe("loadWorkItemPage", () => {
     });
   });
 
-  it("falls back to a fixture only when the API returns 404", async () => {
-    const queryClient = createQueryClient(new ApiError(404, "missing"));
-
-    const data = await loadWorkItemPage(
-      queryClient,
-      "namespace-product",
-      "LMO-101"
-    );
-
-    expect(data).toMatchObject({
-      source: "mock",
-      item: {
-        dataSource: "mock",
-        key: "LMO-101",
-        namespaceId: "namespace-product",
-      },
-    });
-  });
-
-  it("throws not-found when the API 404s and no fixture matches", async () => {
+  it("throws not-found when the API 404s", async () => {
     const queryClient = createQueryClient(new ApiError(404, "missing"));
 
     await expect(
-      loadWorkItemPage(queryClient, "namespace-product", "MISSING-1")
+      loadWorkItemPage(queryClient, "namespace-product", "LMO-101")
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
@@ -111,6 +92,15 @@ describe("loadWorkItemPage", () => {
 
   it("propagates unexpected API failures", async () => {
     const error = new ApiError(500, "boom");
+    const queryClient = createQueryClient(error);
+
+    await expect(
+      loadWorkItemPage(queryClient, "namespace-product", "LMO-101")
+    ).rejects.toBe(error);
+  });
+
+  it("propagates validation errors", async () => {
+    const error = new ApiError(400, "invalid");
     const queryClient = createQueryClient(error);
 
     await expect(

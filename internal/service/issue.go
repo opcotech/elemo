@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -16,27 +15,17 @@ import (
 
 const assignmentSyncPageSize = 1000
 
-type issueListOptionsContextKey struct{}
-
 type IssueListOptions struct {
 	Filter repository.IssueListFilter
 	Sort   repository.IssueListSort
 }
 
-func WithIssueListOptions(ctx context.Context, opts IssueListOptions) context.Context {
-	return context.WithValue(ctx, issueListOptionsContextKey{}, opts)
-}
-
-func issueListOptionsFromContext(ctx context.Context) IssueListOptions {
-	if opts, ok := ctx.Value(issueListOptionsContextKey{}).(IssueListOptions); ok {
-		return opts
+func (o IssueListOptions) withDefaults() IssueListOptions {
+	if o.Sort.Field == "" {
+		o.Sort.Field = repository.IssueListSortFieldRank
+		o.Sort.Direction = repository.SortDirectionAsc
 	}
-	return IssueListOptions{
-		Sort: repository.IssueListSort{
-			Field:     repository.IssueListSortFieldRank,
-			Direction: repository.SortDirectionAsc,
-		},
-	}
+	return o
 }
 
 // PartialAssignee is a lean assignment of a user to an issue.
@@ -166,7 +155,7 @@ type UpdateIssueOpts struct {
 
 // IssueService serves the business logic of interacting with issues.
 //
-//go:generate go tool mockgen -destination=issue_mock_gen.go -package=service -mock_names IssueService=MockIssueService . IssueService
+//go:generate go tool mockgen -destination=mock/mock_issue_gen.go -package=mocksvc . IssueService
 type IssueService interface {
 	// Create creates a new issue in a project. If the project does not exist,
 	// an error is returned.
@@ -177,12 +166,12 @@ type IssueService interface {
 	// GetByKey returns an issue by its composite key (e.g. MOB-1).
 	GetByKey(ctx context.Context, namespaceID model.ID, key string) (*Issue, error)
 	// List returns a cursor-paginated page of issues for a project.
-	List(ctx context.Context, projectID model.ID, page CursorPage) (Page[*PartialIssue], error)
+	List(ctx context.Context, projectID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error)
 	// ListByNamespace returns a cursor-paginated page of issues across
 	// projects in a namespace.
-	ListByNamespace(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*PartialIssue], error)
+	ListByNamespace(ctx context.Context, namespaceID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error)
 	// ListByUser returns a cursor-paginated page of issues assigned to a user.
-	ListByUser(ctx context.Context, userID model.ID, page CursorPage) (Page[*PartialIssue], error)
+	ListByUser(ctx context.Context, userID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error)
 	// Update updates an issue. If the issue does not exist, an error is
 	// returned.
 	Update(ctx context.Context, id model.ID, opts UpdateIssueOpts) (*Issue, error)
@@ -201,7 +190,13 @@ type IssueService interface {
 
 // issueService is the concrete implementation of IssueService.
 type issueService struct {
-	*baseService
+	runtime
+	issueRepo         repository.IssueRepository
+	assignmentRepo    repository.AssignmentRepository
+	labelRepo         repository.LabelRepository
+	permissionService PermissionService
+	licenseService    LicenseService
+	searchService     SearchService
 }
 
 func partialAssigneesFromRepository(assignees []repository.PartialAssignee) []PartialAssignee {
@@ -489,8 +484,8 @@ func (s *issueService) validateParentUpdate(ctx context.Context, issueID model.I
 	if parentID == issueID {
 		return ErrIssueSelfRelation
 	}
-	if !s.permissionService.CtxUserHas(ctx, parentID, model.ActionIssueRead) {
-		return ErrNoPermission
+	if err := requireAction(ctx, s.permissionService, parentID, model.ActionIssueRead); err != nil {
+		return err
 	}
 
 	return nil
@@ -546,8 +541,8 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, projectID, model.ActionIssueCreate) {
-		return nil, errors.Join(ErrIssueCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, projectID, model.ActionIssueCreate); err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
 	parent := optional.None[model.ID]()
@@ -558,9 +553,9 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrIssueCreate, model.ErrInvalidID)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
 	status := opts.Status
@@ -610,7 +605,7 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 	}
 
 	out := issueFromRepository(issue)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -622,8 +617,8 @@ func (s *issueService) Get(ctx context.Context, id model.ID) (*Issue, error) {
 		return nil, errors.Join(ErrIssueGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueRead) {
-		return nil, errors.Join(ErrIssueGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionIssueRead); err != nil {
+		return nil, errors.Join(ErrIssueGet, err)
 	}
 
 	issue, err := s.issueRepo.Get(ctx, id, repository.IssueDetailProjection())
@@ -651,38 +646,38 @@ func (s *issueService) GetByKey(ctx context.Context, namespaceID model.ID, key s
 		return nil, errors.Join(ErrIssueGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, issue.ID, model.ActionIssueRead) {
-		return nil, errors.Join(ErrIssueGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, issue.ID, model.ActionIssueRead); err != nil {
+		return nil, errors.Join(ErrIssueGet, err)
 	}
 
 	return issueFromRepository(issue), nil
 }
 
-func (s *issueService) List(ctx context.Context, projectID model.ID, page CursorPage) (Page[*PartialIssue], error) {
+func (s *issueService) List(ctx context.Context, projectID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error) {
 	ctx, span := s.tracer.Start(ctx, "service.issueService/List")
 	defer span.End()
 
 	if err := projectID.Validate(); err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, projectID, model.ActionIssueRead)
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 	if !allowed {
 		return repository.EmptyPage[*PartialIssue](), nil
 	}
-	listOpts := issueListOptionsFromContext(ctx)
+	listOpts := opts.withDefaults()
 
 	issues, err := s.issueRepo.ListForProject(ctx, repository.IssueListQuery{
 		ProjectID:  projectID,
@@ -696,37 +691,37 @@ func (s *issueService) List(ctx context.Context, projectID model.ID, page Cursor
 		Projection: repository.IssueListForProjectProjection(),
 	})
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	return mapPage(issues, partialIssueFromRepository), nil
 }
 
-func (s *issueService) ListByNamespace(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*PartialIssue], error) {
+func (s *issueService) ListByNamespace(ctx context.Context, namespaceID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error) {
 	ctx, span := s.tracer.Start(ctx, "service.issueService/ListByNamespace")
 	defer span.End()
 
 	if err := namespaceID.Validate(); err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, namespaceID, model.ActionIssueRead)
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 	if !allowed {
 		return repository.EmptyPage[*PartialIssue](), nil
 	}
-	listOpts := issueListOptionsFromContext(ctx)
+	listOpts := opts.withDefaults()
 
 	issues, err := s.issueRepo.ListForNamespace(ctx, repository.IssueListForNamespaceQuery{
 		NamespaceID: namespaceID,
@@ -740,45 +735,45 @@ func (s *issueService) ListByNamespace(ctx context.Context, namespaceID model.ID
 		Projection:  repository.IssueListForNamespaceProjection(),
 	})
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	return mapPage(issues, partialIssueFromRepository), nil
 }
 
-func (s *issueService) ListByUser(ctx context.Context, userID model.ID, page CursorPage) (Page[*PartialIssue], error) {
+func (s *issueService) ListByUser(ctx context.Context, userID model.ID, page CursorPage, opts IssueListOptions) (Page[*PartialIssue], error) {
 	ctx, span := s.tracer.Start(ctx, "service.issueService/ListByUser")
 	defer span.End()
 
 	if err := userID.Validate(); err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
-	ctxUserID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoUser)
+	actorID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
-	if ctxUserID != userID {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, ErrNoPermission)
+	if actorID != userID {
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, ErrNoPermission)
 	}
 	scopeIDs, err := s.permissionService.CtxUserListGrantScopes(ctx, model.ActionIssueRead)
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 	if len(scopeIDs) == 0 {
 		return repository.EmptyPage[*PartialIssue](), nil
 	}
-	listOpts := issueListOptionsFromContext(ctx)
+	listOpts := opts.withDefaults()
 
 	issues, err := s.issueRepo.ListForUser(ctx, repository.IssueListForUserQuery{
 		UserID:     userID,
-		ActorID:    ctxUserID,
+		ActorID:    actorID,
 		Action:     model.ActionIssueRead,
 		ScopeIDs:   scopeIDs,
 		SortField:  listOpts.Sort.Field,
@@ -788,7 +783,7 @@ func (s *issueService) ListByUser(ctx context.Context, userID model.ID, page Cur
 		Projection: repository.IssueListForUserProjection(),
 	})
 	if err != nil {
-		return Page[*PartialIssue]{}, errors.Join(ErrIssueGetAll, err)
+		return Page[*PartialIssue]{}, errors.Join(ErrIssueList, err)
 	}
 
 	return mapPage(issues, partialIssueFromRepository), nil
@@ -806,8 +801,8 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 		return nil, errors.Join(ErrIssueUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueUpdate) {
-		return nil, errors.Join(ErrIssueUpdate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionIssueUpdate); err != nil {
+		return nil, errors.Join(ErrIssueUpdate, err)
 	}
 
 	assignees, err := optionalIDs(opts.Assignees)
@@ -885,7 +880,7 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 	}
 
 	out := issueFromRepository(issue)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -901,8 +896,8 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrIssueDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionIssueDelete) {
-		return errors.Join(ErrIssueDelete, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionIssueDelete); err != nil {
+		return errors.Join(ErrIssueDelete, err)
 	}
 
 	if err := s.issueRepo.Delete(ctx, id); err != nil {
@@ -931,8 +926,8 @@ func (s *issueService) ListRelations(ctx context.Context, issueID model.ID, page
 		return Page[*IssueRelation]{}, errors.Join(ErrIssueGetRelations, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueRead) {
-		return Page[*IssueRelation]{}, errors.Join(ErrIssueGetRelations, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, issueID, model.ActionIssueRead); err != nil {
+		return Page[*IssueRelation]{}, errors.Join(ErrIssueGetRelations, err)
 	}
 
 	relations, err := s.issueRepo.ListRelations(ctx, repository.IssueRelationListQuery{
@@ -969,11 +964,11 @@ func (s *issueService) AddRelation(ctx context.Context, issueID, relatedID model
 		return nil, errors.Join(ErrIssueAddRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
-		return nil, errors.Join(ErrIssueAddRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, issueID, model.ActionIssueUpdate); err != nil {
+		return nil, errors.Join(ErrIssueAddRelation, err)
 	}
-	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
-		return nil, errors.Join(ErrIssueAddRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, relatedID, model.ActionIssueRead); err != nil {
+		return nil, errors.Join(ErrIssueAddRelation, err)
 	}
 
 	created, err := s.issueRepo.AddRelation(ctx, repository.CreateIssueRelationOpts{
@@ -1017,8 +1012,8 @@ func (s *issueService) UpdateRelation(ctx context.Context, issueID, relationID m
 		return nil, errors.Join(ErrIssueUpdateRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
-		return nil, errors.Join(ErrIssueUpdateRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, issueID, model.ActionIssueUpdate); err != nil {
+		return nil, errors.Join(ErrIssueUpdateRelation, err)
 	}
 
 	existing, err := s.issueRepo.GetRelation(ctx, relationID)
@@ -1031,8 +1026,8 @@ func (s *issueService) UpdateRelation(ctx context.Context, issueID, relationID m
 		return nil, errors.Join(ErrIssueUpdateRelation, repository.ErrNotFound)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
-		return nil, errors.Join(ErrIssueUpdateRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, relatedID, model.ActionIssueRead); err != nil {
+		return nil, errors.Join(ErrIssueUpdateRelation, err)
 	}
 
 	if err := s.issueRepo.RemoveRelationByID(ctx, relationID); err != nil {
@@ -1077,8 +1072,8 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 		return errors.Join(ErrIssueRemoveRelation, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, issueID, model.ActionIssueUpdate) {
-		return errors.Join(ErrIssueRemoveRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, issueID, model.ActionIssueUpdate); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
 	}
 
 	existing, err := s.issueRepo.GetRelation(ctx, relationID)
@@ -1091,8 +1086,8 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 		return errors.Join(ErrIssueRemoveRelation, repository.ErrNotFound)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, relatedID, model.ActionIssueRead) {
-		return errors.Join(ErrIssueRemoveRelation, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, relatedID, model.ActionIssueRead); err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
 	}
 
 	if err := s.issueRepo.RemoveRelationByID(ctx, relationID); err != nil {
@@ -1103,14 +1098,28 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 }
 
 // NewIssueService returns a new instance of the IssueService interface.
-func NewIssueService(opts ...Option) (IssueService, error) {
-	s, err := newService(opts...)
+func NewIssueService(
+	issueRepo repository.IssueRepository,
+	assignmentRepo repository.AssignmentRepository,
+	labelRepo repository.LabelRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	searchService SearchService,
+	opts ...Option,
+) (IssueService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &issueService{
-		baseService: s,
+		runtime:           rt,
+		issueRepo:         issueRepo,
+		assignmentRepo:    assignmentRepo,
+		labelRepo:         labelRepo,
+		permissionService: permissionService,
+		licenseService:    licenseService,
+		searchService:     searchService,
 	}
 
 	if svc.issueRepo == nil {

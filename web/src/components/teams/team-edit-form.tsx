@@ -14,13 +14,13 @@ import {
   v1OrganizationTeamGetOptions,
   v1OrganizationTeamsGetOptions,
 } from "@/lib/api/query-options";
+import { zTeamPatch } from "@/lib/api/schemas";
 import { v1OrganizationTeamUpdate } from "@/lib/api/sdk";
 import type {
   Options,
   Team,
   V1OrganizationTeamUpdateData,
 } from "@/lib/api/types";
-import { zTeamPatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

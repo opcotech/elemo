@@ -3,11 +3,10 @@ package cli
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
-
-	"log/slog"
 
 	authStore "github.com/gabor-boros/go-oauth2-pg"
 	authManager "github.com/go-oauth2/oauth2/v4/manage"
@@ -446,7 +445,7 @@ var startServerCmd = &cobra.Command{
 
 		permissionService, err := service.NewPermissionService(
 			permissionRepo,
-			service.WithRoleRepository(roleRepo),
+			roleRepo,
 			service.WithLogger(logger.Named("permission_service")),
 			service.WithTracer(tracer),
 		)
@@ -456,8 +455,8 @@ var startServerCmd = &cobra.Command{
 
 		searchService, err := service.NewSearchService(
 			searchRepo,
-			service.WithPermissionService(permissionService),
-			service.WithSearchTaskEnqueuer(messageQueue),
+			permissionService,
+			messageQueue,
 			service.WithLogger(logger.Named("search_service")),
 			service.WithTracer(tracer),
 		)
@@ -468,7 +467,7 @@ var startServerCmd = &cobra.Command{
 		licenseService, err := service.NewLicenseService(
 			license,
 			licenseRepo,
-			service.WithPermissionService(permissionService),
+			permissionService,
 			service.WithLogger(logger.Named("license_service")),
 			service.WithTracer(tracer),
 		)
@@ -495,12 +494,11 @@ var startServerCmd = &cobra.Command{
 		}
 
 		roleService, err := service.NewRoleService(
-			service.WithRoleRepository(roleRepo),
-			service.WithUserRepository(userRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
-			service.WithOrganizationRepository(organizationRepo),
-			service.WithNotificationService(notificationService),
+			roleRepo,
+			permissionService,
+			licenseService,
+			organizationRepo,
+			notificationService,
 			service.WithLogger(logger.Named("role_service")),
 			service.WithTracer(tracer),
 		)
@@ -509,9 +507,9 @@ var startServerCmd = &cobra.Command{
 		}
 
 		teamService, err := service.NewTeamService(
-			service.WithTeamRepository(teamRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
+			teamRepo,
+			permissionService,
+			licenseService,
 			service.WithLogger(logger.Named("team_service")),
 			service.WithTracer(tracer),
 		)
@@ -520,10 +518,9 @@ var startServerCmd = &cobra.Command{
 		}
 
 		userService, err := service.NewUserService(
-			service.WithUserRepository(userRepo),
-			service.WithUserTokenRepository(userTokenRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
+			userRepo,
+			userTokenRepo,
+			licenseService,
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
 		)
@@ -532,8 +529,8 @@ var startServerCmd = &cobra.Command{
 		}
 
 		todoService, err := service.NewTodoService(
-			service.WithTodoRepository(todoRepo),
-			service.WithLicenseService(licenseService),
+			todoRepo,
+			licenseService,
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),
 		)
@@ -554,7 +551,7 @@ var startServerCmd = &cobra.Command{
 
 		staticFileService, err := service.NewStaticFileService(
 			staticFileRepo,
-			service.WithLicenseService(licenseService),
+			licenseService,
 			service.WithLogger(logger.Named("static_file_service")),
 			service.WithTracer(tracer),
 		)
@@ -563,59 +560,59 @@ var startServerCmd = &cobra.Command{
 		}
 
 		namespaceService, err := service.NewNamespaceService(
-			service.WithNamespaceRepository(namespaceRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
+			namespaceRepo,
+			permissionService,
+			licenseService,
+			searchService,
 			service.WithLogger(logger.Named("namespace_service")),
 			service.WithTracer(tracer),
-			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize namespace service", slog.Any("error", err))
 		}
 
 		projectService, err := service.NewProjectService(
-			service.WithProjectRepository(projectRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
+			projectRepo,
+			permissionService,
+			licenseService,
+			searchService,
 			service.WithLogger(logger.Named("project_service")),
 			service.WithTracer(tracer),
-			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize project service", slog.Any("error", err))
 		}
 
 		issueService, err := service.NewIssueService(
-			service.WithIssueRepository(issueRepo),
-			service.WithAssignmentRepository(assignmentRepo),
-			service.WithLabelRepository(labelRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
+			issueRepo,
+			assignmentRepo,
+			labelRepo,
+			permissionService,
+			licenseService,
+			searchService,
 			service.WithLogger(logger.Named("issue_service")),
 			service.WithTracer(tracer),
-			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize issue service", slog.Any("error", err))
 		}
 
 		documentService, err := service.NewDocumentService(
-			service.WithDocumentRepository(documentRepo),
-			service.WithLicenseService(licenseService),
-			service.WithPermissionService(permissionService),
-			service.WithStaticFileService(staticFileService),
+			documentRepo,
+			licenseService,
+			permissionService,
+			staticFileService,
+			searchService,
 			service.WithLogger(logger.Named("document_service")),
 			service.WithTracer(tracer),
-			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize document service", slog.Any("error", err))
 		}
 
 		folderService, err := service.NewFolderService(
-			service.WithFolderRepository(folderRepo),
-			service.WithPermissionService(permissionService),
+			folderRepo,
+			permissionService,
 			service.WithLogger(logger.Named("folder_service")),
 			service.WithTracer(tracer),
 		)
@@ -624,7 +621,7 @@ var startServerCmd = &cobra.Command{
 		}
 
 		labelService, err := service.NewLabelService(
-			service.WithLabelRepository(labelRepo),
+			labelRepo,
 			service.WithLogger(logger.Named("label_service")),
 			service.WithTracer(tracer),
 		)
@@ -633,17 +630,17 @@ var startServerCmd = &cobra.Command{
 		}
 
 		organizationService, err := service.NewOrganizationService(
-			service.WithOrganizationRepository(organizationRepo),
-			service.WithUserRepository(userRepo),
-			service.WithUserTokenRepository(userTokenRepo),
-			service.WithRoleRepository(roleRepo),
-			service.WithPermissionService(permissionService),
-			service.WithLicenseService(licenseService),
-			service.WithEmailService(emailService),
-			service.WithNotificationService(notificationService),
+			organizationRepo,
+			userRepo,
+			userTokenRepo,
+			roleRepo,
+			permissionService,
+			licenseService,
+			emailService,
+			notificationService,
+			searchService,
 			service.WithLogger(logger.Named("organization_service")),
 			service.WithTracer(tracer),
-			service.WithSearchService(searchService),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
@@ -655,25 +652,27 @@ var startServerCmd = &cobra.Command{
 		}
 
 		httpServer, err := elemoHttp.NewServer(
+			elemoHttp.ServerDeps{
+				AuthProvider:        authProvider,
+				OrganizationService: organizationService,
+				NamespaceService:    namespaceService,
+				ProjectService:      projectService,
+				IssueService:        issueService,
+				DocumentService:     documentService,
+				FolderService:       folderService,
+				LabelService:        labelService,
+				RoleService:         roleService,
+				TeamService:         teamService,
+				UserService:         userService,
+				EmailService:        emailService,
+				TodoService:         todoService,
+				SystemService:       systemService,
+				LicenseService:      licenseService,
+				PermissionService:   permissionService,
+				NotificationService: notificationService,
+				SearchService:       searchService,
+			},
 			elemoHttp.WithConfig(cfg.Server),
-			elemoHttp.WithAuthProvider(authProvider),
-			elemoHttp.WithOrganizationService(organizationService),
-			elemoHttp.WithNamespaceService(namespaceService),
-			elemoHttp.WithProjectService(projectService),
-			elemoHttp.WithIssueService(issueService),
-			elemoHttp.WithDocumentService(documentService),
-			elemoHttp.WithFolderService(folderService),
-			elemoHttp.WithLabelService(labelService),
-			elemoHttp.WithRoleService(roleService),
-			elemoHttp.WithTeamService(teamService),
-			elemoHttp.WithUserService(userService),
-			elemoHttp.WithTodoService(todoService),
-			elemoHttp.WithEmailService(emailService),
-			elemoHttp.WithSystemService(systemService),
-			elemoHttp.WithLicenseService(licenseService),
-			elemoHttp.WithPermissionService(permissionService),
-			elemoHttp.WithNotificationService(notificationService),
-			elemoHttp.WithSearchService(searchService),
 			elemoHttp.WithLogger(logger.Named("http_server")),
 			elemoHttp.WithTracer(tracer),
 		)

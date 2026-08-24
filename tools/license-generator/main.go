@@ -135,7 +135,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := os.WriteFile(outputLicenseFile, []byte(licenseData), 0600); err != nil { // #nosec G703 -- CLI output path from flag
+	if err := os.WriteFile(outputLicenseFile, []byte(licenseData), 0o600); err != nil { // #nosec G703 -- CLI output path from flag
 		log.Fatal(err)
 	}
 

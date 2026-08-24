@@ -1,0 +1,156 @@
+Namespace:
+  title: Namespace
+  type: object
+  description: A namespace in an organization.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      name: Engineering
+      description: Engineering team namespace
+      project_count: 1
+      document_count: 1
+      created_at: "2023-01-01T00:00:00Z"
+      updated_at: null
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the namespace.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the namespace.
+      maxLength: 120
+      example: Engineering
+      minLength: 3
+    description:
+      type: string
+      description: Description of the namespace.
+      maxLength: 500
+      example: Engineering team namespace
+      minLength: 5
+      nullable: true
+    project_count:
+      type: integer
+      format: int64
+      description: Number of projects in the namespace when projected.
+      example: 4
+      nullable: true
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents in the namespace when projected.
+      example: 8
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the namespace was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the namespace was updated.
+      nullable: true
+  required:
+    - id
+    - name
+    - created_at
+    - updated_at
+AccessibleNamespace:
+  title: AccessibleNamespace
+  type: object
+  description: A reachable namespace with its owning organization stub.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the namespace.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the namespace.
+      maxLength: 120
+      example: Engineering
+      minLength: 3
+    description:
+      type: string
+      description: Description of the namespace.
+      maxLength: 500
+      example: Engineering team namespace
+      minLength: 5
+      nullable: true
+    project_count:
+      type: integer
+      format: int64
+      description: Number of projects in the namespace when projected.
+      example: 4
+      nullable: true
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents in the namespace when projected.
+      example: 8
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the namespace was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the namespace was updated.
+      nullable: true
+    organization:
+      $ref: "#/components/schemas/PartialOrganization"
+  required:
+    - id
+    - name
+    - created_at
+    - updated_at
+    - organization
+PartialNamespace:
+  title: PartialNamespace
+  type: object
+  description: A simplified namespace used on issue list and detail responses.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      name: Engineering
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the namespace.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the namespace.
+      minLength: 3
+      maxLength: 120
+      example: Engineering
+  required:
+    - id
+    - name
+NamespacePage:
+  title: NamespacePage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/Namespace"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info
+AccessibleNamespacePage:
+  title: AccessibleNamespacePage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/AccessibleNamespace"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

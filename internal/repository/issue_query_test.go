@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/opcotech/elemo/internal/model"
 )
 
 func TestIssueRelationListQuery_Compile(t *testing.T) {

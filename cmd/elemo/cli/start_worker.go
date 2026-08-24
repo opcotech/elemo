@@ -2,11 +2,10 @@ package cli
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
-
-	"log/slog"
 
 	"github.com/spf13/cobra"
 

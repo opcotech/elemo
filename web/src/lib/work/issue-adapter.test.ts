@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Issue } from "@/lib/client";
+import type { Issue } from "@/lib/api/types";
 import {
   issueStatusLabels,
   issueToWorkItem,

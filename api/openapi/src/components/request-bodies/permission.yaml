@@ -1,0 +1,102 @@
+GrantCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        description: Create a grant. Either role_id or a non-empty actions array is required.
+        properties:
+          principal:
+            type: object
+            description: Principal that receives the grant. Must be User, Team, or Organization.
+            required:
+              - resourceType
+              - id
+            properties:
+              resourceType:
+                $ref: "#/components/schemas/GrantPrincipalType"
+              id:
+                type: string
+                example: 9bsv0s46s6s002p9ltq0
+          scope:
+            type: object
+            description: Resource the grant applies to.
+            required:
+              - resourceType
+              - id
+            properties:
+              resourceType:
+                $ref: "#/components/schemas/ResourceType"
+              id:
+                type: string
+                example: 9bsv0s46s6s002p9ltq0
+          role_id:
+            type: string
+            description: Optional role whose bundled actions are granted on the scope.
+            example: 9bsv0s46s6s002p9ltq0
+          actions:
+            type: array
+            description: Optional explicit actions granted on the scope.
+            items:
+              $ref: "#/components/schemas/Action"
+        required:
+          - principal
+          - scope
+RoleCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          key:
+            type: string
+            description: Stable role template key.
+            maxLength: 120
+            minLength: 1
+            example: org-member
+          name:
+            type: string
+            description: Name of the role.
+            maxLength: 120
+            example: Contributors
+            minLength: 3
+          description:
+            type: string
+            example: Users who can collaborate on the project.
+            minLength: 5
+            maxLength: 500
+            description: Description of the role.
+          actions:
+            type: array
+            description: Actions bundled by this role.
+            items:
+              $ref: "#/components/schemas/Action"
+        required:
+          - name
+RolePatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            maxLength: 120
+            minLength: 3
+            description: Name of the role.
+            example: Contributors
+          description:
+            type: string
+            minLength: 5
+            maxLength: 500
+            description: Description of the role.
+            example: Users who can collaborate on the project.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          actions:
+            type: array
+            description: Actions bundled by this role. Empty array clears actions.
+            items:
+              $ref: "#/components/schemas/Action"
+            x-go-type: "Optional[[]string]"
+            x-go-type-skip-optional-pointer: true

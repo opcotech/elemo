@@ -27,9 +27,9 @@ import { UserAvatarCompact } from "@/components/ui/user-avatar";
 import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationMembersGetOptions } from "@/lib/api/query-options";
+import { zUserStatus } from "@/lib/api/schemas";
 import type { EffectiveActions, OrganizationMember } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
-import { zUserStatus } from "@/lib/client/zod.gen";
 import { sortOrganizationMembers } from "@/lib/organization-members";
 
 function OrganizationMembersListSkeleton() {

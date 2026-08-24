@@ -67,11 +67,11 @@ type UpdateFolderOpts struct {
 	ParentID optional.Optional[model.ID]
 }
 
-//go:generate go tool mockgen -source=folder.go -destination=folder_mock_gen.go -package=repository -mock_names "FolderRepository=MockFolderRepository"
+//go:generate go tool mockgen -source=folder.go -destination=mock/mock_folder_gen.go -package=mockrepo
 type FolderRepository interface {
 	Create(ctx context.Context, opts CreateFolderOpts) (*Folder, error)
 	Get(ctx context.Context, id model.ID) (*Folder, error)
-	List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error)
+	ListForLibrary(ctx context.Context, query FolderListQuery) (Page[*Folder], error)
 	Update(ctx context.Context, id model.ID, opts UpdateFolderOpts) (*Folder, error)
 	Delete(ctx context.Context, id model.ID) error
 }
@@ -292,22 +292,16 @@ func (r *Neo4jFolderRepository) Get(ctx context.Context, id model.ID) (*Folder, 
 	return folder, nil
 }
 
-func (r *Neo4jFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.FolderRepository/List")
+func (r *Neo4jFolderRepository) ListForLibrary(ctx context.Context, query FolderListQuery) (Page[*Folder], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.FolderRepository/ListForLibrary")
 	defer span.End()
 
-	normalized, err := page.Normalize()
+	normalized, err := query.Page.Normalize()
 	if err != nil {
 		return Page[*Folder]{}, errors.Join(ErrFolderRead, err)
 	}
-	plan, err := CompileQuery(FolderListQuery{
-		LibraryID: libraryID,
-		ActorID:   actor,
-		ScopeIDs:  scopeIDs,
-		ParentID:  parentID,
-		Page:      normalized,
-		Order:     SortDirectionDesc,
-	})
+	query.Page = normalized
+	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*Folder]{}, errors.Join(ErrFolderRead, err)
 	}
@@ -430,7 +424,8 @@ func clearFoldersKey(ctx context.Context, r *redisBaseRepository, id model.ID) e
 }
 
 func clearFolderAllLists(ctx context.Context, r *redisBaseRepository) error {
-	return clearFoldersPattern(ctx, r, "List", "*")
+	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
+	return clearFoldersPattern(ctx, r, "*", "ListForLibrary", "*")
 }
 
 func clearFolderAllCrossCache(ctx context.Context, r *redisBaseRepository) error {
@@ -474,20 +469,21 @@ func (r *RedisCachedFolderRepository) Get(ctx context.Context, id model.ID) (*Fo
 	return folder, nil
 }
 
-func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.ID, parentID *model.ID, actor model.ID, scopeIDs []model.ID, page CursorPage) (Page[*Folder], error) {
+func (r *RedisCachedFolderRepository) ListForLibrary(ctx context.Context, query FolderListQuery) (Page[*Folder], error) {
 	var folders Page[*Folder]
 	var err error
 
-	normalized, err := normalizedPage(page)
+	normalized, err := normalizedPage(query.Page)
 	if err != nil {
 		return Page[*Folder]{}, err
 	}
 
-	parentKey := "root"
-	if parentID != nil {
-		parentKey = parentID.String()
+	query.Page = normalized
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*Folder]{}, err
 	}
-	key := composeCacheKey(model.ResourceTypeFolder.String(), "List", libraryID.String(), parentKey, actor.String(), pageTokenValue(normalized.Token), normalized.Size)
+	key := plan.CacheKey(model.ResourceTypeFolder.String(), "ListForLibrary", query.LibraryID.String())
 	if err = r.cacheRepo.Get(ctx, key, &folders); err != nil {
 		return Page[*Folder]{}, err
 	}
@@ -496,7 +492,7 @@ func (r *RedisCachedFolderRepository) List(ctx context.Context, libraryID model.
 		return folders, nil
 	}
 
-	if folders, err = r.folderRepo.List(ctx, libraryID, parentID, actor, scopeIDs, normalized); err != nil {
+	if folders, err = r.folderRepo.ListForLibrary(ctx, query); err != nil {
 		return Page[*Folder]{}, err
 	}
 

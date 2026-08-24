@@ -267,7 +267,7 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestListDoesNotLeakUngrantedO
 	hidden := s.createOrg(owner.ID)
 	s.grant(actor.ID, visible.ID, model.ActionOrganizationRead)
 
-	orgs, err := s.OrganizationRepo.List(s.ctx, actor.ID, repository.CursorPage{Size: 20}, repository.OrganizationListProjection())
+	orgs, err := s.OrganizationRepo.ListForUser(s.ctx, repository.OrganizationListQuery{UserID: actor.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 20}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
 	ids := make([]model.ID, 0, len(orgs.Items))
 	for _, org := range orgs.Items {
@@ -275,11 +275,6 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestListDoesNotLeakUngrantedO
 	}
 	s.Assert().Contains(ids, visible.ID)
 	s.Assert().NotContains(ids, hidden.ID)
-
-	visibleIDs, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionOrganizationRead, model.InstallationID(), model.ResourceTypeOrganization)
-	s.Require().NoError(err)
-	s.Assert().Contains(visibleIDs, visible.ID)
-	s.Assert().NotContains(visibleIDs, hidden.ID)
 }
 
 func (s *PermissionRepositoryIntegrationTestSuite) TestIDORHasWithoutGrant() {
@@ -456,7 +451,7 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestExplain() {
 	s.Assert().Equal(roleGrant.ID, *roleAllowed.GrantID)
 }
 
-func (s *PermissionRepositoryIntegrationTestSuite) TestListVisibleUnderParent() {
+func (s *PermissionRepositoryIntegrationTestSuite) TestProjectListForNamespaceUsesGrantScopes() {
 	owner := s.createUser()
 	actor := s.createUser()
 	org := s.createOrg(owner.ID)
@@ -467,19 +462,18 @@ func (s *PermissionRepositoryIntegrationTestSuite) TestListVisibleUnderParent() 
 	hidden, err := s.ProjectRepo.Create(s.ctx, testModel.NewCreateProjectOpts(ns.ID, owner.ID))
 	s.Require().NoError(err)
 
-	empty, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionProjectRead, ns.ID, model.ResourceTypeProject)
-	s.Require().NoError(err)
-	s.Assert().Empty(empty)
-
 	s.grant(actor.ID, visible.ID, model.ActionProjectRead)
-	ids, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionProjectRead, ns.ID, model.ResourceTypeProject)
+	scopes, err := s.PermissionRepo.ListGrantScopes(s.ctx, actor.ID, model.ActionProjectRead)
 	s.Require().NoError(err)
+
+	page, err := s.ProjectRepo.ListForNamespace(s.ctx, repository.ProjectListQuery{NamespaceID: ns.ID, ActorID: actor.ID, ScopeIDs: scopes, Page: repository.CursorPage{Size: 20}, Order: repository.SortDirectionDesc, Projection: repository.ProjectListProjection()})
+	s.Require().NoError(err)
+	ids := make([]model.ID, 0, len(page.Items))
+	for _, project := range page.Items {
+		ids = append(ids, project.ID)
+	}
 	s.Assert().Contains(ids, visible.ID)
 	s.Assert().NotContains(ids, hidden.ID)
-
-	updateIDs, err := s.PermissionRepo.ListVisible(s.ctx, actor.ID, model.ActionProjectUpdate, ns.ID, model.ResourceTypeProject)
-	s.Require().NoError(err)
-	s.Assert().NotContains(updateIDs, visible.ID)
 }
 
 func (s *PermissionRepositoryIntegrationTestSuite) TestLinkInScopeOfAndCycle() {

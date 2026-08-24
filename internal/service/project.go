@@ -8,7 +8,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -69,7 +68,7 @@ type UpdateProjectOpts struct {
 
 // ProjectService serves the business logic of interacting with projects.
 //
-//go:generate go tool mockgen -destination=project_mock_gen.go -package=service -mock_names ProjectService=MockProjectService . ProjectService
+//go:generate go tool mockgen -destination=mock/mock_project_gen.go -package=mocksvc . ProjectService
 type ProjectService interface {
 	// Create creates a new project in a namespace. If the namespace does not
 	// exist, an error is returned.
@@ -92,7 +91,11 @@ type ProjectService interface {
 
 // projectService is the concrete implementation of ProjectService.
 type projectService struct {
-	*baseService
+	runtime
+	projectRepo       repository.ProjectRepository
+	permissionService PermissionService
+	licenseService    LicenseService
+	searchService     SearchService
 }
 
 func partialProjectFromRepository(p *repository.PartialProject) *PartialProject {
@@ -156,13 +159,13 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, namespaceID, model.ActionProjectCreate) {
-		return nil, errors.Join(ErrProjectCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, namespaceID, model.ActionProjectCreate); err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrProjectCreate, model.ErrInvalidID)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
 	status := opts.Status
@@ -192,7 +195,7 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 	}
 
 	out := projectFromRepository(project)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -204,8 +207,8 @@ func (s *projectService) Get(ctx context.Context, id model.ID) (*Project, error)
 		return nil, errors.Join(ErrProjectGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectRead) {
-		return nil, errors.Join(ErrProjectGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionProjectRead); err != nil {
+		return nil, errors.Join(ErrProjectGet, err)
 	}
 
 	project, err := s.projectRepo.Get(ctx, id, repository.ProjectDetailProjection())
@@ -229,8 +232,8 @@ func (s *projectService) GetByKey(ctx context.Context, key string) (*Project, er
 		return nil, errors.Join(ErrProjectGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, project.ID, model.ActionProjectRead) {
-		return nil, errors.Join(ErrProjectGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, project.ID, model.ActionProjectRead); err != nil {
+		return nil, errors.Join(ErrProjectGet, err)
 	}
 
 	return projectFromRepository(project), nil
@@ -241,37 +244,37 @@ func (s *projectService) List(ctx context.Context, namespaceID model.ID, page Cu
 	defer span.End()
 
 	if err := namespaceID.Validate(); err != nil {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*Project]{}, errors.Join(ErrProjectList, err)
 	}
 
 	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, namespaceID, model.ActionProjectRead)
 	if err != nil {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectList, err)
 	}
 	if !allowed {
 		return repository.EmptyPage[*Project](), nil
 	}
 
-	projects, err := s.projectRepo.List(
-		ctx,
-		namespaceID,
-		userID,
-		scopeIDs,
-		normalized,
-		repository.ProjectListProjection(),
-	)
+	projects, err := s.projectRepo.ListForNamespace(ctx, repository.ProjectListQuery{
+		NamespaceID: namespaceID,
+		ActorID:     userID,
+		ScopeIDs:    scopeIDs,
+		Page:        normalized,
+		Order:       repository.SortDirectionDesc,
+		Projection:  repository.ProjectListProjection(),
+	})
 	if err != nil {
-		return Page[*Project]{}, errors.Join(ErrProjectGetAll, err)
+		return Page[*Project]{}, errors.Join(ErrProjectList, err)
 	}
 
 	return mapPage(projects, projectFromRepository), nil
@@ -289,8 +292,8 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectUpdate) {
-		return nil, errors.Join(ErrProjectUpdate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionProjectUpdate); err != nil {
+		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
 	if opts.Key.Defined && opts.Key.Value != nil {
@@ -309,7 +312,7 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 	}
 
 	out := projectFromRepository(project)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -325,8 +328,8 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrProjectDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionProjectDelete) {
-		return errors.Join(ErrProjectDelete, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionProjectDelete); err != nil {
+		return errors.Join(ErrProjectDelete, err)
 	}
 
 	if err := s.projectRepo.Delete(ctx, id); err != nil {
@@ -343,14 +346,24 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 }
 
 // NewProjectService returns a new instance of the ProjectService interface.
-func NewProjectService(opts ...Option) (ProjectService, error) {
-	s, err := newService(opts...)
+func NewProjectService(
+	projectRepo repository.ProjectRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	searchService SearchService,
+	opts ...Option,
+) (ProjectService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &projectService{
-		baseService: s,
+		runtime:           rt,
+		projectRepo:       projectRepo,
+		permissionService: permissionService,
+		licenseService:    licenseService,
+		searchService:     searchService,
 	}
 
 	if svc.projectRepo == nil {

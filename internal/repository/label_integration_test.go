@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type LabelRepositoryIntegrationTestSuite struct {
@@ -74,7 +75,7 @@ func (s *LabelRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(label.UpdatedAt)
 }
 
-func (s *LabelRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *LabelRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.LabelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.LabelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())
@@ -231,7 +232,7 @@ func (s *CachedLabelRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedLabelRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *CachedLabelRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.labelRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.labelRepo.Create(context.Background(), testModel.NewCreateLabelOpts())

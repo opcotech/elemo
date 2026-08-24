@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 
-import type { TimelineEntry, WorkItem } from "@/lib/mock-data";
+import type { TimelineEntry } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

@@ -1,17 +1,22 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+
 	"github.com/go-redis/cache/v9"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
-	"github.com/opcotech/elemo/internal/pkg/optional"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
 func TestCachedTeamRepository_Create(t *testing.T) {
@@ -23,10 +28,10 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 		wantErr   error
 	}{
 		{name: "add new team", failIndex: -1},
-		{name: "add new team with error", failIndex: -1, repoErr: ErrNotFound, wantErr: ErrNotFound},
-		{name: "add new team with belongs to cache error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "add new team with organization cache error", failIndex: 1, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "add new team with project cache error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add new team with error", failIndex: -1, repoErr: repository.ErrNotFound, wantErr: repository.ErrNotFound},
+		{name: "add new team with belongs to cache error", failIndex: 0, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "add new team with organization cache error", failIndex: 1, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "add new team with project cache error", failIndex: 2, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -35,18 +40,18 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 			defer ctrl.Finish()
 
 			ctx := context.Background()
-			opts := CreateTeamOpts{
+			opts := repository.CreateTeamOpts{
 				Name:        "test team",
 				Description: "test description",
 				CreatedBy:   model.MustNewID(model.ResourceTypeUser),
 				BelongsTo:   model.MustNewID(model.ResourceTypeOrganization),
 			}
-			repo := NewMockTeamRepository(ctrl)
+			repo := mockrepo.NewMockTeamRepository(ctrl)
 			if tt.failIndex < 0 {
 				if tt.repoErr != nil {
 					repo.EXPECT().Create(ctx, opts).Return(nil, tt.repoErr)
 				} else {
-					repo.EXPECT().Create(ctx, opts).Return(&Team{}, nil)
+					repo.EXPECT().Create(ctx, opts).Return(&repository.Team{}, nil)
 				}
 			}
 			bumpCount := 1
@@ -54,10 +59,16 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 				bumpCount = 0
 			}
 
-			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr, bumpCount),
-				teamRepo:  repo,
-			}
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					repo,
+					redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamCreateCachePatterns(opts.BelongsTo), tt.failIndex, tt.failErr, bumpCount)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			_, err := r.Create(ctx, opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -66,8 +77,8 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 
 func TestCachedTeamRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *Team) *redisBaseRepository
-		teamRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, team *Team) TeamRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *repository.Team) []repository.RedisRepositoryOption
+		teamRepo  func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, team *repository.Team) repository.TeamRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -78,28 +89,28 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *Team
+		want    func(id model.ID) *repository.Team
 		wantErr error
 	}{
 		{
 			name: "get uncached team",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -107,16 +118,16 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 						Value: team,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, team *Team) TeamRepository {
-					repo := NewMockTeamRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, belongsTo, TeamDetailProjection()).Return(team, nil)
+				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, team *repository.Team) repository.TeamRepository {
+					repo := mockrepo.NewMockTeamRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, belongsTo, repository.TeamDetailProjection()).Return(team, nil)
 					return repo
 				},
 			},
@@ -125,8 +136,8 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeTeam),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(id model.ID) *Team {
-				return &Team{
+			want: func(id model.ID) *repository.Team {
+				return &repository.Team{
 					ID:          id,
 					Name:        "test team",
 					Description: "test description",
@@ -137,36 +148,36 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 		{
 			name: "get cached team",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, team *repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if teamPtr, ok := dst.(**Team); ok {
+						if teamPtr, ok := dst.(**repository.Team); ok {
 							*teamPtr = team
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *Team) TeamRepository {
-					return NewMockTeamRepository(ctrl)
+				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Team) repository.TeamRepository {
+					return mockrepo.NewMockTeamRepository(ctrl)
 				},
 			},
 			args: args{
@@ -174,8 +185,8 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeTeam),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(_ model.ID) *Team {
-				return &Team{
+			want: func(_ model.ID) *repository.Team {
+				return &repository.Team{
 					ID:          model.MustNewID(model.ResourceTypeTeam),
 					Name:        "test team",
 					Description: "test description",
@@ -186,33 +197,33 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 		{
 			name: "get uncached team error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *Team) TeamRepository {
-					repo := NewMockTeamRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, belongsTo, TeamDetailProjection()).Return(nil, ErrNotFound)
+				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, id, belongsTo model.ID, _ *repository.Team) repository.TeamRepository {
+					repo := mockrepo.NewMockTeamRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, belongsTo, repository.TeamDetailProjection()).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -221,37 +232,37 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeTeam),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get cached team error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *Team) TeamRepository {
-					return NewMockTeamRepository(ctrl)
+				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Team) repository.TeamRepository {
+					return mockrepo.NewMockTeamRepository(ctrl)
 				},
 			},
 			args: args{
@@ -259,7 +270,7 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 				id:        model.MustNewID(model.ResourceTypeTeam),
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 	}
 	for _, tt := range tests {
@@ -268,16 +279,22 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			team := &Team{}
+			team := &repository.Team{}
 			if tt.want != nil {
 				team = tt.want(tt.args.id)
 			}
 
-			r := &RedisCachedTeamRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, team),
-				teamRepo:  tt.fields.teamRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, team),
-			}
-			got, err := r.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo, TeamDetailProjection())
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					tt.fields.teamRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, team),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, team)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo, repository.TeamDetailProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr != nil {
 				return
@@ -289,8 +306,8 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 
 func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*Team) *redisBaseRepository
-		teamRepo  func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*Team) TeamRepository
+		cacheRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*repository.Team) []repository.RedisRepositoryOption
+		teamRepo  func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*repository.Team) repository.TeamRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -301,45 +318,45 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*Team
+		want    []*repository.Team
 		wantErr error
 	}{
 		{
 			name: "get uncached teams",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(TeamListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(repository.TeamListProjection()), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Team]{Items: teams},
+						Value: repository.Page[*repository.Team]{Items: teams},
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*Team) TeamRepository {
-					repo := NewMockTeamRepository(ctrl)
-					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, TeamListProjection()).Return(Page[*Team]{Items: teams}, nil)
+				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*repository.Team) repository.TeamRepository {
+					repo := mockrepo.NewMockTeamRepository(ctrl)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, repository.CursorPage{Size: limit}, repository.TeamListProjection()).Return(repository.Page[*repository.Team]{Items: teams}, nil)
 					return repo
 				},
 			},
@@ -348,7 +365,7 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 				limit:     10,
 			},
-			want: []*Team{
+			want: []*repository.Team{
 				{ID: model.MustNewID(model.ResourceTypeTeam), Name: "team-one"},
 				{ID: model.MustNewID(model.ResourceTypeTeam), Name: "team-two"},
 			},
@@ -356,36 +373,36 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 		{
 			name: "get cached teams",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(TeamListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, teams []*repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(repository.TeamListProjection()), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*Page[*Team]); ok {
-							*ptr = Page[*Team]{Items: teams}
+						if ptr, ok := dst.(*repository.Page[*repository.Team]); ok {
+							*ptr = repository.Page[*repository.Team]{Items: teams}
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ int, _ []*Team) TeamRepository {
-					return NewMockTeamRepository(ctrl)
+				teamRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ int, _ []*repository.Team) repository.TeamRepository {
+					return mockrepo.NewMockTeamRepository(ctrl)
 				},
 			},
 			args: args{
@@ -393,40 +410,40 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 				limit:     10,
 			},
-			want: []*Team{
+			want: []*repository.Team{
 				{ID: model.MustNewID(model.ResourceTypeTeam), Name: "team-one"},
 			},
 		},
 		{
 			name: "get uncached teams error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, _ []*Team) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(TeamListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, _ []*repository.Team) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeTeam.String(), "ListBelongsTo", belongsTo.String(), projectionCacheValue(repository.TeamListProjection()), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, _ []*Team) TeamRepository {
-					repo := NewMockTeamRepository(ctrl)
-					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}, TeamListProjection()).Return(Page[*Team]{}, ErrNotFound)
+				teamRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, limit int, _ []*repository.Team) repository.TeamRepository {
+					repo := mockrepo.NewMockTeamRepository(ctrl)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, repository.CursorPage{Size: limit}, repository.TeamListProjection()).Return(repository.Page[*repository.Team]{}, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -435,7 +452,7 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 				belongsTo: model.MustNewID(model.ResourceTypeOrganization),
 				limit:     10,
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -443,11 +460,17 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedTeamRepository{
-				cacheRepo: tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.limit, tt.want),
-				teamRepo:  tt.fields.teamRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.limit, tt.want),
-			}
-			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, CursorPage{Size: tt.args.limit}, TeamListProjection())
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					tt.fields.teamRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.limit, tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.limit, tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, repository.CursorPage{Size: tt.args.limit}, repository.TeamListProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			require.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -460,9 +483,9 @@ func TestCachedTeamRepository_ListMembers(t *testing.T) {
 	ctx := context.Background()
 	teamID := model.MustNewID(model.ResourceTypeTeam)
 	belongsTo := model.MustNewID(model.ResourceTypeOrganization)
-	page := CursorPage{Size: 10}
-	members := Page[*User]{
-		Items: []*User{{ID: model.MustNewID(model.ResourceTypeUser)}},
+	page := repository.CursorPage{Size: 10}
+	members := repository.Page[*repository.User]{
+		Items: []*repository.User{{ID: model.MustNewID(model.ResourceTypeUser)}},
 	}
 
 	t.Run("passthrough without cache", func(t *testing.T) {
@@ -470,13 +493,19 @@ func TestCachedTeamRepository_ListMembers(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := NewMockTeamRepository(ctrl)
+		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().ListMembers(ctx, teamID, belongsTo, page).Return(members, nil)
 
-		r := &RedisCachedTeamRepository{
-			cacheRepo: &redisBaseRepository{},
-			teamRepo:  repo,
-		}
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.ListMembers(ctx, teamID, belongsTo, page)
 		require.NoError(t, err)
 		require.Equal(t, members, got)
@@ -487,23 +516,29 @@ func TestCachedTeamRepository_ListMembers(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := NewMockTeamRepository(ctrl)
-		repo.EXPECT().ListMembers(ctx, teamID, belongsTo, page).Return(Page[*User]{}, ErrNotFound)
+		repo := mockrepo.NewMockTeamRepository(ctrl)
+		repo.EXPECT().ListMembers(ctx, teamID, belongsTo, page).Return(repository.Page[*repository.User]{}, repository.ErrNotFound)
 
-		r := &RedisCachedTeamRepository{
-			cacheRepo: &redisBaseRepository{},
-			teamRepo:  repo,
-		}
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		_, err := r.ListMembers(ctx, teamID, belongsTo, page)
-		require.ErrorIs(t, err, ErrNotFound)
+		require.ErrorIs(t, err, repository.ErrNotFound)
 	})
 }
 
 func TestCachedTeamRepository_Update(t *testing.T) {
-	newTeam := func(id model.ID) *Team {
-		return &Team{ID: id, Name: "test team", Description: "test description"}
+	newTeam := func(id model.ID) *repository.Team {
+		return &repository.Team{ID: id, Name: "test team", Description: "test description"}
 	}
-	opts := UpdateTeamOpts{
+	opts := repository.UpdateTeamOpts{
 		Name:        optional.Some("updated team"),
 		Description: optional.Some("updated description"),
 	}
@@ -516,13 +551,19 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
 		team := newTeam(id)
-		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
-		repo := NewMockTeamRepository(ctrl)
+		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
+		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(team, nil)
-		r := &RedisCachedTeamRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, teamUpdateInvalidatePatterns(), false, -1, nil),
-			teamRepo:  repo,
-		}
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, teamUpdateInvalidatePatterns(), false, -1, nil)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.Update(ctx, id, belongsTo, opts)
 		require.NoError(t, err)
 		require.Equal(t, team, got)
@@ -535,16 +576,27 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 		ctx := context.Background()
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
-		db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
+		db, err := repository.NewRedisDatabase(repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)))
 		require.NoError(t, err)
-		repo := NewMockTeamRepository(ctrl)
-		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(nil, ErrNotFound)
-		r := &RedisCachedTeamRepository{
-			cacheRepo: &redisBaseRepository{db: db, cache: mock.NewCacheBackend(ctrl), tracer: mock.NewMockTracer(ctrl), logger: mock.NewMockLogger(ctrl)},
-			teamRepo:  repo,
-		}
+		repo := mockrepo.NewMockTeamRepository(ctrl)
+		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(nil, repository.ErrNotFound)
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				[]repository.RedisRepositoryOption{
+					repository.WithRedisDatabase(db),
+					repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+					repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+					repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
+				}...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		_, err = r.Update(ctx, id, belongsTo, opts)
-		require.ErrorIs(t, err, ErrNotFound)
+		require.ErrorIs(t, err, repository.ErrNotFound)
 	})
 
 	t.Run("update team set cache error", func(t *testing.T) {
@@ -555,15 +607,21 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
 		team := newTeam(id)
-		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
-		repo := NewMockTeamRepository(ctrl)
+		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
+		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(team, nil)
-		r := &RedisCachedTeamRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, nil, true, -1, assert.AnError),
-			teamRepo:  repo,
-		}
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, nil, true, -1, assert.AnError)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		_, err := r.Update(ctx, id, belongsTo, opts)
-		require.ErrorIs(t, err, ErrCacheWrite)
+		require.ErrorIs(t, err, repository.ErrCacheWrite)
 	})
 
 	t.Run("update team delete list cache error", func(t *testing.T) {
@@ -574,15 +632,21 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
 		team := newTeam(id)
-		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(TeamDetailProjection()))
-		repo := NewMockTeamRepository(ctrl)
+		setKey := composeCacheKey(model.ResourceTypeTeam.String(), "Get", id.String(), projectionCacheValue(repository.TeamDetailProjection()))
+		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().Update(ctx, id, belongsTo, opts).Return(team, nil)
-		r := &RedisCachedTeamRepository{
-			cacheRepo: redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, teamUpdateInvalidatePatterns(), false, 0, assert.AnError),
-			teamRepo:  repo,
-		}
+		r := func() *repository.RedisCachedTeamRepository {
+			r, err := repository.NewCachedTeamRepository(
+				repo,
+				redisCacheExpectingSetThenPatterns(ctrl, ctx, setKey, team, teamUpdateInvalidatePatterns(), false, 0, assert.AnError)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		_, err := r.Update(ctx, id, belongsTo, opts)
-		require.ErrorIs(t, err, ErrCacheDelete)
+		require.ErrorIs(t, err, repository.ErrCacheDelete)
 	})
 }
 
@@ -595,9 +659,9 @@ func TestCachedTeamRepository_AddMember(t *testing.T) {
 		wantErr   error
 	}{
 		{name: "add member success", failIndex: -1},
-		{name: "add member with team error", failIndex: -1, repoErr: ErrTeamAddMember, wantErr: ErrTeamAddMember},
-		{name: "add member with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "add member with related cache deletion error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "add member with team error", failIndex: -1, repoErr: repository.ErrTeamAddMember, wantErr: repository.ErrTeamAddMember},
+		{name: "add member with cache deletion error", failIndex: 0, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "add member with related cache deletion error", failIndex: 2, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -608,7 +672,7 @@ func TestCachedTeamRepository_AddMember(t *testing.T) {
 			id := model.MustNewID(model.ResourceTypeTeam)
 			memberID := model.MustNewID(model.ResourceTypeUser)
 			belongsToID := model.MustNewID(model.ResourceTypeOrganization)
-			repo := NewMockTeamRepository(ctrl)
+			repo := mockrepo.NewMockTeamRepository(ctrl)
 			if tt.failIndex < 0 {
 				repo.EXPECT().AddMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
@@ -616,10 +680,16 @@ func TestCachedTeamRepository_AddMember(t *testing.T) {
 			if tt.repoErr != nil {
 				bumpCount = 0
 			}
-			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
-				teamRepo:  repo,
-			}
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					repo,
+					redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.AddMember(ctx, id, memberID, belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -635,9 +705,9 @@ func TestCachedTeamRepository_RemoveMember(t *testing.T) {
 		wantErr   error
 	}{
 		{name: "remove member success", failIndex: -1},
-		{name: "remove member with team error", failIndex: -1, repoErr: ErrTeamRemoveMember, wantErr: ErrTeamRemoveMember},
-		{name: "remove member with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "remove member with related cache deletion error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "remove member with team error", failIndex: -1, repoErr: repository.ErrTeamRemoveMember, wantErr: repository.ErrTeamRemoveMember},
+		{name: "remove member with cache deletion error", failIndex: 0, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "remove member with related cache deletion error", failIndex: 2, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -648,7 +718,7 @@ func TestCachedTeamRepository_RemoveMember(t *testing.T) {
 			id := model.MustNewID(model.ResourceTypeTeam)
 			memberID := model.MustNewID(model.ResourceTypeUser)
 			belongsToID := model.MustNewID(model.ResourceTypeOrganization)
-			repo := NewMockTeamRepository(ctrl)
+			repo := mockrepo.NewMockTeamRepository(ctrl)
 			if tt.failIndex < 0 {
 				repo.EXPECT().RemoveMember(ctx, id, memberID, belongsToID).Return(tt.repoErr)
 			}
@@ -656,10 +726,16 @@ func TestCachedTeamRepository_RemoveMember(t *testing.T) {
 			if tt.repoErr != nil {
 				bumpCount = 0
 			}
-			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount),
-				teamRepo:  repo,
-			}
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					repo,
+					redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamMemberCachePatterns(id, belongsToID), tt.failIndex, tt.failErr, bumpCount)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.RemoveMember(ctx, id, memberID, belongsToID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -675,11 +751,11 @@ func TestCachedTeamRepository_Delete(t *testing.T) {
 		wantErr   error
 	}{
 		{name: "delete team success", failIndex: -1},
-		{name: "delete team with team deletion error", failIndex: -1, repoErr: ErrTeamDelete, wantErr: ErrTeamDelete},
-		{name: "delete team with cache deletion error", failIndex: 0, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "delete team with list cache deletion error", failIndex: 1, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "delete team with organization cache deletion error", failIndex: 2, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
-		{name: "delete team with project cache deletion error", failIndex: 3, failErr: ErrCacheDelete, wantErr: ErrCacheDelete},
+		{name: "delete team with team deletion error", failIndex: -1, repoErr: repository.ErrTeamDelete, wantErr: repository.ErrTeamDelete},
+		{name: "delete team with cache deletion error", failIndex: 0, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "delete team with list cache deletion error", failIndex: 1, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "delete team with organization cache deletion error", failIndex: 2, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
+		{name: "delete team with project cache deletion error", failIndex: 3, failErr: repository.ErrCacheDelete, wantErr: repository.ErrCacheDelete},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -689,7 +765,7 @@ func TestCachedTeamRepository_Delete(t *testing.T) {
 			ctx := context.Background()
 			id := model.MustNewID(model.ResourceTypeTeam)
 			belongsTo := model.MustNewID(model.ResourceTypeOrganization)
-			repo := NewMockTeamRepository(ctrl)
+			repo := mockrepo.NewMockTeamRepository(ctrl)
 			if tt.failIndex < 0 {
 				repo.EXPECT().Delete(ctx, id, belongsTo).Return(tt.repoErr)
 			}
@@ -697,10 +773,16 @@ func TestCachedTeamRepository_Delete(t *testing.T) {
 			if tt.repoErr != nil {
 				bumpCount = 0
 			}
-			r := &RedisCachedTeamRepository{
-				cacheRepo: redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamDeleteCachePatterns(id), tt.failIndex, tt.failErr, bumpCount),
-				teamRepo:  repo,
-			}
+			r := func() *repository.RedisCachedTeamRepository {
+				r, err := repository.NewCachedTeamRepository(
+					repo,
+					redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, teamDeleteCachePatterns(id), tt.failIndex, tt.failErr, bumpCount)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.Delete(ctx, id, belongsTo)
 			require.ErrorIs(t, err, tt.wantErr)
 		})

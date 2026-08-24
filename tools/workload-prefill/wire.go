@@ -218,9 +218,9 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 
 	permissionService, err := service.NewPermissionService(
 		permissionRepo,
+		roleRepo,
 		service.WithLogger(logger.Named("permission_service")),
 		service.WithTracer(tracer),
-		service.WithRoleRepository(roleRepo),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("permission service: %w", err)
@@ -230,9 +230,9 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	licenseService, err := service.NewLicenseService(
 		lic,
 		licenseRepo,
+		permissionService,
 		service.WithLogger(logger.Named("license_service")),
 		service.WithTracer(tracer),
-		service.WithPermissionService(permissionService),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("license service: %w", err)
@@ -241,7 +241,8 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	noopSearch := noopSearchService{}
 	realSearch, err := service.NewSearchService(
 		searchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 		service.WithLogger(logger.Named("search_service")),
 		service.WithTracer(tracer),
 	)
@@ -252,71 +253,107 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 
 	staticFileService, err := service.NewStaticFileService(
 		staticFileRepo,
+		licenseService,
 		service.WithLogger(logger.Named("static_file_service")),
 		service.WithTracer(tracer),
-		service.WithLicenseService(licenseService),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("static file service: %w", err)
 	}
 
-	common := []service.Option{
-		service.WithLogger(logger),
-		service.WithTracer(tracer),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithSearchService(noopSearch),
-		service.WithUserRepository(userRepo),
-		service.WithUserTokenRepository(userTokenRepo),
-		service.WithOrganizationRepository(organizationRepo),
-		service.WithRoleRepository(roleRepo),
-		service.WithTeamRepository(teamRepo),
-		service.WithNamespaceRepository(namespaceRepo),
-		service.WithProjectRepository(projectRepo),
-		service.WithIssueRepository(issueRepo),
-		service.WithAssignmentRepository(assignmentRepo),
-		service.WithLabelRepository(labelRepo),
-		service.WithDocumentRepository(documentRepo),
-		service.WithEmailService(discardEmailService{}),
-		service.WithStaticFileService(staticFileService),
+	notificationService := discardNotificationService{}
+
+	namedOpts := func(name string) []service.Option {
+		return []service.Option{
+			service.WithLogger(logger.Named(name)),
+			service.WithTracer(tracer),
+		}
 	}
 
-	withNamed := func(name string) []service.Option {
-		opts := make([]service.Option, 0, len(common)+1)
-		opts = append(opts, common...)
-		opts = append(opts, service.WithLogger(logger.Named(name)))
-		return opts
-	}
-
-	d.users, err = service.NewUserService(withNamed("user_service")...)
+	d.users, err = service.NewUserService(
+		userRepo,
+		userTokenRepo,
+		licenseService,
+		namedOpts("user_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("user service: %w", err)
 	}
-	d.orgs, err = service.NewOrganizationService(withNamed("organization_service")...)
+	d.orgs, err = service.NewOrganizationService(
+		organizationRepo,
+		userRepo,
+		userTokenRepo,
+		roleRepo,
+		permissionService,
+		licenseService,
+		discardEmailService{},
+		notificationService,
+		noopSearch,
+		namedOpts("organization_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("organization service: %w", err)
 	}
-	d.teams, err = service.NewTeamService(withNamed("team_service")...)
+	d.teams, err = service.NewTeamService(
+		teamRepo,
+		permissionService,
+		licenseService,
+		namedOpts("team_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("team service: %w", err)
 	}
-	d.roles, err = service.NewRoleService(withNamed("role_service")...)
+	d.roles, err = service.NewRoleService(
+		roleRepo,
+		permissionService,
+		licenseService,
+		organizationRepo,
+		notificationService,
+		namedOpts("role_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("role service: %w", err)
 	}
-	d.namespaces, err = service.NewNamespaceService(withNamed("namespace_service")...)
+	d.namespaces, err = service.NewNamespaceService(
+		namespaceRepo,
+		permissionService,
+		licenseService,
+		noopSearch,
+		namedOpts("namespace_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("namespace service: %w", err)
 	}
-	d.projects, err = service.NewProjectService(withNamed("project_service")...)
+	d.projects, err = service.NewProjectService(
+		projectRepo,
+		permissionService,
+		licenseService,
+		noopSearch,
+		namedOpts("project_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("project service: %w", err)
 	}
-	d.issues, err = service.NewIssueService(withNamed("issue_service")...)
+	d.issues, err = service.NewIssueService(
+		issueRepo,
+		assignmentRepo,
+		labelRepo,
+		permissionService,
+		licenseService,
+		noopSearch,
+		namedOpts("issue_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("issue service: %w", err)
 	}
-	d.documents, err = service.NewDocumentService(withNamed("document_service")...)
+	d.documents, err = service.NewDocumentService(
+		documentRepo,
+		licenseService,
+		permissionService,
+		staticFileService,
+		noopSearch,
+		namedOpts("document_service")...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("document service: %w", err)
 	}

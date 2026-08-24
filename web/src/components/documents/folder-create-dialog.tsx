@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { zFolderCreate } from "@/lib/api/schemas";
 import {
   v1NamespacesFoldersCreate,
   v1OrganizationsFoldersCreate,
 } from "@/lib/api/sdk";
 import type { Folder, FolderCreate } from "@/lib/api/types";
-import { zFolderCreate } from "@/lib/client/zod.gen";
 import { invalidateLibraryQueries } from "@/lib/documents/document-queries";
 import type { DocumentLibraryKind } from "@/lib/documents/library";
 import { createFormSchema } from "@/lib/forms";

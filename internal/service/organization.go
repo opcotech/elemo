@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/rs/xid"
+
 	"github.com/opcotech/elemo/internal/email"
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
@@ -18,7 +20,6 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/password"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/rs/xid"
 )
 
 // Organization represents an organization returned by the service.
@@ -118,7 +119,7 @@ func (o *AcceptOrganizationInvitationOpts) Validate() error {
 // OrganizationService serves the business logic of interacting with
 // organizations.
 //
-//go:generate go tool mockgen -destination=organization_mock_gen.go -package=service -mock_names OrganizationService=MockOrganizationService . OrganizationService
+//go:generate go tool mockgen -destination=mock/mock_organization_gen.go -package=mocksvc . OrganizationService
 type OrganizationService interface {
 	// Create creates a new organization. The owner of the organization is
 	// automatically added as a member of the organization. If the owner
@@ -159,7 +160,16 @@ type OrganizationService interface {
 
 // organizationService is the concrete implementation of OrganizationService.
 type organizationService struct {
-	*baseService
+	runtime
+	organizationRepo    repository.OrganizationRepository
+	userRepo            repository.UserRepository
+	userTokenRepo       repository.UserTokenRepository
+	roleRepo            repository.RoleRepository
+	permissionService   PermissionService
+	licenseService      LicenseService
+	emailService        EmailService
+	notificationService NotificationService
+	searchService       SearchService
 }
 
 func organizationFromRepository(o *repository.Organization) *Organization {
@@ -194,8 +204,8 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate) {
-		return nil, errors.Join(ErrOrganizationCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionOrganizationCreate); err != nil {
+		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
 	// If the newly created organization is not active, e.g. a company is
@@ -224,7 +234,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 	}
 
 	out := organizationFromRepository(organization)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -265,8 +275,8 @@ func (s *organizationService) Get(ctx context.Context, id model.ID) (*Organizati
 		return nil, errors.Join(ErrOrganizationGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationRead) {
-		return nil, errors.Join(ErrOrganizationGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionOrganizationRead); err != nil {
+		return nil, errors.Join(ErrOrganizationGet, err)
 	}
 
 	organization, err := s.organizationRepo.Get(ctx, id, repository.OrganizationDetailProjection())
@@ -283,22 +293,23 @@ func (s *organizationService) List(ctx context.Context, page CursorPage) (Page[*
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Organization]{}, errors.Join(ErrOrganizationGetAll, err)
+		return Page[*Organization]{}, errors.Join(ErrOrganizationList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*Organization]{}, errors.Join(ErrOrganizationGetAll, model.ErrInvalidID)
-	}
-
-	organizations, err := s.organizationRepo.List(
-		ctx,
-		userID,
-		normalized,
-		repository.OrganizationListProjection(),
-	)
+	userID, err := ctxUserID(ctx)
 	if err != nil {
-		return Page[*Organization]{}, errors.Join(ErrOrganizationGetAll, err)
+		return Page[*Organization]{}, errors.Join(ErrOrganizationList, err)
+	}
+
+	organizations, err := s.organizationRepo.ListForUser(ctx, repository.OrganizationListQuery{
+		UserID:     userID,
+		Action:     model.ActionOrganizationRead,
+		Page:       normalized,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.OrganizationListProjection(),
+	})
+	if err != nil {
+		return Page[*Organization]{}, errors.Join(ErrOrganizationList, err)
 	}
 
 	return mapPage(organizations, organizationFromRepository), nil
@@ -316,8 +327,8 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationUpdate) {
-		return nil, errors.Join(ErrOrganizationUpdate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionOrganizationUpdate); err != nil {
+		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
 	// Check if the organization is being activated is within the license
@@ -341,7 +352,7 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 	}
 
 	out := organizationFromRepository(organization)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -357,8 +368,8 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 		return errors.Join(ErrOrganizationDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionOrganizationDelete) {
-		return errors.Join(ErrOrganizationDelete, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionOrganizationDelete); err != nil {
+		return errors.Join(ErrOrganizationDelete, err)
 	}
 
 	if force {
@@ -398,8 +409,8 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
-		return errors.Join(ErrOrganizationMemberAdd, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationMembersManage); err != nil {
+		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
 	if err := s.organizationRepo.AddMember(ctx, orgID, memberID); err != nil {
@@ -422,8 +433,8 @@ func (s *organizationService) ListMembers(ctx context.Context, orgID model.ID, p
 		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationRead) {
-		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationRead); err != nil {
+		return Page[*OrganizationMember]{}, errors.Join(ErrOrganizationMembersGet, err)
 	}
 
 	members, err := s.organizationRepo.ListMembers(ctx, orgID, normalized)
@@ -461,8 +472,8 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
-		return errors.Join(ErrOrganizationMemberRemove, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationMembersManage); err != nil {
+		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
 	grants, err := s.permissionService.ListByPrincipal(ctx, memberID)
@@ -532,8 +543,8 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
-		return errors.Join(ErrOrganizationMemberInvite, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationMembersManage); err != nil {
+		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
 	user, err := s.userRepo.GetByEmail(ctx, opts.Email, repository.UserDetailProjection())
@@ -663,8 +674,8 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 		return errors.Join(ErrOrganizationInviteRevoke, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage) {
-		return errors.Join(ErrOrganizationInviteRevoke, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationMembersManage); err != nil {
+		return errors.Join(ErrOrganizationInviteRevoke, err)
 	}
 
 	// Get user to verify they exist and check status
@@ -694,12 +705,13 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 	}
 
 	if user.Status == model.UserStatusPending {
-		organizations, err := s.organizationRepo.List(
-			ctx,
-			userID,
-			repository.CursorPage{Size: 1},
-			repository.OrganizationListProjection(),
-		)
+		organizations, err := s.organizationRepo.ListForUser(ctx, repository.OrganizationListQuery{
+			UserID:     userID,
+			Action:     model.ActionOrganizationRead,
+			Page:       repository.CursorPage{Size: 1},
+			Order:      repository.SortDirectionDesc,
+			Projection: repository.OrganizationListProjection(),
+		})
 		if err != nil {
 			s.logger.Warn(ctx, "failed to check user organization membership during invitation revocation",
 				log.WithError(err),
@@ -845,14 +857,34 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 
 // NewOrganizationService returns a new instance of the OrganizationService
 // interface.
-func NewOrganizationService(opts ...Option) (OrganizationService, error) {
-	s, err := newService(opts...)
+func NewOrganizationService(
+	organizationRepo repository.OrganizationRepository,
+	userRepo repository.UserRepository,
+	userTokenRepo repository.UserTokenRepository,
+	roleRepo repository.RoleRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	emailService EmailService,
+	notificationService NotificationService,
+	searchService SearchService,
+	opts ...Option,
+) (OrganizationService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &organizationService{
-		baseService: s,
+		runtime:             rt,
+		organizationRepo:    organizationRepo,
+		userRepo:            userRepo,
+		userTokenRepo:       userTokenRepo,
+		roleRepo:            roleRepo,
+		permissionService:   permissionService,
+		licenseService:      licenseService,
+		emailService:        emailService,
+		notificationService: notificationService,
+		searchService:       searchService,
 	}
 
 	if svc.organizationRepo == nil {
@@ -881,6 +913,10 @@ func NewOrganizationService(opts ...Option) (OrganizationService, error) {
 
 	if svc.emailService == nil {
 		return nil, ErrNoEmailService
+	}
+
+	if svc.notificationService == nil {
+		return nil, ErrNoNotificationService
 	}
 
 	if svc.searchService == nil {

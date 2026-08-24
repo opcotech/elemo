@@ -16,8 +16,8 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/testutil"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
@@ -30,7 +30,7 @@ type OrganizationServiceIntegrationTestSuite struct {
 
 	organizationService service.OrganizationService
 	emailService        service.EmailService
-	emailSender         *mock.EmailSender
+	emailSender         *mocksvc.MockEmailSender
 	capturedTokens      map[string]string
 
 	owner *repository.User
@@ -46,24 +46,25 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	searchService, err := service.NewSearchService(
 		s.SearchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 	)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	ctrl := gomock.NewController(s.T())
-	s.emailSender = mock.NewEmailSender(ctrl)
+	s.emailSender = mocksvc.NewMockEmailSender(ctrl)
 	s.capturedTokens = make(map[string]string)
 	s.emailSender.EXPECT().SendEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		AnyTimes().
@@ -88,15 +89,19 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 	s.emailService, err = service.NewEmailService(s.emailSender, "templates", smtpConf)
 	s.Require().NoError(err)
 
+	notificationService, err := service.NewNotificationService(s.NotificationRepo)
+	s.Require().NoError(err)
+
 	s.organizationService, err = service.NewOrganizationService(
-		service.WithUserRepository(s.UserRepo),
-		service.WithOrganizationRepository(s.OrganizationRepo),
-		service.WithRoleRepository(s.RoleRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithUserTokenRepository(s.UserTokenRepository),
-		service.WithEmailService(s.emailService),
-		service.WithSearchService(searchService),
+		s.OrganizationRepo,
+		s.UserRepo,
+		s.UserTokenRepository,
+		s.RoleRepo,
+		permissionService,
+		licenseService,
+		s.emailService,
+		notificationService,
+		searchService,
 	)
 	s.Require().NoError(err)
 }
@@ -160,7 +165,7 @@ func (s *OrganizationServiceIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(created.Email, org.Email)
 }
 
-func (s *OrganizationServiceIntegrationTestSuite) TestGetAll() {
+func (s *OrganizationServiceIntegrationTestSuite) TestList() {
 	_, err := s.organizationService.Create(s.ctx, s.owner.ID, serviceCreateOrgOpts())
 	s.Require().NoError(err)
 	_, err = s.organizationService.Create(s.ctx, s.owner.ID, serviceCreateOrgOpts())

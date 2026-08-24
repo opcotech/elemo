@@ -1,8 +1,8 @@
 import { useOptimisticIssueFieldPatch } from "./use-optimistic-issue-field-patch";
 
 import type { IssuePatch } from "@/lib/api/types";
-import type { WorkItem, WorkStatus } from "@/lib/mock-data";
 import { mapWorkStatusToIssueStatus } from "@/lib/work/issue-adapter";
+import type { WorkItem, WorkStatus } from "@/lib/work/model";
 
 export type BoardMoveGroup = "status" | "priority";
 

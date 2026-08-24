@@ -1,8 +1,12 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
+
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
@@ -32,17 +36,17 @@ func TestSearchService_EnqueueIndex(t *testing.T) {
 	t.Run("requires enqueuer", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repository.NewMockSearchRepository(ctrl))
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), mockrepo.NewMockSearchRepository(ctrl))
 		err := svc.EnqueueIndex(context.Background(), issueID)
-		assert.ErrorIs(t, err, ErrNoSearchTaskEnqueuer)
+		assert.ErrorIs(t, err, service.ErrNoSearchTaskEnqueuer)
 	})
 
 	t.Run("enqueues resource id task", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		enqueuer := &stubSearchEnqueuer{}
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repository.NewMockSearchRepository(ctrl))
-		svc.searchTaskEnqueuer = enqueuer
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), mockrepo.NewMockSearchRepository(ctrl))
+		service.SetSearchServiceEnqueuer(svc, enqueuer)
 
 		err := svc.EnqueueIndex(context.Background(), issueID)
 		require.NoError(t, err)
@@ -55,11 +59,11 @@ func TestSearchService_EnqueueIndex(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		enqueuer := &stubSearchEnqueuer{err: assert.AnError}
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repository.NewMockSearchRepository(ctrl))
-		svc.searchTaskEnqueuer = enqueuer
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), mockrepo.NewMockSearchRepository(ctrl))
+		service.SetSearchServiceEnqueuer(svc, enqueuer)
 
 		err := svc.EnqueueIndex(context.Background(), issueID)
-		assert.ErrorIs(t, err, ErrSearchIndex)
+		assert.ErrorIs(t, err, service.ErrSearchIndex)
 		assert.ErrorIs(t, err, assert.AnError)
 	})
 }
@@ -70,9 +74,9 @@ func TestSearchService_IndexIDs(t *testing.T) {
 	issueID := model.MustNewID(model.ResourceTypeIssue)
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	ctrl := gomock.NewController(t)
-	repo := repository.NewMockSearchRepository(ctrl)
-	svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-	svc.listSearchableByIDs = func(
+	repo := mockrepo.NewMockSearchRepository(ctrl)
+	svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+	service.SetSearchServiceListByIDs(svc, func(
 		_ context.Context,
 		_ *repository.Neo4jDatabase,
 		resourceType model.ResourceType,
@@ -85,7 +89,7 @@ func TestSearchService_IndexIDs(t *testing.T) {
 			Title:    "Bug",
 			Ancestry: []model.ID{issueID, projectID},
 		}}, nil
-	}
+	})
 	repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, docs ...repository.SearchDocument) error {
 			require.Len(t, docs, 1)
@@ -102,16 +106,16 @@ func TestSearchService_IndexIDs_MissingResourceNoops(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	repo := repository.NewMockSearchRepository(ctrl)
-	svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-	svc.listSearchableByIDs = func(
+	repo := mockrepo.NewMockSearchRepository(ctrl)
+	svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+	service.SetSearchServiceListByIDs(svc, func(
 		_ context.Context,
 		_ *repository.Neo4jDatabase,
 		_ model.ResourceType,
 		_ []model.ID,
 	) ([]repository.SearchableRecord, error) {
 		return []repository.SearchableRecord{}, nil
-	}
+	})
 
 	err := svc.IndexIDs(context.Background(), &repository.Neo4jDatabase{}, model.MustNewID(model.ResourceTypeIssue))
 	require.NoError(t, err)
@@ -125,9 +129,9 @@ func TestChunkSearchableIDs(t *testing.T) {
 		model.MustNewID(model.ResourceTypeIssue),
 		model.MustNewID(model.ResourceTypeIssue),
 	}
-	chunks := ChunkSearchableIDs(ids, 2)
+	chunks := service.ChunkSearchableIDs(ids, 2)
 	require.Len(t, chunks, 2)
 	assert.Len(t, chunks[0], 2)
 	assert.Len(t, chunks[1], 1)
-	assert.Empty(t, ChunkSearchableIDs(nil, 2))
+	assert.Empty(t, service.ChunkSearchableIDs(nil, 2))
 }

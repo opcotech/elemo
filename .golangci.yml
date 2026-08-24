@@ -73,12 +73,22 @@ linters:
           alias: testModel
         - pkg: github.com/opcotech/elemo/internal/testutil/license
           alias: testLicense
-        - pkg: github.com/opcotech/elemo/internal/testutil/mock
-          alias: testMock
         - pkg: github.com/opcotech/elemo/internal/testutil/http
           alias: testHttp
         - pkg: github.com/opcotech/elemo/internal/testutil/config
           alias: testConfig
+        - pkg: github.com/opcotech/elemo/internal/service/mock
+          alias: mocksvc
+        - pkg: github.com/opcotech/elemo/internal/repository/mock
+          alias: mockrepo
+        - pkg: github.com/opcotech/elemo/internal/pkg/log/mock
+          alias: mocklog
+        - pkg: github.com/opcotech/elemo/internal/pkg/tracing/mock
+          alias: mocktrace
+        - pkg: github.com/opcotech/elemo/internal/pkg/smtp/mock
+          alias: mocksmtp
+        - pkg: github.com/opcotech/elemo/internal/transport/async/mock
+          alias: mockasync
   exclusions:
     generated: lax
     presets:
@@ -87,13 +97,14 @@ linters:
       - legacy
       - std-error-handling
     paths:
-      - internal/transport/http/gen
+      - internal/transport/http/api
       - third_party$
       - builtin$
       - examples$
 formatters:
   enable:
-    - gofmt
+    - gofumpt
+    - goimports
   settings:
     goimports:
       local-prefixes:
@@ -101,7 +112,7 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - internal/transport/http/gen
+      - internal/transport/http/api
       - third_party$
       - builtin$
       - examples$

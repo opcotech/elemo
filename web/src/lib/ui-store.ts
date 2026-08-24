@@ -7,10 +7,11 @@ import type { InternalPath } from "@/lib/internal-url";
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 const MAX_RECENT_ENTITIES = 20;
 
-export type RecentEntityType = "namespace" | "project" | "work" | "document";
+export type RecentEntityType =
+  "namespace" | "project" | "work-item" | "document";
 
 const MAX_RECENT_BY_TYPE: Partial<Record<RecentEntityType, number>> = {
-  work: 7,
+  "work-item": 7,
   document: 5,
   project: 3,
 };
@@ -59,7 +60,7 @@ function isRecentEntity(value: unknown): value is RecentEntity {
   return (
     typeof entity.id === "string" &&
     typeof entity.type === "string" &&
-    ["namespace", "project", "work", "document"].includes(entity.type) &&
+    ["namespace", "project", "work-item", "document"].includes(entity.type) &&
     typeof entity.label === "string" &&
     isSafeInternalPath(entity.href) &&
     typeof entity.visitedAt === "number"

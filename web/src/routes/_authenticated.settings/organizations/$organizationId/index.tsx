@@ -14,8 +14,8 @@ import {
 import { TeamsList } from "@/components/teams/teams-list";
 import { PageHeader } from "@/components/ui/page-header";
 import { useAuth } from "@/hooks/use-auth";
+import { zOrganizationStatus } from "@/lib/api/schemas";
 import { entityBreadcrumb } from "@/lib/breadcrumb";
-import { zOrganizationStatus } from "@/lib/client/zod.gen";
 import { loadOrganizationWorkspace } from "@/lib/organization-workspace";
 import { withRouteErrors } from "@/lib/route-errors";
 

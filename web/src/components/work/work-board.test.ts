@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveBoardDropColumn } from "./work-board";
 
-import type { WorkItem } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 
 function workItem(overrides: Partial<WorkItem> = {}): WorkItem {
   return {

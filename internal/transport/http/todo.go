@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -24,6 +24,7 @@ type TodoController interface {
 // todoController is the concrete implementation of TodoController.
 type todoController struct {
 	*baseController
+	todoService service.TodoService
 }
 
 func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosCreateRequestObject) (api.V1TodosCreateResponseObject, error) {
@@ -47,14 +48,14 @@ func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosC
 
 	todo, err := c.todoService.Create(ctx, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1TodosCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		return api.V1TodosCreate500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
+		default:
+			return api.V1TodosCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
-			},
-		}, nil
+			}}, nil
+		}
 	}
 
 	return api.V1TodosCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -73,15 +74,16 @@ func (c *todoController) V1TodoGet(ctx context.Context, request api.V1TodoGetReq
 
 	todo, err := c.todoService.Get(ctx, todoID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1TodoGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1TodoGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1TodoGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1TodoGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1TodoGet200JSONResponse(todoToDTO(todo)), nil
@@ -98,15 +100,16 @@ func (c *todoController) V1TodosGet(ctx context.Context, request api.V1TodosGetR
 
 	page, err := c.todoService.List(ctx, pageParams, request.Params.Completed)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1TodosGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1TodosGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		default:
+			return api.V1TodosGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1TodosGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	todosDTO := make([]api.Todo, len(page.Items))
@@ -136,15 +139,16 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 
 	todo, err := c.todoService.Update(ctx, todoID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1TodoUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1TodoUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1TodoUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1TodoUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1TodoUpdate200JSONResponse(todoToDTO(todo)), nil
@@ -160,33 +164,35 @@ func (c *todoController) V1TodoDelete(ctx context.Context, request api.V1TodoDel
 	}
 
 	if err := c.todoService.Delete(ctx, todoID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1TodoDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1TodoDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1TodoDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1TodoDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1TodoDelete204Response{}, nil
 }
 
 // NewTodoController creates a new TodoController.
-func NewTodoController(opts ...ControllerOption) (TodoController, error) {
+func NewTodoController(todoService service.TodoService, opts ...ControllerOption) (TodoController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &todoController{
-		baseController: c,
+	if todoService == nil {
+		return nil, ErrNoTodoService
 	}
 
-	if controller.todoService == nil {
-		return nil, ErrNoTodoService
+	controller := &todoController{
+		baseController: c,
+		todoService:    todoService,
 	}
 
 	return controller, nil

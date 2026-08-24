@@ -16,12 +16,13 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func newTestIssueController(t *testing.T, is service.IssueService) IssueController {
 	t.Helper()
-	c, err := NewIssueController(WithIssueService(is))
+	c, err := NewIssueController(is)
 	require.NoError(t, err)
 	return c
 }
@@ -76,20 +77,14 @@ func TestNewIssueController(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c, err := NewIssueController(WithIssueService(service.NewMockIssueService(ctrl)))
+		c, err := NewIssueController(mocksvc.NewMockIssueService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing issue service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewIssueController()
-		assert.ErrorIs(t, err, ErrNoIssueService)
-	})
-
-	t.Run("nil issue service option", func(t *testing.T) {
-		t.Parallel()
-		_, err := NewIssueController(WithIssueService(nil))
+		_, err := NewIssueController(nil)
 		assert.ErrorIs(t, err, ErrNoIssueService)
 	})
 }
@@ -105,7 +100,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Create(gomock.Any(), projectID, service.CreateIssueOpts{
 			Kind:  model.IssueKindStory,
 			Title: "Implement authentication",
@@ -131,7 +126,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
 			Id:   "not-a-xid",
 			Body: &api.V1ProjectsIssuesCreateJSONRequestBody{Kind: api.IssueKindStory, Title: "Implement authentication"},
@@ -146,7 +141,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
 			Id: projectID.String(),
 			Body: &api.V1ProjectsIssuesCreateJSONRequestBody{
@@ -164,7 +159,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -182,7 +177,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, errors.Join(service.ErrIssueCreate, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
@@ -200,7 +195,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, license.ErrLicenseExpired)
 
 		c := newTestIssueController(t, is)
@@ -218,7 +213,7 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
 			Id:   projectID.String(),
 			Body: nil,
@@ -240,8 +235,8 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().List(gomock.Any(), projectID, gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().List(gomock.Any(), projectID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
@@ -261,7 +256,7 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
 			Id: "bad",
 		})
@@ -275,8 +270,8 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().List(gomock.Any(), projectID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().List(gomock.Any(), projectID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
@@ -292,8 +287,8 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().List(gomock.Any(), projectID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueGetAll, repository.ErrNotFound))
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().List(gomock.Any(), projectID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueList, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
@@ -309,7 +304,7 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1ProjectsIssuesGet(context.Background(), api.V1ProjectsIssuesGetRequestObject{
 			Id: projectID.String(),
 			Params: api.V1ProjectsIssuesGetParams{
@@ -326,10 +321,10 @@ func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().List(gomock.Any(), projectID, gomock.Any()).Return(
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().List(gomock.Any(), projectID, gomock.Any(), gomock.Any()).Return(
 			service.Page[*service.PartialIssue]{},
-			errors.Join(service.ErrIssueGetAll, repository.ErrInvalidCursor),
+			errors.Join(service.ErrIssueList, repository.ErrInvalidCursor),
 		)
 
 		c := newTestIssueController(t, is)
@@ -356,8 +351,8 @@ func TestIssueController_V1NamespacesIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1NamespacesIssuesGet(context.Background(), api.V1NamespacesIssuesGetRequestObject{
@@ -377,7 +372,7 @@ func TestIssueController_V1NamespacesIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1NamespacesIssuesGet(context.Background(), api.V1NamespacesIssuesGetRequestObject{
 			Id: "bad",
 		})
@@ -391,8 +386,8 @@ func TestIssueController_V1NamespacesIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1NamespacesIssuesGet(context.Background(), api.V1NamespacesIssuesGetRequestObject{
@@ -408,8 +403,8 @@ func TestIssueController_V1NamespacesIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueGetAll, repository.ErrNotFound))
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByNamespace(gomock.Any(), namespaceID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueList, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1NamespacesIssuesGet(context.Background(), api.V1NamespacesIssuesGetRequestObject{
@@ -432,8 +427,8 @@ func TestIssueController_V1UsersIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{Items: []*service.PartialIssue{newServicePartialIssue(issue)}}, nil)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1UsersIssuesGet(context.Background(), api.V1UsersIssuesGetRequestObject{
@@ -453,7 +448,7 @@ func TestIssueController_V1UsersIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1UsersIssuesGet(context.Background(), api.V1UsersIssuesGetRequestObject{
 			Id: "bad",
 		})
@@ -467,8 +462,8 @@ func TestIssueController_V1UsersIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1UsersIssuesGet(context.Background(), api.V1UsersIssuesGetRequestObject{
@@ -484,8 +479,8 @@ func TestIssueController_V1UsersIssuesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
-		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueGetAll, repository.ErrNotFound))
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().ListByUser(gomock.Any(), userID, gomock.Any(), gomock.Any()).Return(service.Page[*service.PartialIssue]{}, errors.Join(service.ErrIssueList, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
 		resp, err := c.V1UsersIssuesGet(context.Background(), api.V1UsersIssuesGetRequestObject{
@@ -507,7 +502,7 @@ func TestIssueController_V1IssueGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Get(gomock.Any(), issue.ID).Return(issue, nil)
 
 		c := newTestIssueController(t, is)
@@ -527,7 +522,7 @@ func TestIssueController_V1IssueGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueGet(context.Background(), api.V1IssueGetRequestObject{Id: "bad"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1IssueGet400JSONResponse)
@@ -539,7 +534,7 @@ func TestIssueController_V1IssueGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Get(gomock.Any(), issue.ID).Return(nil, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -554,7 +549,7 @@ func TestIssueController_V1IssueGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Get(gomock.Any(), issue.ID).Return(nil, errors.Join(service.ErrIssueGet, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
@@ -576,7 +571,7 @@ func TestIssueController_V1NamespacesIssuesKeyGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().GetByKey(gomock.Any(), namespaceID, issue.Key).Return(issue, nil)
 
 		c := newTestIssueController(t, is)
@@ -596,7 +591,7 @@ func TestIssueController_V1NamespacesIssuesKeyGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1NamespacesIssuesKeyGet(context.Background(), api.V1NamespacesIssuesKeyGetRequestObject{
 			Id:  "bad",
 			Key: issue.Key,
@@ -611,7 +606,7 @@ func TestIssueController_V1NamespacesIssuesKeyGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1NamespacesIssuesKeyGet(context.Background(), api.V1NamespacesIssuesKeyGetRequestObject{
 			Id:  namespaceID.String(),
 			Key: "bad",
@@ -626,7 +621,7 @@ func TestIssueController_V1NamespacesIssuesKeyGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().GetByKey(gomock.Any(), namespaceID, issue.Key).Return(nil, errors.Join(service.ErrIssueGet, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
@@ -654,7 +649,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		updated := *issue
 		updated.Title = title
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, service.UpdateIssueOpts{
 			Title: optional.Some(title),
 		}).Return(&updated, nil)
@@ -675,7 +670,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueUpdate(context.Background(), api.V1IssueUpdateRequestObject{
 			Id:   "bad",
 			Body: &api.V1IssueUpdateJSONRequestBody{Title: optional.Some(title)},
@@ -690,7 +685,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueUpdate(context.Background(), api.V1IssueUpdateRequestObject{
 			Id:   issue.ID.String(),
 			Body: nil,
@@ -705,7 +700,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -723,7 +718,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c := newTestIssueController(t, is)
@@ -741,7 +736,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, gomock.Any()).Return(nil, errors.Join(service.ErrIssueUpdate, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
@@ -771,7 +766,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 			Labels:      make([]service.PartialLabel, 0),
 		}
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, service.UpdateIssueOpts{
 			Parent: optional.Some(parentID),
 		}).Return(&updated, nil)
@@ -796,7 +791,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		updated := *issue
 		updated.Parent = nil
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, service.UpdateIssueOpts{
 			Parent: optional.Null[model.ID](),
 		}).Return(&updated, nil)
@@ -817,7 +812,7 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, service.UpdateIssueOpts{
 			Parent: optional.Some(issue.ID),
 		}).Return(nil, errors.Join(service.ErrIssueUpdate, service.ErrIssueSelfRelation))
@@ -843,7 +838,7 @@ func TestIssueController_V1IssueDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Delete(gomock.Any(), issueID).Return(nil)
 
 		c := newTestIssueController(t, is)
@@ -858,7 +853,7 @@ func TestIssueController_V1IssueDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueDelete(context.Background(), api.V1IssueDeleteRequestObject{Id: "bad"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1IssueDelete400JSONResponse)
@@ -870,7 +865,7 @@ func TestIssueController_V1IssueDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Delete(gomock.Any(), issueID).Return(service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -885,7 +880,7 @@ func TestIssueController_V1IssueDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Delete(gomock.Any(), issueID).Return(errors.Join(service.ErrIssueDelete, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)
@@ -1078,7 +1073,7 @@ func TestIssueController_V1IssueRelationsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().ListRelations(gomock.Any(), issue.ID, gomock.Any()).Return(service.Page[*service.IssueRelation]{
 			Items: []*service.IssueRelation{relation},
 		}, nil)
@@ -1102,7 +1097,7 @@ func TestIssueController_V1IssueRelationsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueRelationsGet(context.Background(), api.V1IssueRelationsGetRequestObject{Id: "bad"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1IssueRelationsGet400JSONResponse)
@@ -1114,7 +1109,7 @@ func TestIssueController_V1IssueRelationsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().ListRelations(gomock.Any(), issue.ID, gomock.Any()).Return(service.Page[*service.IssueRelation]{}, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -1129,7 +1124,7 @@ func TestIssueController_V1IssueRelationsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().ListRelations(gomock.Any(), issue.ID, gomock.Any()).Return(
 			service.Page[*service.IssueRelation]{},
 			errors.Join(service.ErrIssueGetRelations, repository.ErrNotFound),
@@ -1155,7 +1150,7 @@ func TestIssueController_V1IssueRelationsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().AddRelation(gomock.Any(), issue.ID, related.ID, model.IssueRelationKindBlocks).Return(relation, nil)
 
 		c := newTestIssueController(t, is)
@@ -1178,7 +1173,7 @@ func TestIssueController_V1IssueRelationsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().AddRelation(gomock.Any(), issue.ID, issue.ID, model.IssueRelationKindBlocks).Return(
 			nil,
 			errors.Join(service.ErrIssueAddRelation, service.ErrIssueSelfRelation),
@@ -1202,7 +1197,7 @@ func TestIssueController_V1IssueRelationsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().AddRelation(gomock.Any(), issue.ID, related.ID, model.IssueRelationKindBlocks).Return(nil, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -1223,7 +1218,7 @@ func TestIssueController_V1IssueRelationsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().AddRelation(gomock.Any(), issue.ID, related.ID, model.IssueRelationKindBlocks).Return(
 			nil,
 			errors.Join(service.ErrIssueAddRelation, repository.ErrNotFound),
@@ -1256,7 +1251,7 @@ func TestIssueController_V1IssueRelationUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().UpdateRelation(gomock.Any(), issue.ID, relationID, model.IssueRelationKindRelatedTo).Return(relation, nil)
 
 		c := newTestIssueController(t, is)
@@ -1275,7 +1270,7 @@ func TestIssueController_V1IssueRelationUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().UpdateRelation(gomock.Any(), issue.ID, relationID, model.IssueRelationKindSubtaskOf).Return(
 			nil,
 			errors.Join(service.ErrIssueUpdateRelation, service.ErrIssueReservedRelationKind),
@@ -1297,7 +1292,7 @@ func TestIssueController_V1IssueRelationUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().UpdateRelation(gomock.Any(), issue.ID, relationID, model.IssueRelationKindRelatedTo).Return(nil, service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -1316,7 +1311,7 @@ func TestIssueController_V1IssueRelationUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().UpdateRelation(gomock.Any(), issue.ID, relationID, model.IssueRelationKindRelatedTo).Return(
 			nil,
 			errors.Join(service.ErrIssueUpdateRelation, repository.ErrNotFound),
@@ -1345,7 +1340,7 @@ func TestIssueController_V1IssueRelationDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().RemoveRelation(gomock.Any(), issueID, relationID).Return(nil)
 
 		c := newTestIssueController(t, is)
@@ -1363,7 +1358,7 @@ func TestIssueController_V1IssueRelationDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestIssueController(t, service.NewMockIssueService(ctrl))
+		c := newTestIssueController(t, mocksvc.NewMockIssueService(ctrl))
 		resp, err := c.V1IssueRelationDelete(context.Background(), api.V1IssueRelationDeleteRequestObject{
 			Id:         issueID.String(),
 			RelationId: "bad",
@@ -1378,7 +1373,7 @@ func TestIssueController_V1IssueRelationDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().RemoveRelation(gomock.Any(), issueID, relationID).Return(service.ErrNoPermission)
 
 		c := newTestIssueController(t, is)
@@ -1396,7 +1391,7 @@ func TestIssueController_V1IssueRelationDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		is := service.NewMockIssueService(ctrl)
+		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().RemoveRelation(gomock.Any(), issueID, relationID).Return(errors.Join(service.ErrIssueRemoveRelation, repository.ErrNotFound))
 
 		c := newTestIssueController(t, is)

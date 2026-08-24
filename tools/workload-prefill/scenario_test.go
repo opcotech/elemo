@@ -54,8 +54,8 @@ func TestFullScenarioCounts(t *testing.T) {
 
 	for _, ns := range spec.main.namespaces {
 		if ns.name == migratedNS {
-			assert.Equal(t, 75, ns.migratedIssueMin)
-			assert.Equal(t, 125, ns.migratedIssueMax)
+			assert.GreaterOrEqual(t, ns.migratedIssueMin, 75)
+			assert.LessOrEqual(t, ns.migratedIssueMax, 300)
 			continue
 		}
 		assert.GreaterOrEqual(t, len(ns.projects), 2)

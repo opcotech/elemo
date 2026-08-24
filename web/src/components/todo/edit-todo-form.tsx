@@ -7,9 +7,9 @@ import { TodoFormFields } from "./todo-form-fields";
 
 import { DialogForm } from "@/components/ui/dialog-form";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { zTodoCreate, zTodoPatch } from "@/lib/api/schemas";
 import { v1TodoUpdate } from "@/lib/api/sdk";
 import type { Options, TodoPriority, V1TodoUpdateData } from "@/lib/api/types";
-import { zTodoCreate, zTodoPatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NameDescriptionFields } from "@/components/ui/name-description-fields";
-import { zRoleCreate } from "@/lib/client/zod.gen";
+import { zRoleCreate } from "@/lib/api/schemas";
 import { createFormSchema } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

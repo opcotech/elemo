@@ -1,0 +1,203 @@
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+)
+
+func testLayout() Layout {
+	return Layout{
+		PathFiles: []string{
+			"paths/users.yaml",
+			"paths/labels.yaml",
+		},
+		SchemaFiles: []string{
+			"components/schemas/common.yaml",
+			"components/schemas/user.yaml",
+		},
+		RequestBodyFiles: []string{
+			"components/request-bodies/user.yaml",
+		},
+		ParametersFile:      "components/parameters.yaml",
+		ResponsesFile:       "components/responses.yaml",
+		SecuritySchemesFile: "components/security-schemes.yaml",
+	}
+}
+
+func writeFile(t *testing.T, dir, rel, contents string) {
+	t.Helper()
+	path := filepath.Join(dir, rel)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0o644))
+}
+
+func TestAssembleMergesFragments(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeFile(t, dir, "openapi.yaml", `
+openapi: "3.0.3"
+info:
+  title: Test
+  version: "0.1.0"
+tags: []
+servers: []
+`)
+	writeFile(t, dir, "paths/users.yaml", `
+/v1/users:
+  get:
+    operationId: v1UsersGet
+`)
+	writeFile(t, dir, "paths/labels.yaml", `
+/v1/labels:
+  get:
+    operationId: v1LabelsGet
+`)
+	writeFile(t, dir, "components/schemas/common.yaml", `
+HTTPError:
+  type: object
+`)
+	writeFile(t, dir, "components/schemas/user.yaml", `
+User:
+  type: object
+`)
+	writeFile(t, dir, "components/request-bodies/user.yaml", `
+UserCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+`)
+	writeFile(t, dir, "components/parameters.yaml", `
+page_size:
+  name: page_size
+  in: query
+`)
+	writeFile(t, dir, "components/responses.yaml", `
+"400":
+  description: Bad request
+`)
+	writeFile(t, dir, "components/security-schemes.yaml", `
+oauth2:
+  type: oauth2
+`)
+
+	node, err := assemble(dir, testLayout())
+	require.NoError(t, err)
+
+	_, paths := mappingLookup(node, "paths")
+	require.NotNil(t, paths)
+	assert.Equal(t, []string{"/v1/users", "/v1/labels"}, mappingKeys(paths))
+
+	_, components := mappingLookup(node, "components")
+	require.NotNil(t, components)
+	assert.Equal(
+		t,
+		[]string{"schemas", "examples", "securitySchemes", "responses", "parameters", "requestBodies"},
+		mappingKeys(components),
+	)
+
+	_, schemas := mappingLookup(components, "schemas")
+	require.NotNil(t, schemas)
+	assert.Equal(t, []string{"HTTPError", "User"}, mappingKeys(schemas))
+
+	_, examples := mappingLookup(components, "examples")
+	require.NotNil(t, examples)
+	assert.Empty(t, mappingKeys(examples))
+}
+
+func TestAssembleDuplicatePathKey(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeFile(t, dir, "openapi.yaml", `
+openapi: "3.0.3"
+info:
+  title: Test
+  version: "0.1.0"
+tags: []
+servers: []
+`)
+	writeFile(t, dir, "paths/users.yaml", `
+/v1/users:
+  get:
+    operationId: v1UsersGet
+`)
+	writeFile(t, dir, "paths/labels.yaml", `
+/v1/users:
+  get:
+    operationId: duplicate
+`)
+	writeFile(t, dir, "components/schemas/common.yaml", "HTTPError:\n  type: object\n")
+	writeFile(t, dir, "components/schemas/user.yaml", "User:\n  type: object\n")
+	writeFile(t, dir, "components/request-bodies/user.yaml", "UserCreate:\n  content: {}\n")
+	writeFile(t, dir, "components/parameters.yaml", "{}\n")
+	writeFile(t, dir, "components/responses.yaml", "{}\n")
+	writeFile(t, dir, "components/security-schemes.yaml", "{}\n")
+
+	_, err := assemble(dir, testLayout())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `duplicate key "/v1/users"`)
+	assert.Contains(t, err.Error(), "paths/users.yaml")
+	assert.Contains(t, err.Error(), "paths/labels.yaml")
+}
+
+func TestMergeMappingsPreservesOrder(t *testing.T) {
+	t.Parallel()
+
+	dst := &yaml.Node{Kind: yaml.MappingNode}
+	first, err := parseMapping("a: 1\nb: 2\n")
+	require.NoError(t, err)
+	second, err := parseMapping("c: 3\n")
+	require.NoError(t, err)
+
+	origins := make(map[string]string)
+	require.NoError(t, mergeMappings(dst, first, "first.yaml", origins))
+	require.NoError(t, mergeMappings(dst, second, "second.yaml", origins))
+	assert.Equal(t, []string{"a", "b", "c"}, mappingKeys(dst))
+}
+
+func TestWriteFragmentsRejectsUnassignedKeys(t *testing.T) {
+	t.Parallel()
+
+	src, err := parseMapping("/v1/users: {}\n/v1/extra: {}\n")
+	require.NoError(t, err)
+
+	err = writeFragments(t.TempDir(), src, []fragment{
+		{file: "paths/users.yaml", keys: []string{"/v1/users"}},
+	}, "paths")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unassigned key "/v1/extra"`)
+}
+
+func TestWriteBundleHeader(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "openapi.yaml")
+	node := &yaml.Node{
+		Kind: yaml.MappingNode,
+		Content: []*yaml.Node{
+			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "openapi"},
+			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "3.0.3"},
+		},
+	}
+
+	require.NoError(t, writeBundle(path, node))
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "Code generated by tools/openapi-assemble")
+	assert.Contains(t, string(data), "openapi: 3.0.3")
+}
+
+func parseMapping(contents string) (*yaml.Node, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal([]byte(contents), &doc); err != nil {
+		return nil, err
+	}
+	return doc.Content[0], nil
+}

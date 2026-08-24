@@ -80,7 +80,7 @@ func (o UpdateTodoOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=todo.go -destination=todo_mock_gen.go -package=repository -mock_names "TodoRepository=MockTodoRepository"
+//go:generate go tool mockgen -source=todo.go -destination=mock/mock_todo_gen.go -package=mockrepo
 type TodoRepository interface {
 	Create(ctx context.Context, opts CreateTodoOpts) (*Todo, error)
 	Get(ctx context.Context, id model.ID) (*Todo, error)
@@ -117,9 +117,18 @@ func (r *Neo4jTodoRepository) scan(tp, op, cp string) func(rec *neo4j.Record) (*
 			return nil, err
 		}
 
-		todo.ID, _ = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeTodo.String())
-		todo.OwnedBy, _ = model.NewIDFromString(ownerID, model.ResourceTypeUser.String())
-		todo.CreatedBy, _ = model.NewIDFromString(creatorID, model.ResourceTypeUser.String())
+		todo.ID, err = model.NewIDFromString(val.GetProperties()["id"].(string), model.ResourceTypeTodo.String())
+		if err != nil {
+			return nil, err
+		}
+		todo.OwnedBy, err = model.NewIDFromString(ownerID, model.ResourceTypeUser.String())
+		if err != nil {
+			return nil, err
+		}
+		todo.CreatedBy, err = model.NewIDFromString(creatorID, model.ResourceTypeUser.String())
+		if err != nil {
+			return nil, err
+		}
 
 		return todo, nil
 	}
@@ -164,7 +173,7 @@ func (r *Neo4jTodoRepository) Create(ctx context.Context, opts CreateTodoOpts) (
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(err, ErrTodoCreate)
+		return nil, errors.Join(ErrTodoCreate, err)
 	}
 
 	return r.Get(ctx, id)
@@ -175,10 +184,11 @@ func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, erro
 	defer span.End()
 
 	plan, err := CompileQuery(TodoGetQuery{
-		ID: id,
+		ID:         id,
+		Projection: TodoDetailProjection(),
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrTodoRead)
+		return nil, errors.Join(ErrTodoRead, err)
 	}
 
 	var todo *Todo
@@ -188,7 +198,7 @@ func (r *Neo4jTodoRepository) Get(ctx context.Context, id model.ID) (*Todo, erro
 		return runErr
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrTodoRead)
+		return nil, errors.Join(ErrTodoRead, err)
 	}
 
 	return todo, nil
@@ -200,16 +210,17 @@ func (r *Neo4jTodoRepository) ListByOwner(ctx context.Context, ownerID model.ID,
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
+		return Page[*Todo]{}, errors.Join(ErrTodoRead, err)
 	}
 	plan, err := CompileQuery(TodoListByOwnerQuery{
-		OwnerID:   ownerID,
-		Page:      normalized,
-		Order:     SortDirectionDesc,
-		Completed: completed,
+		OwnerID:    ownerID,
+		Page:       normalized,
+		Order:      SortDirectionDesc,
+		Completed:  completed,
+		Projection: TodoListProjection(),
 	})
 	if err != nil {
-		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
+		return Page[*Todo]{}, errors.Join(ErrTodoRead, err)
 	}
 
 	todos := make([]*Todo, 0)
@@ -219,7 +230,7 @@ func (r *Neo4jTodoRepository) ListByOwner(ctx context.Context, ownerID model.ID,
 		return runErr
 	})
 	if err != nil {
-		return Page[*Todo]{}, errors.Join(err, ErrTodoRead)
+		return Page[*Todo]{}, errors.Join(ErrTodoRead, err)
 	}
 
 	return PaginateSlice(todos, normalized.Size, func(todo *Todo) model.ID {

@@ -1,0 +1,242 @@
+UserPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          username:
+            type: string
+            description: The unique username of the user.
+            pattern: "^[a-z0-9-_]{3,50}$"
+            minLength: 3
+            maxLength: 50
+            example: test-user
+          first_name:
+            type: string
+            description: First name of the user.
+            minLength: 1
+            maxLength: 50
+            example: Test
+          last_name:
+            type: string
+            description: Last name of the user.
+            example: User
+            minLength: 1
+            maxLength: 50
+          email:
+            type: string
+            format: email
+            example: user@example.com
+            minLength: 6
+            maxLength: 254
+            description: Email address of the user.
+          password:
+            type: string
+            format: password
+            maxLength: 64
+            minLength: 8
+            example: super-secret
+            description: Password of the user. Required together with the new_password field.
+          new_password:
+            type: string
+            format: password
+            maxLength: 64
+            minLength: 8
+            example: super-secret
+            description: New password of the user.
+          picture:
+            type: string
+            description: Profile picture of the user.
+            format: uri
+            example: "https://example.com/users/my-user.png"
+            maxLength: 2000
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          title:
+            type: string
+            description: Work title of the user.
+            example: Senior Software Engineer
+            minLength: 3
+            maxLength: 50
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          bio:
+            type: string
+            description: Self description of the user.
+            maxLength: 500
+            example: I'm working smart on software.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          address:
+            type: string
+            minLength: 3
+            maxLength: 500
+            example: Remote
+            description: Working address of the user.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          phone:
+            type: string
+            example: "+15555551234"
+            minLength: 7
+            maxLength: 16
+            description: Phone number of the user.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          links:
+            type: array
+            description: Links to show on profile page.
+            uniqueItems: true
+            items:
+              type: string
+              format: uri
+              example: "https://example.com/my-user"
+              maxLength: 2000
+          languages:
+            type: array
+            description: Languages of the user.
+            uniqueItems: true
+            items:
+              $ref: "#/components/schemas/Language"
+          status:
+            $ref: "#/components/schemas/UserStatus"
+      examples:
+        example:
+          value:
+            username: test-user
+            first_name: Test
+            last_name: User
+            email: user@example.com
+            picture: "https://example.com/users/my-user.png"
+            title: Senior Software Engineer
+            bio: I'm working smart on software.
+            address: Remote
+            phone: "+15555551234"
+            links:
+              - "https://example.com/my-user"
+            languages:
+              - aa
+            status: active
+  description: ""
+UserCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          username:
+            type: string
+            description: The unique username of the user.
+            pattern: "^[a-z0-9-_]{3,50}$"
+            minLength: 3
+            maxLength: 50
+            example: test-user
+          first_name:
+            type: string
+            description: First name of the user.
+            minLength: 1
+            maxLength: 50
+            example: Test
+          last_name:
+            type: string
+            description: Last name of the user.
+            example: User
+            minLength: 1
+            maxLength: 50
+          email:
+            type: string
+            format: email
+            example: user@example.com
+            minLength: 6
+            maxLength: 254
+            description: Email address of the user.
+          password:
+            type: string
+            minLength: 8
+            maxLength: 64
+            example: super-secret
+            format: password
+            description: Password of the user.
+          picture:
+            type: string
+            description: Profile picture of the user.
+            format: uri
+            example: "https://example.com/users/my-user.png"
+            maxLength: 2000
+            nullable: true
+          title:
+            type: string
+            description: Work title of the user.
+            example: Senior Software Engineer
+            minLength: 3
+            maxLength: 50
+            nullable: true
+          bio:
+            type: string
+            description: Self description of the user.
+            maxLength: 500
+            example: I'm working smart on software.
+            nullable: true
+          address:
+            type: string
+            minLength: 3
+            maxLength: 500
+            example: Remote
+            description: Working address of the user.
+            nullable: true
+          phone:
+            type: string
+            example: "+15555551234"
+            minLength: 7
+            maxLength: 16
+            description: Phone number of the user.
+            nullable: true
+          links:
+            type: array
+            description: Links to show on profile page.
+            uniqueItems: true
+            nullable: true
+            items:
+              type: string
+              format: uri
+              example: "https://example.com/my-user"
+              maxLength: 2000
+          languages:
+            type: array
+            description: Languages of the user.
+            uniqueItems: true
+            nullable: true
+            items:
+              $ref: "#/components/schemas/Language"
+        required:
+          - username
+          - email
+          - password
+          - first_name
+          - last_name
+UserPasswordReset:
+  description: "Password reset request."
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          token:
+            type: string
+            example: tDCVsHnzeOj278GIT85xU0s_
+            description: Token to verify
+          password:
+            type: string
+            format: password
+            maxLength: 64
+            minLength: 8
+            example: super-secret
+            description: Password of the user.
+        required:
+          - password
+          - token

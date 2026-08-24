@@ -13,13 +13,13 @@ import {
   v1NamespaceGetOptions,
   v1OrganizationsNamespacesGetOptions,
 } from "@/lib/api/query-options";
+import { zNamespacePatch } from "@/lib/api/schemas";
 import { v1NamespaceUpdate } from "@/lib/api/sdk";
 import type {
   Namespace,
   Options,
   V1NamespaceUpdateData,
 } from "@/lib/api/types";
-import { zNamespacePatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

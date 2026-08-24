@@ -13,7 +13,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 )
 
 func TestWithContextObject(t *testing.T) {
@@ -33,7 +33,7 @@ func TestWithRequestLogger(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	logger := mock.NewMockLogger(ctrl)
+	logger := mocklog.NewMockLogger(ctrl)
 	logger.EXPECT().Log(gomock.Any(), log.LevelInfo, "serve http request", gomock.Any()).Return()
 
 	ctx := log.WithContext(context.Background(), logger)

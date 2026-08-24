@@ -163,7 +163,7 @@ func (o UpdateUserOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=user.go -destination=user_mock_gen.go -package=repository -mock_names "UserRepository=MockUserRepository"
+//go:generate go tool mockgen -source=user.go -destination=mock/mock_user_gen.go -package=mockrepo
 type UserRepository interface {
 	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
 	Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error)
@@ -263,7 +263,7 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(err, ErrUserCreate)
+		return nil, errors.Join(ErrUserCreate, err)
 	}
 
 	return r.Get(ctx, id, UserDetailProjection())
@@ -463,7 +463,7 @@ func (r *Neo4jUserRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return errors.Join(err, ErrUserDelete)
+		return errors.Join(ErrUserDelete, err)
 	}
 
 	return nil

@@ -3,10 +3,11 @@ package repository
 import (
 	"testing"
 
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
+
+	"github.com/opcotech/elemo/internal/model"
 )
 
 func TestPartialIssueMsgpackRoundTripZeroReportedBy(t *testing.T) {

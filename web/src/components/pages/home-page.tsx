@@ -34,15 +34,11 @@ import {
 } from "@/lib/api/query-options";
 import { v1UsersIssuesGet } from "@/lib/api/sdk";
 import type { Todo } from "@/lib/api/types";
-import {
-  getWorkItem,
-  queryWorkItems,
-  resolveDemoPerson,
-  selectAttentionSignals,
-} from "@/lib/mock-data";
+import { resolveDemoPerson, selectAttentionSignals } from "@/lib/mock-data";
 import { recentEntityLinkType } from "@/lib/recent-entity";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
 import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import { queryWorkItems } from "@/lib/work/query";
 
 const HOME_TODO_PREVIEW_LIMIT = 5;
 
@@ -77,17 +73,42 @@ export function HomePage() {
     enabled: Boolean(userId),
   });
   const todos: Todo[] = todosPage?.items ?? [];
+  const userWorkItems = useMemo(
+    () => issuesToWorkItems(issuesPage?.items ?? []),
+    [issuesPage?.items]
+  );
+  const userWorkItemById = useMemo(
+    () =>
+      new Map(
+        userWorkItems.flatMap((item) => [
+          [item.id, item] as const,
+          [item.key, item] as const,
+        ])
+      ),
+    [userWorkItems]
+  );
   const recentEntities = useUiSelector((state) => state.recentEntities);
-  const attention = selectAttentionSignals({
-    personId: demoPerson.id,
-  });
+  const attention = useMemo(() => {
+    const entries: {
+      signal: ReturnType<typeof selectAttentionSignals>[number];
+      item: (typeof userWorkItems)[number];
+    }[] = [];
+    for (const signal of selectAttentionSignals({ personId: demoPerson.id })) {
+      const item = userWorkItemById.get(signal.workItemId);
+      if (!item) {
+        continue;
+      }
+      entries.push({ signal, item });
+    }
+    return entries;
+  }, [demoPerson.id, userWorkItemById]);
   const continueWorking = useMemo(
     () =>
-      queryWorkItems(issuesToWorkItems(issuesPage?.items ?? []), {
+      queryWorkItems(userWorkItems, {
         filters: { statuses: ["in progress"] },
         sort: [{ field: "priority", direction: "desc" }],
       }),
-    [issuesPage]
+    [userWorkItems]
   );
   const openTodoGroups = useMemo(() => {
     const openTodos = todos.filter((todo) => !todo.completed);
@@ -140,22 +161,17 @@ export function HomePage() {
             </MockDataAlert>
             {attention.length > 0 ? (
               <AppList>
-                {attention.slice(0, 5).map((signal) => {
-                  const item = getWorkItem(signal.workItemId);
+                {attention.slice(0, 5).map(({ signal, item }) => {
                   return (
                     <InternalLink
                       key={signal.id}
-                      to={
-                        item
-                          ? (`/work/${item.namespaceId}/${item.key}` as const)
-                          : "/my-work"
-                      }
+                      to={`/work/${item.namespaceId}/${item.key}` as const}
                       className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
                     >
                       <AttentionIcon severity={signal.severity} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">
-                          {item ? `${item.key} ${item.title}` : signal.summary}
+                          {`${item.key} ${item.title}`}
                         </span>
                         <span className="text-muted-foreground block truncate text-xs">
                           {signal.summary}

@@ -1,7 +1,7 @@
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
 import type { OrganizationMember, PartialUser } from "@/lib/api/types";
 import { getPerson } from "@/lib/mock-data";
-import type { WorkItem, WorkPerson } from "@/lib/mock-data";
+import type { WorkItem, WorkPerson } from "@/lib/work/model";
 
 export function personDisplayName(
   person: Pick<PartialUser, "id" | "first_name" | "last_name">

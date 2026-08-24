@@ -1,9 +1,9 @@
 import { withErrorHandling } from "./error-handler";
 import { getRandomString } from "../utils/random";
 
-import type { Client } from "@/lib/client/client";
-import { v1NamespacesProjectsCreate, v1ProjectGet } from "@/lib/client/sdk.gen";
-import type { Project, ProjectCreate } from "@/lib/client/types.gen";
+import type { Client } from "@/lib/api/client";
+import { v1NamespacesProjectsCreate, v1ProjectGet } from "@/lib/api/sdk";
+import type { Project, ProjectCreate } from "@/lib/api/types";
 
 /**
  * Generate a project key that satisfies API constraints (2–6 uppercase ASCII letters).

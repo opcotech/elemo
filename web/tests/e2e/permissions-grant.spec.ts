@@ -14,10 +14,7 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
-import {
-  v1OrganizationsCreate,
-  v1PermissionResourceGet,
-} from "@/lib/client/sdk.gen";
+import { v1OrganizationsCreate, v1PermissionResourceGet } from "@/lib/api/sdk";
 
 test.describe("@permissions.grants Scoped ReBAC Grant E2E Tests", () => {
   test("should assign a role to a user principal at organization scope", async ({

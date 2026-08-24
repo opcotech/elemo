@@ -35,7 +35,7 @@ type CreateUserTokenOpts struct {
 	Context model.UserTokenContext
 }
 
-//go:generate go tool mockgen -source=auth.go -destination=auth_mock_gen.go -package=repository -mock_names "UserTokenRepository=MockUserTokenRepository"
+//go:generate go tool mockgen -source=auth.go -destination=mock/mock_auth_gen.go -package=mockrepo
 type UserTokenRepository interface {
 	Create(ctx context.Context, opts CreateUserTokenOpts) (*UserToken, error)
 	Get(ctx context.Context, userID model.ID, tokenCtx model.UserTokenContext) (*UserToken, error)

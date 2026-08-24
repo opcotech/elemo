@@ -9,9 +9,9 @@ import (
 
 // Attachment represents an attachment on a resource.
 type Attachment struct {
-	ID        ID         `json:"id" validate:"required"`
-	Name      string     `json:"name" validate:"required,min=3,max=120"`
-	FileID    string     `json:"file_id" validate:"required"`
+	ID        ID         `json:"id"         validate:"required"`
+	Name      string     `json:"name"       validate:"required,min=3,max=120"`
+	FileID    string     `json:"file_id"    validate:"required"`
 	CreatedBy ID         `json:"created_by" validate:"required"`
 	CreatedAt *time.Time `json:"created_at" validate:"omitempty"`
 	UpdatedAt *time.Time `json:"updated_at" validate:"omitempty"`

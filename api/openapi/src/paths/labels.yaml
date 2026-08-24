@@ -1,0 +1,28 @@
+/v1/labels:
+  get:
+    summary: List labels
+    tags:
+      - Label
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabelPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    operationId: v1LabelsGet
+    description: Returns a cursor-paginated page of labels.
+    security:
+      - oauth2:
+          - label.read

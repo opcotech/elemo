@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -23,6 +23,7 @@ type ProjectController interface {
 // projectController is the concrete implementation of ProjectController.
 type projectController struct {
 	*baseController
+	projectService service.ProjectService
 }
 
 func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, request api.V1NamespacesProjectsCreateRequestObject) (api.V1NamespacesProjectsCreateResponseObject, error) {
@@ -41,15 +42,16 @@ func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, requ
 
 	project, err := c.projectService.Create(ctx, namespaceID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NamespacesProjectsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NamespacesProjectsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespacesProjectsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespacesProjectsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NamespacesProjectsCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -73,18 +75,18 @@ func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request
 
 	page, err := c.projectService.List(ctx, namespaceID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1NamespacesProjectsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1NamespacesProjectsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NamespacesProjectsGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespacesProjectsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NamespacesProjectsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	projectsDTO := make([]api.Project, len(page.Items))
@@ -109,15 +111,16 @@ func (c *projectController) V1ProjectGet(ctx context.Context, request api.V1Proj
 
 	project, err := c.projectService.Get(ctx, projectID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1ProjectGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1ProjectGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1ProjectGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1ProjectGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1ProjectGet200JSONResponse(projectToDTO(project)), nil
@@ -139,15 +142,16 @@ func (c *projectController) V1ProjectUpdate(ctx context.Context, request api.V1P
 
 	project, err := c.projectService.Update(ctx, projectID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1ProjectUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1ProjectUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1ProjectUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1ProjectUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1ProjectUpdate200JSONResponse(projectToDTO(project)), nil
@@ -163,36 +167,36 @@ func (c *projectController) V1ProjectDelete(ctx context.Context, request api.V1P
 	}
 
 	if err := c.projectService.Delete(ctx, projectID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1ProjectDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1ProjectDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1ProjectDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1ProjectDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1ProjectDelete204Response{}, nil
 }
 
 // NewProjectController creates a new ProjectController.
-func NewProjectController(opts ...ControllerOption) (ProjectController, error) {
+func NewProjectController(projectService service.ProjectService, opts ...ControllerOption) (ProjectController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &projectController{
-		baseController: c,
-	}
-
-	if controller.projectService == nil {
+	if projectService == nil {
 		return nil, ErrNoProjectService
 	}
 
-	return controller, nil
+	return &projectController{
+		baseController: c,
+		projectService: projectService,
+	}, nil
 }
 
 func createProjectJSONRequestBodyToCreateProjectOpts(body *api.V1NamespacesProjectsCreateJSONRequestBody) (service.CreateProjectOpts, error) {

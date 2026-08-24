@@ -16,8 +16,7 @@ import {
   v1NamespacesIssuesKeyGetOptions,
   v1ProjectsIssuesGetOptions,
 } from "@/lib/api/query-options";
-import type { Issue } from "@/lib/api/types";
-import type { PartialIssue, PartialIssuePage } from "@/lib/client";
+import type { Issue, PartialIssue, PartialIssuePage } from "@/lib/api/types";
 
 function partialIssue(overrides: Partial<PartialIssue> = {}): PartialIssue {
   return {

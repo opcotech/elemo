@@ -1,18 +1,18 @@
 import { withErrorHandling } from "./error-handler";
 
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 import {
   v1PermissionDelete,
   v1PermissionResourceGet,
   v1PermissionsCreate,
-} from "@/lib/client/sdk.gen";
+} from "@/lib/api/sdk";
 import type {
   Action,
   EffectiveActions,
   GrantCreate,
   GrantPrincipalType,
   ResourceType,
-} from "@/lib/client/types.gen";
+} from "@/lib/api/types";
 
 export type CreateGrantInput = GrantCreate;
 

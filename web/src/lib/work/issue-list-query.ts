@@ -1,6 +1,6 @@
-import type { IssuePriority, IssueStatus } from "@/lib/client";
-import type { WorkFilters, WorkSortField } from "@/lib/mock-data";
+import type { IssuePriority, IssueStatus } from "@/lib/api/types";
 import { mapWorkStatusToIssueStatus } from "@/lib/work/issue-adapter";
+import type { WorkFilters, WorkSortField } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
 const sortableFields = new Set<WorkSortField>([

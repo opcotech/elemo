@@ -1,0 +1,136 @@
+/v1/todos:
+  get:
+    summary: Get todo item
+    tags:
+      - Todo
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TodoPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - schema:
+          type: boolean
+        in: query
+        name: completed
+        description: Completion status of the items.
+    operationId: v1TodosGet
+    description: Returns all todo items belonging to the current user.
+    security:
+      - oauth2:
+          - todo.read
+  post:
+    summary: Create todo item
+    operationId: v1TodosCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new todo item.
+    security:
+      - oauth2:
+          - todo
+    requestBody:
+      $ref: "#/components/requestBodies/TodoCreate"
+    tags:
+      - Todo
+"/v1/todos/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get todo item
+    tags:
+      - Todo
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Todo"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1TodoGet
+    description: Return a todo item based on the todo id belonging to the current user.
+    security:
+      - oauth2:
+          - todo.read
+  delete:
+    summary: Delete todo item
+    operationId: v1TodoDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    tags:
+      - Todo
+    description: Delete todo by its ID.
+    security:
+      - oauth2:
+          - todo
+  patch:
+    summary: Update todo
+    operationId: v1TodoUpdate
+    requestBody:
+      $ref: "#/components/requestBodies/TodoPatch"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Todo"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the given todo
+    tags:
+      - Todo
+    security:
+      - oauth2:
+          - todo

@@ -33,6 +33,7 @@ type IssueController interface {
 // issueController is the concrete implementation of IssueController.
 type issueController struct {
 	*baseController
+	issueService service.IssueService
 }
 
 func (c *issueController) V1ProjectsIssuesCreate(ctx context.Context, request api.V1ProjectsIssuesCreateRequestObject) (api.V1ProjectsIssuesCreateResponseObject, error) {
@@ -94,7 +95,7 @@ func (c *issueController) V1ProjectsIssuesGet(ctx context.Context, request api.V
 		return api.V1ProjectsIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	page, err := c.issueService.List(service.WithIssueListOptions(ctx, listOpts), projectID, pageParams)
+	page, err := c.issueService.List(ctx, projectID, pageParams, listOpts)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -144,7 +145,7 @@ func (c *issueController) V1NamespacesIssuesGet(ctx context.Context, request api
 		return api.V1NamespacesIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	page, err := c.issueService.ListByNamespace(service.WithIssueListOptions(ctx, listOpts), namespaceID, pageParams)
+	page, err := c.issueService.ListByNamespace(ctx, namespaceID, pageParams, listOpts)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -194,7 +195,7 @@ func (c *issueController) V1UsersIssuesGet(ctx context.Context, request api.V1Us
 		return api.V1UsersIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	page, err := c.issueService.ListByUser(service.WithIssueListOptions(ctx, listOpts), userID, pageParams)
+	page, err := c.issueService.ListByUser(ctx, userID, pageParams, listOpts)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusBadRequest:
@@ -500,21 +501,20 @@ func (c *issueController) V1IssueRelationDelete(ctx context.Context, request api
 }
 
 // NewIssueController creates a new IssueController.
-func NewIssueController(opts ...ControllerOption) (IssueController, error) {
+func NewIssueController(issueService service.IssueService, opts ...ControllerOption) (IssueController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &issueController{
-		baseController: c,
-	}
-
-	if controller.issueService == nil {
+	if issueService == nil {
 		return nil, ErrNoIssueService
 	}
 
-	return controller, nil
+	return &issueController{
+		baseController: c,
+		issueService:   issueService,
+	}, nil
 }
 
 func createIssueJSONRequestBodyToCreateIssueOpts(body *api.V1ProjectsIssuesCreateJSONRequestBody) (service.CreateIssueOpts, error) {

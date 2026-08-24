@@ -32,13 +32,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { v1ProjectsIssuesGetOptions } from "@/lib/api/query-options";
+import { zIssueCreate } from "@/lib/api/schemas";
 import { v1ProjectsIssuesCreate } from "@/lib/api/sdk";
 import type {
   IssueCreate,
   Options,
   V1ProjectsIssuesCreateData,
 } from "@/lib/api/types";
-import { zIssueCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

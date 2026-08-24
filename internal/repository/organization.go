@@ -100,11 +100,11 @@ func (o UpdateOrganizationOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=organization.go -destination=organization_mock_gen.go -package=repository -mock_names "OrganizationRepository=MockOrganizationRepository"
+//go:generate go tool mockgen -source=organization.go -destination=mock/mock_organization_gen.go -package=mockrepo
 type OrganizationRepository interface {
 	Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error)
 	Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error)
-	List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error)
+	ListForUser(ctx context.Context, query OrganizationListQuery) (Page[*Organization], error)
 	Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error)
 	ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error)
 	AddMember(ctx context.Context, orgID, memberID model.ID) error
@@ -307,21 +307,16 @@ func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID, proj
 	return organization, nil
 }
 
-func (r *Neo4jOrganizationRepository) List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/List")
+func (r *Neo4jOrganizationRepository) ListForUser(ctx context.Context, query OrganizationListQuery) (Page[*Organization], error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/ListForUser")
 	defer span.End()
 
-	normalized, err := page.Normalize()
+	normalized, err := query.Page.Normalize()
 	if err != nil {
 		return Page[*Organization]{}, errors.Join(ErrOrganizationRead, err)
 	}
-	plan, err := CompileQuery(OrganizationListQuery{
-		UserID:     userID,
-		Action:     model.ActionOrganizationRead,
-		Page:       normalized,
-		Order:      SortDirectionDesc,
-		Projection: proj,
-	})
+	query.Page = normalized
+	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*Organization]{}, errors.Join(ErrOrganizationRead, err)
 	}
@@ -329,7 +324,7 @@ func (r *Neo4jOrganizationRepository) List(ctx context.Context, userID model.ID,
 	organizations := make([]*Organization, 0)
 	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
 		var readErr error
-		organizations, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(proj))
+		organizations, _, readErr = Neo4jRunQuery(ctx, tx, plan.Root, r.scan(query.Projection))
 		if readErr != nil {
 			return readErr
 		}
@@ -448,7 +443,8 @@ func (r *Neo4jOrganizationRepository) applyMemberRoleLoader(
 		rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 			UserID string
 			Roles  []string
-		}, error) {
+		}, error,
+		) {
 			userID, err := Neo4jParseValueFromRecord[string](rec, "user_id")
 			if err != nil {
 				return struct {
@@ -648,7 +644,8 @@ func clearOrganizationsKey(ctx context.Context, r *redisBaseRepository, id model
 }
 
 func clearOrganizationAllLists(ctx context.Context, r *redisBaseRepository) error {
-	return clearOrganizationsPattern(ctx, r, "List", "*", "*", "*", "*")
+	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
+	return clearOrganizationsPattern(ctx, r, "*", "ListForUser", "*")
 }
 
 // RedisCachedOrganizationRepository implements caching on the
@@ -690,16 +687,21 @@ func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID
 	return organization, nil
 }
 
-func (r *RedisCachedOrganizationRepository) List(ctx context.Context, userID model.ID, page CursorPage, proj OrganizationProjection) (Page[*Organization], error) {
+func (r *RedisCachedOrganizationRepository) ListForUser(ctx context.Context, query OrganizationListQuery) (Page[*Organization], error) {
 	var organizations Page[*Organization]
 	var err error
 
-	normalized, err := normalizedPage(page)
+	normalized, err := normalizedPage(query.Page)
 	if err != nil {
 		return Page[*Organization]{}, err
 	}
 
-	key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(proj), pageTokenValue(normalized.Token), normalized.Size)
+	query.Page = normalized
+	plan, err := CompileQuery(query)
+	if err != nil {
+		return Page[*Organization]{}, err
+	}
+	key := plan.CacheKey(model.ResourceTypeOrganization.String(), "ListForUser")
 	if err = r.cacheRepo.Get(ctx, key, &organizations); err != nil {
 		return Page[*Organization]{}, err
 	}
@@ -708,7 +710,7 @@ func (r *RedisCachedOrganizationRepository) List(ctx context.Context, userID mod
 		return organizations, nil
 	}
 
-	if organizations, err = r.organizationRepo.List(ctx, userID, normalized, proj); err != nil {
+	if organizations, err = r.organizationRepo.ListForUser(ctx, query); err != nil {
 		return Page[*Organization]{}, err
 	}
 

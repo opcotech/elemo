@@ -35,13 +35,13 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
@@ -49,11 +49,11 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.roleService, err = service.NewRoleService(
-		service.WithRoleRepository(s.RoleRepo),
-		service.WithUserRepository(s.UserRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithNotificationService(notificationService),
+		s.RoleRepo,
+		permissionService,
+		licenseService,
+		s.OrganizationRepo,
+		notificationService,
 	)
 	s.Require().NoError(err)
 }
@@ -107,7 +107,7 @@ func (s *RoleServiceIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(created.Name, role.Name)
 }
 
-func (s *RoleServiceIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *RoleServiceIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.roleService.Create(s.ctx, s.owner.ID, s.organization.ID, service.CreateRoleOpts{
 		Name: "role-one", Description: "role one description",
 	})

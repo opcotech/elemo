@@ -36,13 +36,14 @@ func (s *SearchServiceIntegrationTestSuite) SetupSuite() {
 	var err error
 	s.permissionService, err = service.NewPermissionService(
 		s.PermissionRepo,
-		service.WithRoleRepository(s.RoleRepo),
+		s.RoleRepo,
 	)
 	s.Require().NoError(err)
 
 	s.searchService, err = service.NewSearchService(
 		s.SearchRepo,
-		service.WithPermissionService(s.permissionService),
+		s.permissionService,
+		nil,
 	)
 	s.Require().NoError(err)
 }

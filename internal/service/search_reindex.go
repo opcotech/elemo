@@ -170,9 +170,9 @@ func (s *searchService) Reindex(ctx context.Context, sources SearchReindexSource
 	return nil
 }
 
-func (s *baseService) enqueueSearchIndex(ctx context.Context, id model.ID) {
-	if err := s.searchService.EnqueueIndex(ctx, id); err != nil {
-		s.logger.Warn(ctx, "failed to enqueue search index",
+func enqueueSearchIndex(ctx context.Context, logger log.Logger, searchService SearchService, id model.ID) {
+	if err := searchService.EnqueueIndex(ctx, id); err != nil {
+		logger.Warn(ctx, "failed to enqueue search index",
 			log.WithError(err),
 			log.WithValue(id.Composite()),
 		)

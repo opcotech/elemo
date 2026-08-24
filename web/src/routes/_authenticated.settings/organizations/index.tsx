@@ -2,11 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { OrganizationList } from "@/components/organizations/organization-list";
 import { loadOrganizationsWithPermissions } from "@/lib/route-data";
+import { withRouteErrors } from "@/lib/route-errors";
 
 export const Route = createFileRoute("/_authenticated/settings/organizations/")(
   {
     loader: ({ context }) =>
-      loadOrganizationsWithPermissions(context.queryClient),
+      withRouteErrors(() =>
+        loadOrganizationsWithPermissions(context.queryClient)
+      ),
     staticData: {
       breadcrumb: "Organizations",
     },

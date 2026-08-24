@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -46,7 +45,7 @@ type UpdateTeamOpts struct {
 
 // TeamService is the interface that provides methods for managing teams.
 //
-//go:generate go tool mockgen -destination=team_mock_gen.go -package=service -mock_names TeamService=MockTeamService . TeamService
+//go:generate go tool mockgen -destination=mock/mock_team_gen.go -package=mocksvc . TeamService
 type TeamService interface {
 	// Create creates a new team under an organization or project. The caller
 	// must have team.manage on the parent resource.
@@ -74,7 +73,10 @@ type TeamService interface {
 
 // teamService implements TeamService interface.
 type teamService struct {
-	*baseService
+	runtime
+	teamRepo          repository.TeamRepository
+	permissionService PermissionService
+	licenseService    LicenseService
 }
 
 func teamFromRepository(t *repository.Team) *Team {
@@ -100,15 +102,15 @@ func (s *teamService) requireScopeRead(ctx context.Context, belongsTo model.ID) 
 	if !ok {
 		return ErrNoPermission
 	}
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, action) {
-		return ErrNoPermission
+	if err := requireAction(ctx, s.permissionService, belongsTo, action); err != nil {
+		return err
 	}
 	return nil
 }
 
 func (s *teamService) requireTeamManage(ctx context.Context, belongsTo model.ID) error {
-	if !s.permissionService.CtxUserHas(ctx, belongsTo, model.ActionTeamManage) {
-		return ErrNoPermission
+	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionTeamManage); err != nil {
+		return err
 	}
 	return nil
 }
@@ -137,9 +139,9 @@ func (s *teamService) Create(ctx context.Context, belongsTo model.ID, opts Creat
 		return nil, errors.Join(ErrTeamCreate, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrTeamCreate, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrTeamCreate, err)
 	}
 
 	team, err := s.teamRepo.Create(ctx, repository.CreateTeamOpts{
@@ -368,14 +370,22 @@ func (s *teamService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 
 // NewTeamService creates a new TeamService that provides methods
 // for managing teams.
-func NewTeamService(opts ...Option) (TeamService, error) {
-	s, err := newService(opts...)
+func NewTeamService(
+	teamRepo repository.TeamRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	opts ...Option,
+) (TeamService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &teamService{
-		baseService: s,
+		runtime:           rt,
+		teamRepo:          teamRepo,
+		permissionService: permissionService,
+		licenseService:    licenseService,
 	}
 
 	if svc.teamRepo == nil {

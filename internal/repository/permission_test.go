@@ -1,8 +1,13 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
+
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
 
 	"github.com/go-redis/cache/v9"
 	"github.com/stretchr/testify/assert"
@@ -10,7 +15,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestCreateGrantOpts_Validate(t *testing.T) {
@@ -24,12 +28,12 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		opts    CreateGrantOpts
+		opts    repository.CreateGrantOpts
 		wantErr error
 	}{
 		{
 			name: "valid user principal",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     orgID,
 				Actions:   []model.Action{model.ActionOrganizationRead},
@@ -37,7 +41,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "valid team principal",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: teamID,
 				Scope:     orgID,
 				Actions:   []model.Action{model.ActionOrganizationRead},
@@ -45,7 +49,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "valid organization principal",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: orgID,
 				Scope:     projectID,
 				Actions:   []model.Action{model.ActionProjectRead},
@@ -53,7 +57,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "role id without actions",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     orgID,
 				RoleID:    &roleID,
@@ -61,7 +65,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "not a principal",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: projectID,
 				Scope:     orgID,
 				Actions:   []model.Action{model.ActionOrganizationRead},
@@ -70,7 +74,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "empty actions without role",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     orgID,
 			},
@@ -78,7 +82,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid action",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     orgID,
 				Actions:   []model.Action{"not-an-action"},
@@ -87,7 +91,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "role id wrong type",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     orgID,
 				RoleID:    &projectID,
@@ -96,7 +100,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid principal",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: model.ID{},
 				Scope:     orgID,
 				Actions:   []model.Action{model.ActionOrganizationRead},
@@ -105,7 +109,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid scope",
-			opts: CreateGrantOpts{
+			opts: repository.CreateGrantOpts{
 				Principal: userID,
 				Scope:     model.ID{},
 				Actions:   []model.Action{model.ActionOrganizationRead},
@@ -134,7 +138,7 @@ func TestCreateGrantOpts_Validate(t *testing.T) {
 func TestAuthzVisibleExistsClause(t *testing.T) {
 	t.Parallel()
 
-	clause := AuthzVisibleExistsClause("n", "$user_id", "$action")
+	clause := repository.AuthzVisibleExistsClause("n", "$user_id", "$action")
 	assert.Contains(t, clause, "ALL(authz_node IN nodes(path)")
 	assert.NotContains(t, clause, "ALL(n IN")
 	assert.NotContains(t, clause, "ALL(x IN")
@@ -144,23 +148,29 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	opts := CreateGrantOpts{
+	opts := repository.CreateGrantOpts{
 		Principal: model.MustNewID(model.ResourceTypeUser),
 		Scope:     model.MustNewID(model.ResourceTypeOrganization),
 		Actions:   []model.Action{model.ActionOrganizationRead},
 	}
-	grant := &Grant{ID: model.MustNewID(model.ResourceTypePermission), Principal: opts.Principal, Scope: opts.Scope}
+	grant := &repository.Grant{ID: model.MustNewID(model.ResourceTypePermission), Principal: opts.Principal, Scope: opts.Scope}
 
 	t.Run("creates and clears authz caches", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Create(ctx, opts).Return(grant, nil)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, opts.Principal, permissionCrossCachePatterns()),
-			permissionRepo: inner,
-		}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, opts.Principal, permissionCrossCachePatterns())...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.Create(ctx, opts)
 		require.NoError(t, err)
 		require.Equal(t, grant, got)
@@ -170,14 +180,20 @@ func TestCachedPermissionRepository_Create(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().Create(ctx, opts).Return(nil, ErrPermissionCreate)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      &redisBaseRepository{},
-			permissionRepo: inner,
-		}
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
+		inner.EXPECT().Create(ctx, opts).Return(nil, repository.ErrPermissionCreate)
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		_, err := r.Create(ctx, opts)
-		require.ErrorIs(t, err, ErrPermissionCreate)
+		require.ErrorIs(t, err, repository.ErrPermissionCreate)
 	})
 }
 
@@ -186,7 +202,7 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 
 	ctx := context.Background()
 	id := model.MustNewID(model.ResourceTypePermission)
-	grant := &Grant{
+	grant := &repository.Grant{
 		ID:        id,
 		Principal: model.MustNewID(model.ResourceTypeUser),
 		Scope:     model.MustNewID(model.ResourceTypeOrganization),
@@ -196,13 +212,19 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Get(ctx, id).Return(grant, nil)
 		inner.EXPECT().Delete(ctx, id).Return(nil)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, grant.Principal, permissionCrossCachePatterns()),
-			permissionRepo: inner,
-		}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl, ctx, grant.Principal, permissionCrossCachePatterns())...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		require.NoError(t, r.Delete(ctx, id))
 	})
 
@@ -210,27 +232,39 @@ func TestCachedPermissionRepository_Delete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Get(ctx, id).Return(grant, nil)
-		inner.EXPECT().Delete(ctx, id).Return(ErrPermissionDelete)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      &redisBaseRepository{},
-			permissionRepo: inner,
-		}
-		require.ErrorIs(t, r.Delete(ctx, id), ErrPermissionDelete)
+		inner.EXPECT().Delete(ctx, id).Return(repository.ErrPermissionDelete)
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
+		require.ErrorIs(t, r.Delete(ctx, id), repository.ErrPermissionDelete)
 	})
 
 	t.Run("get failure still deletes and skips generation bump", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
+		inner.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 		inner.EXPECT().Delete(ctx, id).Return(nil)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1),
-			permissionRepo: inner,
-		}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		require.NoError(t, r.Delete(ctx, id))
 	})
 }
@@ -246,12 +280,18 @@ func TestCachedPermissionRepository_LinkInScopeOf(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().LinkInScopeOf(ctx, child, parent).Return(nil)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1),
-			permissionRepo: inner,
-		}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl, ctx, permissionCrossCachePatterns(), -1, nil, 1)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		require.NoError(t, r.LinkInScopeOf(ctx, child, parent))
 	})
 
@@ -259,13 +299,19 @@ func TestCachedPermissionRepository_LinkInScopeOf(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().LinkInScopeOf(ctx, child, parent).Return(ErrInScopeOfLink)
-		r := &RedisCachedPermissionRepository{
-			cacheRepo:      &redisBaseRepository{},
-			permissionRepo: inner,
-		}
-		require.ErrorIs(t, r.LinkInScopeOf(ctx, child, parent), ErrInScopeOfLink)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
+		inner.EXPECT().LinkInScopeOf(ctx, child, parent).Return(repository.ErrInScopeOfLink)
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
+		require.ErrorIs(t, r.LinkInScopeOf(ctx, child, parent), repository.ErrInScopeOfLink)
 	})
 }
 
@@ -281,20 +327,32 @@ func TestCachedPermissionRepository_BumpGeneration(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		db, err := NewRedisDatabase(WithRedisClient(mock.NewUniversalClient(ctrl)))
+		db, err := repository.NewRedisDatabase(repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)))
 		require.NoError(t, err)
-		span := mock.NewMockSpan(ctrl)
+		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0)).Times(2)
-		tracer := mock.NewMockTracer(ctrl)
+		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 		tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
-		cacheRepo := mock.NewCacheBackend(ctrl)
+		cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 		cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 		cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: key, Value: int64(1)}).Return(nil)
 
-		r := &RedisCachedPermissionRepository{
-			cacheRepo: &redisBaseRepository{db: db, cache: cacheRepo, tracer: tracer, logger: mock.NewMockLogger(ctrl)},
-		}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				nil,
+				[]repository.RedisRepositoryOption{
+					repository.WithRedisDatabase(db),
+					repository.WithCacheBackend(cacheRepo),
+					repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+					repository.WithRedisRepositoryTracer(tracer),
+				}...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		require.NoError(t, r.BumpGeneration(ctx, principal))
 	})
 }
@@ -306,15 +364,24 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 	id := model.MustNewID(model.ResourceTypePermission)
 	actor := model.MustNewID(model.ResourceTypeUser)
 	resource := model.MustNewID(model.ResourceTypeOrganization)
-	grant := &Grant{ID: id, Principal: actor, Scope: resource}
+	grant := &repository.Grant{ID: id, Principal: actor, Scope: resource}
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Get(ctx, id).Return(grant, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.Get(ctx, id)
 		require.NoError(t, err)
 		require.Equal(t, grant, got)
@@ -324,33 +391,60 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().ListByPrincipal(ctx, actor).Return([]*Grant{grant}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
+		inner.EXPECT().ListByPrincipal(ctx, actor).Return([]*repository.Grant{grant}, nil)
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.ListByPrincipal(ctx, actor)
 		require.NoError(t, err)
-		require.Equal(t, []*Grant{grant}, got)
+		require.Equal(t, []*repository.Grant{grant}, got)
 	})
 
 	t.Run("ListByScope", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().ListByScope(ctx, resource).Return([]*Grant{grant}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
+		inner.EXPECT().ListByScope(ctx, resource).Return([]*repository.Grant{grant}, nil)
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.ListByScope(ctx, resource)
 		require.NoError(t, err)
-		require.Equal(t, []*Grant{grant}, got)
+		require.Equal(t, []*repository.Grant{grant}, got)
 	})
 
 	t.Run("Has", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Has(ctx, actor, resource, model.ActionOrganizationRead).Return(true, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.Has(ctx, actor, resource, model.ActionOrganizationRead)
 		require.NoError(t, err)
 		require.True(t, got)
@@ -360,9 +454,18 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().EffectiveActions(ctx, actor, resource).Return([]model.Action{model.ActionOrganizationRead}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.EffectiveActions(ctx, actor, resource)
 		require.NoError(t, err)
 		require.Equal(t, []model.Action{model.ActionOrganizationRead}, got)
@@ -372,10 +475,19 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		decision := &Decision{Allowed: true, Actor: actor, Resource: resource}
-		inner := NewMockPermissionRepository(ctrl)
+		decision := &repository.Decision{Allowed: true, Actor: actor, Resource: resource}
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().Explain(ctx, actor, resource, model.ActionOrganizationRead).Return(decision, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.Explain(ctx, actor, resource, model.ActionOrganizationRead)
 		require.NoError(t, err)
 		require.Equal(t, decision, got)
@@ -385,9 +497,18 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().ListGrantScopes(ctx, actor, model.ActionIssueRead).Return([]model.ID{resource}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.ListGrantScopes(ctx, actor, model.ActionIssueRead)
 		require.NoError(t, err)
 		require.Equal(t, []model.ID{resource}, got)
@@ -397,23 +518,19 @@ func TestCachedPermissionRepository_Passthrough(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		inner := NewMockPermissionRepository(ctrl)
+		inner := mockrepo.NewMockPermissionRepository(ctrl)
 		inner.EXPECT().ListScopeAncestry(ctx, resource).Return([]model.ID{resource}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
+		r := func() *repository.RedisCachedPermissionRepository {
+			r, err := repository.NewCachedPermissionRepository(
+				inner,
+				redisRepoOptsNoop(ctrl)...,
+			)
+			if err != nil {
+				panic(err)
+			}
+			return r
+		}()
 		got, err := r.ListScopeAncestry(ctx, resource)
-		require.NoError(t, err)
-		require.Equal(t, []model.ID{resource}, got)
-	})
-
-	t.Run("ListVisible", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		parent := model.InstallationID()
-		inner := NewMockPermissionRepository(ctrl)
-		inner.EXPECT().ListVisible(ctx, actor, model.ActionOrganizationRead, parent, model.ResourceTypeOrganization).Return([]model.ID{resource}, nil)
-		r := &RedisCachedPermissionRepository{permissionRepo: inner}
-		got, err := r.ListVisible(ctx, actor, model.ActionOrganizationRead, parent, model.ResourceTypeOrganization)
 		require.NoError(t, err)
 		require.Equal(t, []model.ID{resource}, got)
 	})

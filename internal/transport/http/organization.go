@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
 
@@ -46,6 +47,10 @@ type OrganizationController interface {
 // organizationController is the concrete implementation of OrganizationController.
 type organizationController struct {
 	*baseController
+	organizationService service.OrganizationService
+	roleService         service.RoleService
+	teamService         service.TeamService
+	userService         service.UserService
 }
 
 func (c *organizationController) V1OrganizationsCreate(ctx context.Context, request api.V1OrganizationsCreateRequestObject) (api.V1OrganizationsCreateResponseObject, error) {
@@ -61,17 +66,16 @@ func (c *organizationController) V1OrganizationsCreate(ctx context.Context, requ
 
 	organization, err := c.organizationService.Create(ctx, ownedBy, opts)
 	if err != nil {
-		if errors.Is(err, model.ErrInvalidOrganizationDetails) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		return api.V1OrganizationsCreate500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
+		default:
+			return api.V1OrganizationsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
-			},
-		}, nil
+			}}, nil
+		}
 	}
 
 	return api.V1OrganizationsCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -90,15 +94,16 @@ func (c *organizationController) V1OrganizationGet(ctx context.Context, request 
 
 	organization, err := c.organizationService.Get(ctx, organizationID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationGet200JSONResponse(organizationToDTO(organization)), nil
@@ -115,15 +120,16 @@ func (c *organizationController) V1OrganizationsGet(ctx context.Context, request
 
 	page, err := c.organizationService.List(ctx, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		default:
+			return api.V1OrganizationsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	organizationsDTO := make([]api.Organization, len(page.Items))
@@ -153,15 +159,16 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 
 	organization, err := c.organizationService.Update(ctx, organizationID, opts)
 	if err != nil {
-		if isNotFoundError(err) {
-			return api.V1OrganizationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusNotFound:
+			return api.V1OrganizationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationUpdate200JSONResponse(organizationToDTO(organization)), nil
@@ -177,15 +184,16 @@ func (c *organizationController) V1OrganizationDelete(ctx context.Context, reque
 	}
 
 	if err := c.organizationService.Delete(ctx, organizationID, pkg.DefaultPtr(request.Params.Force, false)); err != nil {
-		if isNotFoundError(err) {
-			return api.V1OrganizationDelete404JSONResponse{N404JSONResponse: notFound}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusNotFound:
+			return api.V1OrganizationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationDelete204Response{}, nil
@@ -207,18 +215,18 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 
 	users, err := c.organizationService.ListMembers(ctx, organizationID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationMembersGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	membersDTO := make([]api.OrganizationMember, len(users.Items))
@@ -247,15 +255,16 @@ func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, r
 	}
 
 	if err := c.organizationService.AddMember(ctx, organizationID, userID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationMembersAdd201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -307,21 +316,18 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 		// For now, we'll call InviteMember and then get the user
 		inviteErr := c.organizationService.InviteMember(ctx, organizationID, inviteOpts)
 		if inviteErr != nil {
-			if errors.Is(inviteErr, service.ErrNoPermission) {
+			switch classifyServiceError(inviteErr) {
+			case http.StatusBadRequest:
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(inviteErr)}, nil
+			case http.StatusForbidden:
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
-			}
-			if errors.Is(inviteErr, service.ErrOrganizationMemberAlreadyExists) {
-				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberAlreadyExists)}, nil
-			}
-			if errors.Is(inviteErr, service.ErrOrganizationMemberInvalidStatus) {
-				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberInvalidStatus)}, nil
-			}
-			if isNotFoundError(inviteErr) {
+			case http.StatusNotFound:
 				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			default:
+				return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+					Message: inviteErr.Error(),
+				}}, nil
 			}
-			return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-				Message: inviteErr.Error(),
-			}}, nil
 		}
 
 		// Get the user after invitation
@@ -337,21 +343,18 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 		// Invite existing user
 		inviteErr := c.organizationService.InviteMember(ctx, organizationID, inviteOpts)
 		if inviteErr != nil {
-			if errors.Is(inviteErr, service.ErrNoPermission) {
+			switch classifyServiceError(inviteErr) {
+			case http.StatusBadRequest:
+				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(inviteErr)}, nil
+			case http.StatusForbidden:
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
-			}
-			if errors.Is(inviteErr, service.ErrOrganizationMemberAlreadyExists) {
-				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberAlreadyExists)}, nil
-			}
-			if errors.Is(inviteErr, service.ErrOrganizationMemberInvalidStatus) {
-				return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrOrganizationMemberInvalidStatus)}, nil
-			}
-			if isNotFoundError(inviteErr) {
+			case http.StatusNotFound:
 				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			default:
+				return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+					Message: inviteErr.Error(),
+				}}, nil
 			}
-			return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-				Message: inviteErr.Error(),
-			}}, nil
 		}
 	}
 
@@ -375,15 +378,16 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 	}
 
 	if err := c.organizationService.RemoveMember(ctx, organizationID, userID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationMemberRemove204Response{}, nil
@@ -404,15 +408,16 @@ func (c *organizationController) V1OrganizationMemberInviteRevoke(ctx context.Co
 	}
 
 	if err := c.organizationService.RevokeInvitation(ctx, organizationID, userID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationMemberInviteRevoke403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationMemberInviteRevoke404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationMemberInviteRevoke500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationMemberInviteRevoke500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationMemberInviteRevoke204Response{}, nil
@@ -441,15 +446,16 @@ func (c *organizationController) V1OrganizationMembersAccept(ctx context.Context
 		Token:    token,
 		Password: userPassword,
 	}); err != nil {
-		if errors.Is(err, service.ErrInvalidToken) || errors.Is(err, service.ErrExpiredToken) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationMembersAccept404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationMembersAccept500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationMembersAccept500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationMembersAccept204Response{}, nil
@@ -476,18 +482,18 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 
 	role, err := c.roleService.Create(ctx, ownedBy, organizationID, opts)
 	if err != nil {
-		if errors.Is(err, model.ErrInvalidRoleDetails) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationRolesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationRolesCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationRolesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationRolesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationRolesCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -511,18 +517,18 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 
 	roles, err := c.roleService.ListBelongsTo(ctx, organizationID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationRolesGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationRolesGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationRolesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationRolesGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	rolesDTO := make([]api.Role, len(roles.Items))
@@ -552,15 +558,16 @@ func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, requ
 
 	role, err := c.roleService.Get(ctx, roleID, organizationID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationRoleGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationRoleGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationRoleGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationRoleGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationRoleGet200JSONResponse(roleToDTO(role)), nil
@@ -587,15 +594,16 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 
 	role, err := c.roleService.Update(ctx, roleID, organizationID, opts)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationRoleUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationRoleUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationRoleUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationRoleUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationRoleUpdate200JSONResponse(roleToDTO(role)), nil
@@ -616,15 +624,16 @@ func (c *organizationController) V1OrganizationRoleDelete(ctx context.Context, r
 	}
 
 	if err := c.roleService.Delete(ctx, roleID, organizationID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationRoleDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationRoleDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationRoleDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationRoleDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationRoleDelete204Response{}, nil
@@ -643,18 +652,18 @@ func (c *organizationController) V1OrganizationTeamsCreate(ctx context.Context, 
 
 	team, err := c.teamService.Create(ctx, organizationID, opts)
 	if err != nil {
-		if errors.Is(err, model.ErrInvalidTeamDetails) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationTeamsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamsCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -678,18 +687,18 @@ func (c *organizationController) V1OrganizationTeamsGet(ctx context.Context, req
 
 	teams, err := c.teamService.ListBelongsTo(ctx, organizationID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationTeamsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamsGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	teamsDTO := make([]api.Team, len(teams.Items))
@@ -719,15 +728,16 @@ func (c *organizationController) V1OrganizationTeamGet(ctx context.Context, requ
 
 	team, err := c.teamService.Get(ctx, teamID, organizationID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamGet200JSONResponse(teamToDTO(team)), nil
@@ -751,18 +761,18 @@ func (c *organizationController) V1OrganizationTeamUpdate(ctx context.Context, r
 
 	team, err := c.teamService.Update(ctx, teamID, organizationID, opts)
 	if err != nil {
-		if errors.Is(err, model.ErrInvalidTeamDetails) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationTeamUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamUpdate200JSONResponse(teamToDTO(team)), nil
@@ -783,15 +793,16 @@ func (c *organizationController) V1OrganizationTeamDelete(ctx context.Context, r
 	}
 
 	if err := c.teamService.Delete(ctx, teamID, organizationID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamDelete204Response{}, nil
@@ -818,18 +829,18 @@ func (c *organizationController) V1OrganizationTeamMembersGet(ctx context.Contex
 
 	users, err := c.teamService.ListMembers(ctx, teamID, organizationID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1OrganizationTeamMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamMembersGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamMembersGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamMembersGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	usersDTO := make([]api.User, len(users.Items))
@@ -867,15 +878,16 @@ func (c *organizationController) V1OrganizationTeamMembersAdd(ctx context.Contex
 	}
 
 	if err := c.teamService.AddMember(ctx, teamID, userID, organizationID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamMembersAdd201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -903,44 +915,57 @@ func (c *organizationController) V1OrganizationTeamMemberRemove(ctx context.Cont
 	}
 
 	if err := c.teamService.RemoveMember(ctx, teamID, userID, organizationID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1OrganizationTeamMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1OrganizationTeamMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1OrganizationTeamMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1OrganizationTeamMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1OrganizationTeamMemberRemove204Response{}, nil
 }
 
 // NewOrganizationController creates a new OrganizationController.
-func NewOrganizationController(opts ...ControllerOption) (OrganizationController, error) {
+func NewOrganizationController(
+	organizationService service.OrganizationService,
+	roleService service.RoleService,
+	teamService service.TeamService,
+	userService service.UserService,
+	opts ...ControllerOption,
+) (OrganizationController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &organizationController{
-		baseController: c,
-	}
-
-	if controller.organizationService == nil {
+	if organizationService == nil {
 		return nil, ErrNoOrganizationService
 	}
 
-	if controller.roleService == nil {
+	if roleService == nil {
 		return nil, ErrNoRoleService
 	}
 
-	if controller.teamService == nil {
+	if teamService == nil {
 		return nil, ErrNoTeamService
 	}
 
-	return controller, nil
+	if userService == nil {
+		return nil, ErrNoUserService
+	}
+
+	return &organizationController{
+		baseController:      c,
+		organizationService: organizationService,
+		roleService:         roleService,
+		teamService:         teamService,
+		userService:         userService,
+	}, nil
 }
 
 func createOrganizationJSONRequestBodyToCreateOrganizationOpts(body *api.V1OrganizationsCreateJSONRequestBody) service.CreateOrganizationOpts {

@@ -1,0 +1,158 @@
+ProjectStatus:
+  type: string
+  enum:
+    - active
+    - pending
+  example: active
+  description: Status of the project.
+  title: ProjectStatus
+PartialProject:
+  title: PartialProject
+  type: object
+  description: A simplified project that can be used in lists.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      key: ENG
+      name: Engineering Project
+      description: Main engineering project
+      logo: "https://example.com/logo.png"
+      status: active
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the project.
+      example: 9bsv0s46s6s002p9ltq0
+    key:
+      type: string
+      description: Key of the project.
+      minLength: 2
+      maxLength: 6
+      example: ENG
+    name:
+      type: string
+      description: Name of the project.
+      minLength: 3
+      maxLength: 120
+      example: Engineering Project
+    description:
+      type: string
+      description: Description of the project.
+      maxLength: 500
+      example: Main engineering project
+      minLength: 10
+      nullable: true
+    logo:
+      type: string
+      description: Logo of the project.
+      format: uri
+      example: "https://example.com/logo.png"
+      maxLength: 2000
+      nullable: true
+    status:
+      $ref: "#/components/schemas/ProjectStatus"
+  required:
+    - id
+    - key
+    - name
+    - status
+Project:
+  title: Project
+  type: object
+  description: A project in a namespace.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      key: ENG
+      name: Engineering Project
+      description: Main engineering project
+      logo: "https://example.com/logo.png"
+      status: active
+      teams:
+        - 9bsv0s46s6s002p9ltq0
+      document_count: 1
+      issue_count: 1
+      created_at: "2023-01-01T00:00:00Z"
+      updated_at: null
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the project.
+      example: 9bsv0s46s6s002p9ltq0
+    key:
+      type: string
+      description: Key of the project.
+      minLength: 2
+      maxLength: 6
+      example: ENG
+    name:
+      type: string
+      description: Name of the project.
+      minLength: 3
+      maxLength: 120
+      example: Engineering Project
+    description:
+      type: string
+      description: Description of the project.
+      maxLength: 500
+      example: Main engineering project
+      minLength: 10
+      nullable: true
+    logo:
+      type: string
+      description: Logo of the project.
+      format: uri
+      example: "https://example.com/logo.png"
+      maxLength: 2000
+      nullable: true
+    status:
+      $ref: "#/components/schemas/ProjectStatus"
+    teams:
+      type: array
+      description: IDs of the teams in the project.
+      uniqueItems: true
+      items:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents that belong to the project when projected.
+      example: 4
+      nullable: true
+    issue_count:
+      type: integer
+      format: int64
+      description: Number of issues that belong to the project when projected.
+      example: 12
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the project was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the project was updated.
+      nullable: true
+  required:
+    - id
+    - key
+    - name
+    - status
+    - teams
+    - created_at
+    - updated_at
+ProjectPage:
+  title: ProjectPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/Project"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

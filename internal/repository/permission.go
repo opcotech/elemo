@@ -81,7 +81,7 @@ type Decision struct {
 	RoleID    *model.ID
 }
 
-//go:generate go tool mockgen -source=permission.go -destination=permission_mock_gen.go -package=repository -mock_names "PermissionRepository=MockPermissionRepository"
+//go:generate go tool mockgen -source=permission.go -destination=mock/mock_permission_gen.go -package=mockrepo
 type PermissionRepository interface {
 	Create(ctx context.Context, opts CreateGrantOpts) (*Grant, error)
 	Get(ctx context.Context, id model.ID) (*Grant, error)
@@ -91,7 +91,6 @@ type PermissionRepository interface {
 	Has(ctx context.Context, actor, resource model.ID, action model.Action) (bool, error)
 	EffectiveActions(ctx context.Context, actor, resource model.ID) ([]model.Action, error)
 	Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error)
-	ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error)
 	ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error)
 	ListScopeAncestry(ctx context.Context, resource model.ID) ([]model.ID, error)
 	LinkInScopeOf(ctx context.Context, child, parent model.ID) error
@@ -476,62 +475,6 @@ func (r *Neo4jPermissionRepository) Explain(ctx context.Context, actor, resource
 	return decision, nil
 }
 
-// ListVisible returns IDs of resourceType that actor may perform action on.
-// When parent is the installation, every matching node is considered;
-// otherwise only direct IN_SCOPE_OF children of parent are listed.
-func (r *Neo4jPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
-	ctx, span := r.tracer.Start(ctx, "repository.neo4j.PermissionRepository/ListVisible")
-	defer span.End()
-
-	if err := actor.Validate(); err != nil {
-		return nil, errors.Join(ErrPermissionRead, err)
-	}
-	if err := action.Validate(); err != nil {
-		return nil, errors.Join(ErrPermissionRead, err)
-	}
-	if err := parent.Validate(); err != nil {
-		return nil, errors.Join(ErrPermissionRead, err)
-	}
-	if !resourceType.IsAResourceType() {
-		return nil, errors.Join(ErrPermissionRead, model.ErrInvalidResourceType)
-	}
-
-	params := map[string]any{
-		"user_id":       actor.String(),
-		"action":        action.String(),
-		"active_status": model.UserStatusActive.String(),
-	}
-
-	var cypher string
-	if parent.Type == model.ResourceTypeInstallation {
-		cypher = `
-		MATCH (n:` + resourceType.String() + `)
-		WHERE ` + AuthzVisibleExistsClause("n", "$user_id", "$action") + `
-		RETURN n.id AS id`
-	} else {
-		cypher = `
-		MATCH (child:` + resourceType.String() + `)-[:` + EdgeKindInScopeOf.String() + `]->(parent:` + parent.Label() + ` {id: $parent_id})
-		WHERE ` + AuthzVisibleExistsClause("child", "$user_id", "$action") + `
-		RETURN child.id AS id`
-		params["parent_id"] = parent.String()
-	}
-
-	ids, err := Neo4jExecuteReadAndReadAll(ctx, r.db, cypher, params, func(rec *neo4j.Record) (model.ID, error) {
-		raw, err := Neo4jParseValueFromRecord[string](rec, "id")
-		if err != nil {
-			return model.ID{}, err
-		}
-		return model.NewIDFromString(raw, resourceType.String())
-	})
-	if err != nil {
-		return nil, errors.Join(ErrPermissionRead, err)
-	}
-	if ids == nil {
-		ids = []model.ID{}
-	}
-	return ids, nil
-}
-
 // ListGrantScopes returns distinct scopes the actor holds action on via a
 // principal (the actor, a team, or an organization) GRANTED edge. It does not
 // expand descendants; callers intersect these IDs with indexed scope ancestry.
@@ -873,10 +816,6 @@ func (c *RedisCachedPermissionRepository) EffectiveActions(ctx context.Context, 
 
 func (c *RedisCachedPermissionRepository) Explain(ctx context.Context, actor, resource model.ID, action model.Action) (*Decision, error) {
 	return c.permissionRepo.Explain(ctx, actor, resource, action)
-}
-
-func (c *RedisCachedPermissionRepository) ListVisible(ctx context.Context, actor model.ID, action model.Action, parent model.ID, resourceType model.ResourceType) ([]model.ID, error) {
-	return c.permissionRepo.ListVisible(ctx, actor, action, parent, resourceType)
 }
 
 func (c *RedisCachedPermissionRepository) ListGrantScopes(ctx context.Context, actor model.ID, action model.Action) ([]model.ID, error) {

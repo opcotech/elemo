@@ -32,13 +32,14 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 
 	permissionSvc, err := service.NewPermissionService(
 		permissionRepo,
+		nil,
 	)
 	require.NoError(t, err)
 
 	licenseSvc, err := service.NewLicenseService(
 		testutil.ParseLicense(t),
 		licenseRepo,
-		service.WithPermissionService(permissionSvc),
+		permissionSvc,
 	)
 	require.NoError(t, err)
 

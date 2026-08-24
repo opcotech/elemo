@@ -75,4 +75,16 @@ export default [...tanstackConfig, {
     "no-shadow": "warn",
     "@typescript-eslint/array-type": ["error", { default: "array" }],
   },
+}, {
+  files: ["src/**/*.{js,jsx,ts,tsx}", "tests/e2e/**/*.{js,jsx,ts,tsx}"],
+  ignores: ["src/lib/api/**", "src/lib/client/**", "tests/e2e/api/client.ts"],
+  rules: {
+    "no-restricted-imports": ["error", {
+      patterns: [{
+        group: ["@/lib/client", "@/lib/client/*"],
+        message:
+          "Import API types and SDK from @/lib/api/{types,sdk,query-options,mutation-options,schemas}.",
+      }],
+    }],
+  },
 }, ...storybook.configs["flat/recommended"]];

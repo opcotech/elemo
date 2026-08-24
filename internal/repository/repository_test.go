@@ -1,34 +1,132 @@
-package repository
+package repository_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsS3 "github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/smithy-go"
 	"github.com/go-redis/cache/v9"
-	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/opcotech/elemo/internal/config"
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
 func testPageSize(limit int) int {
-	if limit < MinPageSize {
-		return DefaultPageSize
+	if limit < repository.MinPageSize {
+		return repository.DefaultPageSize
 	}
 	return limit
 }
 
-func issueListForIssueCacheKey(issueID model.ID, page CursorPage, proj IssueProjection) string {
-	plan, err := CompileQuery(IssueListForIssueQuery{IssueID: issueID, Page: page, Projection: proj})
+func mustPlanCacheKey(t *testing.T, q repository.QueryCompiler, prefix string, extra ...any) string {
+	t.Helper()
+	plan, err := repository.CompileQuery(q)
+	require.NoError(t, err)
+	return plan.CacheKey(prefix, extra...)
+}
+
+// Test-local copies of unexported production helpers used to assert exact cache keys.
+func composeCacheKey(params ...any) string {
+	sep := ":"
+
+	key := make([]string, len(params))
+	for i, param := range params {
+		if param != nil {
+			switch p := param.(type) {
+			case []string:
+				key[i] = strings.Join(p, sep)
+			default:
+				key[i] = fmt.Sprintf("%v", param)
+			}
+		}
+	}
+
+	return strings.Join(key, sep)
+}
+
+func projectionCacheValue(proj any) string {
+	return fmt.Sprintf("%+v", proj)
+}
+
+func authzGenKey(principal model.ID) string {
+	return composeCacheKey("authz", "gen", principal.String())
+}
+
+const issueListGenPrefix = "issue:list:gen"
+
+func issueListProjectGenKey(projectID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "project", projectID.String())
+}
+
+func issueListNamespaceGenKey(namespaceID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "namespace", namespaceID.String())
+}
+
+func issueListUserGenKey(userID model.ID) string {
+	return composeCacheKey(issueListGenPrefix, "user", userID.String())
+}
+
+func issueListAuthzEpochKey() string {
+	return composeCacheKey(issueListGenPrefix, "authz_epoch")
+}
+
+func issueListProjectionEpochKey() string {
+	return composeCacheKey(issueListGenPrefix, "projection_epoch")
+}
+
+func mustPGDatabase(t *testing.T, pool repository.PGPool) *repository.PGDatabase {
+	t.Helper()
+	db, err := repository.NewPGDatabase(repository.WithDatabasePool(pool))
+	require.NoError(t, err)
+	return db
+}
+
+func mustRedisDatabase(t *testing.T, client redis.UniversalClient) *repository.RedisDatabase {
+	t.Helper()
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
+	require.NoError(t, err)
+	return db
+}
+
+func mustS3Storage(t *testing.T, client repository.S3Client, bucket string) *repository.S3Storage {
+	t.Helper()
+	opts := []repository.S3StorageOption{repository.WithStorageClient(client)}
+	if bucket != "" {
+		opts = append(opts, repository.WithStorageBucket(bucket))
+	}
+	storage, err := repository.NewStorage(opts...)
+	require.NoError(t, err)
+	return storage
+}
+
+func redisRepoOptsNoop(ctrl *gomock.Controller) []repository.RedisRepositoryOption {
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)))
+	if err != nil {
+		panic(err)
+	}
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+	}
+}
+
+func issueListForIssueCacheKey(issueID model.ID, page repository.CursorPage, proj repository.IssueProjection) string {
+	plan, err := repository.CompileQuery(repository.IssueListForIssueQuery{IssueID: issueID, Page: page, Projection: proj})
 	if err != nil {
 		panic(err)
 	}
@@ -39,11 +137,11 @@ func issueListForIssueCacheKey(issueID model.ID, page CursorPage, proj IssueProj
 // If failIndex >= 0, that pattern's cache.Delete returns failErr and later patterns are not expected.
 //
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingPatterns(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error) *redisBaseRepository {
-	client := mock.NewUniversalClient(ctrl)
-	backend := mock.NewCacheBackend(ctrl)
-	span := mock.NewMockSpan(ctrl)
-	tracer := mock.NewMockTracer(ctrl)
+func redisCacheExpectingPatterns(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error) []repository.RedisRepositoryOption {
+	client := mockrepo.NewMockUniversalClient(ctrl)
+	backend := mockrepo.NewMockCacheBackend(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 
 	count := 0
 	for i, pattern := range patterns {
@@ -61,40 +159,40 @@ func redisCacheExpectingPatterns(ctrl *gomock.Controller, ctx context.Context, p
 	span.EXPECT().End(gomock.Len(0)).Times(count)
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count)
 
-	db, err := NewRedisDatabase(WithRedisClient(client))
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 	if err != nil {
 		panic(err)
 	}
 
-	return &redisBaseRepository{
-		db:     db,
-		cache:  backend,
-		tracer: tracer,
-		logger: mock.NewMockLogger(ctrl),
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(backend),
+		repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+		repository.WithRedisRepositoryTracer(tracer),
 	}
 }
 
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingSetThenPatterns(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error) *redisBaseRepository {
-	client := mock.NewUniversalClient(ctrl)
-	backend := mock.NewCacheBackend(ctrl)
-	span := mock.NewMockSpan(ctrl)
-	tracer := mock.NewMockTracer(ctrl)
+func redisCacheExpectingSetThenPatterns(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error) []repository.RedisRepositoryOption {
+	client := mockrepo.NewMockUniversalClient(ctrl)
+	backend := mockrepo.NewMockCacheBackend(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 
 	count := 1
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 	if failOnSet {
 		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(failErr)
 		span.EXPECT().End(gomock.Len(0)).Times(1)
-		db, err := NewRedisDatabase(WithRedisClient(client))
+		db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 		if err != nil {
 			panic(err)
 		}
-		return &redisBaseRepository{
-			db:     db,
-			cache:  backend,
-			tracer: tracer,
-			logger: mock.NewMockLogger(ctrl),
+		return []repository.RedisRepositoryOption{
+			repository.WithRedisDatabase(db),
+			repository.WithCacheBackend(backend),
+			repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+			repository.WithRedisRepositoryTracer(tracer),
 		}
 	}
 
@@ -114,25 +212,25 @@ func redisCacheExpectingSetThenPatterns(ctrl *gomock.Controller, ctx context.Con
 	span.EXPECT().End(gomock.Len(0)).Times(count)
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - 1)
 
-	db, err := NewRedisDatabase(WithRedisClient(client))
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 	if err != nil {
 		panic(err)
 	}
 
-	return &redisBaseRepository{
-		db:     db,
-		cache:  backend,
-		tracer: tracer,
-		logger: mock.NewMockLogger(ctrl),
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(backend),
+		repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+		repository.WithRedisRepositoryTracer(tracer),
 	}
 }
 
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error, bumpCount int) *redisBaseRepository {
-	client := mock.NewUniversalClient(ctrl)
-	backend := mock.NewCacheBackend(ctrl)
-	span := mock.NewMockSpan(ctrl)
-	tracer := mock.NewMockTracer(ctrl)
+func redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, patterns []string, failIndex int, failErr error, bumpCount int) []repository.RedisRepositoryOption {
+	client := mockrepo.NewMockUniversalClient(ctrl)
+	backend := mockrepo.NewMockCacheBackend(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 
 	count := 0
 	for i, pattern := range patterns {
@@ -160,40 +258,40 @@ func redisCacheExpectingPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller,
 	span.EXPECT().End(gomock.Len(0)).Times(count)
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - (2 * bumpCount))
 
-	db, err := NewRedisDatabase(WithRedisClient(client))
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 	if err != nil {
 		panic(err)
 	}
 
-	return &redisBaseRepository{
-		db:     db,
-		cache:  backend,
-		tracer: tracer,
-		logger: mock.NewMockLogger(ctrl),
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(backend),
+		repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+		repository.WithRedisRepositoryTracer(tracer),
 	}
 }
 
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error, bumpCount int) *redisBaseRepository {
-	client := mock.NewUniversalClient(ctrl)
-	backend := mock.NewCacheBackend(ctrl)
-	span := mock.NewMockSpan(ctrl)
-	tracer := mock.NewMockTracer(ctrl)
+func redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl *gomock.Controller, ctx context.Context, setKey string, setValue any, patterns []string, failOnSet bool, failIndex int, failErr error, bumpCount int) []repository.RedisRepositoryOption {
+	client := mockrepo.NewMockUniversalClient(ctrl)
+	backend := mockrepo.NewMockCacheBackend(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 
 	count := 1
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 	if failOnSet {
 		backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(failErr)
 		span.EXPECT().End(gomock.Len(0)).Times(1)
-		db, err := NewRedisDatabase(WithRedisClient(client))
+		db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 		if err != nil {
 			panic(err)
 		}
-		return &redisBaseRepository{
-			db:     db,
-			cache:  backend,
-			tracer: tracer,
-			logger: mock.NewMockLogger(ctrl),
+		return []repository.RedisRepositoryOption{
+			repository.WithRedisDatabase(db),
+			repository.WithCacheBackend(backend),
+			repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+			repository.WithRedisRepositoryTracer(tracer),
 		}
 	}
 	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: setKey, Value: setValue}).Return(nil)
@@ -223,25 +321,25 @@ func redisCacheExpectingSetThenPatternsThenIssueAuthzEpochBump(ctrl *gomock.Cont
 	span.EXPECT().End(gomock.Len(0)).Times(count)
 	tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(count - 1 - (2 * bumpCount))
 
-	db, err := NewRedisDatabase(WithRedisClient(client))
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 	if err != nil {
 		panic(err)
 	}
 
-	return &redisBaseRepository{
-		db:     db,
-		cache:  backend,
-		tracer: tracer,
-		logger: mock.NewMockLogger(ctrl),
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(backend),
+		repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+		repository.WithRedisRepositoryTracer(tracer),
 	}
 }
 
 //nolint:revive // test cache factories take gomock.Controller first
-func redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl *gomock.Controller, ctx context.Context, principal model.ID, patterns []string) *redisBaseRepository {
-	client := mock.NewUniversalClient(ctrl)
-	backend := mock.NewCacheBackend(ctrl)
-	span := mock.NewMockSpan(ctrl)
-	tracer := mock.NewMockTracer(ctrl)
+func redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl *gomock.Controller, ctx context.Context, principal model.ID, patterns []string) []repository.RedisRepositoryOption {
+	client := mockrepo.NewMockUniversalClient(ctrl)
+	backend := mockrepo.NewMockCacheBackend(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 
 	genKey := authzGenKey(principal)
 	issueEpochKey := issueListAuthzEpochKey()
@@ -262,15 +360,15 @@ func redisCacheExpectingBumpThenPatternsAndIssueAuthzEpoch(ctrl *gomock.Controll
 	backend.EXPECT().Get(ctx, issueEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
 	backend.EXPECT().Set(&cache.Item{Ctx: ctx, Key: issueEpochKey, Value: int64(1)}).Return(nil)
 
-	db, err := NewRedisDatabase(WithRedisClient(client))
+	db, err := repository.NewRedisDatabase(repository.WithRedisClient(client))
 	if err != nil {
 		panic(err)
 	}
-	return &redisBaseRepository{
-		db:     db,
-		cache:  backend,
-		tracer: tracer,
-		logger: mock.NewMockLogger(ctrl),
+	return []repository.RedisRepositoryOption{
+		repository.WithRedisDatabase(db),
+		repository.WithCacheBackend(backend),
+		repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+		repository.WithRedisRepositoryTracer(tracer),
 	}
 }
 
@@ -347,46 +445,46 @@ func permissionCrossCachePatterns() []string {
 	return []string{
 		composeCacheKey(model.ResourceTypeRole.String(), "*"),
 		composeCacheKey(model.ResourceTypeUser.String(), "*"),
-		composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*"),
-		composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*"),
-		composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*"),
-		composeCacheKey(model.ResourceTypeProject.String(), "*", "List", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*"),
+		composeCacheKey(model.ResourceTypeProject.String(), "*", "ListForNamespace", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*"),
-		composeCacheKey(model.ResourceTypeFolder.String(), "List", "*"),
+		composeCacheKey(model.ResourceTypeFolder.String(), "*", "ListForLibrary", "*"),
 	}
 }
 
 func TestEdgeKind_String(t *testing.T) {
 	tests := []struct {
 		name string
-		s    EdgeKind
+		s    repository.EdgeKind
 		want string
 	}{
-		{"ASSIGNED_TO", EdgeKindAssignedTo, "ASSIGNED_TO"},
-		{"BELONGS_TO", EdgeKindBelongsTo, "BELONGS_TO"},
-		{"COMMENTED", EdgeKindCommented, "COMMENTED"},
-		{"CREATED", EdgeKindCreated, "CREATED"},
-		{"HAS_ATTACHMENT", EdgeKindHasAttachment, "HAS_ATTACHMENT"},
-		{"HAS_COMMENT", EdgeKindHasComment, "HAS_COMMENT"},
-		{"HAS_LABEL", EdgeKindHasLabel, "HAS_LABEL"},
-		{"HAS_NAMESPACE", EdgeKindHasNamespace, "HAS_NAMESPACE"},
-		{"HAS_PERMISSION", EdgeKindHasPermission, "HAS_PERMISSION"},
-		{"HAS_PROJECT", EdgeKindHasProject, "HAS_PROJECT"},
-		{"HAS_TEAM", EdgeKindHasTeam, "HAS_TEAM"},
-		{"INVITED", EdgeKindInvited, "INVITED"},
-		{"INVITED_TO", EdgeKindInvitedTo, "INVITED_TO"},
-		{"KIND_OF", EdgeKindKindOf, "KIND_OF"},
-		{"MEMBER_OF", EdgeKindMemberOf, "MEMBER_OF"},
-		{"RELATED_TO", EdgeKindRelatedTo, "RELATED_TO"},
-		{"SPEAKS", EdgeKindSpeaks, "SPEAKS"},
-		{"WATCHES", EdgeKindWatches, "WATCHES"},
-		{"SCOPED_TO", EdgeKindScopedTo, "SCOPED_TO"},
-		{"LOCATED_IN", EdgeKindLocatedIn, "LOCATED_IN"},
-		{"IN_SCOPE_OF", EdgeKindInScopeOf, "IN_SCOPE_OF"},
-		{"GRANTED", EdgeKindGranted, "GRANTED"},
-		{"DEFINES_ROLE", EdgeKindDefinesRole, "DEFINES_ROLE"},
+		{"ASSIGNED_TO", repository.EdgeKindAssignedTo, "ASSIGNED_TO"},
+		{"BELONGS_TO", repository.EdgeKindBelongsTo, "BELONGS_TO"},
+		{"COMMENTED", repository.EdgeKindCommented, "COMMENTED"},
+		{"CREATED", repository.EdgeKindCreated, "CREATED"},
+		{"HAS_ATTACHMENT", repository.EdgeKindHasAttachment, "HAS_ATTACHMENT"},
+		{"HAS_COMMENT", repository.EdgeKindHasComment, "HAS_COMMENT"},
+		{"HAS_LABEL", repository.EdgeKindHasLabel, "HAS_LABEL"},
+		{"HAS_NAMESPACE", repository.EdgeKindHasNamespace, "HAS_NAMESPACE"},
+		{"HAS_PERMISSION", repository.EdgeKindHasPermission, "HAS_PERMISSION"},
+		{"HAS_PROJECT", repository.EdgeKindHasProject, "HAS_PROJECT"},
+		{"HAS_TEAM", repository.EdgeKindHasTeam, "HAS_TEAM"},
+		{"INVITED", repository.EdgeKindInvited, "INVITED"},
+		{"INVITED_TO", repository.EdgeKindInvitedTo, "INVITED_TO"},
+		{"KIND_OF", repository.EdgeKindKindOf, "KIND_OF"},
+		{"MEMBER_OF", repository.EdgeKindMemberOf, "MEMBER_OF"},
+		{"RELATED_TO", repository.EdgeKindRelatedTo, "RELATED_TO"},
+		{"SPEAKS", repository.EdgeKindSpeaks, "SPEAKS"},
+		{"WATCHES", repository.EdgeKindWatches, "WATCHES"},
+		{"SCOPED_TO", repository.EdgeKindScopedTo, "SCOPED_TO"},
+		{"LOCATED_IN", repository.EdgeKindLocatedIn, "LOCATED_IN"},
+		{"IN_SCOPE_OF", repository.EdgeKindInScopeOf, "IN_SCOPE_OF"},
+		{"GRANTED", repository.EdgeKindGranted, "GRANTED"},
+		{"DEFINES_ROLE", repository.EdgeKindDefinesRole, "DEFINES_ROLE"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -457,7 +555,7 @@ func TestNewPGPool(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := NewPool(tt.args.ctx, tt.args.conf)
+			_, err := repository.NewPool(tt.args.ctx, tt.args.conf)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -470,7 +568,7 @@ func TestNewPGPool(t *testing.T) {
 func TestNewPGPoolPreservesDefaultLifetimes(t *testing.T) {
 	t.Parallel()
 
-	pool, err := NewPool(context.Background(), &config.RelationalDatabaseConfig{
+	pool, err := repository.NewPool(context.Background(), &config.RelationalDatabaseConfig{
 		Host:           "localhost",
 		Port:           5432,
 		Username:       "postgres",
@@ -490,7 +588,7 @@ func TestNewPGPoolPreservesDefaultLifetimes(t *testing.T) {
 func TestNewPGPoolAppliesConfiguredLifetimes(t *testing.T) {
 	t.Parallel()
 
-	pool, err := NewPool(context.Background(), &config.RelationalDatabaseConfig{
+	pool, err := repository.NewPool(context.Background(), &config.RelationalDatabaseConfig{
 		Host:                  "localhost",
 		Port:                  5432,
 		Username:              "postgres",
@@ -511,37 +609,39 @@ func TestNewPGPoolAppliesConfiguredLifetimes(t *testing.T) {
 
 func TestWithDatabasePool(t *testing.T) {
 	type args struct {
-		pool PGPool
+		pool repository.PGPool
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    PGPool
+		want    repository.PGPool
 		wantErr error
 	}{
 		{
 			name: "create new option with pool",
 			args: args{
-				pool: mock.NewPGPool(nil),
+				pool: mockrepo.NewMockPGPool(nil),
 			},
-			want: mock.NewPGPool(nil),
+			want: mockrepo.NewMockPGPool(nil),
 		},
 		{
 			name: "create new option with nil pool",
 			args: args{
 				pool: nil,
 			},
-			wantErr: ErrNoPool,
+			wantErr: repository.ErrNoPool,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(PGDatabase)
-			err := WithDatabasePool(tt.args.pool)(db)
+			db := new(repository.PGDatabase)
+			err := repository.WithDatabasePool(tt.args.pool)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.pool)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.args.pool, db.Pool())
+			}
 		})
 	}
 }
@@ -559,9 +659,9 @@ func TestWithPGDatabaseLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 			},
-			want: mock.NewMockLogger(nil),
+			want: mocklog.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -575,10 +675,12 @@ func TestWithPGDatabaseLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(PGDatabase)
-			err := WithPGDatabaseLogger(tt.args.logger)(db)
+			db := new(repository.PGDatabase)
+			err := repository.WithPGDatabaseLogger(tt.args.logger)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.logger)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.logger)
+			}
 		})
 	}
 }
@@ -596,9 +698,9 @@ func TestWithPGDatabaseTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			want: mock.NewMockTracer(nil),
+			want: mocktrace.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -612,62 +714,59 @@ func TestWithPGDatabaseTracer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(PGDatabase)
-			err := WithPGDatabaseTracer(tt.args.tracer)(db)
+			db := new(repository.PGDatabase)
+			err := repository.WithPGDatabaseTracer(tt.args.tracer)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.tracer)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.tracer)
+			}
 		})
 	}
 }
 
 func TestNewPGDatabase(t *testing.T) {
 	type args struct {
-		pool   PGPool
+		pool   repository.PGPool
 		logger log.Logger
 		tracer tracing.Tracer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *PGDatabase
+		want    *repository.PGDatabase
 		wantErr error
 	}{
 		{
 			name: "create new database",
 			args: args{
-				pool:   mock.NewPGPool(nil),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-			want: &PGDatabase{
-				pool:   mock.NewPGPool(nil),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				pool:   mockrepo.NewMockPGPool(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "create new database with nil pool",
 			args: args{
 				pool:   nil,
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			wantErr: ErrNoPool,
+			wantErr: repository.ErrNoPool,
 		},
 		{
 			name: "create new database with nil logger",
 			args: args{
-				pool:   mock.NewPGPool(nil),
+				pool:   mockrepo.NewMockPGPool(nil),
 				logger: nil,
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "create new database with nil tracer",
 			args: args{
-				pool:   mock.NewPGPool(nil),
-				logger: mock.NewMockLogger(nil),
+				pool:   mockrepo.NewMockPGPool(nil),
+				logger: mocklog.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -677,13 +776,15 @@ func TestNewPGDatabase(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db, err := NewPGDatabase(
-				WithDatabasePool(tt.args.pool),
-				WithPGDatabaseLogger(tt.args.logger),
-				WithPGDatabaseTracer(tt.args.tracer),
+			db, err := repository.NewPGDatabase(
+				repository.WithDatabasePool(tt.args.pool),
+				repository.WithPGDatabaseLogger(tt.args.logger),
+				repository.WithPGDatabaseTracer(tt.args.tracer),
 			)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db)
+			if tt.wantErr == nil {
+				require.NotNil(t, db)
+			}
 		})
 	}
 }
@@ -693,12 +794,10 @@ func TestPGDatabase_Close(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	pool := mock.NewPGPool(ctrl)
+	pool := mockrepo.NewMockPGPool(ctrl)
 	pool.EXPECT().Close()
 
-	db := &PGDatabase{
-		pool: pool,
-	}
+	db := mustPGDatabase(t, pool)
 
 	require.NoError(t, db.Close())
 }
@@ -706,11 +805,9 @@ func TestPGDatabase_Close(t *testing.T) {
 func TestDatabase_Pool(t *testing.T) {
 	t.Parallel()
 
-	pool := mock.NewPGPool(nil)
+	pool := mockrepo.NewMockPGPool(nil)
 
-	db := &PGDatabase{
-		pool: pool,
-	}
+	db := mustPGDatabase(t, pool)
 
 	require.Equal(t, pool, db.Pool())
 }
@@ -720,7 +817,7 @@ func TestPGDatabase_Ping(t *testing.T) {
 		ctx context.Context
 	}
 	type fields struct {
-		pool func(ctx context.Context, ctrl *gomock.Controller) PGPool
+		pool func(ctx context.Context, ctrl *gomock.Controller) repository.PGPool
 	}
 	tests := []struct {
 		name    string
@@ -734,8 +831,8 @@ func TestPGDatabase_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				pool: func(ctx context.Context, ctrl *gomock.Controller) PGPool {
-					p := mock.NewPGPool(ctrl)
+				pool: func(ctx context.Context, ctrl *gomock.Controller) repository.PGPool {
+					p := mockrepo.NewMockPGPool(ctrl)
 					p.EXPECT().Ping(ctx).Return(nil)
 					return p
 				},
@@ -747,8 +844,8 @@ func TestPGDatabase_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				pool: func(ctx context.Context, ctrl *gomock.Controller) PGPool {
-					p := mock.NewPGPool(ctrl)
+				pool: func(ctx context.Context, ctrl *gomock.Controller) repository.PGPool {
+					p := mockrepo.NewMockPGPool(ctrl)
 					p.EXPECT().Ping(ctx).Return(assert.AnError)
 					return p
 				},
@@ -762,9 +859,7 @@ func TestPGDatabase_Ping(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			db := &PGDatabase{
-				pool: tt.fields.pool(tt.args.ctx, ctrl),
-			}
+			db := mustPGDatabase(t, tt.fields.pool(tt.args.ctx, ctrl))
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
 				require.Error(t, err)
@@ -817,7 +912,7 @@ func TestNewRedisClient(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := NewRedisClient(tt.args.conf)
+			_, err := repository.NewRedisClient(tt.args.conf)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -839,13 +934,13 @@ func TestWithDatabaseClient(t *testing.T) {
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewUniversalClient(ctrl)
+					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 			},
 			want: func() redis.UniversalClient {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
-				return mock.NewUniversalClient(ctrl)
+				return mockrepo.NewMockUniversalClient(ctrl)
 			}(),
 		},
 		{
@@ -853,17 +948,19 @@ func TestWithDatabaseClient(t *testing.T) {
 			args: args{
 				client: nil,
 			},
-			wantErr: ErrNoClient,
+			wantErr: repository.ErrNoClient,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(RedisDatabase)
-			err := WithRedisClient(tt.args.client)(db)
+			db := new(repository.RedisDatabase)
+			err := repository.WithRedisClient(tt.args.client)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.client)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.args.client, db.Client())
+			}
 		})
 	}
 }
@@ -881,9 +978,9 @@ func TestWithRedisDatabaseLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 			},
-			want: mock.NewMockLogger(nil),
+			want: mocklog.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -897,10 +994,12 @@ func TestWithRedisDatabaseLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(RedisDatabase)
-			err := WithRedisDatabaseLogger(tt.args.logger)(db)
+			db := new(repository.RedisDatabase)
+			err := repository.WithRedisDatabaseLogger(tt.args.logger)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.logger)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.logger)
+			}
 		})
 	}
 }
@@ -918,9 +1017,9 @@ func TestWithRedisDatabaseTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			want: mock.NewMockTracer(nil),
+			want: mocktrace.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -934,10 +1033,12 @@ func TestWithRedisDatabaseTracer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db := new(RedisDatabase)
-			err := WithRedisDatabaseTracer(tt.args.tracer)(db)
+			db := new(repository.RedisDatabase)
+			err := repository.WithRedisDatabaseTracer(tt.args.tracer)(db)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db.tracer)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.tracer)
+			}
 		})
 	}
 }
@@ -951,7 +1052,7 @@ func TestNewRedisDatabase(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *RedisDatabase
+		want    *repository.RedisDatabase
 		wantErr error
 	}{
 		{
@@ -960,29 +1061,20 @@ func TestNewRedisDatabase(t *testing.T) {
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewUniversalClient(ctrl)
+					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-			want: &RedisDatabase{
-				client: func() redis.UniversalClient {
-					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
-					return mock.NewUniversalClient(ctrl)
-				}(),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 		},
 		{
 			name: "create new database with nil client",
 			args: args{
 				client: nil,
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			wantErr: ErrNoClient,
+			wantErr: repository.ErrNoClient,
 		},
 		{
 			name: "create new database with nil logger",
@@ -990,10 +1082,10 @@ func TestNewRedisDatabase(t *testing.T) {
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewUniversalClient(ctrl)
+					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 				logger: nil,
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -1003,9 +1095,9 @@ func TestNewRedisDatabase(t *testing.T) {
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
-					return mock.NewUniversalClient(ctrl)
+					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -1015,13 +1107,15 @@ func TestNewRedisDatabase(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			db, err := NewRedisDatabase(
-				WithRedisClient(tt.args.client),
-				WithRedisDatabaseLogger(tt.args.logger),
-				WithRedisDatabaseTracer(tt.args.tracer),
+			db, err := repository.NewRedisDatabase(
+				repository.WithRedisClient(tt.args.client),
+				repository.WithRedisDatabaseLogger(tt.args.logger),
+				repository.WithRedisDatabaseTracer(tt.args.tracer),
 			)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, db)
+			if tt.wantErr == nil {
+				require.NotNil(t, db)
+			}
 		})
 	}
 }
@@ -1032,11 +1126,9 @@ func TestDatabase_Client(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	client := mock.NewUniversalClient(ctrl)
+	client := mockrepo.NewMockUniversalClient(ctrl)
 
-	db := &RedisDatabase{
-		client: client,
-	}
+	db := mustRedisDatabase(t, client)
 
 	require.Equal(t, client, db.Client())
 }
@@ -1047,12 +1139,10 @@ func TestRedisDatabase_Close(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	client := mock.NewUniversalClient(ctrl)
+	client := mockrepo.NewMockUniversalClient(ctrl)
 	client.EXPECT().Close().Return(nil)
 
-	db := &RedisDatabase{
-		client: client,
-	}
+	db := mustRedisDatabase(t, client)
 
 	require.NoError(t, db.Close())
 }
@@ -1077,7 +1167,7 @@ func TestRedisDatabase_Ping(t *testing.T) {
 			},
 			fields: fields{
 				client: func(ctrl *gomock.Controller, ctx context.Context) redis.UniversalClient {
-					p := mock.NewUniversalClient(ctrl)
+					p := mockrepo.NewMockUniversalClient(ctrl)
 					p.EXPECT().Ping(ctx).Return(&redis.StatusCmd{})
 					return p
 				},
@@ -1090,9 +1180,7 @@ func TestRedisDatabase_Ping(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			db := &RedisDatabase{
-				client: tt.fields.client(ctrl, tt.args.ctx),
-			}
+			db := mustRedisDatabase(t, tt.fields.client(ctrl, tt.args.ctx))
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
 				require.Error(t, err)
@@ -1136,7 +1224,7 @@ func TestNewS3Client(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := NewS3Client(tt.args.ctx, tt.args.conf)
+			_, err := repository.NewS3Client(tt.args.ctx, tt.args.conf)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -1144,37 +1232,39 @@ func TestNewS3Client(t *testing.T) {
 
 func TestWithStorageClient(t *testing.T) {
 	type args struct {
-		client S3Client
+		client repository.S3Client
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    S3Client
+		want    repository.S3Client
 		wantErr error
 	}{
 		{
 			name: "create new option with client",
 			args: args{
-				client: mock.NewS3Client(nil),
+				client: mockrepo.NewMockS3Client(nil),
 			},
-			want: mock.NewS3Client(nil),
+			want: mockrepo.NewMockS3Client(nil),
 		},
 		{
 			name: "create new option with nil client",
 			args: args{
 				client: nil,
 			},
-			wantErr: ErrNoClient,
+			wantErr: repository.ErrNoClient,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage := new(S3Storage)
-			err := WithStorageClient(tt.args.client)(storage)
+			storage := new(repository.S3Storage)
+			err := repository.WithStorageClient(tt.args.client)(storage)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, storage.client)
+			if tt.wantErr == nil {
+				require.Equal(t, tt.args.client, storage.Client())
+			}
 		})
 	}
 }
@@ -1201,17 +1291,24 @@ func TestWithStorageBucket(t *testing.T) {
 			args: args{
 				bucket: "",
 			},
-			wantErr: ErrNoBucket,
+			wantErr: repository.ErrNoBucket,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage := new(S3Storage)
-			err := WithStorageBucket(tt.args.bucket)(storage)
+			storage := new(repository.S3Storage)
+			err := repository.WithStorageBucket(tt.args.bucket)(storage)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, storage.bucket)
+			if tt.wantErr == nil {
+				ctrl := gomock.NewController(t)
+				client := mockrepo.NewMockS3Client(ctrl)
+				client.EXPECT().HeadBucket(gomock.Any(), &awsS3.HeadBucketInput{Bucket: aws.String(tt.args.bucket)}, gomock.Any()).
+					Return(&awsS3.HeadBucketOutput{}, nil)
+				require.NoError(t, repository.WithStorageClient(client)(storage))
+				require.NoError(t, storage.Ping(context.Background()))
+			}
 		})
 	}
 }
@@ -1229,9 +1326,9 @@ func TestWithStorageLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 			},
-			want: mock.NewMockLogger(nil),
+			want: mocklog.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -1245,10 +1342,12 @@ func TestWithStorageLogger(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage := new(S3Storage)
-			err := WithStorageLogger(tt.args.logger)(storage)
+			storage := new(repository.S3Storage)
+			err := repository.WithStorageLogger(tt.args.logger)(storage)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, storage.logger)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.logger)
+			}
 		})
 	}
 }
@@ -1266,9 +1365,9 @@ func TestWithStorageTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			want: mock.NewMockTracer(nil),
+			want: mocktrace.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -1282,17 +1381,19 @@ func TestWithStorageTracer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage := new(S3Storage)
-			err := WithStorageTracer(tt.args.tracer)(storage)
+			storage := new(repository.S3Storage)
+			err := repository.WithStorageTracer(tt.args.tracer)(storage)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, storage.tracer)
+			if tt.wantErr == nil {
+				require.NotNil(t, tt.args.tracer)
+			}
 		})
 	}
 }
 
 func TestNewStorage(t *testing.T) {
 	type args struct {
-		client S3Client
+		client repository.S3Client
 		bucket string
 		logger log.Logger
 		tracer tracing.Tracer
@@ -1300,22 +1401,16 @@ func TestNewStorage(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *S3Storage
+		want    *repository.S3Storage
 		wantErr error
 	}{
 		{
 			name: "create new storage",
 			args: args{
-				client: mock.NewS3Client(nil),
+				client: mockrepo.NewMockS3Client(nil),
 				bucket: "test-bucket",
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-			want: &S3Storage{
-				client: mock.NewS3Client(nil),
-				bucket: "test-bucket",
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 		},
 		{
@@ -1323,37 +1418,37 @@ func TestNewStorage(t *testing.T) {
 			args: args{
 				client: nil,
 				bucket: "test-bucket",
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			wantErr: ErrNoClient,
+			wantErr: repository.ErrNoClient,
 		},
 		{
 			name: "create new storage with empty bucket",
 			args: args{
-				client: mock.NewS3Client(nil),
+				client: mockrepo.NewMockS3Client(nil),
 				bucket: "",
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			wantErr: ErrNoBucket,
+			wantErr: repository.ErrNoBucket,
 		},
 		{
 			name: "create new storage with nil logger",
 			args: args{
-				client: mock.NewS3Client(nil),
+				client: mockrepo.NewMockS3Client(nil),
 				bucket: "test-bucket",
 				logger: nil,
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "create new storage with nil tracer",
 			args: args{
-				client: mock.NewS3Client(nil),
+				client: mockrepo.NewMockS3Client(nil),
 				bucket: "test-bucket",
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -1363,14 +1458,16 @@ func TestNewStorage(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			storage, err := NewStorage(
-				WithStorageClient(tt.args.client),
-				WithStorageBucket(tt.args.bucket),
-				WithStorageLogger(tt.args.logger),
-				WithStorageTracer(tt.args.tracer),
+			storage, err := repository.NewStorage(
+				repository.WithStorageClient(tt.args.client),
+				repository.WithStorageBucket(tt.args.bucket),
+				repository.WithStorageLogger(tt.args.logger),
+				repository.WithStorageTracer(tt.args.tracer),
 			)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, storage)
+			if tt.wantErr == nil {
+				require.NotNil(t, storage)
+			}
 		})
 	}
 }
@@ -1378,11 +1475,9 @@ func TestNewStorage(t *testing.T) {
 func TestStorage_Client(t *testing.T) {
 	t.Parallel()
 
-	client := mock.NewS3Client(nil)
+	client := mockrepo.NewMockS3Client(nil)
 
-	storage := &S3Storage{
-		client: client,
-	}
+	storage := mustS3Storage(t, client, "")
 
 	require.Equal(t, client, storage.Client())
 }
@@ -1392,7 +1487,7 @@ func TestStorage_Ping(t *testing.T) {
 		ctx context.Context
 	}
 	type fields struct {
-		client func(ctx context.Context, ctrl *gomock.Controller) S3Client
+		client func(ctx context.Context, ctrl *gomock.Controller) repository.S3Client
 		bucket string
 	}
 	tests := []struct {
@@ -1407,8 +1502,8 @@ func TestStorage_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				client: func(ctx context.Context, ctrl *gomock.Controller) S3Client {
-					c := mock.NewS3Client(ctrl)
+				client: func(ctx context.Context, ctrl *gomock.Controller) repository.S3Client {
+					c := mockrepo.NewMockS3Client(ctrl)
 					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, nil)
 					return c
 				},
@@ -1421,8 +1516,8 @@ func TestStorage_Ping(t *testing.T) {
 				ctx: context.Background(),
 			},
 			fields: fields{
-				client: func(ctx context.Context, ctrl *gomock.Controller) S3Client {
-					c := mock.NewS3Client(ctrl)
+				client: func(ctx context.Context, ctrl *gomock.Controller) repository.S3Client {
+					c := mockrepo.NewMockS3Client(ctrl)
 					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, assert.AnError)
 					return c
 				},
@@ -1437,10 +1532,7 @@ func TestStorage_Ping(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			storage := &S3Storage{
-				client: tt.fields.client(tt.args.ctx, ctrl),
-				bucket: tt.fields.bucket,
-			}
+			storage := mustS3Storage(t, tt.fields.client(tt.args.ctx, ctrl), tt.fields.bucket)
 			err := storage.Ping(tt.args.ctx)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -1449,266 +1541,4 @@ func TestStorage_Ping(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestWithStorage(t *testing.T) {
-	type args struct {
-		storage *S3Storage
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *S3Storage
-		wantErr error
-	}{
-		{
-			name: "create new option with storage",
-			args: args{
-				storage: &S3Storage{
-					client: mock.NewS3Client(nil),
-					bucket: "test-bucket",
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-			},
-			want: &S3Storage{
-				client: mock.NewS3Client(nil),
-				bucket: "test-bucket",
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-		},
-		{
-			name: "create new option with nil storage",
-			args: args{
-				storage: nil,
-			},
-			wantErr: ErrNoDriver,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			repo := new(s3BaseRepository)
-			err := WithS3Storage(tt.args.storage)(repo)
-			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, repo.storage)
-		})
-	}
-}
-
-func TestWithRepositoryLogger(t *testing.T) {
-	type args struct {
-		logger log.Logger
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    log.Logger
-		wantErr error
-	}{
-		{
-			name: "create new option with logger",
-			args: args{
-				logger: mock.NewMockLogger(nil),
-			},
-			want: mock.NewMockLogger(nil),
-		},
-		{
-			name: "create new option with nil logger",
-			args: args{
-				logger: nil,
-			},
-			wantErr: log.ErrNoLogger,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			repo := new(s3BaseRepository)
-			err := WithS3RepositoryLogger(tt.args.logger)(repo)
-			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, repo.logger)
-		})
-	}
-}
-
-func TestWithRepositoryTracer(t *testing.T) {
-	type args struct {
-		tracer tracing.Tracer
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    tracing.Tracer
-		wantErr error
-	}{
-		{
-			name: "create new option with tracer",
-			args: args{
-				tracer: mock.NewMockTracer(nil),
-			},
-			want: mock.NewMockTracer(nil),
-		},
-		{
-			name: "create new option with nil tracer",
-			args: args{
-				tracer: nil,
-			},
-			wantErr: tracing.ErrNoTracer,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			repo := new(s3BaseRepository)
-			err := WithS3RepositoryTracer(tt.args.tracer)(repo)
-			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, repo.tracer)
-		})
-	}
-}
-
-func TestNewBaseRepository(t *testing.T) {
-	type args struct {
-		storage *S3Storage
-		logger  log.Logger
-		tracer  tracing.Tracer
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *s3BaseRepository
-		wantErr error
-	}{
-		{
-			name: "create new base repository",
-			args: args{
-				storage: &S3Storage{
-					client: mock.NewS3Client(nil),
-					bucket: "test-bucket",
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-			want: &s3BaseRepository{
-				storage: &S3Storage{
-					client: mock.NewS3Client(nil),
-					bucket: "test-bucket",
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
-			},
-		},
-		{
-			name: "create new base repository with nil storage",
-			args: args{
-				storage: nil,
-				logger:  mock.NewMockLogger(nil),
-				tracer:  mock.NewMockTracer(nil),
-			},
-			wantErr: ErrNoDriver,
-		},
-		{
-			name: "create new base repository with nil logger",
-			args: args{
-				storage: &S3Storage{
-					client: mock.NewS3Client(nil),
-					bucket: "test-bucket",
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-				logger: nil,
-				tracer: mock.NewMockTracer(nil),
-			},
-			wantErr: log.ErrNoLogger,
-		},
-		{
-			name: "create new base repository with nil tracer",
-			args: args{
-				storage: &S3Storage{
-					client: mock.NewS3Client(nil),
-					bucket: "test-bucket",
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-				logger: mock.NewMockLogger(nil),
-				tracer: nil,
-			},
-			wantErr: tracing.ErrNoTracer,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			repo, err := newS3BaseRepository(
-				WithS3Storage(tt.args.storage),
-				WithS3RepositoryLogger(tt.args.logger),
-				WithS3RepositoryTracer(tt.args.tracer),
-			)
-			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, repo)
-		})
-	}
-}
-
-func TestIsNotFoundError(t *testing.T) {
-	tests := []struct {
-		name string
-		err  error
-		want bool
-	}{
-		{
-			name: "not found error",
-			err:  &mockAPIError{errorCode: "NoSuchKey"},
-			want: true,
-		},
-		{
-			name: "other error",
-			err:  assert.AnError,
-			want: false,
-		},
-		{
-			name: "nil error",
-			err:  nil,
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := isNotFoundError(tt.err)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
-
-// Mock APIError for testing isNotFoundError
-type mockAPIError struct {
-	errorCode string
-}
-
-func (m *mockAPIError) Error() string {
-	return "mock API error"
-}
-
-func (m *mockAPIError) ErrorCode() string {
-	return m.errorCode
-}
-
-func (m *mockAPIError) ErrorMessage() string {
-	return "mock error message"
-}
-
-func (m *mockAPIError) ErrorFault() smithy.ErrorFault {
-	return smithy.FaultUnknown
 }

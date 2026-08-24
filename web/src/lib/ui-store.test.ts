@@ -122,7 +122,7 @@ describe("uiStore actions", () => {
     for (let index = 0; index < 9; index += 1) {
       uiActions.rememberRecentEntity({
         id: `work-${index}`,
-        type: "work",
+        type: "work-item",
         label: `Work ${index}`,
         href: internalPath(`/work/work-${index}`),
         namespaceId: "namespace-product",
@@ -131,7 +131,7 @@ describe("uiStore actions", () => {
 
     expect(
       uiStore.state.recentEntities
-        .filter((entity) => entity.type === "work")
+        .filter((entity) => entity.type === "work-item")
         .map((entity) => entity.id)
     ).toEqual([
       "work-8",
@@ -212,7 +212,7 @@ describe("uiStore actions", () => {
     });
     uiActions.rememberRecentEntity({
       id: "work-1",
-      type: "work",
+      type: "work-item",
       label: "Work One",
       href: internalPath("/work/work-1"),
       namespaceId: "ns",
@@ -225,7 +225,7 @@ describe("uiStore actions", () => {
       namespaceId: "ns",
     });
 
-    uiActions.forgetRecentEntity({ id: "work-1", type: "work" });
+    uiActions.forgetRecentEntity({ id: "work-1", type: "work-item" });
 
     expect(uiStore.state.recentEntities.map((entity) => entity.id)).toEqual([
       "document-1",
@@ -246,7 +246,7 @@ describe("uiStore actions", () => {
         recentEntities: [
           {
             id: "lmo-101",
-            type: "work",
+            type: "work-item",
             label: "LMO-101 Work",
             href: "/work/lmo-101",
             visitedAt: 10,
@@ -267,7 +267,7 @@ describe("uiStore actions", () => {
       uiStore.state.recentEntities.map(
         (entity) => `${entity.type}:${entity.id}`
       )
-    ).toEqual(["document:document-1", "work:lmo-101"]);
+    ).toEqual(["document:document-1", "work-item:lmo-101"]);
   });
 
   it("hydrates valid navigation fields and ignores unsafe entities", () => {

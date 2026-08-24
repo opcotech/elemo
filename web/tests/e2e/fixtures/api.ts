@@ -5,7 +5,7 @@ import {
   createPrivilegedClient,
 } from "../api/client";
 
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 
 /**
  * Custom Playwright fixtures for API client.

@@ -1,4 +1,4 @@
-import type { SearchResult } from "@/lib/client";
+import type { SearchResult } from "@/lib/api/types";
 import type { AppEntityType } from "@/lib/entity-types";
 
 export const SEARCH_RESOURCE_TYPES = [

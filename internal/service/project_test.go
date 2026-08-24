@@ -1,10 +1,19 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
+
 	"go.uber.org/mock/gomock"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
@@ -12,14 +21,11 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func newCreateProjectOpts() CreateProjectOpts {
-	return CreateProjectOpts{
+func newCreateProjectOpts() service.CreateProjectOpts {
+	return service.CreateProjectOpts{
 		Key:         "ENG",
 		Name:        "test project",
 		Description: "test description for project",
@@ -29,111 +35,51 @@ func newCreateProjectOpts() CreateProjectOpts {
 }
 
 func TestNewProjectService(t *testing.T) {
-	type args struct {
-		opts func(ctrl *gomock.Controller) []Option
-	}
 	tests := []struct {
 		name    string
-		args    args
-		want    func(ctrl *gomock.Controller) ProjectService
+		build   func(ctrl *gomock.Controller) (service.ProjectService, error)
 		wantErr error
 	}{
 		{
 			name: "new project service",
-			args: args{
-				opts: func(ctrl *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(mock.NewMockLogger(ctrl)),
-						WithTracer(mock.NewMockTracer(ctrl)),
-						WithProjectRepository(repository.NewMockProjectRepository(nil)),
-						WithPermissionService(NewMockPermissionService(nil)),
-						WithLicenseService(mock.NewMockLicenseService(nil)),
-						WithSearchService(NewMockSearchService(nil)),
-					}
-				},
+			build: func(ctrl *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(mockrepo.NewMockProjectRepository(nil), mocksvc.NewMockPermissionService(nil), mocksvc.NewMockLicenseService(nil), mocksvc.NewMockSearchService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			want: func(ctrl *gomock.Controller) ProjectService {
-				return &projectService{
-					baseService: &baseService{
-						searchService:     NewMockSearchService(nil),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            mock.NewMockTracer(ctrl),
-						projectRepo:       repository.NewMockProjectRepository(nil),
-						permissionService: NewMockPermissionService(nil),
-						licenseService:    mock.NewMockLicenseService(nil),
-					},
-				}
-			},
-		},
-		{
-			name: "new project service with invalid options",
-			args: args{
-				opts: func(_ *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(nil),
-						WithProjectRepository(repository.NewMockProjectRepository(nil)),
-						WithLicenseService(mock.NewMockLicenseService(nil)),
-					}
-				},
-			},
-			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "new project service with no project repository",
-			args: args{
-				opts: func(ctrl *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(mock.NewMockLogger(ctrl)),
-						WithTracer(mock.NewMockTracer(ctrl)),
-						WithPermissionService(NewMockPermissionService(nil)),
-						WithLicenseService(mock.NewMockLicenseService(nil)),
-					}
-				},
+			build: func(ctrl *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(nil, mocksvc.NewMockPermissionService(nil), mocksvc.NewMockLicenseService(nil), mocksvc.NewMockSearchService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			wantErr: ErrNoProjectRepository,
+			wantErr: service.ErrNoProjectRepository,
 		},
 		{
 			name: "new project service with no permission service",
-			args: args{
-				opts: func(ctrl *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(mock.NewMockLogger(ctrl)),
-						WithTracer(mock.NewMockTracer(ctrl)),
-						WithProjectRepository(repository.NewMockProjectRepository(nil)),
-						WithLicenseService(mock.NewMockLicenseService(nil)),
-					}
-				},
+			build: func(ctrl *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(mockrepo.NewMockProjectRepository(nil), nil, mocksvc.NewMockLicenseService(nil), mocksvc.NewMockSearchService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			wantErr: ErrNoPermissionService,
+			wantErr: service.ErrNoPermissionService,
 		},
 		{
 			name: "new project service with no license service",
-			args: args{
-				opts: func(ctrl *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(mock.NewMockLogger(ctrl)),
-						WithTracer(mock.NewMockTracer(ctrl)),
-						WithProjectRepository(repository.NewMockProjectRepository(nil)),
-						WithPermissionService(NewMockPermissionService(nil)),
-					}
-				},
+			build: func(ctrl *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(mockrepo.NewMockProjectRepository(nil), mocksvc.NewMockPermissionService(nil), nil, mocksvc.NewMockSearchService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			wantErr: ErrNoLicenseService,
+			wantErr: service.ErrNoLicenseService,
 		},
 		{
 			name: "new project service with no search service",
-			args: args{
-				opts: func(ctrl *gomock.Controller) []Option {
-					return []Option{
-						WithLogger(mock.NewMockLogger(ctrl)),
-						WithTracer(mock.NewMockTracer(ctrl)),
-						WithProjectRepository(repository.NewMockProjectRepository(nil)),
-						WithPermissionService(NewMockPermissionService(nil)),
-						WithLicenseService(mock.NewMockLicenseService(nil)),
-					}
-				},
+			build: func(ctrl *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(mockrepo.NewMockProjectRepository(nil), mocksvc.NewMockPermissionService(nil), mocksvc.NewMockLicenseService(nil), nil, service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			wantErr: ErrNoSearchService,
+			wantErr: service.ErrNoSearchService,
+		},
+		{
+			name: "new project service with invalid options",
+			build: func(_ *gomock.Controller) (service.ProjectService, error) {
+				return service.NewProjectService(mockrepo.NewMockProjectRepository(nil), mocksvc.NewMockPermissionService(nil), mocksvc.NewMockLicenseService(nil), mocksvc.NewMockSearchService(nil), service.WithLogger(nil))
+			},
+			wantErr: log.ErrNoLogger,
 		},
 	}
 	for _, tt := range tests {
@@ -142,10 +88,10 @@ func TestNewProjectService(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			got, err := NewProjectService(tt.args.opts(ctrl)...)
+			got, err := tt.build(ctrl)
 			require.ErrorIs(t, err, tt.wantErr)
-			if tt.want != nil {
-				assert.Equal(t, tt.want(ctrl), got)
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
 			}
 		})
 	}
@@ -157,12 +103,12 @@ func TestProjectService_Create(t *testing.T) {
 	opts := newCreateProjectOpts()
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts service.CreateProjectOpts) service.ProjectService
 	}
 	type args struct {
 		ctx         context.Context
 		namespaceID model.ID
-		opts        CreateProjectOpts
+		opts        service.CreateProjectOpts
 	}
 	tests := []struct {
 		name    string
@@ -173,15 +119,15 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
 						CreatorID:   creatorID,
@@ -192,21 +138,27 @@ func TestProjectService_Create(t *testing.T) {
 						Status:      opts.Status,
 					}).Return(testModel.NewRepositoryProject(), nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchIndex(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchIndex(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -218,15 +170,15 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project normalizes key to uppercase",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
 						CreatorID:   creatorID,
@@ -237,27 +189,33 @@ func TestProjectService_Create(t *testing.T) {
 						Status:      opts.Status,
 					}).Return(testModel.NewRepositoryProject(), nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchIndex(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchIndex(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
-				opts: CreateProjectOpts{
+				opts: service.CreateProjectOpts{
 					Key:         "eng",
 					Name:        "test project",
 					Description: "test description for project",
@@ -269,15 +227,15 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project with default status",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
 						CreatorID:   creatorID,
@@ -288,27 +246,33 @@ func TestProjectService_Create(t *testing.T) {
 						Status:      model.ProjectStatusActive,
 					}).Return(testModel.NewRepositoryProject(), nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchIndex(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchIndex(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
-				opts: CreateProjectOpts{
+				opts: service.CreateProjectOpts{
 					Key:         "ENG",
 					Name:        "test project",
 					Description: "test description for project",
@@ -319,22 +283,30 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project with license expired",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -347,27 +319,34 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, _ CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, _ service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(false)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(false, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -375,27 +354,35 @@ func TestProjectService_Create(t *testing.T) {
 				namespaceID: namespaceID,
 				opts:        opts,
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "create project with invalid namespaceID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -408,43 +395,51 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project with invalid details",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				opts:        CreateProjectOpts{Key: "AB", Name: "ab"},
+				opts:        service.CreateProjectOpts{Key: "AB", Name: "ab"},
 			},
 			wantErr: model.ErrInvalidProjectDetails,
 		},
 		{
 			name: "create project with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, opts service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Create(ctx, repository.CreateProjectOpts{
 						NamespaceID: namespaceID,
 						CreatorID:   creatorID,
@@ -455,21 +450,27 @@ func TestProjectService_Create(t *testing.T) {
 						Status:      opts.Status,
 					}).Return(nil, repository.ErrProjectCreate)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -482,27 +483,34 @@ func TestProjectService_Create(t *testing.T) {
 		{
 			name: "create project with no user ID in context",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, _ CreateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, _ service.CreateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Create", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, namespaceID, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -510,7 +518,7 @@ func TestProjectService_Create(t *testing.T) {
 				namespaceID: namespaceID,
 				opts:        opts,
 			},
-			wantErr: model.ErrInvalidID,
+			wantErr: service.ErrNoUser,
 		},
 	}
 	for _, tt := range tests {
@@ -520,9 +528,7 @@ func TestProjectService_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID, tt.args.opts),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID, tt.args.opts)
 
 			_, err := s.Create(tt.args.ctx, tt.args.namespaceID, tt.args.opts)
 			if tt.wantErr != nil {
@@ -539,10 +545,10 @@ func TestProjectService_Get(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	repoProject := testModel.NewRepositoryProject()
 	repoProject.ID = projectID
-	want := projectFromRepository(repoProject)
+	want := service.ProjectFromRepository(repoProject)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService
 	}
 	type args struct {
 		ctx context.Context
@@ -552,33 +558,40 @@ func TestProjectService_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *Project
+		want    *service.Project
 		wantErr error
 	}{
 		{
 			name: "get project",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -590,46 +603,63 @@ func TestProjectService_Get(t *testing.T) {
 		{
 			name: "get project with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  projectID,
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "get project with invalid ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -641,27 +671,34 @@ func TestProjectService_Get(t *testing.T) {
 		{
 			name: "get project with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Get", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Get(ctx, id, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -678,9 +715,7 @@ func TestProjectService_Get(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id)
 
 			got, err := s.Get(tt.args.ctx, tt.args.id)
 			if tt.wantErr != nil {
@@ -697,10 +732,10 @@ func TestProjectService_Get(t *testing.T) {
 func TestProjectService_GetByKey(t *testing.T) {
 	repoProject := testModel.NewRepositoryProject()
 	projectKey := repoProject.Key
-	want := projectFromRepository(repoProject)
+	want := service.ProjectFromRepository(repoProject)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, key string) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService
 	}
 	type args struct {
 		ctx context.Context
@@ -710,33 +745,40 @@ func TestProjectService_GetByKey(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *Project
+		want    *service.Project
 		wantErr error
 	}{
 		{
 			name: "get project by key",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(true, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -748,50 +790,66 @@ func TestProjectService_GetByKey(t *testing.T) {
 		{
 			name: "get project by key with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(false)
+					permSvc.EXPECT().CtxUserHas(ctx, repoProject.ID, gomock.Any()).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				key: projectKey,
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "get project by key with empty key",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ string) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ string) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -803,22 +861,30 @@ func TestProjectService_GetByKey(t *testing.T) {
 		{
 			name: "get project by key with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-						projectRepo:   projectRepo,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -835,9 +901,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.key),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.key)
 
 			got, err := s.GetByKey(tt.args.ctx, tt.args.key)
 			if tt.wantErr != nil {
@@ -858,174 +922,213 @@ func TestProjectService_List(t *testing.T) {
 		testModel.NewRepositoryProject(),
 		testModel.NewRepositoryProject(),
 	}
-	want := projectsFromRepository(repoProjects)
+	want := service.ProjectsFromRepository(repoProjects)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) service.ProjectService
 	}
 	type args struct {
 		ctx         context.Context
 		namespaceID model.ID
-		page        CursorPage
+		page        service.CursorPage
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    Page[*Project]
+		want    service.Page[*service.Project]
 		wantErr error
 	}{
 		{
 			name: "get all projects",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().List(
-						ctx,
-						namespaceID,
-						userID,
-						nil,
-						repository.CursorPage{Size: 10},
-						repository.ProjectListProjection(),
-					).Return(repository.Page[*repository.Project]{Items: repoProjects}, nil)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
+					projectRepo.EXPECT().ListForNamespace(ctx, repository.ProjectListQuery{
+						NamespaceID: namespaceID,
+						ActorID:     userID,
+						Page:        repository.CursorPage{Size: 10},
+						Order:       repository.SortDirectionDesc,
+						Projection:  repository.ProjectListProjection(),
+					}).Return(repository.Page[*repository.Project]{Items: repoProjects}, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{namespaceID}, nil)
 					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
-				page:        CursorPage{Size: 10},
+				page:        service.CursorPage{Size: 10},
 			},
-			want: Page[*Project]{Items: want},
+			want: service.Page[*service.Project]{Items: want},
 		},
 		{
 			name: "get all projects with no user",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				page:        CursorPage{Size: 10},
+				page:        service.CursorPage{Size: 10},
 			},
-			wantErr: ErrNoUser,
+			wantErr: service.ErrNoUser,
 		},
 		{
 			name: "get all projects with invalid namespaceID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: model.ID{},
-				page:        CursorPage{Size: 10},
+				page:        service.CursorPage{Size: 10},
 			},
 			wantErr: model.ErrInvalidID,
 		},
 		{
 			name: "list projects with invalid page size",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						searchService: NewMockSearchService(ctrl),
-						logger:        mock.NewMockLogger(ctrl),
-						tracer:        tracer,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.Background(),
 				namespaceID: namespaceID,
-				page:        CursorPage{Size: -1},
+				page:        service.CursorPage{Size: -1},
 			},
 			wantErr: repository.ErrInvalidPageSize,
 		},
 		{
 			name: "get all projects with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/List", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().List(
-						ctx,
-						namespaceID,
-						userID,
-						nil,
-						repository.CursorPage{Size: 10},
-						repository.ProjectListProjection(),
-					).Return(repository.Page[*repository.Project]{}, repository.ErrProjectRead)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
+					projectRepo.EXPECT().ListForNamespace(ctx, repository.ProjectListQuery{
+						NamespaceID: namespaceID,
+						ActorID:     userID,
+						Page:        repository.CursorPage{Size: 10},
+						Order:       repository.SortDirectionDesc,
+						Projection:  repository.ProjectListProjection(),
+					}).Return(repository.Page[*repository.Project]{}, repository.ErrProjectRead)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{namespaceID}, nil)
 					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							mocksvc.NewMockLicenseService(ctrl),
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:         context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				namespaceID: namespaceID,
-				page:        CursorPage{Size: 10},
+				page:        service.CursorPage{Size: 10},
 			},
 			wantErr: repository.ErrProjectRead,
 		},
@@ -1037,9 +1140,7 @@ func TestProjectService_List(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID)
 
 			got, err := s.List(tt.args.ctx, tt.args.namespaceID, tt.args.page)
 			if tt.wantErr != nil {
@@ -1057,35 +1158,35 @@ func TestProjectService_Update(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 	repoProject := testModel.NewRepositoryProject()
 	repoProject.ID = projectID
-	want := projectFromRepository(repoProject)
-	opts := UpdateProjectOpts{Name: optional.Some("Updated Name")}
+	want := service.ProjectFromRepository(repoProject)
+	opts := service.UpdateProjectOpts{Name: optional.Some("Updated Name")}
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateProjectOpts) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts service.UpdateProjectOpts) service.ProjectService
 	}
 	type args struct {
 		ctx  context.Context
 		id   model.ID
-		opts UpdateProjectOpts
+		opts service.UpdateProjectOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *Project
+		want    *service.Project
 		wantErr error
 	}{
 		{
 			name: "update project",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
 						Key:         opts.Key,
 						Name:        opts.Name,
@@ -1094,21 +1195,27 @@ func TestProjectService_Update(t *testing.T) {
 						Status:      opts.Status,
 					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchIndex(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchIndex(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1121,61 +1228,75 @@ func TestProjectService_Update(t *testing.T) {
 		{
 			name: "update project normalizes key to uppercase",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
 						Key: optional.Some("ENG"),
 					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchIndex(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchIndex(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				id:   projectID,
-				opts: UpdateProjectOpts{Key: optional.Some("eng")},
+				opts: service.UpdateProjectOpts{Key: optional.Some("eng")},
 			},
 			want: want,
 		},
 		{
 			name: "update project with license expired",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1188,27 +1309,34 @@ func TestProjectService_Update(t *testing.T) {
 		{
 			name: "update project with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1216,27 +1344,35 @@ func TestProjectService_Update(t *testing.T) {
 				id:   projectID,
 				opts: opts,
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "update project with invalid ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1249,14 +1385,14 @@ func TestProjectService_Update(t *testing.T) {
 		{
 			name: "update project with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateProjectOpts) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts service.UpdateProjectOpts) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
 						Key:         opts.Key,
 						Name:        opts.Name,
@@ -1265,21 +1401,27 @@ func TestProjectService_Update(t *testing.T) {
 						Status:      opts.Status,
 					}, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectUpdate)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1297,9 +1439,7 @@ func TestProjectService_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.opts),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.opts)
 
 			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			if tt.wantErr != nil {
@@ -1317,7 +1457,7 @@ func TestProjectService_Delete(t *testing.T) {
 	projectID := model.MustNewID(model.ResourceTypeProject)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService
 	}
 	type args struct {
 		ctx context.Context
@@ -1332,31 +1472,37 @@ func TestProjectService_Delete(t *testing.T) {
 		{
 			name: "delete project",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Delete(ctx, id).Return(nil)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     mockSearchDeleteByScope(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mockSearchDeleteByScope(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1367,22 +1513,30 @@ func TestProjectService_Delete(t *testing.T) {
 		{
 			name: "delete project with license expired",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1394,54 +1548,69 @@ func TestProjectService_Delete(t *testing.T) {
 		{
 			name: "delete project with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  projectID,
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "delete project with invalid ID",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:  NewMockSearchService(ctrl),
-						logger:         mock.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							mockrepo.NewMockProjectRepository(ctrl),
+							mocksvc.NewMockPermissionService(ctrl),
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1453,31 +1622,37 @@ func TestProjectService_Delete(t *testing.T) {
 		{
 			name: "delete project with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.ProjectService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.projectService/Delete", gomock.Len(0)).Return(ctx, span)
 
-					projectRepo := repository.NewMockProjectRepository(ctrl)
+					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Delete(ctx, id).Return(repository.ErrProjectDelete)
 
-					permSvc := NewMockPermissionService(ctrl)
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true)
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
 
-					licenseSvc := mock.NewMockLicenseService(ctrl)
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
-					return &baseService{
-						searchService:     NewMockSearchService(ctrl),
-						logger:            mock.NewMockLogger(ctrl),
-						tracer:            tracer,
-						projectRepo:       projectRepo,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
+					return func() service.ProjectService {
+						svc, err := service.NewProjectService(
+							projectRepo,
+							permSvc,
+							licenseSvc,
+							mocksvc.NewMockSearchService(ctrl),
+							service.WithLogger(mocklog.NewMockLogger(ctrl)),
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 			},
 			args: args{
@@ -1494,9 +1669,7 @@ func TestProjectService_Delete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := &projectService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id)
 
 			err := s.Delete(tt.args.ctx, tt.args.id)
 			if tt.wantErr != nil {
@@ -1514,16 +1687,16 @@ func TestProjectFromRepository(t *testing.T) {
 
 	t.Run("nil project", func(t *testing.T) {
 		t.Parallel()
-		assert.Nil(t, projectFromRepository(nil))
+		assert.Nil(t, service.ProjectFromRepository(nil))
 	})
 
 	t.Run("nil partial project", func(t *testing.T) {
 		t.Parallel()
-		assert.Nil(t, partialProjectFromRepository(nil))
+		assert.Nil(t, service.PartialProjectFromRepository(nil))
 	})
 
 	t.Run("nil partial issue", func(t *testing.T) {
 		t.Parallel()
-		assert.Nil(t, partialIssueFromRepository(nil))
+		assert.Nil(t, service.PartialIssueFromRepository(nil))
 	})
 }

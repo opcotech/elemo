@@ -1,0 +1,220 @@
+PartialDocument:
+  title: PartialDocument
+  type: object
+  description: A simplified document that can be used in listings.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      title: Project Plan
+      excerpt: Overview of the project plan
+      created_by: 9bsv0s46s6s002p9ltq0
+      created_at: "2023-01-01T00:00:00Z"
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the document.
+      example: 9bsv0s46s6s002p9ltq0
+    title:
+      type: string
+      description: Title of the document.
+      minLength: 3
+      maxLength: 120
+      example: Project Plan
+    excerpt:
+      type: string
+      description: Excerpt of the document.
+      maxLength: 500
+      example: Overview of the project plan
+      minLength: 10
+      nullable: true
+    created_by:
+      $ref: "#/components/schemas/PartialUser"
+      description: User who created the document.
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the document was created.
+      nullable: true
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the document was last updated.
+      nullable: true
+  required:
+    - id
+    - title
+    - created_by
+Document:
+  title: Document
+  type: object
+  description: A document in an organization or namespace library.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      title: Project Plan
+      excerpt: Overview of the project plan
+      content: "# Project Plan\n\nGoals and timeline."
+      created_by: 9bsv0s46s6s002p9ltq0
+      library:
+        id: 9bsv0s46s6s002p9ltq0
+        type: Namespace
+        name: Product
+      folder: null
+      relations: []
+      labels: []
+      comment_count: 0
+      attachment_count: 0
+      created_at: "2023-01-01T00:00:00Z"
+      updated_at: null
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the document.
+      example: 9bsv0s46s6s002p9ltq0
+    title:
+      type: string
+      description: Title of the document.
+      minLength: 3
+      maxLength: 120
+      example: Project Plan
+    excerpt:
+      type: string
+      description: Excerpt of the document.
+      maxLength: 500
+      example: Overview of the project plan
+      minLength: 10
+      nullable: true
+    content:
+      type: string
+      description: Body of the document.
+      example: "# Project Plan\n\nGoals and timeline."
+    created_by:
+      $ref: "#/components/schemas/PartialUser"
+      description: User who created the document.
+    library:
+      $ref: "#/components/schemas/DocumentLibrary"
+    folder:
+      allOf:
+        - $ref: "#/components/schemas/DocumentFolder"
+      nullable: true
+    relations:
+      type: array
+      description: Projects and issues this document is related to.
+      items:
+        $ref: "#/components/schemas/DocumentRelation"
+    labels:
+      type: array
+      description: Labels attached to the document.
+      items:
+        $ref: "#/components/schemas/PartialLabel"
+    comment_count:
+      type: integer
+      format: int64
+      description: Number of comments on the document when projected.
+      example: 3
+      nullable: true
+    attachment_count:
+      type: integer
+      format: int64
+      description: Number of attachments on the document when projected.
+      example: 1
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the document was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the document was updated.
+      nullable: true
+  required:
+    - id
+    - title
+    - content
+    - created_by
+    - library
+    - folder
+    - relations
+    - labels
+    - created_at
+    - updated_at
+DocumentLibrary:
+  title: DocumentLibrary
+  type: object
+  description: The organization or namespace a document or folder is scoped to.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the library.
+      example: 9bsv0s46s6s002p9ltq0
+    type:
+      type: string
+      description: Resource type of the library.
+      enum:
+        - Organization
+        - Namespace
+    name:
+      type: string
+      description: Name of the organization or namespace.
+      example: Product
+  required:
+    - id
+    - type
+    - name
+DocumentFolder:
+  title: DocumentFolder
+  type: object
+  description: The folder a document or nested folder is located in.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the folder.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the folder.
+      example: Guides
+    parent_id:
+      type: string
+      description: Parent folder ID when the folder is nested.
+      example: 9bsv0s46s6s002p9ltq0
+  required:
+    - id
+    - name
+DocumentRelation:
+  title: DocumentRelation
+  type: object
+  description: A project or issue a document is related to. Issues use the issue key as name.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the related resource.
+      example: 9bsv0s46s6s002p9ltq0
+    type:
+      type: string
+      description: Resource type of the related resource.
+      enum:
+        - Project
+        - Issue
+    name:
+      type: string
+      description: Project name, or issue key.
+      example: PLAT-1
+  required:
+    - id
+    - type
+    - name
+PartialDocumentPage:
+  title: PartialDocumentPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/PartialDocument"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

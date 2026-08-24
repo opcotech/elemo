@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"encoding/base64"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -246,6 +247,87 @@ func TestCompiledQueryFingerprintStable(t *testing.T) {
 	assert.Equal(t, q1.Fingerprint(), q2.Fingerprint())
 	assert.NotEqual(t, q1.Fingerprint(), q3.Fingerprint())
 	assert.Contains(t, q1.CacheKey("Project", "Get"), q1.Fingerprint())
+}
+
+func TestPlanCacheKeyMatchesListInvalidationGlob(t *testing.T) {
+	t.Parallel()
+
+	libraryID := model.MustNewID(model.ResourceTypeNamespace)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	actorID := model.MustNewID(model.ResourceTypeUser)
+
+	tests := []struct {
+		name    string
+		query   repository.QueryCompiler
+		prefix  string
+		extra   []any
+		pattern string
+	}{
+		{
+			name: "folder list",
+			query: repository.FolderListQuery{
+				LibraryID: libraryID,
+				ActorID:   actorID,
+				Page:      repository.CursorPage{Size: 10},
+				Order:     repository.SortDirectionDesc,
+			},
+			prefix:  model.ResourceTypeFolder.String(),
+			extra:   []any{"ListForLibrary", libraryID.String()},
+			pattern: composeCacheKey(model.ResourceTypeFolder.String(), "*", "ListForLibrary", "*"),
+		},
+		{
+			name: "namespace organization list",
+			query: repository.NamespaceListQuery{
+				OrgID:      orgID,
+				ActorID:    actorID,
+				Page:       repository.CursorPage{Size: 10},
+				Order:      repository.SortDirectionDesc,
+				Projection: repository.NamespaceListProjection(),
+			},
+			prefix:  model.ResourceTypeNamespace.String(),
+			extra:   []any{"ListForOrganization", orgID.String()},
+			pattern: composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*"),
+		},
+		{
+			name: "namespace accessible list",
+			query: repository.NamespaceListAccessibleQuery{
+				ActorID:    actorID,
+				Page:       repository.CursorPage{Size: 10},
+				Order:      repository.SortDirectionDesc,
+				Projection: repository.NamespaceListProjection(),
+			},
+			prefix:  model.ResourceTypeNamespace.String(),
+			extra:   []any{"ListAccessible"},
+			pattern: composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*"),
+		},
+		{
+			name: "organization user list",
+			query: repository.OrganizationListQuery{
+				UserID:     actorID,
+				Action:     model.ActionOrganizationRead,
+				Page:       repository.CursorPage{Size: 10},
+				Order:      repository.SortDirectionDesc,
+				Projection: repository.OrganizationListProjection(),
+			},
+			prefix:  model.ResourceTypeOrganization.String(),
+			extra:   []any{"ListForUser"},
+			pattern: composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			plan, err := repository.CompileQuery(tt.query)
+			require.NoError(t, err)
+
+			key := plan.CacheKey(tt.prefix, tt.extra...)
+			matched, err := path.Match(tt.pattern, key)
+			require.NoError(t, err)
+			assert.True(t, matched, "pattern %q should match key %q", tt.pattern, key)
+		})
+	}
 }
 
 func TestQueryPlanValidate(t *testing.T) {

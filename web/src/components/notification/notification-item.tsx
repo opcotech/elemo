@@ -9,7 +9,7 @@ import {
   v1NotificationUpdateMutation,
 } from "@/lib/api/mutation-options";
 import { v1NotificationsGetOptions } from "@/lib/api/query-options";
-import type { Notification, NotificationPage } from "@/lib/client";
+import type { Notification, NotificationPage } from "@/lib/api/types";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 interface NotificationItemProps {

@@ -31,19 +31,19 @@ func (s *StaticFileServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupLocalStack(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	s.staticFileService, err = service.NewStaticFileService(
 		s.StaticFileRepository,
-		service.WithLicenseService(licenseService),
+		licenseService,
 	)
 	s.Require().NoError(err)
 }

@@ -1,5 +1,5 @@
+import { zUserStatus } from "@/lib/api/schemas";
 import type { OrganizationMember } from "@/lib/api/types";
-import { zUserStatus } from "@/lib/client/zod.gen";
 
 /** Pending first, deleted last, then alphabetical by full name. */
 export function sortOrganizationMembers(

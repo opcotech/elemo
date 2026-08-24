@@ -1,26 +1,31 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+
 	"github.com/go-redis/cache/v9"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/opcotech/elemo/internal/model"
 )
 
 func TestCachedCommentRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) []repository.RedisRepositoryOption
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) repository.CommentRepository
 	}
 	type args struct {
 		ctx  context.Context
-		opts CreateCommentOpts
+		opts repository.CreateCommentOpts
 	}
 	tests := []struct {
 		name    string
@@ -31,7 +36,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to an issue",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) []repository.RedisRepositoryOption {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -41,41 +46,41 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(&Comment{}, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&repository.Comment{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateCommentOpts{
+				opts: repository.CreateCommentOpts{
 					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -85,7 +90,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment to a document",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) []repository.RedisRepositoryOption {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
 
@@ -95,41 +100,41 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					documentsKeyResult := new(redis.StringSliceCmd)
 					documentsKeyResult.SetVal([]string{documentsKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(&Comment{}, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&repository.Comment{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateCommentOpts{
+				opts: repository.CreateCommentOpts{
 					BelongsTo: model.MustNewID(model.ResourceTypeDocument),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -139,7 +144,7 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		{
 			name: "add new comment with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) []repository.RedisRepositoryOption {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -149,52 +154,52 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(nil, ErrCommentCreate)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, repository.ErrCommentCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateCommentOpts{
+				opts: repository.CreateCommentOpts{
 					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
 			},
-			wantErr: ErrCommentCreate,
+			wantErr: repository.ErrCommentCreate,
 		},
 		{
 			name: "add new comment belongs to cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateCommentOpts) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateCommentOpts) []repository.RedisRepositoryOption {
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", opts.BelongsTo.String(), "*", "*")
 					issuesKey := composeCacheKey(model.ResourceTypeIssue.String(), "*")
 
@@ -204,45 +209,45 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 					issuesKeyResult := new(redis.StringSliceCmd)
 					issuesKeyResult.SetVal([]string{issuesKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyResult)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ CreateCommentOpts) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ repository.CreateCommentOpts) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateCommentOpts{
+				opts: repository.CreateCommentOpts{
 					BelongsTo: model.MustNewID(model.ResourceTypeIssue),
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -250,12 +255,18 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt := tt
-			var ctrl = gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.opts),
-			}
+			r := func() *repository.RedisCachedCommentRepository {
+				r, err := repository.NewCachedCommentRepository(
+					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.opts),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -264,8 +275,8 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 
 func TestCachedCommentRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -275,28 +286,28 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *Comment
+		want    func(id model.ID) *repository.Comment
 		wantErr error
 	}{
 		{
 			name: "get uncached comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -304,15 +315,15 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						Value: comment,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -321,8 +332,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			want: func(id model.ID) *Comment {
-				return &Comment{
+			want: func(id model.ID) *repository.Comment {
+				return &repository.Comment{
 					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -332,44 +343,44 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get cached comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**Comment); ok {
+						if ptr, ok := dst.(**repository.Comment); ok {
 							*ptr = comment
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Comment) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			want: func(id model.ID) *Comment {
-				return &Comment{
+			want: func(id model.ID) *repository.Comment {
+				return &repository.Comment{
 					ID:        id,
 					Content:   "test comment content",
 					CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -379,33 +390,33 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		{
 			name: "get uncached comment error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(nil, ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Get(ctx, id).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -413,64 +424,64 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get cached comment error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Comment) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached comment cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -478,15 +489,15 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 						Value: comment,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
 					repo.EXPECT().Get(ctx, id).Return(comment, nil)
 					return repo
 				},
@@ -495,7 +506,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -503,17 +514,23 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt := tt
-			var ctrl = gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *Comment
+			var want *repository.Comment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
 
-			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, want),
-			}
+			r := func() *repository.RedisCachedCommentRepository {
+				r, err := repository.NewCachedCommentRepository(
+					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			got, err := r.Get(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, want, got)
@@ -523,8 +540,8 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 
 func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) []repository.RedisRepositoryOption
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -536,45 +553,45 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*Comment
+		want    []*repository.Comment
 		wantErr error
 	}{
 		{
 			name: "get uncached comments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", belongsTo.String(), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Comment]{Items: comments},
+						Value: repository.Page[*repository.Comment]{Items: comments},
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}).Return(Page[*Comment]{Items: comments}, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, repository.CursorPage{Size: limit}).Return(repository.Page[*repository.Comment]{Items: comments}, nil)
 					return repo
 				},
 			},
@@ -582,7 +599,7 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*Comment{
+			want: []*repository.Comment{
 				{
 					ID:        model.MustNewID(model.ResourceTypeComment),
 					Content:   "test comment content",
@@ -598,43 +615,43 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 		{
 			name: "get cached comments",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", belongsTo.String(), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*Page[*Comment]); ok {
-							*ptr = Page[*Comment]{Items: comments}
+						if ptr, ok := dst.(*repository.Page[*repository.Comment]); ok {
+							*ptr = repository.Page[*repository.Comment]{Items: comments}
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Comment) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Comment) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*Comment{
+			want: []*repository.Comment{
 				{
 					ID:        model.MustNewID(model.ResourceTypeComment),
 					Content:   "test comment content",
@@ -650,33 +667,33 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 		{
 			name: "get uncached comments error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", belongsTo.String(), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}).Return(Page[*Comment]{}, ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, repository.CursorPage{Size: limit}).Return(repository.Page[*repository.Comment]{}, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -684,81 +701,81 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get get comments cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, _ []*repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", belongsTo.String(), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Comment) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Comment) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached comments cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", belongsTo.String(), "", limit)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Comment]{Items: comments},
+						Value: repository.Page[*repository.Comment]{Items: comments},
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().ListBelongsTo(ctx, belongsTo, CursorPage{Size: limit}).Return(Page[*Comment]{Items: comments}, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, belongsTo model.ID, _, limit int, comments []*repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().ListBelongsTo(ctx, belongsTo, repository.CursorPage{Size: limit}).Return(repository.Page[*repository.Comment]{Items: comments}, nil)
 					return repo
 				},
 			},
@@ -766,7 +783,7 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 				ctx:       context.Background(),
 				belongsTo: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -774,13 +791,19 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt := tt
-			var ctrl = gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-			}
-			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, CursorPage{Size: testPageSize(tt.args.limit)})
+			r := func() *repository.RedisCachedCommentRepository {
+				r, err := repository.NewCachedCommentRepository(
+					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, repository.CursorPage{Size: testPageSize(tt.args.limit)})
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -789,47 +812,47 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 
 func TestCachedCommentRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository
 	}
 	type args struct {
 		ctx  context.Context
 		id   model.ID
-		opts UpdateCommentOpts
+		opts repository.UpdateCommentOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *Comment
+		want    *repository.Comment
 		wantErr error
 	}{
 		{
 			name: "update comment",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -837,25 +860,25 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						Value: comment,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: comment.Content}).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, repository.UpdateCommentOpts{Content: comment.Content}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				id:   model.MustNewID(model.ResourceTypeComment),
-				opts: UpdateCommentOpts{Content: "new content"},
+				opts: repository.UpdateCommentOpts{Content: "new content"},
 			},
-			want: &Comment{
+			want: &repository.Comment{
 				ID:        model.MustNewID(model.ResourceTypeComment),
 				Content:   "new content",
 				CreatedBy: model.MustNewID(model.ResourceTypeUser),
@@ -864,102 +887,102 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 		{
 			name: "update comment with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Comment) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Comment) []repository.RedisRepositoryOption {
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(nil, ErrNotFound)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, repository.UpdateCommentOpts{Content: "new content"}).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				id:   model.MustNewID(model.ResourceTypeComment),
-				opts: UpdateCommentOpts{Content: "new content"},
+				opts: repository.UpdateCommentOpts{Content: "new content"},
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "update comment set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: comment,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, repository.UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				id:   model.MustNewID(model.ResourceTypeComment),
-				opts: UpdateCommentOpts{Content: "new content"},
+				opts: repository.UpdateCommentOpts{Content: "new content"},
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 		{
 			name: "update comment delete cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String())
 					belongsToKey := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 
 					belongsToKeyCmd := new(redis.StringSliceCmd)
 					belongsToKeyCmd.SetVal([]string{belongsToKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, belongsToKey).Return(belongsToKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, belongsToKey).Return(assert.AnError)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -967,25 +990,25 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 						Value: comment,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *Comment) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, repository.UpdateCommentOpts{Content: "new content"}).Return(comment, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				id:   model.MustNewID(model.ResourceTypeComment),
-				opts: UpdateCommentOpts{Content: "new content"},
+				opts: repository.UpdateCommentOpts{Content: "new content"},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -993,13 +1016,19 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt := tt
-			var ctrl = gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-			}
+			r := func() *repository.RedisCachedCommentRepository {
+				r, err := repository.NewCachedCommentRepository(
+					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -1009,8 +1038,8 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 
 func TestCachedCommentRepository_Delete(t *testing.T) {
 	type fields struct {
-		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository
-		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) CommentRepository
+		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption
+		commentRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1025,7 +1054,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 		{
 			name: "delete comment success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 					byBelongsTo := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1043,38 +1072,38 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1087,7 +1116,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 		{
 			name: "delete comment with comment deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 					byBelongsTo := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1105,39 +1134,39 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) CommentRepository {
-					repo := NewMockCommentRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(ErrCommentDelete)
+				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
+					repo := mockrepo.NewMockCommentRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrCommentDelete)
 					return repo
 				},
 			},
@@ -1145,55 +1174,55 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCommentDelete,
+			wantErr: repository.ErrCommentDelete,
 		},
 		{
 			name: "delete comment with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete comment cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 					byBelongsTo := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 
@@ -1203,47 +1232,47 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 
 		{
 			name: "delete comment cache by document key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 					byBelongsTo := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1257,48 +1286,48 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete comment cache by issues key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeComment.String(), "Get", id.String()+"*")
 					byBelongsTo := composeCacheKey(model.ResourceTypeComment.String(), "ListBelongsTo", "*", "*", "*")
 					documentsKey := composeCacheKey(model.ResourceTypeDocument.String(), "*")
@@ -1316,45 +1345,45 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, byBelongsTo).Return(byBelongsToCmd)
 					dbClient.EXPECT().Keys(ctx, documentsKey).Return(documentsKeyCmd)
 					dbClient.EXPECT().Keys(ctx, issuesKey).Return(issuesKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, byBelongsTo).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, documentsKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, issuesKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) CommentRepository {
-					return NewMockCommentRepository(nil)
+				commentRepo: func(_ *gomock.Controller, _ context.Context, _ model.ID) repository.CommentRepository {
+					return mockrepo.NewMockCommentRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeComment),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1362,12 +1391,18 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tt := tt
-			var ctrl = gomock.NewController(t)
+			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedCommentRepository{
-				cacheRepo:   tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				commentRepo: tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id),
-			}
+			r := func() *repository.RedisCachedCommentRepository {
+				r, err := repository.NewCachedCommentRepository(
+					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})

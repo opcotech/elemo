@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -26,8 +25,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { v1UserResetPasswordMutation } from "@/lib/api/mutation-options";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { useFormMutation } from "@/hooks/use-form-mutation";
+import { v1UserResetPassword } from "@/lib/api/sdk";
+import type { Options, V1UserResetPasswordData } from "@/lib/api/types";
 
 const passwordResetSchema = z
   .object({
@@ -45,7 +45,6 @@ const passwordResetSchema = z
 type PasswordResetFormData = z.infer<typeof passwordResetSchema>;
 
 export function PasswordResetForm() {
-  const navigate = useNavigate();
   const { token } = useSearch({ from: "/reset-password" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,36 +57,32 @@ export function PasswordResetForm() {
     },
   });
 
-  const resetPasswordMutation = useMutation({
-    ...v1UserResetPasswordMutation(),
-    onSuccess: () => {
-      showSuccessToast(
-        "Password reset successfully",
-        "Your password has been reset successfully. You can now log in with your new password."
-      );
-      navigate({ to: "/login", search: { redirect: undefined } });
+  const resetPasswordMutation = useFormMutation<
+    unknown,
+    Options<V1UserResetPasswordData>,
+    PasswordResetFormData
+  >({
+    mutationFn: async (variables) => {
+      const { data } = await v1UserResetPassword({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
     },
-    onError: (error) => {
-      showErrorToast("Failed to reset password", error.message);
-    },
-  });
-
-  const onSubmit = (values: PasswordResetFormData) => {
-    if (!token) {
-      showErrorToast(
-        "Invalid reset link",
-        "The password reset link is invalid or missing."
-      );
-      return;
-    }
-
-    resetPasswordMutation.mutate({
+    form,
+    successMessage: "Password reset successfully",
+    successDescription:
+      "Your password has been reset successfully. You can now log in with your new password.",
+    errorMessagePrefix: "Failed to reset password",
+    transformValues: (values) => ({
       body: {
-        token,
+        token: token ?? "",
         password: values.password,
       },
-    });
-  };
+    }),
+    navigateOnSuccess: (navigate) =>
+      navigate({ to: "/login", search: { redirect: undefined } }),
+  });
 
   if (!token) {
     return (
@@ -137,8 +132,11 @@ export function PasswordResetForm() {
         </CardHeader>
         <CardContent>
           <FieldProvider {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {resetPasswordMutation.isError && (
+            <form
+              onSubmit={resetPasswordMutation.handleSubmit}
+              className="space-y-4"
+            >
+              {resetPasswordMutation.error && (
                 <Alert variant="destructive">
                   <AlertDescription>
                     {resetPasswordMutation.error.message}

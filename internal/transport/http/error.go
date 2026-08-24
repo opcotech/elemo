@@ -78,34 +78,50 @@ func isInvalidPageError(err error) bool {
 	return errors.Is(err, repository.ErrInvalidPageSize) || errors.Is(err, repository.ErrInvalidCursor)
 }
 
-func isIssueRelationBadRequest(err error) bool {
-	return errors.Is(err, service.ErrIssueSelfRelation) ||
+func isClientValidationError(err error) bool {
+	return isInvalidPageError(err) ||
+		errors.Is(err, service.ErrNoUser) ||
+		errors.Is(err, service.ErrInvalidEmail) ||
+		errors.Is(err, service.ErrInvalidToken) ||
+		errors.Is(err, service.ErrExpiredToken) ||
+		errors.Is(err, service.ErrOrganizationMemberAlreadyExists) ||
+		errors.Is(err, service.ErrOrganizationMemberInvalidStatus) ||
+		errors.Is(err, service.ErrIssueSelfRelation) ||
 		errors.Is(err, service.ErrIssueReservedRelationKind) ||
+		errors.Is(err, repository.ErrFolderNameConflict) ||
+		errors.Is(err, repository.ErrFolderCycle) ||
+		errors.Is(err, model.ErrInvalidID) ||
+		errors.Is(err, model.ErrInvalidResourceType) ||
+		errors.Is(err, model.ErrInvalidIssueDetails) ||
 		errors.Is(err, model.ErrInvalidIssueRelationKind) ||
-		errors.Is(err, model.ErrInvalidID)
+		errors.Is(err, model.ErrInvalidDocumentDetails) ||
+		errors.Is(err, model.ErrInvalidFolderDetails) ||
+		errors.Is(err, model.ErrInvalidProjectDetails) ||
+		errors.Is(err, model.ErrInvalidNamespaceDetails) ||
+		errors.Is(err, model.ErrInvalidOrganizationDetails) ||
+		errors.Is(err, model.ErrInvalidRoleDetails) ||
+		errors.Is(err, model.ErrInvalidTeamDetails) ||
+		errors.Is(err, model.ErrInvalidTodoDetails) ||
+		errors.Is(err, model.ErrInvalidUserDetails) ||
+		errors.Is(err, model.ErrInvalidGrant) ||
+		errors.Is(err, model.ErrInvalidAction) ||
+		errors.Is(err, model.ErrNotAPrincipal)
 }
 
-func isIssueForbidden(err error) bool {
+func isForbiddenError(err error) bool {
 	return errors.Is(err, service.ErrNoPermission) ||
 		errors.Is(err, license.ErrLicenseExpired) ||
-		errors.Is(err, service.ErrQuotaExceeded)
+		errors.Is(err, service.ErrQuotaExceeded) ||
+		errors.Is(err, model.ErrPrivilegeEscalation)
 }
 
 // classifyServiceError maps service/repository errors to HTTP status codes.
 // Handlers wrap the result in generated OpenAPI response types.
 func classifyServiceError(err error) int {
 	switch {
-	case isInvalidPageError(err),
-		isIssueRelationBadRequest(err),
-		errors.Is(err, model.ErrInvalidIssueDetails),
-		errors.Is(err, model.ErrInvalidDocumentDetails),
-		errors.Is(err, model.ErrInvalidFolderDetails),
-		errors.Is(err, model.ErrInvalidResourceType),
-		errors.Is(err, service.ErrNoUser),
-		errors.Is(err, repository.ErrFolderNameConflict),
-		errors.Is(err, repository.ErrFolderCycle):
+	case isClientValidationError(err):
 		return http.StatusBadRequest
-	case isIssueForbidden(err):
+	case isForbiddenError(err):
 		return http.StatusForbidden
 	case isNotFoundError(err):
 		return http.StatusNotFound

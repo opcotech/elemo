@@ -84,7 +84,7 @@ func (o UpdateDocumentOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=document.go -destination=document_mock_gen.go -package=repository -mock_names "DocumentRepository=MockDocumentRepository"
+//go:generate go tool mockgen -source=document.go -destination=mock/mock_document_gen.go -package=mockrepo
 type DocumentRepository interface {
 	Create(ctx context.Context, opts CreateDocumentOpts) (*Document, error)
 	Get(ctx context.Context, id model.ID, proj DocumentProjection) (*Document, error)
@@ -182,7 +182,8 @@ func (r *Neo4jDocumentRepository) applyDocumentLoaders(ctx context.Context, tx n
 			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 				DocumentID string
 				Labels     []PartialLabel
-			}, error) {
+			}, error,
+			) {
 				documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
 				if err != nil {
 					return struct {
@@ -249,7 +250,8 @@ func applyDocumentCountLoader(
 	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		DocumentID string
 		Count      int64
-	}, error) {
+	}, error,
+	) {
 		documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
 		if err != nil {
 			return struct {
@@ -289,7 +291,8 @@ func applyDocumentFolderLoader(
 	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		DocumentID string
 		Folder     *DocumentFolder
-	}, error) {
+	}, error,
+	) {
 		documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
 		if err != nil {
 			return struct {
@@ -360,7 +363,8 @@ func applyDocumentRelationsLoader(
 	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		DocumentID string
 		Relation   DocumentRelation
-	}, error) {
+	}, error,
+	) {
 		documentID, err := Neo4jParseValueFromRecord[string](rec, "document_id")
 		if err != nil {
 			return struct {

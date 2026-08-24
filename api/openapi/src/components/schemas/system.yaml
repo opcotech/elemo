@@ -1,0 +1,173 @@
+SystemHealth:
+  title: SystemHealth
+  type: object
+  properties:
+    cache_database:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the cache database.
+    graph_database:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the graph database.
+    relational_database:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the relational database.
+    license:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the license.
+    message_queue:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the message queue.
+    search:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - unknown
+      minLength: 7
+      maxLength: 9
+      description: Health of the search engine.
+  required:
+    - cache_database
+    - graph_database
+    - relational_database
+    - license
+    - message_queue
+    - search
+  x-examples:
+    example:
+      cache_database: healthy
+      graph_database: healthy
+      relational_database: healthy
+      license: healthy
+      message_queue: healthy
+      search: healthy
+SystemVersion:
+  title: SystemVersion
+  type: object
+  properties:
+    version:
+      type: string
+      description: Version of the application.
+      pattern: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+    commit:
+      type: string
+      description: Commit hash of the build.
+      pattern: "^[0-9a-f]{5,40}$"
+    date:
+      type: string
+      format: date-time
+      description: Build date and time of the application.
+    go_version:
+      type: string
+      description: Go version used to build the application.
+      pattern: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+  required:
+    - version
+    - commit
+    - date
+    - go_version
+SystemLicense:
+  title: SystemLicense
+  type: object
+  properties:
+    id:
+      type: string
+      description: Unique ID identifying the license.
+    organization:
+      type: string
+      description: Name of the organization the license belongs to.
+    email:
+      type: string
+      format: email
+      example: info@example.com
+      minLength: 6
+      maxLength: 254
+      description: Email address of the licensee.
+    quotas:
+      type: object
+      description: Quotas available for the license.
+      required:
+        - documents
+        - namespaces
+        - organizations
+        - projects
+        - roles
+        - users
+      properties:
+        documents:
+          type: integer
+          minimum: 1
+          description: Number of documents can exist in the system.
+        namespaces:
+          type: integer
+          minimum: 1
+          description: Number of namespaces can exist in the system.
+        organizations:
+          type: integer
+          minimum: 1
+          description: Number of organizations active can exist in the system.
+        projects:
+          type: integer
+          minimum: 1
+          description: Number of projects can exist in the system.
+        roles:
+          type: integer
+          minimum: 1
+          description: Number of roles can exist in the system.
+        users:
+          type: integer
+          minimum: 1
+          description: Number of active or pending users can exist in the system.
+    features:
+      type: array
+      uniqueItems: true
+      description: Features enabled by the license.
+      items:
+        type: string
+        enum:
+          - components
+          - custom_statuses
+          - custom_fields
+          - multiple_assignees
+          - releases
+    expires_at:
+      type: string
+      format: date-time
+      description: Date and time when the license expires.
+  required:
+    - id
+    - organization
+    - email
+    - quotas
+    - features
+    - expires_at

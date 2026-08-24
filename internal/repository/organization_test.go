@@ -1,31 +1,47 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+
 	"github.com/go-redis/cache/v9"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
-	"github.com/opcotech/elemo/internal/pkg/optional"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
+
+func mustOrganizationListForUserKey(t *testing.T, userID model.ID, page repository.CursorPage) string {
+	t.Helper()
+	return mustPlanCacheKey(t, repository.OrganizationListQuery{
+		UserID:     userID,
+		Action:     model.ActionOrganizationRead,
+		Page:       page,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.OrganizationListProjection(),
+	}, model.ResourceTypeOrganization.String(), "ListForUser")
+}
 
 func TestCachedOrganizationRepository_Create(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, opts CreateOrganizationOpts) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, opts CreateOrganizationOpts) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx  context.Context
-		opts CreateOrganizationOpts
+		opts repository.CreateOrganizationOpts
 	}
 	tests := []struct {
 		name    string
@@ -36,45 +52,45 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		{
 			name: "add new organization",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateOrganizationOpts) *redisBaseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, ownerKey).Return(ownerKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, ownerKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateOrganizationOpts) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(&Organization{}, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&repository.Organization{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateOrganizationOpts{
+				opts: repository.CreateOrganizationOpts{
 					Owner:   model.MustNewID(model.ResourceTypeUser),
 					Name:    "test organization",
 					Email:   "info@example.com",
@@ -87,45 +103,45 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		{
 			name: "add new organization with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateOrganizationOpts) *redisBaseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, ownerKey).Return(ownerKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, ownerKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts CreateOrganizationOpts) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(nil, ErrOrganizationCreate)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, repository.ErrOrganizationCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateOrganizationOpts{
+				opts: repository.CreateOrganizationOpts{
 					Owner:   model.MustNewID(model.ResourceTypeUser),
 					Name:    "test organization",
 					Email:   "info@example.com",
@@ -134,48 +150,48 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 					Status:  model.OrganizationStatusActive,
 				},
 			},
-			wantErr: ErrOrganizationCreate,
+			wantErr: repository.ErrOrganizationCreate,
 		},
 		{
 			name: "add new organization get all cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateOrganizationOpts) *redisBaseRepository {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, ownerKey).Return(ownerKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, ownerKey).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, ownerKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ CreateOrganizationOpts) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ repository.CreateOrganizationOpts) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateOrganizationOpts{
+				opts: repository.CreateOrganizationOpts{
 					Owner:   model.MustNewID(model.ResourceTypeUser),
 					Name:    "test organization",
 					Email:   "info@example.com",
@@ -184,7 +200,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 					Status:  model.OrganizationStatusActive,
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -193,10 +209,16 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.opts),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.opts),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -205,8 +227,8 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 
 func TestCachedOrganizationRepository_Get(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -216,28 +238,28 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *Organization
+		want    func(id model.ID) *repository.Organization
 		wantErr error
 	}{
 		{
 			name: "get uncached organization",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -245,16 +267,16 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						Value: organization,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, OrganizationDetailProjection()).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.OrganizationDetailProjection()).Return(organization, nil)
 					return repo
 				},
 			},
@@ -262,8 +284,8 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(id model.ID) *Organization {
-				return &Organization{
+			want: func(id model.ID) *repository.Organization {
+				return &repository.Organization{
 					ID:             id,
 					Name:           "test organization",
 					Email:          "info@example.com",
@@ -279,44 +301,44 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		{
 			name: "get cached organization",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if orgPtr, ok := dst.(**Organization); ok {
+						if orgPtr, ok := dst.(**repository.Organization); ok {
 							*orgPtr = organization
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Organization) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Organization) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: func(id model.ID) *Organization {
-				return &Organization{
+			want: func(id model.ID) *repository.Organization {
+				return &repository.Organization{
 					ID:             id,
 					Name:           "test organization",
 					Email:          "info@example.com",
@@ -332,33 +354,33 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		{
 			name: "get uncached organization error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, OrganizationDetailProjection()).Return(nil, ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.OrganizationDetailProjection()).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -366,64 +388,64 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get cached organization error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Organization) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Organization) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached organization cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -431,16 +453,16 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 						Value: organization,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, OrganizationDetailProjection()).Return(organization, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.OrganizationDetailProjection()).Return(organization, nil)
 					return repo
 				},
 			},
@@ -448,7 +470,7 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -457,26 +479,32 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *Organization
+			var want *repository.Organization
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
 
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, want),
-			}
-			got, err := r.Get(tt.args.ctx, tt.args.id, OrganizationDetailProjection())
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.Get(tt.args.ctx, tt.args.id, repository.OrganizationDetailProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, want, got)
 		})
 	}
 }
 
-func TestCachedOrganizationRepository_GetAll(t *testing.T) {
+func TestCachedOrganizationRepository_List(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -488,45 +516,45 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*Organization
+		want    []*repository.Organization
 		wantErr error
 	}{
 		{
 			name: "get uncached organizations",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(OrganizationListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) []repository.RedisRepositoryOption {
+					key := mustOrganizationListForUserKey(t, userID, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Organization]{Items: organizations},
+						Value: repository.Page[*repository.Organization]{Items: organizations},
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().List(ctx, userID, CursorPage{Size: limit}, OrganizationListProjection()).Return(Page[*Organization]{Items: organizations}, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().ListForUser(ctx, repository.OrganizationListQuery{UserID: userID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()}).Return(repository.Page[*repository.Organization]{Items: organizations}, nil)
 					return repo
 				},
 			},
@@ -536,7 +564,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*Organization{
+			want: []*repository.Organization{
 				{
 					ID:             model.MustNewID(model.ResourceTypeOrganization),
 					Name:           "test organization",
@@ -564,36 +592,36 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached organizations",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(OrganizationListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) []repository.RedisRepositoryOption {
+					key := mustOrganizationListForUserKey(t, userID, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*Page[*Organization]); ok {
-							*ptr = Page[*Organization]{Items: organizations}
+						if ptr, ok := dst.(*repository.Page[*repository.Organization]); ok {
+							*ptr = repository.Page[*repository.Organization]{Items: organizations}
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Organization) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Organization) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -602,7 +630,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			want: []*Organization{
+			want: []*repository.Organization{
 				{
 					ID:             model.MustNewID(model.ResourceTypeOrganization),
 					Name:           "test organization",
@@ -630,33 +658,33 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached organizations error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(OrganizationListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*repository.Organization) []repository.RedisRepositoryOption {
+					key := mustOrganizationListForUserKey(t, userID, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().List(ctx, userID, CursorPage{Size: limit}, OrganizationListProjection()).Return(Page[*Organization]{}, ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().ListForUser(ctx, repository.OrganizationListQuery{UserID: userID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()}).Return(repository.Page[*repository.Organization]{}, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -666,37 +694,37 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get organizations cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(OrganizationListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, _ []*repository.Organization) []repository.RedisRepositoryOption {
+					key := mustOrganizationListForUserKey(t, userID, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*Organization) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _, _ int, _ []*repository.Organization) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -705,44 +733,44 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached organizations cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "List", userID.String(), projectionCacheValue(OrganizationListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) []repository.RedisRepositoryOption {
+					key := mustOrganizationListForUserKey(t, userID, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Organization]{Items: organizations},
+						Value: repository.Page[*repository.Organization]{Items: organizations},
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().List(ctx, userID, CursorPage{Size: limit}, OrganizationListProjection()).Return(Page[*Organization]{Items: organizations}, nil)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, userID model.ID, _, limit int, organizations []*repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().ListForUser(ctx, repository.OrganizationListQuery{UserID: userID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()}).Return(repository.Page[*repository.Organization]{Items: organizations}, nil)
 					return repo
 				},
 			},
@@ -752,7 +780,7 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 				offset: 0,
 				limit:  10,
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -761,11 +789,17 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-			}
-			got, err := r.List(tt.args.ctx, tt.args.userID, CursorPage{Size: testPageSize(tt.args.limit)}, OrganizationListProjection())
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.ListForUser(tt.args.ctx, repository.OrganizationListQuery{UserID: tt.args.userID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: testPageSize(tt.args.limit)}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 			require.ErrorIs(t, err, tt.wantErr)
 			require.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -774,47 +808,47 @@ func TestCachedOrganizationRepository_GetAll(t *testing.T) {
 
 func TestCachedOrganizationRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateOrganizationOpts, organization *Organization) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts repository.UpdateOrganizationOpts, organization *repository.Organization) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx  context.Context
 		id   model.ID
-		opts UpdateOrganizationOpts
+		opts repository.UpdateOrganizationOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *Organization
+		want    *repository.Organization
 		wantErr error
 	}{
 		{
 			name: "update organization",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -822,15 +856,15 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						Value: organization,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateOrganizationOpts, organization *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts repository.UpdateOrganizationOpts, organization *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, opts).Return(organization, nil)
 					return repo
 				},
@@ -838,11 +872,11 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateOrganizationOpts{
+				opts: repository.UpdateOrganizationOpts{
 					Name: optional.Some("updated organization"),
 				},
 			},
-			want: &Organization{
+			want: &repository.Organization{
 				ID:             model.MustNewID(model.ResourceTypeOrganization),
 				Name:           "test organization",
 				Email:          "info@example.com",
@@ -857,69 +891,69 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 		{
 			name: "update organization with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Organization) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Organization) []repository.RedisRepositoryOption {
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateOrganizationOpts, _ *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, opts).Return(nil, ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts repository.UpdateOrganizationOpts, _ *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, opts).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateOrganizationOpts{
+				opts: repository.UpdateOrganizationOpts{
 					Name: optional.Some("updated organization"),
 				},
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "update organization set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
 						Value: organization,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateOrganizationOpts, organization *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts repository.UpdateOrganizationOpts, organization *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, opts).Return(organization, nil)
 					return repo
 				},
@@ -927,38 +961,38 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateOrganizationOpts{
+				opts: repository.UpdateOrganizationOpts{
 					Name: optional.Some("updated organization"),
 				},
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 		{
 			name: "update organization delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *Organization) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(OrganizationDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(assert.AnError)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -966,15 +1000,15 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 						Value: organization,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts UpdateOrganizationOpts, organization *Organization) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, opts repository.UpdateOrganizationOpts, organization *repository.Organization) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, opts).Return(organization, nil)
 					return repo
 				},
@@ -982,11 +1016,11 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
-				opts: UpdateOrganizationOpts{
+				opts: repository.UpdateOrganizationOpts{
 					Name: optional.Some("updated organization"),
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -996,10 +1030,16 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
@@ -1009,8 +1049,8 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 
 func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -1026,9 +1066,9 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1036,34 +1076,34 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().AddMember(ctx, id, memberID).Return(nil)
 					return repo
 				},
@@ -1077,9 +1117,9 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		{
 			name: "delete organization with organization deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1087,35 +1127,35 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().AddMember(ctx, id, memberID).Return(ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().AddMember(ctx, id, memberID).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1124,43 +1164,43 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrOrganizationDelete,
+			wantErr: repository.ErrOrganizationDelete,
 		},
 		{
 			name: "delete organization with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1169,14 +1209,14 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete organization cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1184,34 +1224,34 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1219,7 +1259,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1228,10 +1268,16 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.AddMember(tt.args.ctx, tt.args.id, tt.args.memberID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -1240,8 +1286,8 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 
 func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx      context.Context
@@ -1257,9 +1303,9 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1267,34 +1313,34 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(nil)
 					return repo
 				},
@@ -1308,9 +1354,9 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		{
 			name: "delete organization with organization deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1318,35 +1364,35 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1355,43 +1401,43 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrOrganizationDelete,
+			wantErr: repository.ErrOrganizationDelete,
 		},
 		{
 			name: "delete organization with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1400,14 +1446,14 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete organization cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1415,34 +1461,34 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1450,7 +1496,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 				id:       model.MustNewID(model.ResourceTypeOrganization),
 				memberID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1459,10 +1505,16 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.RemoveMember(tt.args.ctx, tt.args.id, tt.args.memberID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -1471,8 +1523,8 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 
 func TestCachedOrganizationRepository_Delete(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1487,9 +1539,9 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 		{
 			name: "delete organization success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1497,34 +1549,34 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1537,9 +1589,9 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 		{
 			name: "delete organization with organization deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1547,35 +1599,35 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(ErrOrganizationDelete)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrOrganizationDelete)
 					return repo
 				},
 			},
@@ -1583,43 +1635,43 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrOrganizationDelete,
+			wantErr: repository.ErrOrganizationDelete,
 		},
 		{
 			name: "delete organization with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					return repo
 				},
 			},
@@ -1627,14 +1679,14 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete organization cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1642,41 +1694,41 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1685,10 +1737,16 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -1697,8 +1755,8 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 
 func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -1714,9 +1772,9 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 		{
 			name: "add invitation success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1724,34 +1782,34 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().AddInvitation(ctx, orgID, userID).Return(nil)
 					return repo
 				},
@@ -1765,9 +1823,9 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 		{
 			name: "add invitation with organization error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1775,35 +1833,35 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().AddInvitation(ctx, orgID, userID).Return(ErrOrganizationAddMember)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().AddInvitation(ctx, orgID, userID).Return(repository.ErrOrganizationAddMember)
 					return repo
 				},
 			},
@@ -1812,43 +1870,43 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrOrganizationAddMember,
+			wantErr: repository.ErrOrganizationAddMember,
 		},
 		{
 			name: "add invitation with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1856,14 +1914,14 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "add invitation cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1871,34 +1929,34 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -1906,7 +1964,7 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1915,10 +1973,16 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.AddInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -1927,8 +1991,8 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 
 func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx    context.Context
@@ -1944,9 +2008,9 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 		{
 			name: "remove invitation success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1954,34 +2018,34 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(nil)
 					return repo
 				},
@@ -1995,9 +2059,9 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 		{
 			name: "remove invitation with organization error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -2005,35 +2069,35 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(ErrOrganizationRemoveMember)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, userID model.ID) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().RemoveInvitation(ctx, orgID, userID).Return(repository.ErrOrganizationRemoveMember)
 					return repo
 				},
 			},
@@ -2042,43 +2106,43 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrOrganizationRemoveMember,
+			wantErr: repository.ErrOrganizationRemoveMember,
 		},
 		{
 			name: "remove invitation with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2086,14 +2150,14 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "remove invitation cache by related key error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -2101,34 +2165,34 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) OrganizationRepository {
-					return NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.OrganizationRepository {
+					return mockrepo.NewMockOrganizationRepository(ctrl)
 				},
 			},
 			args: args{
@@ -2136,7 +2200,7 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 				orgID:  model.MustNewID(model.ResourceTypeOrganization),
 				userID: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -2145,10 +2209,16 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.RemoveInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -2157,8 +2227,8 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 
 func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 	type fields struct {
-		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID) *redisBaseRepository
-		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*OrganizationMember) OrganizationRepository
+		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID) []repository.RedisRepositoryOption
+		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*repository.OrganizationMember) repository.OrganizationRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -2168,27 +2238,27 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*OrganizationMember
+		want    []*repository.OrganizationMember
 		wantErr error
 	}{
 		{
 			name: "get invitations success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) []repository.RedisRepositoryOption {
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*OrganizationMember) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, invitations []*repository.OrganizationMember) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
 					repo.EXPECT().GetInvitations(ctx, orgID).Return(invitations, nil)
 					return repo
 				},
@@ -2197,7 +2267,7 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 				ctx:   context.Background(),
 				orgID: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*OrganizationMember{
+			want: []*repository.OrganizationMember{
 				{
 					ID:    model.MustNewID(model.ResourceTypeUser),
 					Email: "user1@example.com",
@@ -2208,22 +2278,22 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 		{
 			name: "get invitations with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID) []repository.RedisRepositoryOption {
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
 					}
 				},
-				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ []*OrganizationMember) OrganizationRepository {
-					repo := NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().GetInvitations(ctx, orgID).Return(nil, ErrNotFound)
+				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID model.ID, _ []*repository.OrganizationMember) repository.OrganizationRepository {
+					repo := mockrepo.NewMockOrganizationRepository(ctrl)
+					repo.EXPECT().GetInvitations(ctx, orgID).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -2231,7 +2301,7 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 				ctx:   context.Background(),
 				orgID: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -2240,10 +2310,16 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedOrganizationRepository{
-				cacheRepo:        tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID),
-				organizationRepo: tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.want),
-			}
+			r := func() *repository.RedisCachedOrganizationRepository {
+				r, err := repository.NewCachedOrganizationRepository(
+					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.orgID)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			got, err := r.GetInvitations(tt.args.ctx, tt.args.orgID)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)

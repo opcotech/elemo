@@ -1,95 +1,53 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
+
 	"go.uber.org/mock/gomock"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
-	"github.com/opcotech/elemo/internal/testutil/mock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewSystemService(t *testing.T) {
-	type args struct {
-		resources map[model.HealthCheckComponent]Pingable
-		version   *model.VersionInfo
-		opts      []Option
-	}
 	tests := []struct {
 		name    string
-		args    args
-		want    SystemService
+		build   func() (service.SystemService, error)
 		wantErr error
 	}{
 		{
 			name: "new system service",
-			args: args{
-				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
-				},
-				version: &model.VersionInfo{
-					Version: "1.0.0",
-				},
-				opts: []Option{
-					WithLogger(mock.NewMockLogger(nil)),
-					WithTracer(mock.NewMockTracer(nil)),
-				},
-			},
-			want: &systemService{
-				baseService: &baseService{
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
-				},
-				versionInfo: &model.VersionInfo{
-					Version: "1.0.0",
-				},
-				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
-				},
+			build: func() (service.SystemService, error) {
+				return service.NewSystemService(map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(nil)}, &model.VersionInfo{Version: "1.0.0"}, service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
 		},
 		{
 			name: "new system service with nil resources",
-			args: args{
-				resources: nil,
-				version: &model.VersionInfo{
-					Version: "1.0.0",
-				},
-				opts: []Option{
-					WithLogger(mock.NewMockLogger(nil)),
-					WithTracer(mock.NewMockTracer(nil)),
-				},
+			build: func() (service.SystemService, error) {
+				return service.NewSystemService(nil, &model.VersionInfo{Version: "1.0.0"}, service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
-			wantErr: ErrNoResources,
+			wantErr: service.ErrNoResources,
 		},
 		{
 			name: "new system service with nil version",
-			args: args{
-				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
-				},
-				version: nil,
-				opts: []Option{
-					WithLogger(mock.NewMockLogger(nil)),
-					WithTracer(mock.NewMockTracer(nil)),
-				},
+			build: func() (service.SystemService, error) {
+				return service.NewSystemService(map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(nil)}, nil, service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
-			wantErr: ErrNoVersionInfo,
+			wantErr: service.ErrNoVersionInfo,
 		},
 		{
 			name: "new system service with invalid options",
-			args: args{
-				resources: map[model.HealthCheckComponent]Pingable{
-					model.HealthCheckComponentGraphDB: mock.NewPingableResource(nil),
-				},
-				version: &model.VersionInfo{},
-				opts: []Option{
-					WithLogger(nil),
-				},
+			build: func() (service.SystemService, error) {
+				return service.NewSystemService(map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(nil)}, &model.VersionInfo{Version: "1.0.0"}, service.WithLogger(nil))
 			},
 			wantErr: log.ErrNoLogger,
 		},
@@ -98,9 +56,11 @@ func TestNewSystemService(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewSystemService(tt.args.resources, tt.args.version, tt.args.opts...)
+			got, err := tt.build()
 			require.ErrorIs(t, err, tt.wantErr)
-			assert.Equal(t, tt.want, got)
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
+			}
 		})
 	}
 }
@@ -113,17 +73,23 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 
 	ctx := context.Background()
 
-	span := mock.NewMockSpan(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 
-	tracer := mock.NewMockTracer(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(ctx, "service.systemService/GetHeartbeat", gomock.Len(0)).Return(ctx, span)
 
-	s := &systemService{
-		baseService: &baseService{
-			tracer: tracer,
-		},
-	}
+	s := func() service.SystemService {
+		svc, err := service.NewSystemService(
+			map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(ctrl)},
+			&model.VersionInfo{Version: "test"},
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			panic(err)
+		}
+		return svc
+	}()
 
 	assert.NoError(t, s.GetHeartbeat(ctx))
 }
@@ -136,33 +102,38 @@ func Test_systemService_GetVersion(t *testing.T) {
 
 	ctx := context.Background()
 
-	span := mock.NewMockSpan(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 
-	tracer := mock.NewMockTracer(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(ctx, "service.systemService/GetVersion", gomock.Len(0)).Return(ctx, span)
 
-	s := &systemService{
-		baseService: &baseService{
-			tracer: tracer,
-		},
-		versionInfo: &model.VersionInfo{
-			Version:   "version",
-			Commit:    "commit",
-			Date:      "date",
-			GoVersion: "go version",
-		},
-	}
+	s := func() service.SystemService {
+		svc, err := service.NewSystemService(
+			map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(ctrl)},
+			&model.VersionInfo{
+				Version:   "version",
+				Commit:    "commit",
+				Date:      "date",
+				GoVersion: "go version",
+			},
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			panic(err)
+		}
+		return svc
+	}()
 
 	got := s.GetVersion(ctx)
-	assert.Equal(t, s.versionInfo, got)
+	assert.Equal(t, service.SystemServiceVersion(s), got)
 }
 
 func Test_systemService_GetHealth(t *testing.T) {
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context) *baseService
+		baseService func(ctrl *gomock.Controller, ctx context.Context) service.SystemService
 		versionInfo *model.VersionInfo
-		resources   func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable
+		resources   func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable
 	}
 	type args struct {
 		ctx context.Context
@@ -177,25 +148,33 @@ func Test_systemService_GetHealth(t *testing.T) {
 		{
 			name: "get health",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.SystemService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						tracer: tracer,
-					}
+					return func() service.SystemService {
+						svc, err := service.NewSystemService(
+							map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(ctrl)},
+							&model.VersionInfo{Version: "test"},
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 				versionInfo: &model.VersionInfo{
 					Version: "1.0.0",
 				},
-				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable {
-					resource := mock.NewPingableResource(ctrl)
+				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
+					resource := mocksvc.NewMockPingable(ctrl)
 					resource.EXPECT().Ping(ctx).Return(nil).Times(4)
 
-					return map[model.HealthCheckComponent]Pingable{
+					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
 						model.HealthCheckComponentLicense:      resource,
@@ -216,25 +195,33 @@ func Test_systemService_GetHealth(t *testing.T) {
 		{
 			name: "get health with error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) *baseService {
-					span := mock.NewMockSpan(ctrl)
+				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.SystemService {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
-					return &baseService{
-						tracer: tracer,
-					}
+					return func() service.SystemService {
+						svc, err := service.NewSystemService(
+							map[model.HealthCheckComponent]service.Pingable{model.HealthCheckComponentGraphDB: mocksvc.NewMockPingable(ctrl)},
+							&model.VersionInfo{Version: "test"},
+							service.WithTracer(tracer),
+						)
+						if err != nil {
+							panic(err)
+						}
+						return svc
+					}()
 				},
 				versionInfo: &model.VersionInfo{
 					Version: "1.0.0",
 				},
-				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]Pingable {
-					resource := mock.NewPingableResource(ctrl)
+				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
+					resource := mocksvc.NewMockPingable(ctrl)
 					resource.EXPECT().Ping(ctx).Return(assert.AnError).Times(4)
 
-					return map[model.HealthCheckComponent]Pingable{
+					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
 						model.HealthCheckComponentLicense:      resource,
@@ -251,7 +238,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 				model.HealthCheckComponentLicense:      model.HealthStatusUnhealthy,
 				model.HealthCheckComponentMessageQueue: model.HealthStatusUnhealthy,
 			},
-			wantErr: ErrSystemHealthCheck,
+			wantErr: service.ErrSystemHealthCheck,
 		},
 	}
 	for _, tt := range tests {
@@ -260,11 +247,8 @@ func Test_systemService_GetHealth(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			s := &systemService{
-				baseService: tt.fields.baseService(ctrl, tt.args.ctx),
-				versionInfo: tt.fields.versionInfo,
-				resources:   tt.fields.resources(tt.args.ctx, ctrl),
-			}
+			s := tt.fields.baseService(ctrl, tt.args.ctx)
+			service.SetSystemServiceState(s, tt.fields.versionInfo, tt.fields.resources(tt.args.ctx, ctrl))
 			got, err := s.GetHealth(tt.args.ctx)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)

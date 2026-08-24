@@ -1,12 +1,12 @@
 import { withErrorHandling } from "./error-handler";
 
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 import {
   v1OrganizationRoleGet,
   v1OrganizationRoleUpdate,
   v1OrganizationRolesCreate,
-} from "@/lib/client/sdk.gen";
-import type { Role, RoleCreate, RolePatch } from "@/lib/client/types.gen";
+} from "@/lib/api/sdk";
+import type { Role, RoleCreate, RolePatch } from "@/lib/api/types";
 
 /**
  * Create a role via API.

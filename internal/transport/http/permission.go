@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/service"
@@ -20,6 +20,7 @@ type PermissionController interface {
 // permissionController is the concrete implementation of PermissionController.
 type permissionController struct {
 	*baseController
+	permissionService service.PermissionService
 }
 
 func (c *permissionController) V1PermissionsCreate(ctx context.Context, request api.V1PermissionsCreateRequestObject) (api.V1PermissionsCreateResponseObject, error) {
@@ -33,17 +34,16 @@ func (c *permissionController) V1PermissionsCreate(ctx context.Context, request 
 
 	grant, err := c.permissionService.CtxUserCreate(ctx, opts)
 	if err != nil {
-		if isGrantBadRequest(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1PermissionsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) || errors.Is(err, model.ErrPrivilegeEscalation) {
+		case http.StatusForbidden:
 			return api.V1PermissionsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		return api.V1PermissionsCreate500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
+		default:
+			return api.V1PermissionsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
-			},
-		}, nil
+			}}, nil
+		}
 	}
 
 	return api.V1PermissionsCreate201JSONResponse{N201JSONResponse: api.N201JSONResponse{
@@ -62,12 +62,14 @@ func (c *permissionController) V1PermissionGet(ctx context.Context, request api.
 
 	grant, err := c.permissionService.Get(ctx, grantID)
 	if err != nil {
-		if isNotFoundError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusNotFound:
 			return api.V1PermissionGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1PermissionGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1PermissionGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1PermissionGet200JSONResponse(grantToDTO(grant)), nil
@@ -83,15 +85,16 @@ func (c *permissionController) V1PermissionDelete(ctx context.Context, request a
 	}
 
 	if err := c.permissionService.CtxUserDelete(ctx, grantID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1PermissionDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1PermissionDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1PermissionDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1PermissionDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1PermissionDelete204Response{}, nil
@@ -108,20 +111,18 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 
 	actions, err := c.permissionService.CtxUserEffectiveActions(ctx, id)
 	if err != nil {
-		if errors.Is(err, service.ErrNoUser) || errors.Is(err, model.ErrInvalidID) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1PermissionResourceGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1PermissionResourceGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1PermissionResourceGet404JSONResponse{N404JSONResponse: notFound}, nil
-		}
-		return api.V1PermissionResourceGet500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
+		default:
+			return api.V1PermissionResourceGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
-			},
-		}, nil
+			}}, nil
+		}
 	}
 
 	return api.V1PermissionResourceGet200JSONResponse{
@@ -130,29 +131,20 @@ func (c *permissionController) V1PermissionResourceGet(ctx context.Context, requ
 }
 
 // NewPermissionController creates a new PermissionController.
-func NewPermissionController(opts ...ControllerOption) (PermissionController, error) {
+func NewPermissionController(permissionService service.PermissionService, opts ...ControllerOption) (PermissionController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &permissionController{
-		baseController: c,
-	}
-
-	if controller.permissionService == nil {
+	if permissionService == nil {
 		return nil, ErrNoPermissionService
 	}
 
-	return controller, nil
-}
-
-func isGrantBadRequest(err error) bool {
-	return errors.Is(err, model.ErrInvalidGrant) ||
-		errors.Is(err, model.ErrInvalidAction) ||
-		errors.Is(err, model.ErrNotAPrincipal) ||
-		errors.Is(err, model.ErrInvalidID) ||
-		errors.Is(err, service.ErrNoUser)
+	return &permissionController{
+		baseController:    c,
+		permissionService: permissionService,
+	}, nil
 }
 
 func createGrantJSONRequestBodyToCreateGrantOpts(body *api.V1PermissionsCreateJSONRequestBody) (service.CreateGrantOpts, error) {

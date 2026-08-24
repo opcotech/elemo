@@ -1,0 +1,41 @@
+TeamCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Name of the team.
+            maxLength: 120
+            example: Platform
+            minLength: 3
+          description:
+            type: string
+            example: Platform engineering team.
+            minLength: 5
+            maxLength: 500
+            description: Description of the team.
+        required:
+          - name
+TeamPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            maxLength: 120
+            minLength: 3
+            description: Name of the team.
+            example: Platform
+          description:
+            type: string
+            minLength: 5
+            maxLength: 500
+            description: Description of the team.
+            example: Platform engineering team.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
