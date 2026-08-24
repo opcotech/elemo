@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
@@ -21,6 +21,7 @@ type NotificationController interface {
 // notificationController is the concrete implementation of NotificationController.
 type notificationController struct {
 	*baseController
+	notificationService service.NotificationService
 }
 
 func (c *notificationController) V1NotificationGet(ctx context.Context, request api.V1NotificationGetRequestObject) (api.V1NotificationGetResponseObject, error) {
@@ -39,15 +40,16 @@ func (c *notificationController) V1NotificationGet(ctx context.Context, request 
 
 	notification, err := c.notificationService.Get(ctx, notificationID, recipientID)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NotificationGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NotificationGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NotificationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NotificationGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NotificationGet200JSONResponse(notificationToDTO(notification)), nil
@@ -69,15 +71,16 @@ func (c *notificationController) V1NotificationsGet(ctx context.Context, request
 
 	page, err := c.notificationService.ListByRecipient(ctx, recipientID, pageParams)
 	if err != nil {
-		if isInvalidPageError(err) {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
 			return api.V1NotificationsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
-		}
-		if errors.Is(err, service.ErrNoPermission) {
+		case http.StatusForbidden:
 			return api.V1NotificationsGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		default:
+			return api.V1NotificationsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NotificationsGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	notificationsDTO := make([]api.Notification, len(page.Items))
@@ -109,15 +112,16 @@ func (c *notificationController) V1NotificationUpdate(ctx context.Context, reque
 		Read: request.Body.Read,
 	})
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NotificationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NotificationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NotificationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NotificationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NotificationUpdate200JSONResponse(notificationToDTO(notification)), nil
@@ -138,40 +142,44 @@ func (c *notificationController) V1NotificationDelete(ctx context.Context, reque
 	}
 
 	if err := c.notificationService.Delete(ctx, notificationID, recipientID); err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1NotificationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
-		}
-		if isNotFoundError(err) {
+		case http.StatusNotFound:
 			return api.V1NotificationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NotificationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1NotificationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
-			Message: err.Error(),
-		}}, nil
 	}
 
 	return api.V1NotificationDelete204Response{}, nil
 }
 
 // NewNotificationController creates a new NotificationController.
-func NewNotificationController(opts ...ControllerOption) (NotificationController, error) {
+func NewNotificationController(
+	notificationService service.NotificationService,
+	userService service.UserService,
+	opts ...ControllerOption,
+) (NotificationController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &notificationController{
-		baseController: c,
-	}
-
-	if controller.notificationService == nil {
+	if notificationService == nil {
 		return nil, ErrNoNotificationService
 	}
 
-	if controller.userService == nil {
-		return nil, ErrNoNotificationService
+	if userService == nil {
+		return nil, ErrNoUserService
 	}
 
-	return controller, nil
+	return &notificationController{
+		baseController:      c,
+		notificationService: notificationService,
+	}, nil
 }
 
 func notificationToDTO(notification *service.Notification) api.Notification {

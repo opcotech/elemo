@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -83,7 +82,7 @@ type LibraryListFilter struct {
 
 // DocumentService serves the business logic of interacting with documents.
 //
-//go:generate go tool mockgen -destination=document_mock_gen.go -package=service -mock_names DocumentService=MockDocumentService . DocumentService
+//go:generate go tool mockgen -destination=mock/mock_document_gen.go -package=mocksvc . DocumentService
 type DocumentService interface {
 	// Create creates a new document in the library inferred from contextID.
 	Create(ctx context.Context, contextID model.ID, opts CreateDocumentOpts) (*Document, error)
@@ -108,7 +107,12 @@ type DocumentService interface {
 }
 
 type documentService struct {
-	*baseService
+	runtime
+	documentRepo      repository.DocumentRepository
+	licenseService    LicenseService
+	permissionService PermissionService
+	staticFileService StaticFileService
+	searchService     SearchService
 }
 
 func partialDocumentFromDocument(d *repository.Document) *PartialDocument {
@@ -173,8 +177,8 @@ func (s *documentService) documentContent(ctx context.Context, fileID string) ([
 	return content, nil
 }
 
-func (s *documentService) hasDocumentPermission(ctx context.Context, docID model.ID, action model.Action) bool {
-	return s.permissionService.CtxUserHas(ctx, docID, action)
+func (s *documentService) hasDocumentPermission(ctx context.Context, docID model.ID, action model.Action) error {
+	return requireAction(ctx, s.permissionService, docID, action)
 }
 
 func relatedResourceReadAction(id model.ID) (model.Action, bool) {
@@ -220,17 +224,17 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 		return nil, errors.Join(ErrDocumentCreate, model.ErrInvalidID)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, libraryID, model.ActionDocumentCreate) {
-		return nil, errors.Join(ErrDocumentCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, libraryID, model.ActionDocumentCreate); err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
 	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaDocuments); !ok || err != nil {
 		return nil, errors.Join(ErrDocumentCreate, ErrQuotaExceeded)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrDocumentCreate, model.ErrInvalidID)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
 	fileID := documentFilePrefix + model.NewRawID()
@@ -260,7 +264,7 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 	}
 
 	out := documentFromRepository(doc, opts.Content)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -277,8 +281,8 @@ func (s *documentService) Get(ctx context.Context, id model.ID) (*Document, erro
 		return nil, errors.Join(ErrDocumentGet, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, doc.ID, model.ActionDocumentRead) {
-		return nil, errors.Join(ErrDocumentGet, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, doc.ID, model.ActionDocumentRead); err != nil {
+		return nil, errors.Join(ErrDocumentGet, err)
 	}
 
 	content, err := s.staticFileService.Get(ctx, doc.FileID)
@@ -294,25 +298,25 @@ func (s *documentService) ListLibrary(ctx context.Context, libraryID model.ID, f
 	defer span.End()
 
 	if err := libraryID.Validate(); err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 	if !isLibraryID(libraryID) {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, model.ErrInvalidID)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, model.ErrInvalidID)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
 	scopeIDs, allowed, err := resolvedListScopeIDs(ctx, s.permissionService, libraryID, model.ActionDocumentRead)
 	if err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 	if !allowed {
 		return repository.EmptyPage[*PartialDocument](), nil
@@ -323,7 +327,7 @@ func (s *documentService) ListLibrary(ctx context.Context, libraryID model.ID, f
 		All:      filter.All,
 	}, normalized, repository.DocumentSummaryProjection())
 	if err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
 	return mapPage(documents, partialDocumentFromDocument), nil
@@ -334,30 +338,33 @@ func (s *documentService) ListRelated(ctx context.Context, relatedTo model.ID, p
 	defer span.End()
 
 	if err := relatedTo.Validate(); err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 	if !isRelatedID(relatedTo) {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, model.ErrInvalidID)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, model.ErrInvalidID)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
 	action, ok := relatedResourceReadAction(relatedTo)
-	if !ok || !s.permissionService.CtxUserHas(ctx, relatedTo, action) {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoPermission)
+	if !ok {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, ErrNoPermission)
+	}
+	if err := requireAction(ctx, s.permissionService, relatedTo, action); err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
 	documents, err := s.documentRepo.ListRelated(ctx, relatedTo, userID, normalized, repository.DocumentSummaryProjection())
 	if err != nil {
-		return Page[*PartialDocument]{}, errors.Join(ErrDocumentGetAll, err)
+		return Page[*PartialDocument]{}, errors.Join(ErrDocumentList, err)
 	}
 
 	return mapPage(documents, partialDocumentFromDocument), nil
@@ -380,8 +387,8 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
-		return nil, errors.Join(ErrDocumentUpdate, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate); err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
 	if opts.Content.Defined && opts.Content.Value != nil {
@@ -415,7 +422,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 		if err != nil {
 			return nil, err
 		}
-		s.enqueueSearchIndex(ctx, moved.ID)
+		enqueueSearchIndex(ctx, s.logger, s.searchService, moved.ID)
 		return moved, nil
 	}
 
@@ -425,7 +432,7 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 	}
 
 	out := documentFromRepository(current, content)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -454,11 +461,11 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
-		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
 	}
-	if !s.permissionService.CtxUserHas(ctx, libraryID, model.ActionDocumentUpdate) {
-		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, libraryID, model.ActionDocumentUpdate); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
 	content, err := s.documentContent(ctx, current.FileID)
@@ -472,7 +479,7 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 	}
 
 	out := documentFromRepository(doc, content)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -497,8 +504,8 @@ func (s *documentService) MoveToFolder(ctx context.Context, id model.ID, folderI
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
-		return nil, errors.Join(ErrDocumentMove, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate); err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
 	}
 
 	content, err := s.documentContent(ctx, current.FileID)
@@ -533,12 +540,15 @@ func (s *documentService) Relate(ctx context.Context, id, targetID model.ID) err
 		return errors.Join(ErrDocumentRelate, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
-		return errors.Join(ErrDocumentRelate, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate); err != nil {
+		return errors.Join(ErrDocumentRelate, err)
 	}
 	action, ok := relatedResourceReadAction(targetID)
-	if !ok || !s.permissionService.CtxUserHas(ctx, targetID, action) {
+	if !ok {
 		return errors.Join(ErrDocumentRelate, ErrNoPermission)
+	}
+	if err := requireAction(ctx, s.permissionService, targetID, action); err != nil {
+		return errors.Join(ErrDocumentRelate, err)
 	}
 
 	if err := s.documentRepo.Relate(ctx, id, targetID); err != nil {
@@ -566,12 +576,15 @@ func (s *documentService) Unrelate(ctx context.Context, id, targetID model.ID) e
 		return errors.Join(ErrDocumentUnrelate, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate) {
-		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentUpdate); err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
 	}
 	action, ok := relatedResourceReadAction(targetID)
-	if !ok || !s.permissionService.CtxUserHas(ctx, targetID, action) {
+	if !ok {
 		return errors.Join(ErrDocumentUnrelate, ErrNoPermission)
+	}
+	if err := requireAction(ctx, s.permissionService, targetID, action); err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
 	}
 
 	if err := s.documentRepo.Unrelate(ctx, id, targetID); err != nil {
@@ -597,8 +610,8 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrDocumentDelete, err)
 	}
 
-	if !s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentDelete) {
-		return errors.Join(ErrDocumentDelete, ErrNoPermission)
+	if err := s.hasDocumentPermission(ctx, current.ID, model.ActionDocumentDelete); err != nil {
+		return errors.Join(ErrDocumentDelete, err)
 	}
 
 	if err := s.documentRepo.Delete(ctx, id); err != nil {
@@ -619,14 +632,26 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 }
 
 // NewDocumentService returns a new instance of the DocumentService interface.
-func NewDocumentService(opts ...Option) (DocumentService, error) {
-	s, err := newService(opts...)
+func NewDocumentService(
+	documentRepo repository.DocumentRepository,
+	licenseService LicenseService,
+	permissionService PermissionService,
+	staticFileService StaticFileService,
+	searchService SearchService,
+	opts ...Option,
+) (DocumentService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &documentService{
-		baseService: s,
+		runtime:           rt,
+		documentRepo:      documentRepo,
+		licenseService:    licenseService,
+		permissionService: permissionService,
+		staticFileService: staticFileService,
+		searchService:     searchService,
 	}
 
 	if svc.documentRepo == nil {

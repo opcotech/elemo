@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-var (
-	ErrNoConfig = errors.New("no config provided") // no configuration provided
-)
+var ErrNoConfig = errors.New("no config provided") // no configuration provided
 
 // TemplateConfig is the configuration for template files.
 type TemplateConfig struct {

@@ -31,7 +31,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { SavedView, Scope, WorkLayout } from "@/lib/mock-data";
+import type { SavedView } from "@/lib/mock-data";
+import type { Scope, WorkLayout } from "@/lib/work/model";
 import {
   resolveWorkScope,
   serializeWorkScope,

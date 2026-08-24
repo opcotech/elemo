@@ -17,6 +17,7 @@ type SearchController interface {
 
 type searchController struct {
 	*baseController
+	searchService service.SearchService
 }
 
 func (c *searchController) V1SearchGet(ctx context.Context, request api.V1SearchGetRequestObject) (api.V1SearchGetResponseObject, error) {
@@ -132,17 +133,18 @@ func searchResultToDTO(result *service.SearchResult) api.SearchResult {
 }
 
 // NewSearchController creates a new SearchController.
-func NewSearchController(opts ...ControllerOption) (SearchController, error) {
+func NewSearchController(searchService service.SearchService, opts ...ControllerOption) (SearchController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &searchController{
-		baseController: c,
-	}
-	if controller.searchService == nil {
+	if searchService == nil {
 		return nil, ErrNoSearchService
 	}
-	return controller, nil
+
+	return &searchController{
+		baseController: c,
+		searchService:  searchService,
+	}, nil
 }

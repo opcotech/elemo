@@ -17,8 +17,8 @@ import {
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type { Document } from "@/lib/api/types";
-import { v1OrganizationsNamespacesCreate } from "@/lib/client/sdk.gen";
 
 function createdTime(document: Pick<Document, "created_at">): number {
   if (!document.created_at) {

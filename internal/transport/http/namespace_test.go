@@ -12,6 +12,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -23,14 +24,14 @@ func TestNewNamespaceController(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c, err := NewNamespaceController(WithNamespaceService(service.NewMockNamespaceService(ctrl)))
+		c, err := NewNamespaceController(mocksvc.NewMockNamespaceService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing namespace service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewNamespaceController()
+		_, err := NewNamespaceController(nil)
 		assert.ErrorIs(t, err, ErrNoNamespaceService)
 	})
 }
@@ -53,10 +54,10 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		nsSvc := service.NewMockNamespaceService(ctrl)
+		nsSvc := mocksvc.NewMockNamespaceService(ctrl)
 		nsSvc.EXPECT().Get(gomock.Any(), namespaceID).Return(ns, nil)
 
-		c, err := NewNamespaceController(WithNamespaceService(nsSvc))
+		c, err := NewNamespaceController(nsSvc)
 		require.NoError(t, err)
 
 		resp, err := c.V1NamespaceGet(context.Background(), api.V1NamespaceGetRequestObject{Id: namespaceID.String()})
@@ -98,12 +99,12 @@ func TestNamespaceController_V1NamespacesGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		nsSvc := service.NewMockNamespaceService(ctrl)
+		nsSvc := mocksvc.NewMockNamespaceService(ctrl)
 		nsSvc.EXPECT().ListAccessible(gomock.Any(), gomock.Any()).Return(service.Page[*service.AccessibleNamespace]{
 			Items: []*service.AccessibleNamespace{ns},
 		}, nil)
 
-		c, err := NewNamespaceController(WithNamespaceService(nsSvc))
+		c, err := NewNamespaceController(nsSvc)
 		require.NoError(t, err)
 
 		resp, err := c.V1NamespacesGet(context.Background(), api.V1NamespacesGetRequestObject{})

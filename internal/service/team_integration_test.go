@@ -37,21 +37,21 @@ func (s *TeamServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 	s.permissionService = permissionService
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	s.teamService, err = service.NewTeamService(
-		service.WithTeamRepository(s.TeamRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
+		s.TeamRepo,
+		permissionService,
+		licenseService,
 	)
 	s.Require().NoError(err)
 }
@@ -209,10 +209,14 @@ func (s *TeamServiceIntegrationTestSuite) TestTeamGrantAuthorizesMember() {
 	s.Require().NoError(err)
 
 	memberCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, member.ID)
-	s.Assert().False(s.permissionService.CtxUserHas(memberCtx, project.ID, model.ActionProjectRead))
+	allowed, err := s.permissionService.CtxUserHas(memberCtx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().False(allowed)
 
 	s.Require().NoError(s.teamService.AddMember(s.ctx, team.ID, member.ID, s.organization.ID))
-	s.Assert().True(s.permissionService.CtxUserHas(memberCtx, project.ID, model.ActionProjectRead))
+	allowed, err = s.permissionService.CtxUserHas(memberCtx, project.ID, model.ActionProjectRead)
+	s.Require().NoError(err)
+	s.Assert().True(allowed)
 }
 
 func TestTeamServiceIntegrationTestSuite(t *testing.T) {

@@ -81,7 +81,7 @@ func (s *NotificationServiceIntegrationTestSuite) TestGet() {
 	s.Assert().WithinDuration(*created.CreatedAt, *notification.CreatedAt, 100*time.Millisecond)
 }
 
-func (s *NotificationServiceIntegrationTestSuite) TestGetAllByRecipient() {
+func (s *NotificationServiceIntegrationTestSuite) TestListByRecipient() {
 	_, err := s.notificationService.Create(s.testUserContext, service.CreateNotificationOpts{
 		Title: "n1 title", Description: "n1 description text", Recipient: s.testUser.ID,
 	})

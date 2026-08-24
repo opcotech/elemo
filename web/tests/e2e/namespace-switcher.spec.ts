@@ -5,9 +5,9 @@ import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
+import type { Client } from "@/lib/api/client";
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type { User } from "@/lib/api/types";
-import type { Client } from "@/lib/client/client";
-import { v1OrganizationsNamespacesCreate } from "@/lib/client/sdk.gen";
 
 test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
   let ownerUser: User;

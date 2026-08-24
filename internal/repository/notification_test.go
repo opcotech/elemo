@@ -1,9 +1,14 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
 	"time"
+
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,36 +20,28 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 func TestNewNotificationRepository(t *testing.T) {
 	type args struct {
-		opts []PGRepositoryOption
+		opts []repository.PGRepositoryOption
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *PGNotificationRepository
 		wantErr error
 	}{
 		{
 			name: "new notification repository with default options",
 			args: args{
-				opts: []PGRepositoryOption{},
-			},
-			want: &PGNotificationRepository{
-				pgBaseRepository: &pgBaseRepository{
-					logger: log.DefaultLogger(),
-					tracer: tracing.NoopTracer(),
-				},
+				opts: []repository.PGRepositoryOption{},
 			},
 		},
 		{
 			name: "new notification repository with no logger",
 			args: args{
-				opts: []PGRepositoryOption{
-					WithPGRepositoryLogger(nil),
+				opts: []repository.PGRepositoryOption{
+					repository.WithPGRepositoryLogger(nil),
 				},
 			},
 			wantErr: log.ErrNoLogger,
@@ -52,8 +49,8 @@ func TestNewNotificationRepository(t *testing.T) {
 		{
 			name: "new notification repository with no tracer",
 			args: args{
-				opts: []PGRepositoryOption{
-					WithPGRepositoryTracer(nil),
+				opts: []repository.PGRepositoryOption{
+					repository.WithPGRepositoryTracer(nil),
 				},
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -63,20 +60,22 @@ func TestNewNotificationRepository(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := NewNotificationRepository(tt.args.opts...)
+			got, err := repository.NewNotificationRepository(tt.args.opts...)
 			require.ErrorIs(t, err, tt.wantErr)
-			require.Equal(t, tt.want, got)
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
+			}
 		})
 	}
 }
 
 func TestNotificationRepository_Create(t *testing.T) {
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNotificationOpts) []repository.PGRepositoryOption
 	}
 	type args struct {
 		ctx  context.Context
-		opts CreateNotificationOpts
+		opts repository.CreateNotificationOpts
 	}
 	tests := []struct {
 		name    string
@@ -87,15 +86,15 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNotificationOpts) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Create").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Exec(ctx,
@@ -104,16 +103,16 @@ func TestNotificationRepository_Create(t *testing.T) {
 						false, gomock.Any(),
 					).Return(pgconn.CommandTag{}, nil)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNotificationOpts{
+				opts: repository.CreateNotificationOpts{
 					Title:       "test notification",
 					Description: "test description",
 					Recipient:   model.MustNewNilID(model.ResourceTypeUser),
@@ -123,15 +122,15 @@ func TestNotificationRepository_Create(t *testing.T) {
 		{
 			name: "create new notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNotificationOpts) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNotificationOpts) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Create").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Exec(ctx,
@@ -140,22 +139,22 @@ func TestNotificationRepository_Create(t *testing.T) {
 						false, gomock.Any(),
 					).Return(pgconn.CommandTag{}, assert.AnError)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNotificationOpts{
+				opts: repository.CreateNotificationOpts{
 					Title:       "test notification",
 					Description: "test description",
 					Recipient:   model.MustNewNilID(model.ResourceTypeUser),
 				},
 			},
-			wantErr: ErrNotificationCreate,
+			wantErr: repository.ErrNotificationCreate,
 		},
 	}
 	for _, tt := range tests {
@@ -164,9 +163,8 @@ func TestNotificationRepository_Create(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.opts),
-			}
+			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.opts)...)
+			require.NoError(t, err)
 			got, err := notificationRepo.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
@@ -186,7 +184,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *repository.Notification) []repository.PGRepositoryOption
 	}
 	type args struct {
 		ctx       context.Context
@@ -197,24 +195,24 @@ func TestNotificationRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *Notification
+		want    *repository.Notification
 		wantErr error
 	}{
 		{
 			name: "get notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, notification *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
@@ -233,10 +231,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 						id, recipient,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -245,7 +243,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 				id:        notificationID,
 				recipient: recipientID,
 			},
-			want: &Notification{
+			want: &repository.Notification{
 				ID:          notificationID,
 				Title:       "test title",
 				Description: "test description",
@@ -256,18 +254,18 @@ func TestNotificationRepository_Get(t *testing.T) {
 		{
 			name: "get notification not found",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(pgx.ErrNoRows)
@@ -277,10 +275,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 						id, recipient,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -289,23 +287,23 @@ func TestNotificationRepository_Get(t *testing.T) {
 				id:        notificationID,
 				recipient: recipientID,
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, _ *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(assert.AnError)
@@ -315,10 +313,10 @@ func TestNotificationRepository_Get(t *testing.T) {
 						id, recipient,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -327,7 +325,7 @@ func TestNotificationRepository_Get(t *testing.T) {
 				id:        notificationID,
 				recipient: recipientID,
 			},
-			wantErr: ErrNotificationRead,
+			wantErr: repository.ErrNotificationRead,
 		},
 	}
 	for _, tt := range tests {
@@ -336,10 +334,9 @@ func TestNotificationRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.want),
-			}
-			got, err := notificationRepo.Get(tt.args.ctx, tt.args.id, tt.args.recipient, NotificationDetailProjection())
+			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.want)...)
+			require.NoError(t, err)
+			got, err := notificationRepo.Get(tt.args.ctx, tt.args.id, tt.args.recipient, repository.NotificationDetailProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
@@ -350,7 +347,7 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, notifications []*Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, notifications []*repository.Notification) []repository.PGRepositoryOption
 	}
 	type args struct {
 		ctx       context.Context
@@ -362,24 +359,24 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*Notification
+		want    []*repository.Notification
 		wantErr error
 	}{
 		{
 			name: "get all notifications by recipient",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, offset, limit int, notifications []*repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := mock.NewPGRows(ctrl)
+					mockRows := mockrepo.NewMockRows(ctrl)
 					mockRows.EXPECT().Close().Return()
 					mockRows.EXPECT().Next().Return(true).Times(limit)
 					mockRows.EXPECT().Next().Return(false)
@@ -406,10 +403,10 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 						recipient, limit+1,
 					).Return(mockRows, nil)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -419,7 +416,7 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 				limit:     2,
 				offset:    0,
 			},
-			want: []*Notification{
+			want: []*repository.Notification{
 				{
 					ID:          model.MustNewID(model.ResourceTypeNotification),
 					Title:       "Test",
@@ -443,26 +440,26 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 		{
 			name: "get all notifications by recipient with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
 						recipient, limit+1,
-					).Return(mock.NewPGRows(nil), assert.AnError)
+					).Return(mockrepo.NewMockRows(nil), assert.AnError)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -472,23 +469,23 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 				limit:     2,
 				offset:    0,
 			},
-			wantErr: ErrNotificationRead,
+			wantErr: repository.ErrNotificationRead,
 		},
 		{
 			name: "get all notifications with scan error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, recipient model.ID, _, limit int, _ []*repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRows := mock.NewPGRows(ctrl)
+					mockRows := mockrepo.NewMockRows(ctrl)
 					mockRows.EXPECT().Close().Return()
 					mockRows.EXPECT().Next().Return(true).Times(1)
 					mockRows.EXPECT().
@@ -500,10 +497,10 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 						recipient, limit+1,
 					).Return(mockRows, nil)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -513,7 +510,7 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 				limit:     2,
 				offset:    0,
 			},
-			wantErr: ErrNotificationRead,
+			wantErr: repository.ErrNotificationRead,
 		},
 	}
 	for _, tt := range tests {
@@ -522,10 +519,9 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.recipient, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-			}
-			got, err := notificationRepo.ListByRecipient(tt.args.ctx, tt.args.recipient, CursorPage{Size: testPageSize(tt.args.limit)}, NotificationListProjection())
+			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.recipient, tt.args.offset, testPageSize(tt.args.limit), tt.want)...)
+			require.NoError(t, err)
+			got, err := notificationRepo.ListByRecipient(tt.args.ctx, tt.args.recipient, repository.CursorPage{Size: testPageSize(tt.args.limit)}, repository.NotificationListProjection())
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
 				require.Equal(t, tt.want, got.Items)
@@ -539,36 +535,36 @@ func TestNotificationRepository_Update(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, notification *Notification) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts repository.UpdateNotificationOpts, notification *repository.Notification) []repository.PGRepositoryOption
 	}
 	type args struct {
 		ctx       context.Context
 		id        model.ID
 		recipient model.ID
-		opts      UpdateNotificationOpts
+		opts      repository.UpdateNotificationOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *Notification
+		want    *repository.Notification
 		wantErr error
 	}{
 		{
 			name: "update notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, notification *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts repository.UpdateNotificationOpts, notification *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						DoAndReturn(func(dest ...any) error {
@@ -587,10 +583,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 						id, recipient, opts.Read,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -598,9 +594,9 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
-				opts:      UpdateNotificationOpts{Read: true},
+				opts:      repository.UpdateNotificationOpts{Read: true},
 			},
-			want: &Notification{
+			want: &repository.Notification{
 				ID:          notificationID,
 				Title:       "test title",
 				Description: "test description",
@@ -613,18 +609,18 @@ func TestNotificationRepository_Update(t *testing.T) {
 		{
 			name: "update notification not found",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, _ *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts repository.UpdateNotificationOpts, _ *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(pgx.ErrNoRows)
@@ -634,10 +630,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 						id, recipient, opts.Read,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -645,25 +641,25 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
-				opts:      UpdateNotificationOpts{Read: true},
+				opts:      repository.UpdateNotificationOpts{Read: true},
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "update notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts UpdateNotificationOpts, _ *Notification) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID, opts repository.UpdateNotificationOpts, _ *repository.Notification) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
-					mockRow := mock.NewPGRow(ctrl)
+					mockRow := mockrepo.NewMockRow(ctrl)
 					mockRow.EXPECT().
 						Scan(gomock.Any()).
 						Return(assert.AnError)
@@ -673,10 +669,10 @@ func TestNotificationRepository_Update(t *testing.T) {
 						id, recipient, opts.Read,
 					).Return(mockRow)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -684,9 +680,9 @@ func TestNotificationRepository_Update(t *testing.T) {
 				ctx:       context.Background(),
 				id:        notificationID,
 				recipient: recipientID,
-				opts:      UpdateNotificationOpts{Read: true},
+				opts:      repository.UpdateNotificationOpts{Read: true},
 			},
-			wantErr: ErrNotificationUpdate,
+			wantErr: repository.ErrNotificationUpdate,
 		},
 	}
 	for _, tt := range tests {
@@ -695,9 +691,8 @@ func TestNotificationRepository_Update(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.args.opts, tt.want),
-			}
+			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.args.opts, tt.want)...)
+			require.NoError(t, err)
 			got, err := notificationRepo.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
@@ -707,7 +702,7 @@ func TestNotificationRepository_Update(t *testing.T) {
 
 func TestNotificationRepository_Delete(t *testing.T) {
 	type fields struct {
-		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *pgBaseRepository
+		pgBaseRepository func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) []repository.PGRepositoryOption
 	}
 	type args struct {
 		ctx       context.Context
@@ -723,15 +718,15 @@ func TestNotificationRepository_Delete(t *testing.T) {
 		{
 			name: "delete notification",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Exec(ctx,
@@ -739,10 +734,10 @@ func TestNotificationRepository_Delete(t *testing.T) {
 						id, recipient,
 					).Return(pgconn.CommandTag{}, nil)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -755,15 +750,15 @@ func TestNotificationRepository_Delete(t *testing.T) {
 		{
 			name: "delete notification not found",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Exec(ctx,
@@ -771,10 +766,10 @@ func TestNotificationRepository_Delete(t *testing.T) {
 						id, recipient,
 					).Return(pgconn.CommandTag{}, pgx.ErrNoRows)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -783,20 +778,20 @@ func TestNotificationRepository_Delete(t *testing.T) {
 				id:        model.MustNewNilID(model.ResourceTypeNotification),
 				recipient: model.MustNewNilID(model.ResourceTypeUser),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "delete notification with error",
 			fields: fields{
-				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) *pgBaseRepository {
-					span := mock.NewMockSpan(ctrl)
+				pgBaseRepository: func(ctx context.Context, ctrl *gomock.Controller, id, recipient model.ID) []repository.PGRepositoryOption {
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mock.NewPGPool(ctrl)
-					mockDB, err := NewPGDatabase(WithDatabasePool(mockDBPool))
+					mockDBPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
 					require.NoError(t, err)
 
 					mockDBPool.EXPECT().Exec(ctx,
@@ -804,10 +799,10 @@ func TestNotificationRepository_Delete(t *testing.T) {
 						id, recipient,
 					).Return(pgconn.CommandTag{}, assert.AnError)
 
-					return &pgBaseRepository{
-						db:     mockDB,
-						logger: mock.NewMockLogger(nil),
-						tracer: tracer,
+					return []repository.PGRepositoryOption{
+						repository.WithPGDatabase(mockDB),
+						repository.WithPGRepositoryLogger(mocklog.NewMockLogger(nil)),
+						repository.WithPGRepositoryTracer(tracer),
 					}
 				},
 			},
@@ -816,7 +811,7 @@ func TestNotificationRepository_Delete(t *testing.T) {
 				id:        model.MustNewNilID(model.ResourceTypeNotification),
 				recipient: model.MustNewNilID(model.ResourceTypeUser),
 			},
-			wantErr: ErrNotificationDelete,
+			wantErr: repository.ErrNotificationDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -825,10 +820,9 @@ func TestNotificationRepository_Delete(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			notificationRepo := &PGNotificationRepository{
-				pgBaseRepository: tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient),
-			}
-			err := notificationRepo.Delete(tt.args.ctx, tt.args.id, tt.args.recipient)
+			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient)...)
+			require.NoError(t, err)
+			err = notificationRepo.Delete(tt.args.ctx, tt.args.id, tt.args.recipient)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}

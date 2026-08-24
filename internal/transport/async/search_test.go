@@ -11,11 +11,13 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 )
 
 type stubTaskEnqueuer struct {
@@ -28,12 +30,12 @@ func (s *stubTaskEnqueuer) Enqueue(_ context.Context, task *asynq.Task, _ ...asy
 }
 
 func testSearchHandlerBase(ctx context.Context, ctrl *gomock.Controller, spanName string) *baseTaskHandler {
-	span := mock.NewMockSpan(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End().Return()
-	tracer := mock.NewMockTracer(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(ctx, spanName).Return(ctx, span)
 	return &baseTaskHandler{
-		logger:           mock.NewMockLogger(nil),
+		logger:           mocklog.NewMockLogger(nil),
 		tracer:           tracer,
 		reindexBatchSize: service.DefaultSearchReindexBatchSize,
 	}
@@ -49,7 +51,7 @@ func TestSearchIndexTaskHandler_ProcessTask(t *testing.T) {
 	t.Run("indexes current resource", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		searchSvc := service.NewMockSearchService(ctrl)
+		searchSvc := mocksvc.NewMockSearchService(ctrl)
 		searchSvc.EXPECT().IndexIDs(ctx, db, issueID).Return(nil)
 		base := testSearchHandlerBase(ctx, ctrl, "transport.asynq.SearchIndexTaskHandler/ProcessTask")
 		base.searchService = searchSvc
@@ -84,7 +86,7 @@ func TestSearchReindexTaskHandler_ProcessTask(t *testing.T) {
 	t.Run("wipes then enqueues batches", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		searchSvc := service.NewMockSearchService(ctrl)
+		searchSvc := mocksvc.NewMockSearchService(ctrl)
 		listed := false
 		searchSvc.EXPECT().DeleteAll(ctx).DoAndReturn(func(context.Context) error {
 			assert.False(t, listed)
@@ -119,7 +121,7 @@ func TestSearchReindexTaskHandler_ProcessTask(t *testing.T) {
 	t.Run("does not wipe without delete_all", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		searchSvc := service.NewMockSearchService(ctrl)
+		searchSvc := mocksvc.NewMockSearchService(ctrl)
 		enqueuer := &stubTaskEnqueuer{}
 		base := testSearchHandlerBase(ctx, ctrl, "transport.asynq.SearchReindexTaskHandler/ProcessTask")
 		base.searchService = searchSvc
@@ -165,7 +167,7 @@ func TestSearchReindexBatchTaskHandler_ProcessTask(t *testing.T) {
 	t.Run("indexes batch", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		searchSvc := service.NewMockSearchService(ctrl)
+		searchSvc := mocksvc.NewMockSearchService(ctrl)
 		searchSvc.EXPECT().IndexIDs(ctx, db, issueID).Return(nil)
 		base := testSearchHandlerBase(ctx, ctrl, "transport.asynq.SearchReindexBatchTaskHandler/ProcessTask")
 		base.searchService = searchSvc
@@ -182,12 +184,12 @@ func TestNewSearchIndexTaskHandler(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	_, err := NewSearchIndexTaskHandler(
-		WithTaskLogger(mock.NewMockLogger(nil)),
-		WithTaskTracer(mock.NewMockTracer(nil)),
+		WithTaskLogger(mocklog.NewMockLogger(nil)),
+		WithTaskTracer(mocktrace.NewMockTracer(nil)),
 	)
 	assert.ErrorIs(t, err, ErrNoSearchService)
 
-	searchSvc := service.NewMockSearchService(ctrl)
+	searchSvc := mocksvc.NewMockSearchService(ctrl)
 	_, err = NewSearchIndexTaskHandler(
 		WithTaskSearchService(searchSvc),
 		WithTaskLogger(log.DefaultLogger()),
@@ -200,7 +202,7 @@ func TestNewSearchReindexTaskHandler(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	searchSvc := service.NewMockSearchService(ctrl)
+	searchSvc := mocksvc.NewMockSearchService(ctrl)
 	db := &repository.Neo4jDatabase{}
 
 	_, err := NewSearchReindexTaskHandler(

@@ -5,10 +5,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
-	"github.com/stretchr/testify/suite"
 )
 
 type StaticFileRepositoryIntegrationTestSuite struct {

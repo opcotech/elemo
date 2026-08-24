@@ -13,13 +13,13 @@ import {
   v1OrganizationRoleGetOptions,
   v1OrganizationRolesGetOptions,
 } from "@/lib/api/query-options";
+import { zRolePatch } from "@/lib/api/schemas";
 import { v1OrganizationRoleUpdate } from "@/lib/api/sdk";
 import type {
   Options,
   Role,
   V1OrganizationRoleUpdateData,
 } from "@/lib/api/types";
-import { zRolePatch } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

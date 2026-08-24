@@ -1,6 +1,6 @@
 import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
-import type { DataSource } from "@/lib/mock-data";
+import type { DataSource } from "@/lib/work/model";
 import { resolveReportedByPerson } from "@/lib/work/resolve-work-people";
 import { useOrganizationMembersForNamespace } from "@/lib/work/use-organization-members-for-namespace";
 

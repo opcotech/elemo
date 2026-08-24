@@ -2,9 +2,11 @@ package service
 
 import "github.com/opcotech/elemo/internal/repository"
 
-type CursorPage = repository.CursorPage
-type PageInfo = repository.PageInfo
-type Page[T any] = repository.Page[T]
+type (
+	CursorPage  = repository.CursorPage
+	PageInfo    = repository.PageInfo
+	Page[T any] = repository.Page[T]
+)
 
 func mapPage[In any, Out any](page repository.Page[In], fn func(In) Out) Page[Out] {
 	items := make([]Out, len(page.Items))

@@ -11,9 +11,11 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocksmtp "github.com/opcotech/elemo/internal/pkg/smtp/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 	"github.com/opcotech/elemo/internal/testutil"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 )
 
 type testTemplateData struct {
@@ -40,16 +42,16 @@ func TestNewDatabase(t *testing.T) {
 		{
 			name: "create new client",
 			args: args{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 				config: new(config.SMTPConfig),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			want: &Client{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 				config: new(config.SMTPConfig),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 		},
 		{
@@ -57,37 +59,37 @@ func TestNewDatabase(t *testing.T) {
 			args: args{
 				client: nil,
 				config: new(config.SMTPConfig),
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: ErrNoSMTPClient,
 		},
 		{
 			name: "create new client with nil config",
 			args: args{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 				config: nil,
-				logger: mock.NewMockLogger(nil),
-				tracer: mock.NewMockTracer(nil),
+				logger: mocklog.NewMockLogger(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: config.ErrNoConfig,
 		},
 		{
 			name: "create new client with nil logger",
 			args: args{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 				config: new(config.SMTPConfig),
 				logger: nil,
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
 			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "create new client with nil tracer",
 			args: args{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 				config: new(config.SMTPConfig),
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 				tracer: nil,
 			},
 			wantErr: tracing.ErrNoTracer,
@@ -159,9 +161,9 @@ func TestWithWrappedClient(t *testing.T) {
 		{
 			name: "create new option with client",
 			args: args{
-				client: new(mock.WrappedClient),
+				client: new(mocksmtp.MockWrappedClient),
 			},
-			want: new(mock.WrappedClient),
+			want: new(mocksmtp.MockWrappedClient),
 		},
 		{
 			name: "create new option with nil client",
@@ -196,9 +198,9 @@ func TestWithLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 			},
-			want: mock.NewMockLogger(nil),
+			want: mocklog.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -233,9 +235,9 @@ func TestWithTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			want: mock.NewMockTracer(nil),
+			want: mocktrace.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",
@@ -281,16 +283,16 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := mock.NewWrappedClient(ctrl)
+					client := mocksmtp.NewMockWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(nil)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					logger := mock.NewMockLogger(ctrl)
+					logger := mocklog.NewMockLogger(ctrl)
 					logger.EXPECT().Info(gomock.Any(), "email sent", gomock.Any())
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)
 
 					return &Client{
@@ -319,16 +321,16 @@ func TestClient_SendEmail(t *testing.T) {
 						FromAddress: "no-reply@example.com",
 					}
 
-					client := mock.NewWrappedClient(ctrl)
+					client := mocksmtp.NewMockWrappedClient(ctrl)
 					client.EXPECT().DialAndSend(gomock.Any()).Return(assert.AnError)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					logger := mock.NewMockLogger(ctrl)
+					logger := mocklog.NewMockLogger(ctrl)
 					logger.EXPECT().Error(gomock.Any(), ErrSendEmail.Error(), gomock.Any())
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "smtp.Client/SendEmail").Return(ctx, span)
 
 					return &Client{

@@ -39,27 +39,28 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	searchService, err := service.NewSearchService(
 		s.SearchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 	)
 	s.Require().NoError(err)
 
 	s.namespaceService, err = service.NewNamespaceService(
-		service.WithNamespaceRepository(s.NamespaceRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithSearchService(searchService),
+		s.NamespaceRepo,
+		permissionService,
+		licenseService,
+		searchService,
 	)
 	s.Require().NoError(err)
 }
@@ -129,7 +130,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(created.Name, ns.Name)
 }
 
-func (s *NamespaceServiceIntegrationTestSuite) TestGetAll() {
+func (s *NamespaceServiceIntegrationTestSuite) TestList() {
 	_, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
 		Name: "ns-one", Description: "ns one description",
 	})

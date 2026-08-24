@@ -43,6 +43,33 @@ func (discardEmailService) SendUserWelcomeEmail(_ context.Context, _ email.Recip
 	return nil
 }
 
+// discardNotificationService satisfies service.NotificationService without writes.
+type discardNotificationService struct{}
+
+func (discardNotificationService) Create(_ context.Context, opts service.CreateNotificationOpts) (*service.Notification, error) {
+	return &service.Notification{
+		Title:       opts.Title,
+		Description: opts.Description,
+		Recipient:   opts.Recipient,
+	}, nil
+}
+
+func (discardNotificationService) Get(_ context.Context, _, _ model.ID) (*service.Notification, error) {
+	return nil, nil
+}
+
+func (discardNotificationService) ListByRecipient(_ context.Context, _ model.ID, _ service.CursorPage) (service.Page[*service.Notification], error) {
+	return service.Page[*service.Notification]{}, nil
+}
+
+func (discardNotificationService) Update(_ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts) (*service.Notification, error) {
+	return nil, nil
+}
+
+func (discardNotificationService) Delete(_ context.Context, _, _ model.ID) error {
+	return nil
+}
+
 // noopSearchService drops write-through indexing during seed. Reindex is
 // called on a real SearchService after the graph is populated.
 type noopSearchService struct{}

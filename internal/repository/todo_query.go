@@ -6,15 +6,27 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 )
 
+type TodoProjection struct{}
+
+func TodoListProjection() TodoProjection {
+	return TodoProjection{}
+}
+
+func TodoDetailProjection() TodoProjection {
+	return TodoProjection{}
+}
+
 type TodoGetQuery struct {
-	ID model.ID
+	ID         model.ID
+	Projection TodoProjection
 }
 
 type TodoListByOwnerQuery struct {
-	OwnerID   model.ID
-	Page      CursorPage
-	Order     SortDirection
-	Completed *bool
+	OwnerID    model.ID
+	Page       CursorPage
+	Order      SortDirection
+	Completed  *bool
+	Projection TodoProjection
 }
 
 func (q TodoGetQuery) Compile() (QueryPlan, error) {

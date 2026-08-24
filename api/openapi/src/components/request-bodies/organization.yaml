@@ -1,0 +1,92 @@
+OrganizationInvitationAccept:
+  description: "Organization invitation acceptance request."
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          token:
+            type: string
+            example: tDCVsHnzeOj278GIT85xU0s_
+            description: Invitation token from the invitation email
+          password:
+            type: string
+            format: password
+            maxLength: 64
+            minLength: 8
+            description: Password for the account (required if user is pending)
+        required:
+          - token
+OrganizationCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Name of the organization.
+            maxLength: 120
+            example: ACME Inc.
+            minLength: 1
+          email:
+            type: string
+            format: email
+            example: info@example.com
+            minLength: 6
+            maxLength: 254
+            description: Email address of the organization.
+          logo:
+            type: string
+            description: Logo of the organization.
+            format: uri
+            example: "https://example.com/static/logo.png"
+            maxLength: 2000
+          website:
+            type: string
+            description: Work title of the user.
+            format: uri
+            example: "https://example.com"
+            maxLength: 2000
+        required:
+          - name
+          - email
+OrganizationPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            example: ACME Inc.
+            minLength: 1
+            maxLength: 120
+            description: Name of the organization.
+          email:
+            type: string
+            format: email
+            example: info@example.com
+            minLength: 6
+            maxLength: 254
+            description: Email address of the organization.
+          logo:
+            type: string
+            description: Logo of the organization.
+            format: uri
+            example: "https://example.com/static/logo.png"
+            maxLength: 2000
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          website:
+            type: string
+            description: Work title of the user.
+            format: uri
+            example: "https://example.com"
+            maxLength: 2000
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          status:
+            $ref: "#/components/schemas/OrganizationStatus"

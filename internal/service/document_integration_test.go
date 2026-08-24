@@ -40,34 +40,35 @@ func (s *DocumentServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupLocalStack(&s.ContainerIntegrationTestSuite, container)
 	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	s.staticFileService, err = service.NewStaticFileService(
 		s.StaticFileRepository,
-		service.WithLicenseService(licenseService),
+		licenseService,
 	)
 	s.Require().NoError(err)
 
 	searchService, err := service.NewSearchService(
 		s.SearchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 	)
 	s.Require().NoError(err)
 
 	s.documentService, err = service.NewDocumentService(
-		service.WithDocumentRepository(s.DocumentRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithStaticFileService(s.staticFileService),
-		service.WithSearchService(searchService),
+		s.DocumentRepo,
+		licenseService,
+		permissionService,
+		s.staticFileService,
+		searchService,
 	)
 	s.Require().NoError(err)
 }

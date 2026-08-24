@@ -1,12 +1,12 @@
 import { withErrorHandling } from "./error-handler";
 
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 import {
   v1IssueGet,
   v1IssueRelationsCreate,
   v1IssueUpdate,
   v1ProjectsIssuesCreate,
-} from "@/lib/client/sdk.gen";
+} from "@/lib/api/sdk";
 import type {
   Issue,
   IssueCreate,
@@ -14,7 +14,7 @@ import type {
   IssuePatch,
   IssueRelation,
   IssueRelationCreate,
-} from "@/lib/client/types.gen";
+} from "@/lib/api/types";
 
 /**
  * Create an issue via API, then fetch the full issue by ID.

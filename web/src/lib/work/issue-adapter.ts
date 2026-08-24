@@ -4,8 +4,8 @@ import type {
   PartialIssue,
   PartialLabel,
   PartialUser,
-} from "@/lib/client";
-import type { WorkItem, WorkPerson, WorkStatus } from "@/lib/mock-data";
+} from "@/lib/api/types";
+import type { WorkItem, WorkPerson, WorkStatus } from "@/lib/work/model";
 import type { WorkLabel } from "@/lib/work/resolve-work-labels";
 
 export interface IssueWorkContext {

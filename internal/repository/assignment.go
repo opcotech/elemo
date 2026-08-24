@@ -32,7 +32,7 @@ type CreateAssignmentOpts struct {
 	Resource model.ID
 }
 
-//go:generate go tool mockgen -source=assignment.go -destination=assignment_mock_gen.go -package=repository -mock_names "AssignmentRepository=MockAssignmentRepository"
+//go:generate go tool mockgen -source=assignment.go -destination=mock/mock_assignment_gen.go -package=mockrepo
 type AssignmentRepository interface {
 	Create(ctx context.Context, opts CreateAssignmentOpts) (*Assignment, error)
 	Get(ctx context.Context, id model.ID, proj AssignmentProjection) (*Assignment, error)

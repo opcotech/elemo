@@ -32,9 +32,10 @@ import {
 } from "@/hooks/use-permissions";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
+import { zOrganizationStatus } from "@/lib/api/schemas";
 import { Action, can } from "@/lib/auth/permissions";
-import { zOrganizationStatus } from "@/lib/client/zod.gen";
 import { loadOrganizations } from "@/lib/route-data";
+import { withRouteErrors } from "@/lib/route-errors";
 import { pluralize } from "@/lib/utils";
 
 const organizationsListSearchSchema = z.object({
@@ -47,7 +48,8 @@ const organizationsListSearchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/organizations/")({
   validateSearch: organizationsListSearchSchema,
-  loader: ({ context }) => loadOrganizations(context.queryClient),
+  loader: ({ context }) =>
+    withRouteErrors(() => loadOrganizations(context.queryClient)),
   component: OrganizationsListPage,
 });
 

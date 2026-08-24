@@ -1,28 +1,54 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"testing"
 
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/repository"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+
 	"github.com/go-redis/cache/v9"
-	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/convert"
-	"github.com/opcotech/elemo/internal/pkg/optional"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/optional"
 )
+
+func mustNamespaceListForOrganizationKey(t *testing.T, orgID model.ID, page repository.CursorPage) string {
+	t.Helper()
+	return mustPlanCacheKey(t, repository.NamespaceListQuery{
+		OrgID:      orgID,
+		ActorID:    model.MustNewNilID(model.ResourceTypeUser),
+		Page:       page,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.NamespaceListProjection(),
+	}, model.ResourceTypeNamespace.String(), "ListForOrganization", orgID.String())
+}
+
+func mustNamespaceListAccessibleKey(t *testing.T, actor model.ID, page repository.CursorPage) string {
+	t.Helper()
+	return mustPlanCacheKey(t, repository.NamespaceListAccessibleQuery{
+		ActorID:    actor,
+		Page:       page,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.NamespaceListProjection(),
+	}, model.ResourceTypeNamespace.String(), "ListAccessible")
+}
 
 func TestCachedNamespaceRepository_Create(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, opts CreateNamespaceOpts) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, opts CreateNamespaceOpts) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateNamespaceOpts) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNamespaceOpts) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx  context.Context
-		opts CreateNamespaceOpts
+		opts repository.CreateNamespaceOpts
 	}
 	tests := []struct {
 		name    string
@@ -33,9 +59,9 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNamespaceOpts) *redisBaseRepository {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -47,43 +73,43 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					organizationKeyResult := new(redis.StringSliceCmd)
 					organizationKeyResult.SetVal([]string{organizationKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyResult)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNamespaceOpts) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(&Namespace{}, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNamespaceOpts) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(&repository.Namespace{}, nil)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNamespaceOpts{
+				opts: repository.CreateNamespaceOpts{
 					Name:        "test namespace",
 					Description: "test description",
 					CreatorID:   model.MustNewID(model.ResourceTypeUser),
@@ -94,9 +120,9 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		{
 			name: "add new namespace with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNamespaceOpts) *redisBaseRepository {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -108,105 +134,105 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					organizationKeyResult := new(redis.StringSliceCmd)
 					organizationKeyResult.SetVal([]string{organizationKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyResult)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, opts CreateNamespaceOpts) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Create(ctx, opts).Return(nil, ErrNamespaceCreate)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, opts repository.CreateNamespaceOpts) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Create(ctx, opts).Return(nil, repository.ErrNamespaceCreate)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNamespaceOpts{
+				opts: repository.CreateNamespaceOpts{
 					Name:        "test namespace",
 					Description: "test description",
 					CreatorID:   model.MustNewID(model.ResourceTypeUser),
 					OrgID:       model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
-			wantErr: ErrNamespaceCreate,
+			wantErr: repository.ErrNamespaceCreate,
 		},
 		{
 			name: "add new namespace with cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNamespaceOpts) *redisBaseRepository {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
 					getAllKeyResult.SetVal([]string{getAllKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ CreateNamespaceOpts) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ repository.CreateNamespaceOpts) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNamespaceOpts{
+				opts: repository.CreateNamespaceOpts{
 					Name:        "test namespace",
 					Description: "test description",
 					CreatorID:   model.MustNewID(model.ResourceTypeUser),
 					OrgID:       model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "add new namespace with organization cache delete error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ CreateNamespaceOpts) *redisBaseRepository {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -218,48 +244,48 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 					organizationKeyResult := new(redis.StringSliceCmd)
 					organizationKeyResult.SetVal([]string{organizationKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyResult)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyResult)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyResult)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(3)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(3)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ CreateNamespaceOpts) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ repository.CreateNamespaceOpts) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				opts: CreateNamespaceOpts{
+				opts: repository.CreateNamespaceOpts{
 					Name:        "test namespace",
 					Description: "test description",
 					CreatorID:   model.MustNewID(model.ResourceTypeUser),
 					OrgID:       model.MustNewID(model.ResourceTypeOrganization),
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -268,10 +294,16 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.opts),
-			}
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.opts),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.opts)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			_, err := r.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -283,8 +315,8 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 	defer ctrl.Finish()
 
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *Namespace) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *repository.Namespace) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -294,28 +326,28 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    func(id model.ID) *Namespace
+		want    func(id model.ID) *repository.Namespace
 		wantErr error
 	}{
 		{
 			name: "get uncached namespace",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -323,16 +355,16 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						Value: namespace,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, NamespaceDetailProjection()).Return(namespace, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(namespace, nil)
 					return repo
 				},
 			},
@@ -340,8 +372,8 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			want: func(id model.ID) *Namespace {
-				return &Namespace{
+			want: func(id model.ID) *repository.Namespace {
+				return &repository.Namespace{
 					ID:            id,
 					Name:          "test namespace",
 					Description:   "test description",
@@ -353,44 +385,44 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		{
 			name: "get cached namespace",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(**Namespace); ok {
+						if ptr, ok := dst.(**repository.Namespace); ok {
 							*ptr = namespace
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *Namespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *repository.Namespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			want: func(id model.ID) *Namespace {
-				return &Namespace{
+			want: func(id model.ID) *repository.Namespace {
+				return &repository.Namespace{
 					ID:            id,
 					Name:          "test namespace",
 					Description:   "test description",
@@ -402,33 +434,33 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		{
 			name: "get uncached namespace error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, _ *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, NamespaceDetailProjection()).Return(nil, ErrNotFound)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, _ *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -436,64 +468,64 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get cached namespace error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *Namespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ *repository.Namespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached namespace cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
@@ -501,16 +533,16 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 						Value: namespace,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, NamespaceDetailProjection()).Return(namespace, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(namespace, nil)
 					return repo
 				},
 			},
@@ -518,7 +550,7 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -527,26 +559,32 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			var want *Namespace
+			var want *repository.Namespace
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
 			}
 
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id, want),
-			}
-			got, err := r.Get(tt.args.ctx, tt.args.id, NamespaceDetailProjection())
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id, want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.Get(tt.args.ctx, tt.args.id, repository.NamespaceDetailProjection())
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, want, got)
 		})
 	}
 }
 
-func TestCachedNamespaceRepository_GetAll(t *testing.T) {
+func TestCachedNamespaceRepository_List(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*Namespace) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*Namespace) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*repository.Namespace) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*repository.Namespace) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx          context.Context
@@ -558,45 +596,45 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*Namespace
+		want    []*repository.Namespace
 		wantErr error
 	}{
 		{
 			name: "get uncached namespaces",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", organization.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*repository.Namespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListForOrganizationKey(t, organization, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Namespace]{Items: namespaces},
+						Value: repository.Page[*repository.Namespace]{Items: namespaces},
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().List(ctx, organization, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*Namespace]{Items: namespaces}, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListForOrganization(ctx, repository.NamespaceListQuery{OrgID: organization, ActorID: model.MustNewNilID(model.ResourceTypeUser), Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.Namespace]{Items: namespaces}, nil)
 					return repo
 				},
 			},
@@ -604,7 +642,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 				ctx:          context.Background(),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*Namespace{
+			want: []*repository.Namespace{
 				{
 					ID:            model.MustNewID(model.ResourceTypeNamespace),
 					Name:          "test namespace",
@@ -624,43 +662,43 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 		{
 			name: "get cached namespaces",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", organization.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*repository.Namespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListForOrganizationKey(t, organization, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*Page[*Namespace]); ok {
-							*ptr = Page[*Namespace]{Items: namespaces}
+						if ptr, ok := dst.(*repository.Page[*repository.Namespace]); ok {
+							*ptr = repository.Page[*repository.Namespace]{Items: namespaces}
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _, _ int, _ []*Namespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _, _ int, _ []*repository.Namespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			want: []*Namespace{
+			want: []*repository.Namespace{
 				{
 					ID:            model.MustNewID(model.ResourceTypeNamespace),
 					Name:          "test namespace",
@@ -680,33 +718,33 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 		{
 			name: "get uncached namespaces error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, _ []*Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", organization.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, _ []*repository.Namespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListForOrganizationKey(t, organization, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, _ []*Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().List(ctx, organization, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*Namespace]{}, ErrNotFound)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, _ []*repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListForOrganization(ctx, repository.NamespaceListQuery{OrgID: organization, ActorID: model.MustNewNilID(model.ResourceTypeUser), Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.Namespace]{}, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -714,81 +752,81 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 				ctx:          context.Background(),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get get namespaces cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, _ []*Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", organization.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, _ []*repository.Namespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListForOrganizationKey(t, organization, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _, _ int, _ []*Namespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _, _ int, _ []*repository.Namespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:          context.Background(),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached namespaces cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "List", organization.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, organization model.ID, _, limit int, namespaces []*repository.Namespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListForOrganizationKey(t, organization, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*Namespace]{Items: namespaces},
+						Value: repository.Page[*repository.Namespace]{Items: namespaces},
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().List(ctx, organization, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*Namespace]{Items: namespaces}, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, organization model.ID, _, limit int, namespaces []*repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListForOrganization(ctx, repository.NamespaceListQuery{OrgID: organization, ActorID: model.MustNewNilID(model.ResourceTypeUser), Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.Namespace]{Items: namespaces}, nil)
 					return repo
 				},
 			},
@@ -796,7 +834,7 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 				ctx:          context.Background(),
 				organization: model.MustNewID(model.ResourceTypeOrganization),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -805,11 +843,17 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.organization, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.organization, tt.args.offset, testPageSize(tt.args.limit), tt.want),
-			}
-			got, err := r.List(tt.args.ctx, tt.args.organization, model.MustNewNilID(model.ResourceTypeUser), CursorPage{Size: testPageSize(tt.args.limit)}, NamespaceListProjection())
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.organization, tt.args.offset, testPageSize(tt.args.limit), tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.organization, tt.args.offset, testPageSize(tt.args.limit), tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.ListForOrganization(tt.args.ctx, repository.NamespaceListQuery{OrgID: tt.args.organization, ActorID: model.MustNewNilID(model.ResourceTypeUser), Page: repository.CursorPage{Size: testPageSize(tt.args.limit)}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -818,8 +862,8 @@ func TestCachedNamespaceRepository_GetAll(t *testing.T) {
 
 func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*AccessibleNamespace) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*AccessibleNamespace) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx   context.Context
@@ -830,45 +874,45 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []*AccessibleNamespace
+		want    []*repository.AccessibleNamespace
 		wantErr error
 	}{
 		{
 			name: "get uncached accessible namespaces",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*AccessibleNamespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListAccessibleKey(t, actor, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*AccessibleNamespace]{Items: namespaces},
+						Value: repository.Page[*repository.AccessibleNamespace]{Items: namespaces},
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*AccessibleNamespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().ListAccessible(ctx, actor, CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*AccessibleNamespace]{Items: namespaces}, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListAccessible(ctx, repository.NamespaceListAccessibleQuery{ActorID: actor, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.AccessibleNamespace]{Items: namespaces}, nil)
 					return repo
 				},
 			},
@@ -876,16 +920,16 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 				ctx:   context.Background(),
 				actor: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*AccessibleNamespace{
+			want: []*repository.AccessibleNamespace{
 				{
-					Namespace: Namespace{
+					Namespace: repository.Namespace{
 						ID:            model.MustNewID(model.ResourceTypeNamespace),
 						Name:          "test namespace",
 						Description:   "test description",
 						ProjectCount:  convert.ToPointer(int64(0)),
 						DocumentCount: convert.ToPointer(int64(0)),
 					},
-					Organization: PartialOrganization{
+					Organization: repository.PartialOrganization{
 						ID:   model.MustNewID(model.ResourceTypeOrganization),
 						Name: "test organization",
 					},
@@ -895,52 +939,52 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 		{
 			name: "get cached accessible namespaces",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*AccessibleNamespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListAccessibleKey(t, actor, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						if ptr, ok := dst.(*Page[*AccessibleNamespace]); ok {
-							*ptr = Page[*AccessibleNamespace]{Items: namespaces}
+						if ptr, ok := dst.(*repository.Page[*repository.AccessibleNamespace]); ok {
+							*ptr = repository.Page[*repository.AccessibleNamespace]{Items: namespaces}
 						}
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ int, _ []*AccessibleNamespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ int, _ []*repository.AccessibleNamespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:   context.Background(),
 				actor: model.MustNewID(model.ResourceTypeUser),
 			},
-			want: []*AccessibleNamespace{
+			want: []*repository.AccessibleNamespace{
 				{
-					Namespace: Namespace{
+					Namespace: repository.Namespace{
 						ID:            model.MustNewID(model.ResourceTypeNamespace),
 						Name:          "test namespace",
 						Description:   "test description",
 						ProjectCount:  convert.ToPointer(int64(0)),
 						DocumentCount: convert.ToPointer(int64(0)),
 					},
-					Organization: PartialOrganization{
+					Organization: repository.PartialOrganization{
 						ID:   model.MustNewID(model.ResourceTypeOrganization),
 						Name: "test organization",
 					},
@@ -950,33 +994,33 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 		{
 			name: "get uncached accessible namespaces error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, _ []*AccessibleNamespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, _ []*repository.AccessibleNamespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListAccessibleKey(t, actor, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, _ []*AccessibleNamespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().ListAccessible(ctx, actor, CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*AccessibleNamespace]{}, ErrNotFound)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, _ []*repository.AccessibleNamespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListAccessible(ctx, repository.NamespaceListAccessibleQuery{ActorID: actor, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.AccessibleNamespace]{}, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -984,81 +1028,81 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 				ctx:   context.Background(),
 				actor: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "get accessible namespaces cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, _ []*AccessibleNamespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, _ []*repository.AccessibleNamespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListAccessibleKey(t, actor, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ int, _ []*AccessibleNamespace) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID, _ int, _ []*repository.AccessibleNamespace) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx:   context.Background(),
 				actor: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheRead,
+			wantErr: repository.ErrCacheRead,
 		},
 		{
 			name: "get uncached accessible namespaces cache set error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*AccessibleNamespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", actor.String(), projectionCacheValue(NamespaceListProjection()), "", limit)
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) []repository.RedisRepositoryOption {
+					key := mustNamespaceListAccessibleKey(t, actor, repository.CursorPage{Size: limit})
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{
 						Ctx:   ctx,
 						Key:   key,
-						Value: Page[*AccessibleNamespace]{Items: namespaces},
+						Value: repository.Page[*repository.AccessibleNamespace]{Items: namespaces},
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*AccessibleNamespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().ListAccessible(ctx, actor, CursorPage{Size: limit}, NamespaceListProjection()).Return(Page[*AccessibleNamespace]{Items: namespaces}, nil)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, actor model.ID, limit int, namespaces []*repository.AccessibleNamespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().ListAccessible(ctx, repository.NamespaceListAccessibleQuery{ActorID: actor, Page: repository.CursorPage{Size: limit}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()}).Return(repository.Page[*repository.AccessibleNamespace]{Items: namespaces}, nil)
 					return repo
 				},
 			},
@@ -1066,7 +1110,7 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 				ctx:   context.Background(),
 				actor: model.MustNewID(model.ResourceTypeUser),
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 	}
 	for _, tt := range tests {
@@ -1075,11 +1119,17 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.actor, testPageSize(tt.args.limit), tt.want),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.actor, testPageSize(tt.args.limit), tt.want),
-			}
-			got, err := r.ListAccessible(tt.args.ctx, tt.args.actor, CursorPage{Size: testPageSize(tt.args.limit)}, NamespaceListProjection())
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.actor, testPageSize(tt.args.limit), tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.actor, testPageSize(tt.args.limit), tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
+			got, err := r.ListAccessible(tt.args.ctx, repository.NamespaceListAccessibleQuery{ActorID: tt.args.actor, Page: repository.CursorPage{Size: testPageSize(tt.args.limit)}, Order: repository.SortDirectionDesc, Projection: repository.NamespaceListProjection()})
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.ElementsMatch(t, tt.want, got.Items)
 		})
@@ -1088,28 +1138,28 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 
 func TestCachedNamespaceRepository_Update(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch UpdateNamespaceOpts, namespace *Namespace) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx   context.Context
 		id    model.ID
-		patch UpdateNamespaceOpts
+		patch repository.UpdateNamespaceOpts
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *Namespace
+		want    *repository.Namespace
 		wantErr error
 	}{
 		{
 			name: "update namespace",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
 
@@ -1118,21 +1168,21 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 					listAccessibleKeyCmd := new(redis.StringSliceCmd)
 					listAccessibleKeyCmd.SetVal([]string{listAccessibleKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyCmd)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(7)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(3)
@@ -1149,15 +1199,15 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 						Value: namespace,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch UpdateNamespaceOpts, namespace *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -1165,12 +1215,12 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
-				patch: UpdateNamespaceOpts{
+				patch: repository.UpdateNamespaceOpts{
 					Name:        optional.Some("updated namespace"),
 					Description: optional.Some("updated description"),
 				},
 			},
-			want: &Namespace{
+			want: &repository.Namespace{
 				ID:            model.MustNewID(model.ResourceTypeNamespace),
 				Name:          "test namespace",
 				Description:   "test description",
@@ -1181,53 +1231,53 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 		{
 			name: "update namespace with error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *Namespace) *redisBaseRepository {
-					db, err := NewRedisDatabase(
-						WithRedisClient(mock.NewUniversalClient(ctrl)),
+				cacheRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ *repository.Namespace) []repository.RedisRepositoryOption {
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(mockrepo.NewMockUniversalClient(ctrl)),
 					)
 					require.NoError(t, err)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  mock.NewCacheBackend(ctrl),
-						tracer: mock.NewMockTracer(ctrl),
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(mockrepo.NewMockCacheBackend(ctrl)),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(mocktrace.NewMockTracer(ctrl)),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch UpdateNamespaceOpts, _ *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(nil, ErrNotFound)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, _ *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Update(ctx, id, patch).Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
-				patch: UpdateNamespaceOpts{
+				patch: repository.UpdateNamespaceOpts{
 					Name:        optional.Some("updated namespace"),
 					Description: optional.Some("updated description"),
 				},
 			},
-			wantErr: ErrNotFound,
+			wantErr: repository.ErrNotFound,
 		},
 		{
 			name: "update namespace set cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
 
-					dbClient := mock.NewUniversalClient(ctrl)
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
 					cacheRepo.EXPECT().Set(&cache.Item{
@@ -1236,15 +1286,15 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 						Value: namespace,
 					}).Return(assert.AnError)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch UpdateNamespaceOpts, namespace *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -1252,37 +1302,37 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
-				patch: UpdateNamespaceOpts{
+				patch: repository.UpdateNamespaceOpts{
 					Name:        optional.Some("updated namespace"),
 					Description: optional.Some("updated description"),
 				},
 			},
-			wantErr: ErrCacheWrite,
+			wantErr: repository.ErrCacheWrite,
 		},
 		{
 			name: "update namespace delete get all cache error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *Namespace) *redisBaseRepository {
-					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(NamespaceDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
+					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span)
 
@@ -1293,15 +1343,15 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 						Value: namespace,
 					}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch UpdateNamespaceOpts, namespace *Namespace) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
 					return repo
 				},
@@ -1309,12 +1359,12 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
-				patch: UpdateNamespaceOpts{
+				patch: repository.UpdateNamespaceOpts{
 					Name:        optional.Some("updated namespace"),
 					Description: optional.Some("updated description"),
 				},
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1324,10 +1374,16 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id, tt.args.patch, tt.want),
-			}
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id, tt.args.patch, tt.want),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id, tt.want)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			got, err := r.Update(tt.args.ctx, tt.args.id, tt.args.patch)
 			assert.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -1337,8 +1393,8 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 
 func TestCachedNamespaceRepository_Delete(t *testing.T) {
 	type fields struct {
-		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository
-		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID) NamespaceRepository
+		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption
+		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID) repository.NamespaceRepository
 	}
 	type args struct {
 		ctx context.Context
@@ -1353,10 +1409,10 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 		{
 			name: "delete namespace success",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
@@ -1372,26 +1428,26 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyCmd)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(8)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
@@ -1401,15 +1457,15 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					cacheRepo.EXPECT().Get(ctx, projectionEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: projectionEpochKey, Value: int64(1)}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
 					repo.EXPECT().Delete(ctx, id).Return(nil)
 					return repo
 				},
@@ -1422,10 +1478,10 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 		{
 			name: "delete namespace with namespace deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
@@ -1441,26 +1497,26 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyCmd)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(8)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span).Times(2)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Set", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
@@ -1470,16 +1526,16 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					cacheRepo.EXPECT().Get(ctx, projectionEpochKey, gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Set(&cache.Item{Ctx: ctx, Key: projectionEpochKey, Value: int64(1)}).Return(nil)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID) NamespaceRepository {
-					repo := NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(ErrNamespaceDelete)
+				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(ctrl)
+					repo.EXPECT().Delete(ctx, id).Return(repository.ErrNamespaceDelete)
 					return repo
 				},
 			},
@@ -1487,43 +1543,43 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrNamespaceDelete,
+			wantErr: repository.ErrNamespaceDelete,
 		},
 		{
 			name: "delete namespace with cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
 
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(1)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
-					cacheRepo.EXPECT().Delete(ctx, key).Return(ErrCacheDelete)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
+					cacheRepo.EXPECT().Delete(ctx, key).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) NamespaceRepository {
-					repo := NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) repository.NamespaceRepository {
+					repo := mockrepo.NewMockNamespaceRepository(nil)
 					return repo
 				},
 			},
@@ -1531,14 +1587,14 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete namespace with get all cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1546,49 +1602,49 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(2)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 		{
 			name: "delete namespace with organization cache deletion error",
 			fields: fields{
-				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) *redisBaseRepository {
+				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "List", "*", "*", "*", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*", "*", "*", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
@@ -1602,45 +1658,45 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 					keyCmd := new(redis.StringSliceCmd)
 					keyCmd.SetVal([]string{key})
 
-					dbClient := mock.NewUniversalClient(ctrl)
+					dbClient := mockrepo.NewMockUniversalClient(ctrl)
 					dbClient.EXPECT().Keys(ctx, key).Return(keyCmd)
 					dbClient.EXPECT().Keys(ctx, getAllKey).Return(getAllKeyCmd)
 					dbClient.EXPECT().Keys(ctx, listAccessibleKey).Return(listAccessibleKeyCmd)
 					dbClient.EXPECT().Keys(ctx, organizationKey).Return(organizationKeyCmd)
 
-					db, err := NewRedisDatabase(
-						WithRedisClient(dbClient),
+					db, err := repository.NewRedisDatabase(
+						repository.WithRedisClient(dbClient),
 					)
 					require.NoError(t, err)
 
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0)).Times(4)
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/DeletePattern", gomock.Len(0)).Return(ctx, span).Times(4)
 
-					cacheRepo := mock.NewCacheBackend(ctrl)
+					cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 					cacheRepo.EXPECT().Delete(ctx, key).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, getAllKey).Return(nil)
 					cacheRepo.EXPECT().Delete(ctx, listAccessibleKey).Return(nil)
-					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(ErrCacheDelete)
+					cacheRepo.EXPECT().Delete(ctx, organizationKey).Return(repository.ErrCacheDelete)
 
-					return &redisBaseRepository{
-						db:     db,
-						cache:  cacheRepo,
-						tracer: tracer,
-						logger: mock.NewMockLogger(ctrl),
+					return []repository.RedisRepositoryOption{
+						repository.WithRedisDatabase(db),
+						repository.WithCacheBackend(cacheRepo),
+						repository.WithRedisRepositoryLogger(mocklog.NewMockLogger(ctrl)),
+						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) NamespaceRepository {
-					return NewMockNamespaceRepository(nil)
+				namespaceRepo: func(_ context.Context, _ *gomock.Controller, _ model.ID) repository.NamespaceRepository {
+					return mockrepo.NewMockNamespaceRepository(nil)
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				id:  model.MustNewID(model.ResourceTypeNamespace),
 			},
-			wantErr: ErrCacheDelete,
+			wantErr: repository.ErrCacheDelete,
 		},
 	}
 	for _, tt := range tests {
@@ -1649,10 +1705,16 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			r := &RedisCachedNamespaceRepository{
-				cacheRepo:     tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id),
-				namespaceRepo: tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id),
-			}
+			r := func() *repository.RedisCachedNamespaceRepository {
+				r, err := repository.NewCachedNamespaceRepository(
+					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id),
+					tt.fields.cacheRepo(ctrl, tt.args.ctx, tt.args.id)...,
+				)
+				if err != nil {
+					panic(err)
+				}
+				return r
+			}()
 			err := r.Delete(tt.args.ctx, tt.args.id)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { SearchResult } from "@/lib/client";
+import type { SearchResult } from "@/lib/api/types";
 import {
   groupSearchResults,
   searchResultEntityType,

@@ -10,8 +10,9 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 )
 
 func testSearchClient() meilisearch.ServiceManager {
@@ -22,8 +23,8 @@ func TestNewSearchDatabase(t *testing.T) {
 	t.Parallel()
 
 	client := testSearchClient()
-	logger := mock.NewMockLogger(nil)
-	tracer := mock.NewMockTracer(nil)
+	logger := mocklog.NewMockLogger(nil)
+	tracer := mocktrace.NewMockTracer(nil)
 
 	tests := []struct {
 		name    string
@@ -113,8 +114,8 @@ func TestNewMeilisearchSearchRepository(t *testing.T) {
 	db, err := NewSearchDatabase(WithSearchClient(testSearchClient()))
 	require.NoError(t, err)
 
-	logger := mock.NewMockLogger(nil)
-	tracer := mock.NewMockTracer(nil)
+	logger := mocklog.NewMockLogger(nil)
+	tracer := mocktrace.NewMockTracer(nil)
 
 	tests := []struct {
 		name    string

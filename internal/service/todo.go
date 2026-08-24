@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
@@ -64,6 +63,8 @@ type UpdateTodoOpts struct {
 
 // TodoService serves the business logic of interacting with todos in the
 // system.
+//
+//go:generate go tool mockgen -destination=mock/mock_todo_gen.go -package=mocksvc . TodoService
 type TodoService interface {
 	// Create creates a new todo item. Todos are personal: the creator must
 	// also be the owner.
@@ -84,7 +85,9 @@ type TodoService interface {
 
 // todoService is the concrete implementation of the TodoService interface.
 type todoService struct {
-	*baseService
+	runtime
+	todoRepo       repository.TodoRepository
+	licenseService LicenseService
 }
 
 func todoFromRepository(t *repository.Todo) *Todo {
@@ -157,14 +160,14 @@ func (s *todoService) List(ctx context.Context, page CursorPage, completed *bool
 	ctx, span := s.tracer.Start(ctx, "service.todoService/List")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*Todo]{}, errors.Join(ErrTodoList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, err)
+		return Page[*Todo]{}, errors.Join(ErrTodoList, err)
 	}
 
 	todos, err := s.todoRepo.ListByOwner(
@@ -174,7 +177,7 @@ func (s *todoService) List(ctx context.Context, page CursorPage, completed *bool
 		completed,
 	)
 	if err != nil {
-		return Page[*Todo]{}, errors.Join(ErrTodoGetAll, err)
+		return Page[*Todo]{}, errors.Join(ErrTodoList, err)
 	}
 
 	return mapPage(todos, todoFromRepository), nil
@@ -234,9 +237,9 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 }
 
 func (s *todoService) ownedTodo(ctx context.Context, id model.ID) (*repository.Todo, error) {
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, ErrNoUser
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	todo, err := s.todoRepo.Get(ctx, id)
@@ -251,14 +254,16 @@ func (s *todoService) ownedTodo(ctx context.Context, id model.ID) (*repository.T
 }
 
 // NewTodoService returns a new instance of the TodoService interface.
-func NewTodoService(opts ...Option) (TodoService, error) {
-	s, err := newService(opts...)
+func NewTodoService(todoRepo repository.TodoRepository, licenseService LicenseService, opts ...Option) (TodoService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &todoService{
-		baseService: s,
+		runtime:        rt,
+		todoRepo:       todoRepo,
+		licenseService: licenseService,
 	}
 
 	if svc.todoRepo == nil {

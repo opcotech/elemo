@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type RoleRepositoryIntegrationTestSuite struct {
@@ -68,7 +69,7 @@ func (s *RoleRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().WithinDuration(*created.CreatedAt, *role.CreatedAt, 100*time.Millisecond)
 }
 
-func (s *RoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *RoleRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.RoleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.RoleRepo.Create(context.Background(), testModel.NewCreateRoleOpts(s.testUser.ID, s.testOrg.ID))
@@ -232,7 +233,7 @@ func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetByKey() {
 	s.Assert().Equal(original.Key, cached.Key)
 }
 
-func (s *CachedRoleRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *CachedRoleRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.roleRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	original, err := s.RoleRepo.ListBelongsTo(context.Background(), s.testOrg.ID, repository.CursorPage{Size: 10}, repository.RoleListProjection())

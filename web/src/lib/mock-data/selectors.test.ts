@@ -39,7 +39,6 @@ describe("mock-data boundary", () => {
     );
     expect(MOCK_ONLY_DOMAINS).toEqual(
       expect.arrayContaining([
-        "workItems",
         "savedViews",
         "documentBodies",
         "relations",

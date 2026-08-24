@@ -1,0 +1,447 @@
+PartialIssue:
+  title: PartialIssue
+  type: object
+  description: A simplified issue that can be used in lists.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      key: MOB-1
+      numeric_id: 1
+      parent: null
+      kind: story
+      title: Implement authentication
+      status: open
+      priority: normal
+      assignees: []
+      reviewers: []
+      labels: []
+      due_date: null
+      start_date: null
+      reported_by: 9bsv0s46s6s002p9ltq0
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the issue.
+      example: 9bsv0s46s6s002p9ltq0
+    key:
+      type: string
+      description: Composite issue key built from the owner project key and numeric ID.
+      pattern: "^[A-Z]{2,6}-[1-9][0-9]*$"
+      example: MOB-1
+    numeric_id:
+      type: integer
+      minimum: 1
+      description: Numeric identifier of the issue within its project.
+      example: 1
+    parent:
+      allOf:
+        - $ref: "#/components/schemas/PartialIssue"
+      nullable: true
+      description: Parent issue of this issue.
+    kind:
+      $ref: "#/components/schemas/IssueKind"
+    title:
+      type: string
+      description: Title of the issue.
+      minLength: 3
+      maxLength: 120
+      example: Implement authentication
+    description:
+      type: string
+      description: Description of the issue.
+      minLength: 3
+      example: Add OAuth2 password and authorization code flows.
+      nullable: true
+    status:
+      $ref: "#/components/schemas/IssueStatus"
+    priority:
+      $ref: "#/components/schemas/IssuePriority"
+    reported_by:
+      allOf:
+        - $ref: "#/components/schemas/PartialUser"
+      nullable: true
+      description: User who reported the issue.
+    assignees:
+      type: array
+      description: Users assigned to the issue.
+      items:
+        $ref: "#/components/schemas/PartialUser"
+    reviewers:
+      type: array
+      description: Users reviewing the issue.
+      items:
+        $ref: "#/components/schemas/PartialUser"
+    labels:
+      type: array
+      description: Labels attached to the issue.
+      items:
+        $ref: "#/components/schemas/PartialLabel"
+    project:
+      allOf:
+        - $ref: "#/components/schemas/PartialProject"
+      nullable: true
+      description: Project the issue belongs to.
+    namespace:
+      allOf:
+        - $ref: "#/components/schemas/PartialNamespace"
+      nullable: true
+      description: Namespace that owns the issue's project.
+    due_date:
+      type: string
+      format: date-time
+      description: Due date of the issue.
+      nullable: true
+    start_date:
+      type: string
+      format: date-time
+      description: Start date of the issue.
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the issue was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the issue was updated.
+      nullable: true
+  required:
+    - id
+    - key
+    - numeric_id
+    - kind
+    - title
+    - status
+    - priority
+    - assignees
+    - reviewers
+    - labels
+    - created_at
+    - updated_at
+IssueKind:
+  type: string
+  enum:
+    - epic
+    - story
+    - task
+    - bug
+  example: story
+  description: Kind of the issue.
+  title: IssueKind
+IssueStatus:
+  type: string
+  enum:
+    - open
+    - in progress
+    - blocked
+    - review
+    - done
+    - closed
+  example: open
+  description: Status of the issue.
+  title: IssueStatus
+IssuePriority:
+  type: string
+  enum:
+    - lowest
+    - low
+    - normal
+    - high
+    - highest
+  example: normal
+  description: Priority of the issue.
+  title: IssuePriority
+IssueResolution:
+  type: string
+  enum:
+    - none
+    - fixed
+    - duplicate
+    - won't fix
+    - invalid
+    - incomplete
+    - cannot reproduce
+  example: none
+  description: Resolution of the issue.
+  title: IssueResolution
+IssueRelationKind:
+  type: string
+  enum:
+    - blocked by
+    - blocks
+    - depends on
+    - duplicated by
+    - duplicates
+    - related to
+    - subtask of
+  example: blocks
+  description: Kind of relation between two issues.
+  title: IssueRelationKind
+IssueRelationDirection:
+  type: string
+  enum:
+    - outgoing
+    - incoming
+  example: outgoing
+  description: Whether the relation edge leaves (outgoing) or enters (incoming) the issue in the URL.
+  title: IssueRelationDirection
+IssueLink:
+  title: IssueLink
+  type: object
+  description: An external URL attached to an issue, with a visible label.
+  x-examples:
+    example:
+      url: "https://example.com/ticket/1"
+      label: Design spec
+  properties:
+    url:
+      type: string
+      format: uri
+      description: Destination URL of the link.
+      example: "https://example.com/ticket/1"
+      maxLength: 2000
+    label:
+      type: string
+      description: Visible label of the link.
+      example: Design spec
+      minLength: 1
+      maxLength: 120
+  required:
+    - url
+    - label
+Issue:
+  title: Issue
+  type: object
+  description: An issue in a project.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      key: MOB-1
+      numeric_id: 1
+      parent: null
+      kind: story
+      title: Implement authentication
+      description: Add OAuth2 password and authorization code flows.
+      status: open
+      priority: normal
+      resolution: none
+      reported_by: 9bsv0s46s6s002p9ltq0
+      assignees: []
+      reviewers: []
+      labels: []
+      comment_count: 0
+      document_count: 0
+      attachment_count: 0
+      watcher_count: 0
+      relation_count: 0
+      links: []
+      due_date: null
+      start_date: null
+      created_at: "2023-01-01T00:00:00Z"
+      updated_at: null
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the issue.
+      example: 9bsv0s46s6s002p9ltq0
+    key:
+      type: string
+      description: Composite issue key built from the owner project key and numeric ID.
+      pattern: "^[A-Z]{2,6}-[1-9][0-9]*$"
+      example: MOB-1
+    numeric_id:
+      type: integer
+      minimum: 1
+      description: Numeric identifier of the issue within its project.
+      example: 1
+    parent:
+      allOf:
+        - $ref: "#/components/schemas/PartialIssue"
+      nullable: true
+      description: Parent issue of this issue.
+    kind:
+      $ref: "#/components/schemas/IssueKind"
+    title:
+      type: string
+      description: Title of the issue.
+      minLength: 3
+      maxLength: 120
+      example: Implement authentication
+    description:
+      type: string
+      description: Description of the issue.
+      minLength: 3
+      example: Add OAuth2 password and authorization code flows.
+      nullable: true
+    status:
+      $ref: "#/components/schemas/IssueStatus"
+    priority:
+      $ref: "#/components/schemas/IssuePriority"
+    resolution:
+      $ref: "#/components/schemas/IssueResolution"
+    reported_by:
+      $ref: "#/components/schemas/PartialUser"
+      description: User who reported the issue.
+    assignees:
+      type: array
+      description: Users assigned to the issue.
+      items:
+        $ref: "#/components/schemas/PartialUser"
+    reviewers:
+      type: array
+      description: Users reviewing the issue.
+      items:
+        $ref: "#/components/schemas/PartialUser"
+    labels:
+      type: array
+      description: Labels attached to the issue.
+      items:
+        $ref: "#/components/schemas/PartialLabel"
+    project:
+      allOf:
+        - $ref: "#/components/schemas/PartialProject"
+      nullable: true
+      description: Project the issue belongs to.
+    namespace:
+      allOf:
+        - $ref: "#/components/schemas/PartialNamespace"
+      nullable: true
+      description: Namespace that owns the issue's project.
+    comment_count:
+      type: integer
+      format: int64
+      description: Number of comments on the issue when projected.
+      example: 3
+      nullable: true
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents that belong to the issue when projected.
+      example: 2
+      nullable: true
+    attachment_count:
+      type: integer
+      format: int64
+      description: Number of attachments on the issue when projected.
+      example: 1
+      nullable: true
+    watcher_count:
+      type: integer
+      format: int64
+      description: Number of users watching the issue when projected.
+      example: 2
+      nullable: true
+    relation_count:
+      type: integer
+      format: int64
+      description: Number of related issues when projected.
+      example: 0
+      nullable: true
+    links:
+      type: array
+      description: External links related to the issue.
+      items:
+        $ref: "#/components/schemas/IssueLink"
+    due_date:
+      type: string
+      format: date-time
+      description: Due date of the issue.
+      nullable: true
+    start_date:
+      type: string
+      format: date-time
+      description: Start date of the issue.
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the issue was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the issue was updated.
+      nullable: true
+  required:
+    - id
+    - key
+    - numeric_id
+    - kind
+    - title
+    - status
+    - priority
+    - resolution
+    - reported_by
+    - assignees
+    - reviewers
+    - labels
+    - links
+    - created_at
+    - updated_at
+IssueRelation:
+  title: IssueRelation
+  type: object
+  description: A directed relation between the issue in the URL and another issue.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      kind: blocks
+      direction: outgoing
+      related:
+        id: 9bsv0s46s6s002p9ltq1
+        key: MOB-2
+        numeric_id: 2
+        kind: task
+        title: Related work
+        status: open
+        priority: normal
+        assignees: []
+        reviewers: []
+        labels: []
+      created_at: "2023-01-01T00:00:00Z"
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the relation.
+      example: 9bsv0s46s6s002p9ltq0
+    kind:
+      $ref: "#/components/schemas/IssueRelationKind"
+    direction:
+      $ref: "#/components/schemas/IssueRelationDirection"
+    related:
+      $ref: "#/components/schemas/PartialIssue"
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the relation was created.
+  required:
+    - id
+    - kind
+    - direction
+    - related
+    - created_at
+PartialIssuePage:
+  title: PartialIssuePage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/PartialIssue"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info
+IssueRelationPage:
+  title: IssueRelationPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/IssueRelation"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

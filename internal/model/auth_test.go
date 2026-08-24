@@ -1,9 +1,8 @@
 package model
 
 import (
-	"testing"
-
 	"database/sql/driver"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

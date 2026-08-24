@@ -6,6 +6,7 @@ import {
   accessibleNamespacesOptions,
   useAccessibleNamespaces,
 } from "@/lib/api/accessible-namespaces";
+import { withRouteErrors } from "@/lib/route-errors";
 
 const documentsHubSearchSchema = z.object({
   q: z.string().optional().catch(undefined),
@@ -14,8 +15,10 @@ const documentsHubSearchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/documents/")({
   validateSearch: documentsHubSearchSchema,
   loader: ({ context }) =>
-    context.queryClient.fetchQuery(
-      accessibleNamespacesOptions(context.queryClient)
+    withRouteErrors(() =>
+      context.queryClient.fetchQuery(
+        accessibleNamespacesOptions(context.queryClient)
+      )
     ),
   component: DocumentsHubRoute,
 });

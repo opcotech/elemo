@@ -13,6 +13,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
@@ -24,7 +25,7 @@ func TestSearchController_V1SearchGet(t *testing.T) {
 	q := "bug"
 
 	ctrl := gomock.NewController(t)
-	searchSvc := service.NewMockSearchService(ctrl)
+	searchSvc := mocksvc.NewMockSearchService(ctrl)
 	searchSvc.EXPECT().Search(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, query service.SearchQuery) (service.Page[*service.SearchResult], error) {
 			assert.Equal(t, "bug", query.Text)
@@ -43,10 +44,10 @@ func TestSearchController_V1SearchGet(t *testing.T) {
 
 	c := &searchController{
 		baseController: &baseController{
-			logger:        log.DefaultLogger(),
-			tracer:        tracing.NoopTracer(),
-			searchService: searchSvc,
+			logger: log.DefaultLogger(),
+			tracer: tracing.NoopTracer(),
 		},
+		searchService: searchSvc,
 	}
 
 	resp, err := c.V1SearchGet(context.Background(), api.V1SearchGetRequestObject{
@@ -67,7 +68,7 @@ func TestNewSearchController(t *testing.T) {
 
 	t.Run("requires search service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewSearchController()
+		_, err := NewSearchController(nil)
 		assert.ErrorIs(t, err, ErrNoSearchService)
 	})
 }

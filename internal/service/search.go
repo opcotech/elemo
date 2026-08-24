@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -86,7 +85,7 @@ type searchPageToken struct {
 	Hash   string `json:"h"`
 }
 
-//go:generate go tool mockgen -destination=search_mock_gen.go -package=service -mock_names SearchService=MockSearchService . SearchService
+//go:generate go tool mockgen -destination=mock/mock_search_gen.go -package=mocksvc . SearchService
 type SearchService interface {
 	// Index upserts a searchable projection. Ancestry is resolved from Neo4j.
 	Index(ctx context.Context, input IndexInput) error
@@ -122,7 +121,9 @@ type searchableRecordByIDsLister func(
 ) ([]repository.SearchableRecord, error)
 
 type searchService struct {
-	*baseService
+	runtime
+	permissionService     PermissionService
+	searchTaskEnqueuer    SearchTaskEnqueuer
 	searchRepo            repository.SearchRepository
 	listSearchableRecords searchableRecordLister
 	listSearchableByIDs   searchableRecordByIDsLister
@@ -279,9 +280,9 @@ func (s *searchService) Search(ctx context.Context, q SearchQuery) (Page[*Search
 	ctx, span := s.tracer.Start(ctx, "service.searchService/Search")
 	defer span.End()
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*SearchResult]{}, errors.Join(ErrSearchGet, ErrNoUser)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return Page[*SearchResult]{}, errors.Join(ErrSearchGet, err)
 	}
 
 	types, err := normalizeSearchTypes(q.Types)
@@ -507,14 +508,21 @@ func decodeSearchPageToken(value string) (searchPageToken, error) {
 	return token, nil
 }
 
-func NewSearchService(searchRepo repository.SearchRepository, opts ...Option) (SearchService, error) {
-	s, err := newService(opts...)
+func NewSearchService(
+	searchRepo repository.SearchRepository,
+	permissionService PermissionService,
+	searchTaskEnqueuer SearchTaskEnqueuer,
+	opts ...Option,
+) (SearchService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &searchService{
-		baseService:           s,
+		runtime:               rt,
+		permissionService:     permissionService,
+		searchTaskEnqueuer:    searchTaskEnqueuer,
 		searchRepo:            searchRepo,
 		listSearchableRecords: repository.ListSearchableRecords,
 		listSearchableByIDs:   repository.ListSearchableRecordsByIDs,

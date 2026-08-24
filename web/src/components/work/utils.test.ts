@@ -24,7 +24,8 @@ import {
   workItemsToTimelineEntries,
 } from "./utils";
 
-import type { TimelineEntry, WorkItem } from "@/lib/mock-data";
+import type { TimelineEntry } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 
 const entries = [
   {

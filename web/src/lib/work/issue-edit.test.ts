@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PartialProject } from "@/lib/client";
+import type { PartialProject } from "@/lib/api/types";
 import {
   assignmentIdsEqual,
   matchProjectByIssueKey,

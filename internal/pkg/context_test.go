@@ -200,7 +200,26 @@ func TestCtxMachineUserKindType(t *testing.T) {
 	})
 }
 
-func TestCtxUserIDIntegration(t *testing.T) {
+func TestCtxUserIDValue(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns user id", func(t *testing.T) {
+		t.Parallel()
+		userID := model.MustNewID(model.ResourceTypeUser)
+		ctx := context.WithValue(context.Background(), CtxKeyUserID, userID)
+		got, ok := CtxUserIDValue(ctx)
+		require.True(t, ok)
+		assert.Equal(t, userID, got)
+	})
+
+	t.Run("missing user", func(t *testing.T) {
+		t.Parallel()
+		_, ok := CtxUserIDValue(context.Background())
+		assert.False(t, ok)
+	})
+}
+
+func TestCtxUserIDNestedContext(t *testing.T) {
 	t.Run("should work with nested contexts", func(t *testing.T) {
 		t.Parallel()
 

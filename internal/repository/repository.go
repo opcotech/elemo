@@ -452,8 +452,8 @@ func Neo4jExecuteWriteAndReadAll[T any](ctx context.Context, db *Neo4jDatabase, 
 
 // PGPool defines the interface for a database connection pool.
 //
-//go:generate go tool mockgen -destination=../testutil/mock/repository_pg_gen.go -package=mock -mock_names "PGPool=PGPool" github.com/opcotech/elemo/internal/repository PGPool
-//go:generate go tool mockgen -destination=../testutil/mock/pgx_gen.go -package=mock -mock_names "Row=PGRow,Rows=PGRows" github.com/jackc/pgx/v5 Row,Rows
+//go:generate go tool mockgen -destination=mock/mock_pgpool_gen.go -package=mockrepo . PGPool
+//go:generate go tool mockgen -destination=mock/mock_pgx_gen.go -package=mockrepo github.com/jackc/pgx/v5 Row,Rows
 type PGPool interface {
 	Close()
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)
@@ -770,8 +770,8 @@ func NewRedisDatabase(opts ...RedisDatabaseOption) (*RedisDatabase, error) {
 
 // CacheBackend represents a cache backend.
 //
-//go:generate go tool mockgen -destination=../testutil/mock/universalclient_gen.go -package=mock -mock_names UniversalClient=UniversalClient github.com/redis/go-redis/v9 UniversalClient
-//go:generate go tool mockgen -source=repository.go -destination=../testutil/mock/cachebackend_gen.go -package=mock -mock_names CacheBackend=CacheBackend github.com/opcotech/elemo/internal/repository CacheBackend
+//go:generate go tool mockgen -destination=mock/mock_universalclient_gen.go -package=mockrepo github.com/redis/go-redis/v9 UniversalClient
+//go:generate go tool mockgen -destination=mock/mock_cachebackend_gen.go -package=mockrepo . CacheBackend
 type CacheBackend interface {
 	Set(item *cache.Item) error
 	Get(ctx context.Context, key string, dst any) error
@@ -812,6 +812,19 @@ func WithRedisRepositoryTracer(tracer tracing.Tracer) RedisRepositoryOption {
 			return tracing.ErrNoTracer
 		}
 		r.tracer = tracer
+
+		return nil
+	}
+}
+
+// WithCacheBackend sets the cache backend for a redisBaseRepository.
+// When omitted, newRedisBaseRepository creates a go-redis/cache backend.
+func WithCacheBackend(backend CacheBackend) RedisRepositoryOption {
+	return func(r *redisBaseRepository) error {
+		if backend == nil {
+			return ErrNoCacheBackend
+		}
+		r.cache = backend
 
 		return nil
 	}
@@ -913,10 +926,12 @@ func newRedisBaseRepository(opts ...RedisRepositoryOption) (*redisBaseRepository
 		}
 	}
 
-	r.cache = cache.New(&cache.Options{
-		Redis:      r.db.Client(),
-		LocalCache: nil, // turn off the local cache as it is buggy
-	})
+	if r.cache == nil {
+		r.cache = cache.New(&cache.Options{
+			Redis:      r.db.Client(),
+			LocalCache: nil, // turn off the local cache as it is buggy
+		})
+	}
 
 	if err := validate.Struct(r); err != nil {
 		return nil, errors.Join(ErrInvalidRepository, err)
@@ -943,7 +958,7 @@ func composeCacheKey(params ...any) string {
 	return strings.Join(key, sep)
 }
 
-//go:generate go tool mockgen -destination=../testutil/mock/repository_s3_gen.go -package=mock -mock_names "S3Client=S3Client" github.com/opcotech/elemo/internal/repository S3Client
+//go:generate go tool mockgen -destination=mock/mock_s3client_gen.go -package=mockrepo . S3Client
 type S3Client interface {
 	CreateBucket(ctx context.Context, params *awsS3.CreateBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.CreateBucketOutput, error)
 	HeadBucket(ctx context.Context, params *awsS3.HeadBucketInput, optFns ...func(*awsS3.Options)) (*awsS3.HeadBucketOutput, error)

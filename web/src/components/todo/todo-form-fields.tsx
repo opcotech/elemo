@@ -24,8 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { zTodoCreate } from "@/lib/api/schemas";
 import type { TodoPriority } from "@/lib/api/types";
-import { zTodoCreate } from "@/lib/client/zod.gen";
 import { createFormSchema } from "@/lib/forms";
 import { cn, getDefaultValue } from "@/lib/utils";
 

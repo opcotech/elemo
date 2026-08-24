@@ -24,8 +24,6 @@ const (
 )
 
 // EmailSender defines the interface to send emails.
-//
-//go:generate go tool mockgen -destination=../testutil/mock/email_sender_gen.go -package=mock -mock_names EmailSender=EmailSender github.com/opcotech/elemo/internal/service EmailSender
 type EmailSender interface {
 	// SendEmail sends an email to the given address using a template.
 	SendEmail(ctx context.Context, subject, to string, template *email.Template) error
@@ -33,7 +31,7 @@ type EmailSender interface {
 
 // EmailService defines the interface to send emails from templates.
 //
-//go:generate go tool mockgen -destination=../testutil/mock/email_service_gen.go -package=mock -mock_names EmailService=EmailService github.com/opcotech/elemo/internal/service EmailService
+//go:generate go tool mockgen -destination=mock/mock_email_gen.go -package=mocksvc . EmailService,EmailSender
 type EmailService interface {
 	// SendAuthPasswordResetEmail sends an email to the user with a link to
 	// reset the password.
@@ -49,7 +47,7 @@ type EmailService interface {
 
 // emailService is the concrete implementation of the EmailService interface.
 type emailService struct {
-	*baseService
+	runtime
 	client       EmailSender
 	templatesDir string
 	smtpConf     *config.SMTPConfig
@@ -138,13 +136,13 @@ func (s *emailService) SendUserWelcomeEmail(ctx context.Context, recipient email
 
 // NewEmailService creates a new email service.
 func NewEmailService(client EmailSender, templatesDir string, smtpConf *config.SMTPConfig, opts ...Option) (EmailService, error) {
-	s, err := newService(opts...)
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &emailService{
-		baseService:  s,
+		runtime:      rt,
 		client:       client,
 		templatesDir: templatesDir,
 		smtpConf:     smtpConf,

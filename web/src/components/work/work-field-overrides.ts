@@ -1,4 +1,4 @@
-import type { WorkItem } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 
 export type WorkFieldOverride = Partial<
   Pick<WorkItem, "status" | "priority" | "startDate" | "dueDate">

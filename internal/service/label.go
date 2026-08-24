@@ -26,7 +26,7 @@ type Label struct {
 
 // LabelService serves the business logic of interacting with labels.
 //
-//go:generate go tool mockgen -destination=label_mock_gen.go -package=service -mock_names LabelService=MockLabelService . LabelService
+//go:generate go tool mockgen -destination=mock/mock_label_gen.go -package=mocksvc . LabelService
 type LabelService interface {
 	// List returns a cursor-paginated page of labels.
 	List(ctx context.Context, page CursorPage) (Page[*Label], error)
@@ -34,7 +34,8 @@ type LabelService interface {
 
 // labelService is the concrete implementation of LabelService.
 type labelService struct {
-	*baseService
+	runtime
+	labelRepo repository.LabelRepository
 }
 
 func labelFromRepository(l *repository.Label) *Label {
@@ -56,26 +57,31 @@ func (s *labelService) List(ctx context.Context, page CursorPage) (Page[*Label],
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Label]{}, errors.Join(ErrLabelGetAll, err)
+		return Page[*Label]{}, errors.Join(ErrLabelList, err)
+	}
+
+	if _, err := ctxUserID(ctx); err != nil {
+		return Page[*Label]{}, errors.Join(ErrLabelList, err)
 	}
 
 	labels, err := s.labelRepo.List(ctx, normalized, repository.LabelListProjection())
 	if err != nil {
-		return Page[*Label]{}, errors.Join(ErrLabelGetAll, err)
+		return Page[*Label]{}, errors.Join(ErrLabelList, err)
 	}
 
 	return mapPage(labels, labelFromRepository), nil
 }
 
 // NewLabelService returns a new instance of the LabelService interface.
-func NewLabelService(opts ...Option) (LabelService, error) {
-	s, err := newService(opts...)
+func NewLabelService(labelRepo repository.LabelRepository, opts ...Option) (LabelService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &labelService{
-		baseService: s,
+		runtime:   rt,
+		labelRepo: labelRepo,
 	}
 
 	if svc.labelRepo == nil {

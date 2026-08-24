@@ -18,6 +18,7 @@ _Pull requests, bug reports, and all other forms of contribution are welcomed an
 - [Writing Commit Messages](#writing-commit-messages)
 - [Code Review](#code-review)
 - [Coding Style](#coding-style)
+- [Repository Conventions](#repository-conventions)
 - [Web Component Design](#web-component-design)
 - [Developer's Certificate of Origin](#developers-certificate-of-origin)
 
@@ -162,8 +163,11 @@ destroy.backend                # Destroy all backend resources
 dev.frontend                   # Start front-end for development
 dev                            # Start backend and front-end for development
 format.backend                 # Run formatters for the backend
+format.backend.check           # Check backend formatting
 format.frontend                # Run formatters for the front-end
+format.frontend.check          # Check front-end formatting
 format                         # Run formatters for the backend and front-end
+generate.backend.check         # Check backend generated artifacts are up to date
 generate.client                # Generate API client
 generate.email                 # Generate HTML emails from MJML templates
 generate.server                # Generate API server
@@ -183,8 +187,12 @@ test.backend.coverage          # Combine unit and integration test coverage
 test.backend.integration       # Run backend integration tests
 test.backend.unit              # Run backend unit tests
 test.backend                   # Run all backend tests
+test.frontend.e2e              # Run front-end end-to-end tests
+test.frontend.storybook        # Build Storybook and run a11y verification stories
+test.frontend.unit             # Run front-end unit tests
 test.frontend                  # Run all front-end tests
 test                           # Run all k6, backend and front-end tests
+typecheck.frontend             # Typecheck the front-end
 ```
 
 ## Releases
@@ -199,9 +207,11 @@ The project ensures code quality and code coverage in multiple ways. Besides thi
 completeness, `gofmt` `go-imports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `eslint` are used to keep up with
 industry standards.
 
-Although front-end unit tests are not created yet, linters and some end-to-end tests are available. In order to run
-end-to-end tests, you have to have the necessary browser drivers installed. The easiest way to install them, is using
-playwright. When the drivers are installed, you can start the end-to-end tests.
+Although front-end unit tests exist (`make test.frontend.unit`), linters and
+end-to-end tests are also available. In order to run end-to-end tests, you have
+to have the necessary browser drivers installed. The easiest way to install them
+is using playwright. When the drivers are installed, you can start the
+end-to-end tests.
 
 ```shell
 # Install playwright dependencies
@@ -220,6 +230,8 @@ make test.backend.coverage    # Combine unit and integration test coverage, or
 make test.backend.integration # Run backend integration tests, or
 make test.backend.unit        # Run backend unit tests, or
 make test.backend             # Run all backend tests, or
+make test.frontend.unit       # Run front-end unit tests, or
+make test.frontend.e2e        # Run front-end end-to-end tests, or
 make test.frontend            # Run all front-end tests
 ```
 
@@ -233,16 +245,20 @@ make test.k6 # Run k6 tests
 
 ## Updating The APIs
 
-The APIs are defined in `/api/openapi/openapi.yaml`. To reduce the possibility
-of human error and ensure the API is called properly, both the server and client
-code is generated.
+The APIs are defined as YAML fragments in `/api/openapi/src/`. Those files are
+assembled into `/api/openapi/openapi.yaml` (do not edit the bundle by hand).
+To reduce the possibility of human error and ensure the API is called properly,
+both the server and client code is generated.
 
-After updating the API specification, you have to regenerate the server and
-client code. To do so, execute the following:
+After updating the API specification, you have to assemble the spec, regenerate
+the server and client code, then confirm there is no unexpected drift:
 
 ```shell
-make generate.server # Generate API server
-make generate.client # Generate API client
+make generate.openapi         # Assemble api/openapi/openapi.yaml from src/
+make generate.server          # Assemble, then generate API server and Go mocks/enums
+make generate.backend.check   # Fail if generated Go artifacts or the OpenAPI bundle changed
+make generate.client          # Assemble, then generate API client
+pnpm --dir web generate:check # Fail if generated TypeScript client changed
 ```
 
 ## Writing Commit Messages
@@ -313,6 +329,59 @@ modifying and of the overall project. Failure to do so will result in a prolonge
 updating the superficial aspects of your code, rather than improving its functionality and performance.
 
 When possible, style and format will be enforced with a linter.
+
+## Repository Conventions
+
+These conventions are Elemo-specific. Follow them for new code, and prefer them
+when touching existing code.
+
+### Backend
+
+- Keep the partial-hexagonal layout: models own domain types, repositories own
+  persistence, services own application logic, and HTTP controllers map requests
+  to commands. See [ADR 0001](docs/ADRs/0001.software-architecture.md),
+  [ADR 0020](docs/ADRs/0020.query-projections-and-relationship-fetching.md), and
+  [ADR 0021](docs/ADRs/0021.scoped-rebac-authorization.md).
+- Wire dependencies manually. Service constructors take required collaborators
+  as arguments. Use options only for logger and tracer (`WithLogger`,
+  `WithTracer`).
+- Repository reads use typed query structs, `Compile()`, and
+  `Neo4jExecuteReadPlan`. Name scoped lists `ListFor{Scope}` (`ListForLibrary`,
+  `ListForNamespace`, `ListForOrganization`, `ListForUser`). Look up a single
+  entity with `Get` or `GetByKey`. PostgreSQL and S3 repositories stay
+  store-specific.
+- Context carries request metadata (authenticated user, tracing). Filters,
+  sorting, and list options are explicit parameters, not context values.
+- Service errors are `Err{Entity}{Operation}` (`List`, not `GetAll`). Wrap the
+  operation sentinel first, then inspect with `errors.Is` / `errors.As`. HTTP
+  handlers classify through `classifyServiceError`.
+- Do not import generated OpenAPI types from `internal/transport/http/api`
+  outside the HTTP layer except through the existing mapping.
+
+### Frontend
+
+- App code imports API artifacts through `@/lib/api/{types,sdk,query-options,mutation-options,schemas}`.
+  Do not import `@/lib/client` from application or component code.
+- `Issue` is the API type. `WorkItem` is the work UI view model. The UI entity
+  key is `work-item`. Convert at `web/src/lib/work/issue-adapter.ts`.
+- Data routes load with `queryClient.fetchQuery` and wrap loaders in
+  `withRouteErrors`. Settings tables use `SettingsResourceTable`. Standard forms
+  use generated Zod schemas, `useFormMutation`, and `DialogForm`. Destructive
+  flows use `useDeleteMutation` or entity lifecycle.
+- Optimistic patching is reserved for high-frequency issue field updates.
+  Documents invalidate queries instead. Mock data remains only for domains
+  without a product API.
+
+### Tests and generation
+
+- Place unit tests next to the package (`*_test.go`). Integration tests live in
+  `*_integration_test.go` and require the testcontainers environment.
+- Regenerate mocks, enumer output, and the OpenAPI server with
+  `make generate.server`. Check drift with `make generate.backend.check` and
+  `make format.backend.check`. The front-end client uses
+  `pnpm --dir web generate` / `generate:check`.
+- Front-end unit tests: `make test.frontend.unit`. End-to-end tests:
+  `make test.frontend.e2e`.
 
 ## Web Component Design
 

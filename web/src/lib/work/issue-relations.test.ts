@@ -17,7 +17,7 @@ import {
 } from "./issue-relations";
 
 import { v1IssueRelationsGetOptions } from "@/lib/api/query-options";
-import type { IssueRelation, PartialIssue } from "@/lib/client";
+import type { IssueRelation, PartialIssue } from "@/lib/api/types";
 
 function partialIssue(
   overrides: Partial<PartialIssue> & Pick<PartialIssue, "id" | "key">

@@ -58,3 +58,7 @@ export const isPermissionDenied = (error: unknown): boolean =>
 
 export const isNotFound = (error: unknown): boolean =>
   getErrorStatus(error) === 404;
+
+export function isNotFoundOrForbidden(error: unknown): boolean {
+  return isNotFound(error) || isPermissionDenied(error);
+}

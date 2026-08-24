@@ -1,0 +1,152 @@
+"/v1/organizations/{id}/roles":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get organization roles
+    description: Return the roles that are assigned to the organization.
+    operationId: v1OrganizationRolesGet
+    tags:
+      - Organization
+      - Role
+    security:
+      - oauth2:
+          - organization.read
+          - role.read
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  post:
+    summary: Create a new role in the organization
+    operationId: v1OrganizationRolesCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new role and assign it to the organization.
+    security:
+      - oauth2:
+          - organization
+          - role
+    tags:
+      - Organization
+      - Role
+    requestBody:
+      $ref: "#/components/requestBodies/RoleCreate"
+"/v1/organizations/{id}/roles/{role_id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+    - schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      name: role_id
+      in: path
+      required: true
+      description: ID of the role.
+  get:
+    summary: Get organization role
+    operationId: v1OrganizationRoleGet
+    tags:
+      - Organization
+      - Role
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Role"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    security:
+      - oauth2:
+          - organization.read
+          - role.read
+    description: Returns the given organization by its ID.
+  patch:
+    summary: Update organization role
+    operationId: v1OrganizationRoleUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Role"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the organization role by its ID.
+    security:
+      - oauth2:
+          - organization
+          - role
+    tags:
+      - Organization
+      - Role
+    requestBody:
+      $ref: "#/components/requestBodies/RolePatch"
+  delete:
+    summary: Delete organization role
+    operationId: v1OrganizationRoleDelete
+    tags:
+      - Organization
+      - Role
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Deletes a role that is assigned to the organization.
+    security:
+      - oauth2:
+          - organization
+          - role

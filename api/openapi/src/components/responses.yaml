@@ -1,0 +1,63 @@
+"201":
+  description: Example response
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          id:
+            type: string
+            description: ID of the newly created resource.
+        required:
+          - id
+"400":
+  description: Bad request
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: Invalid input given
+"401":
+  description: Unauthorized request
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: Unauthorized request
+"403":
+  description: Forbidden
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: The requested operation is forbidden
+"404":
+  description: The requested resource not found
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: The requested resource not found
+"500":
+  description: Internal Server Error
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: Internal Server Error

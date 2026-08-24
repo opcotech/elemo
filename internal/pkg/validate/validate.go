@@ -2,9 +2,7 @@ package validate
 
 import "github.com/go-playground/validator/v10"
 
-var (
-	validate = validator.New() // the validator instance
-)
+var validate = validator.New() // the validator instance
 
 // Validator returns the validator instance.
 func Validator() *validator.Validate {

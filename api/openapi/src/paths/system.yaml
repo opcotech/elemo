@@ -1,0 +1,73 @@
+/v1/system/health:
+  get:
+    summary: Get system health
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemHealth"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1SystemHealth
+    description: Returns the health of registered components.
+    security: []
+    tags:
+      - System
+/v1/system/heartbeat:
+  get:
+    summary: Get heartbeat
+    tags:
+      - System
+    responses:
+      "200":
+        description: OK
+        content:
+          text/plain:
+            schema:
+              type: string
+              enum:
+                - OK
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1SystemHeartbeat
+    description: Returns 200 OK if the service is reachable.
+    security: []
+/v1/system/license:
+  get:
+    summary: Get license info
+    tags:
+      - System
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemLicense"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1SystemLicense
+    description: Return the license information. The license information is only available to entitled users.
+    security:
+      - oauth2: []
+/v1/system/version:
+  get:
+    summary: Get system version
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemVersion"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1SystemVersion
+    description: Returns the version information of the system.
+    security: []
+    tags:
+      - System

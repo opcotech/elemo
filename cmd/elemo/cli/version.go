@@ -3,10 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/goccy/go-json"
-
-	"log/slog"
 
 	"github.com/spf13/cobra"
 )

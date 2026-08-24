@@ -7,8 +7,9 @@ import type {
   Relation,
   SavedView,
   TimelineEntry,
-  WorkItem,
 } from "./types";
+
+import type { WorkItem } from "@/lib/work/model";
 
 export const mockPeople = [
   {

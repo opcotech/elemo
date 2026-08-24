@@ -19,17 +19,15 @@ import {
 import type {
   Issue,
   IssuePatch,
+  LabelPage,
   Options,
+  OrganizationMemberPage,
+  PartialIssue,
+  PartialIssuePage,
   PartialLabel,
   PartialUser,
   V1IssueUpdateData,
 } from "@/lib/api/types";
-import type {
-  LabelPage,
-  OrganizationMemberPage,
-  PartialIssue,
-  PartialIssuePage,
-} from "@/lib/client";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { labelsFromIds } from "@/lib/work/resolve-work-labels";
 import { partialUsersFromIds } from "@/lib/work/resolve-work-people";

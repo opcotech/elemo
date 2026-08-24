@@ -11,9 +11,9 @@ import { CountBadge } from "@/components/ui/count-badge";
 import { ExternalLink } from "@/components/ui/external-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { zOrganizationStatus } from "@/lib/api/schemas";
 import type { EffectiveActions, Organization } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
-import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 export function OrganizationRow({
   organization,

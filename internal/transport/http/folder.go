@@ -25,6 +25,7 @@ type FolderController interface {
 
 type folderController struct {
 	*baseController
+	folderService service.FolderService
 }
 
 func (c *folderController) V1OrganizationsFoldersGet(ctx context.Context, request api.V1OrganizationsFoldersGetRequestObject) (api.V1OrganizationsFoldersGetResponseObject, error) {
@@ -338,19 +339,18 @@ func folderPageToDTO(page service.Page[*service.Folder]) api.FolderPage {
 }
 
 // NewFolderController creates a new FolderController.
-func NewFolderController(opts ...ControllerOption) (FolderController, error) {
+func NewFolderController(folderService service.FolderService, opts ...ControllerOption) (FolderController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &folderController{
-		baseController: c,
-	}
-
-	if controller.folderService == nil {
+	if folderService == nil {
 		return nil, ErrNoFolderService
 	}
 
-	return controller, nil
+	return &folderController{
+		baseController: c,
+		folderService:  folderService,
+	}, nil
 }

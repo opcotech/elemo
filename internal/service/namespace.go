@@ -7,7 +7,6 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -66,7 +65,7 @@ type UpdateNamespaceOpts struct {
 
 // NamespaceService serves the business logic of interacting with namespaces.
 //
-//go:generate go tool mockgen -destination=namespace_mock_gen.go -package=service -mock_names NamespaceService=MockNamespaceService . NamespaceService
+//go:generate go tool mockgen -destination=mock/mock_namespace_gen.go -package=mocksvc . NamespaceService
 type NamespaceService interface {
 	// Create creates a new namespace in an organization. If the organization
 	// does not exist, an error is returned.
@@ -89,7 +88,11 @@ type NamespaceService interface {
 
 // namespaceService is the concrete implementation of NamespaceService.
 type namespaceService struct {
-	*baseService
+	runtime
+	namespaceRepo     repository.NamespaceRepository
+	permissionService PermissionService
+	licenseService    LicenseService
+	searchService     SearchService
 }
 
 func partialNamespaceFromRepository(n *repository.PartialNamespace) *PartialNamespace {
@@ -161,13 +164,13 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, orgID, model.ActionNamespaceCreate) {
-		return nil, errors.Join(ErrNamespaceCreate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, orgID, model.ActionNamespaceCreate); err != nil {
+		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return nil, errors.Join(ErrNamespaceCreate, model.ErrInvalidID)
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
 	namespace, err := s.namespaceRepo.Create(ctx, repository.CreateNamespaceOpts{
@@ -189,7 +192,7 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 	}
 
 	out := namespaceFromRepository(namespace)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -201,8 +204,8 @@ func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, er
 		return nil, errors.Join(ErrNamespaceGet, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceRead) {
-		return nil, errors.Join(ErrNamespaceGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionNamespaceRead); err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
 	}
 
 	namespace, err := s.namespaceRepo.Get(ctx, id, repository.NamespaceDetailProjection())
@@ -218,28 +221,28 @@ func (s *namespaceService) List(ctx context.Context, orgID model.ID, page Cursor
 	defer span.End()
 
 	if err := orgID.Validate(); err != nil {
-		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceList, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoUser)
-	}
-
-	namespaces, err := s.namespaceRepo.List(
-		ctx,
-		orgID,
-		userID,
-		normalized,
-		repository.NamespaceListProjection(),
-	)
+	userID, err := ctxUserID(ctx)
 	if err != nil {
-		return Page[*Namespace]{}, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceList, err)
+	}
+
+	namespaces, err := s.namespaceRepo.ListForOrganization(ctx, repository.NamespaceListQuery{
+		OrgID:      orgID,
+		ActorID:    userID,
+		Page:       normalized,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.NamespaceListProjection(),
+	})
+	if err != nil {
+		return Page[*Namespace]{}, errors.Join(ErrNamespaceList, err)
 	}
 
 	return mapPage(namespaces, namespaceFromRepository), nil
@@ -251,22 +254,22 @@ func (s *namespaceService) ListAccessible(ctx context.Context, page CursorPage) 
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceList, err)
 	}
 
-	userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID)
-	if !ok {
-		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, ErrNoUser)
-	}
-
-	namespaces, err := s.namespaceRepo.ListAccessible(
-		ctx,
-		userID,
-		normalized,
-		repository.NamespaceListProjection(),
-	)
+	userID, err := ctxUserID(ctx)
 	if err != nil {
-		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceGetAll, err)
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceList, err)
+	}
+
+	namespaces, err := s.namespaceRepo.ListAccessible(ctx, repository.NamespaceListAccessibleQuery{
+		ActorID:    userID,
+		Page:       normalized,
+		Order:      repository.SortDirectionDesc,
+		Projection: repository.NamespaceListProjection(),
+	})
+	if err != nil {
+		return Page[*AccessibleNamespace]{}, errors.Join(ErrNamespaceList, err)
 	}
 
 	return mapPage(namespaces, accessibleNamespaceFromRepository), nil
@@ -284,8 +287,8 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 		return nil, errors.Join(ErrNamespaceUpdate, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceUpdate) {
-		return nil, errors.Join(ErrNamespaceUpdate, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionNamespaceUpdate); err != nil {
+		return nil, errors.Join(ErrNamespaceUpdate, err)
 	}
 
 	namespace, err := s.namespaceRepo.Update(ctx, id, repository.UpdateNamespaceOpts{
@@ -297,7 +300,7 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 	}
 
 	out := namespaceFromRepository(namespace)
-	s.enqueueSearchIndex(ctx, out.ID)
+	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
 	return out, nil
 }
 
@@ -313,8 +316,8 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 		return errors.Join(ErrNamespaceDelete, err)
 	}
 
-	if !s.permissionService.CtxUserHas(ctx, id, model.ActionNamespaceDelete) {
-		return errors.Join(ErrNamespaceDelete, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, id, model.ActionNamespaceDelete); err != nil {
+		return errors.Join(ErrNamespaceDelete, err)
 	}
 
 	if err := s.namespaceRepo.Delete(ctx, id); err != nil {
@@ -331,14 +334,24 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 }
 
 // NewNamespaceService returns a new instance of the NamespaceService interface.
-func NewNamespaceService(opts ...Option) (NamespaceService, error) {
-	s, err := newService(opts...)
+func NewNamespaceService(
+	namespaceRepo repository.NamespaceRepository,
+	permissionService PermissionService,
+	licenseService LicenseService,
+	searchService SearchService,
+	opts ...Option,
+) (NamespaceService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &namespaceService{
-		baseService: s,
+		runtime:           rt,
+		namespaceRepo:     namespaceRepo,
+		permissionService: permissionService,
+		licenseService:    licenseService,
+		searchService:     searchService,
 	}
 
 	if svc.namespaceRepo == nil {

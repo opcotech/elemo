@@ -86,7 +86,7 @@ type SearchHits struct {
 	Limit     int64
 }
 
-//go:generate go tool mockgen -source=search.go -destination=search_mock_gen.go -package=repository -mock_names "SearchRepository=MockSearchRepository"
+//go:generate go tool mockgen -source=search.go -destination=mock/mock_search_gen.go -package=mockrepo
 type SearchRepository interface {
 	// Upsert writes or replaces searchable documents and waits for the task.
 	Upsert(ctx context.Context, docs ...SearchDocument) error

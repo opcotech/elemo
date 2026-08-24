@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Scope } from "@/lib/mock-data";
+import type { Scope } from "@/lib/work/model";
 
 export const workLayoutSchema = z.enum(["board", "list", "table", "timeline"]);
 

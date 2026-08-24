@@ -1,0 +1,107 @@
+/v1/notifications:
+  get:
+    summary: Get all in-app notification of the requesting user.
+    tags:
+      - Notification
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NotificationsGet
+    description: Returns the paginated list of in-app notifications
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    security:
+      - oauth2:
+          - notification.read
+"/v1/notifications/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get an in-app notification
+    tags:
+      - Notification
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Notification"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NotificationGet
+    description: Return the requested notification by its ID.
+    security:
+      - oauth2:
+          - notification.read
+  patch:
+    summary: Update an in-app notification
+    tags:
+      - Notification
+    operationId: v1NotificationUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Notification"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the given user.
+    requestBody:
+      $ref: "#/components/requestBodies/NotificationPatch"
+    security:
+      - oauth2:
+          - notification
+  delete:
+    summary: Delete the notification with the given ID.
+    tags:
+      - Notification
+    operationId: v1NotificationDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete a notification by its ID.
+    security:
+      - oauth2:
+          - notification

@@ -7,8 +7,8 @@ import {
   v1OrganizationsDocumentsGetOptions,
   v1ProjectsDocumentsGetOptions,
 } from "@/lib/api/query-options";
+import { zDocumentCreate } from "@/lib/api/schemas";
 import type { DocumentCreate } from "@/lib/api/types";
-import { zDocumentCreate } from "@/lib/client/zod.gen";
 
 export const documentCreateFormSchema = zDocumentCreate.pick({
   title: true,

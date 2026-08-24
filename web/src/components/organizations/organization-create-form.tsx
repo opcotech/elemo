@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
+import { zOrganizationCreate } from "@/lib/api/schemas";
 import { v1OrganizationsCreate } from "@/lib/api/sdk";
 import type { Options, V1OrganizationsCreateData } from "@/lib/api/types";
-import { zOrganizationCreate } from "@/lib/client/zod.gen";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 

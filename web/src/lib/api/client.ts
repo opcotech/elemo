@@ -1,6 +1,7 @@
 import { toApiError } from "./errors";
 import { isPublicApiRequest, transportRequestSchema } from "./protocol";
 
+import type { Client } from "@/lib/client/client";
 import { client } from "@/lib/client/client.gen";
 
 const BFF_BASE_URL = "https://elemo-bff.invalid/api";
@@ -84,3 +85,4 @@ export function ensureApiClientConfigured(): void {
 ensureApiClientConfigured();
 
 export { client };
+export type { Client };

@@ -2,9 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { AllNamespacesList } from "@/components/namespaces/all-namespaces-list";
 import { loadAllNamespaces } from "@/lib/route-data";
+import { withRouteErrors } from "@/lib/route-errors";
 
 export const Route = createFileRoute("/_authenticated/settings/namespaces/")({
-  loader: ({ context }) => loadAllNamespaces(context.queryClient),
+  loader: ({ context }) =>
+    withRouteErrors(() => loadAllNamespaces(context.queryClient)),
   staticData: {
     breadcrumb: "Namespaces",
   },

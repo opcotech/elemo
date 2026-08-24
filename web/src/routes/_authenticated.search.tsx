@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { SearchPage } from "@/components/pages/search-page";
 import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
 import { v1SearchGetOptions } from "@/lib/api/query-options";
+import { withRouteErrors } from "@/lib/route-errors";
 import {
   hasActiveSearch,
   searchQueryFromRoute,
@@ -15,22 +16,20 @@ export const Route = createFileRoute("/_authenticated/search")({
   staticData: { breadcrumb: "Search" },
   validateSearch: searchRouteSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) => {
-    const workspace = context.queryClient.fetchQuery(
-      accessibleNamespacesOptions(context.queryClient)
-    );
-    if (!hasActiveSearch(deps)) {
-      return workspace;
-    }
-    return Promise.all([
-      workspace,
-      context.queryClient.ensureQueryData(
+  loader: ({ context, deps }) =>
+    withRouteErrors(async () => {
+      await context.queryClient.fetchQuery(
+        accessibleNamespacesOptions(context.queryClient)
+      );
+      if (!hasActiveSearch(deps)) {
+        return;
+      }
+      await context.queryClient.ensureQueryData(
         v1SearchGetOptions({
           query: searchQueryFromRoute({ ...deps, page_token: undefined }),
         })
-      ),
-    ]);
-  },
+      );
+    }),
   component: SearchRoute,
 });
 

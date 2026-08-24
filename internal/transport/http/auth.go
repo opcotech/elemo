@@ -7,10 +7,12 @@ import (
 	"net/url"
 
 	"github.com/go-oauth2/oauth2/v4"
+	authServer "github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-session/session"
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/password"
+	"github.com/opcotech/elemo/internal/service"
 )
 
 const (
@@ -48,6 +50,8 @@ type AuthController interface {
 type authController struct {
 	*baseController
 	sessionManager *session.Manager
+	userService    service.UserService
+	authProvider   *authServer.Server
 }
 
 func (c *authController) Authorize(w http.ResponseWriter, r *http.Request) {
@@ -234,10 +238,22 @@ func (c *authController) ValidateTokenHandler(r *http.Request) error {
 }
 
 // NewAuthController creates a new AuthController.
-func NewAuthController(opts ...ControllerOption) (AuthController, error) {
+func NewAuthController(
+	userService service.UserService,
+	authProvider *authServer.Server,
+	opts ...ControllerOption,
+) (AuthController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
+	}
+
+	if userService == nil {
+		return nil, ErrNoUserService
+	}
+
+	if authProvider == nil {
+		return nil, ErrNoAuthProvider
 	}
 
 	controller := &authController{
@@ -248,14 +264,8 @@ func NewAuthController(opts ...ControllerOption) (AuthController, error) {
 			session.SetSecure(c.conf.Session.Secure),
 			session.SetEnableSIDInHTTPHeader(true),
 		),
-	}
-
-	if controller.userService == nil {
-		return nil, ErrNoUserService
-	}
-
-	if controller.authProvider == nil {
-		return nil, ErrNoAuthProvider
+		userService:  userService,
+		authProvider: authProvider,
 	}
 
 	controller.authProvider.SetUserAuthorizationHandler(controller.UserAuthHandler)

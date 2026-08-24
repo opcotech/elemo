@@ -1,0 +1,331 @@
+"/v1/namespaces/{id}/issues":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get namespace issues
+    tags:
+      - Namespace
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialIssuePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesIssuesGet
+    security:
+      - oauth2:
+          - namespace.read
+          - issue.read
+    description: Return a cursor-paginated page of issues that belong to projects in the namespace.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/issue_list_q"
+      - $ref: "#/components/parameters/issue_list_status"
+      - $ref: "#/components/parameters/issue_list_priority"
+      - $ref: "#/components/parameters/issue_list_order"
+"/v1/namespaces/{id}/issues/{key}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/issueKey"
+  get:
+    summary: Get issue by key
+    tags:
+      - Namespace
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Issue"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesIssuesKeyGet
+    security:
+      - oauth2:
+          - namespace.read
+          - issue.read
+    description: Return the issue identified by composite key within the given namespace.
+"/v1/projects/{id}/issues":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get project issues
+    tags:
+      - Project
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialIssuePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1ProjectsIssuesGet
+    security:
+      - oauth2:
+          - project.read
+          - issue.read
+    description: Return a cursor-paginated page of issues that belong to the project.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/issue_list_q"
+      - $ref: "#/components/parameters/issue_list_status"
+      - $ref: "#/components/parameters/issue_list_priority"
+      - $ref: "#/components/parameters/issue_list_order"
+  post:
+    summary: Create issue in project
+    operationId: v1ProjectsIssuesCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Issue"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new issue in the project.
+    security:
+      - oauth2:
+          - project
+          - issue
+    tags:
+      - Project
+      - Issue
+    requestBody:
+      $ref: "#/components/requestBodies/IssueCreate"
+"/v1/issues/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get issue
+    tags:
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Issue"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1IssueGet
+    security:
+      - oauth2:
+          - issue.read
+    description: Return the requested issue by its ID.
+  patch:
+    summary: Update issue
+    operationId: v1IssueUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Issue"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the issue by its ID.
+    security:
+      - oauth2:
+          - issue
+    tags:
+      - Issue
+    requestBody:
+      $ref: "#/components/requestBodies/IssuePatch"
+  delete:
+    summary: Delete issue
+    operationId: v1IssueDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete the issue by its ID.
+    security:
+      - oauth2:
+          - issue
+    tags:
+      - Issue
+"/v1/issues/{id}/relations":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get issue relations
+    tags:
+      - Issue
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueRelationPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1IssueRelationsGet
+    security:
+      - oauth2:
+          - issue.read
+    description: Return a cursor-paginated page of relations for the issue, including incoming and outgoing edges.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+  post:
+    summary: Add issue relation
+    operationId: v1IssueRelationsCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueRelation"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
+    security:
+      - oauth2:
+          - issue
+    tags:
+      - Issue
+    requestBody:
+      $ref: "#/components/requestBodies/IssueRelationCreate"
+"/v1/issues/{id}/relations/{relation_id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/relation_id"
+  patch:
+    summary: Update issue relation
+    operationId: v1IssueRelationUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueRelation"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
+    security:
+      - oauth2:
+          - issue
+    tags:
+      - Issue
+    requestBody:
+      $ref: "#/components/requestBodies/IssueRelationPatch"
+  delete:
+    summary: Delete issue relation
+    operationId: v1IssueRelationDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete a relation of the issue by its relation ID.
+    security:
+      - oauth2:
+          - issue
+    tags:
+      - Issue

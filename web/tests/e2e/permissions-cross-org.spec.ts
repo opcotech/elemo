@@ -17,7 +17,7 @@ import {
   v1OrganizationsNamespacesCreate,
   v1OrganizationsNamespacesGet,
   v1ProjectGet,
-} from "@/lib/client/sdk.gen";
+} from "@/lib/api/sdk";
 
 const PROJECT_VIEWER_ACTIONS = ["project.read", "issue.read", "document.read"];
 

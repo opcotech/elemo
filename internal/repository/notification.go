@@ -42,7 +42,7 @@ type UpdateNotificationOpts struct {
 	Read bool
 }
 
-//go:generate go tool mockgen -source=notification.go -destination=notification_mock_gen.go -package=repository -mock_names "NotificationRepository=MockNotificationRepository"
+//go:generate go tool mockgen -source=notification.go -destination=mock/mock_notification_gen.go -package=mockrepo
 type NotificationRepository interface {
 	Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error)
 	Get(ctx context.Context, id, recipient model.ID, proj NotificationProjection) (*Notification, error)

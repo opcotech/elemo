@@ -1,0 +1,77 @@
+ProjectCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          key:
+            type: string
+            description: Key of the project.
+            minLength: 2
+            maxLength: 6
+            example: ENG
+          name:
+            type: string
+            description: Name of the project.
+            minLength: 3
+            maxLength: 120
+            example: Engineering Project
+          description:
+            type: string
+            description: Description of the project.
+            maxLength: 500
+            example: Main engineering project
+            minLength: 10
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          logo:
+            type: string
+            description: Logo of the project.
+            format: uri
+            example: "https://example.com/logo.png"
+            maxLength: 2000
+            nullable: true
+          status:
+            $ref: "#/components/schemas/ProjectStatus"
+        required:
+          - key
+          - name
+ProjectPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          key:
+            type: string
+            description: Key of the project.
+            minLength: 2
+            maxLength: 6
+            example: ENG
+          name:
+            type: string
+            description: Name of the project.
+            minLength: 3
+            maxLength: 120
+            example: Engineering Project
+          description:
+            type: string
+            description: Description of the project.
+            maxLength: 500
+            example: Main engineering project
+            minLength: 10
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          logo:
+            type: string
+            description: Logo of the project.
+            format: uri
+            example: "https://example.com/logo.png"
+            maxLength: 2000
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          status:
+            $ref: "#/components/schemas/ProjectStatus"

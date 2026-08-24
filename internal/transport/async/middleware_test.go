@@ -13,8 +13,10 @@ import (
 
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	mockasync "github.com/opcotech/elemo/internal/transport/async/mock"
 )
 
 func TestSetRateLimiter(t *testing.T) {
@@ -52,10 +54,10 @@ func TestWithMetricsExporter(t *testing.T) {
 
 	ctx := context.Background()
 
-	span := mock.NewMockSpan(ctrl)
+	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End().Return().Times(2)
 
-	tracer := mock.NewMockTracer(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithMetricsExporter").Return(ctx, span).Times(2)
 
 	assert.NoError(t,
@@ -89,17 +91,17 @@ func TestWithRateLimiter(t *testing.T) {
 			name: "return handler if rate limiter is allowed",
 			fields: fields{
 				limiter: func(ctrl *gomock.Controller) RateLimiter {
-					limiter := mock.NewRateLimiter(ctrl)
+					limiter := mockasync.NewMockRateLimiter(ctrl)
 					limiter.EXPECT().Allow().Return(true)
 					return limiter
 				},
 			},
 			args: args{
 				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(gomock.Any(), "transport.asynq.middleware/WithRateLimiter").Return(context.Background(), span)
 
 					return tracer
@@ -111,17 +113,17 @@ func TestWithRateLimiter(t *testing.T) {
 			name: "return error if rate limiter is not allowed",
 			fields: fields{
 				limiter: func(ctrl *gomock.Controller) RateLimiter {
-					limiter := mock.NewRateLimiter(ctrl)
+					limiter := mockasync.NewMockRateLimiter(ctrl)
 					limiter.EXPECT().Allow().Return(false)
 					return limiter
 				},
 			},
 			args: args{
 				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(gomock.Any(), "transport.asynq.middleware/WithRateLimiter").Return(context.Background(), span)
 
 					return tracer
@@ -170,15 +172,15 @@ func TestWithErrorLogger(t *testing.T) {
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
 				logger: func(_ context.Context, _ *asynq.Task, _ *gomock.Controller) log.Logger {
-					return mock.NewMockLogger(nil)
+					return mocklog.NewMockLogger(nil)
 				},
 			},
 			args: args{
 				tracer: func(ctx context.Context, ctrl *gomock.Controller) tracing.Tracer {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithErrorLogger").Return(ctx, span)
 
 					return tracer
@@ -191,17 +193,17 @@ func TestWithErrorLogger(t *testing.T) {
 				ctx:  context.Background(),
 				task: asynq.NewTask("test:task", []byte("hello")),
 				logger: func(_ context.Context, _ *asynq.Task, ctrl *gomock.Controller) log.Logger {
-					logger := mock.NewMockLogger(ctrl)
+					logger := mocklog.NewMockLogger(ctrl)
 					logger.EXPECT().Log(gomock.Any(), log.LevelError, assert.AnError.Error(), gomock.Any()).Return()
 					return logger
 				},
 			},
 			args: args{
 				tracer: func(ctx context.Context, ctrl *gomock.Controller) tracing.Tracer {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.middleware/WithErrorLogger").Return(ctx, span)
 
 					return tracer

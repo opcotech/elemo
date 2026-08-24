@@ -4,7 +4,7 @@ import {
   zProjectCreate,
   zProjectPatch,
   zProjectStatus,
-} from "@/lib/client/zod.gen";
+} from "@/lib/api/schemas";
 import { createFormSchema } from "@/lib/forms";
 
 /** Normalize a project key to uppercase for display and API submission. */

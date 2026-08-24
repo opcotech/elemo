@@ -1,0 +1,184 @@
+OrganizationMember:
+  title: OrganizationMember
+  type: object
+  description: A member of an organization with limited information.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the user.
+      example: 9bsv0s46s6s002p9ltq0
+    first_name:
+      type: string
+      description: First name of the user.
+      minLength: 1
+      maxLength: 50
+      example: Test
+    last_name:
+      type: string
+      description: Last name of the user.
+      example: User
+      minLength: 1
+      maxLength: 50
+    email:
+      type: string
+      format: email
+      example: user@example.com
+      minLength: 6
+      maxLength: 254
+      description: Email address of the user.
+    picture:
+      type: string
+      description: Profile picture of the user.
+      format: uri
+      example: "https://example.com/users/my-user.png"
+      maxLength: 2000
+      nullable: true
+    status:
+      $ref: "#/components/schemas/UserStatus"
+    roles:
+      type: array
+      description: Organization roles the user belongs to (includes virtual roles based on permissions).
+      uniqueItems: true
+      items:
+        type: string
+      example:
+        - owner
+        - admin
+  required:
+    - id
+    - first_name
+    - last_name
+    - email
+    - picture
+    - status
+    - roles
+Organization:
+  title: Organization
+  type: object
+  description: An organization in the system.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the organization.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the organization.
+      maxLength: 120
+      example: ACME Inc.
+      minLength: 1
+    email:
+      type: string
+      format: email
+      example: info@example.com
+      minLength: 6
+      maxLength: 254
+      description: Email address of the organization.
+    logo:
+      type: string
+      description: Logo of the organization.
+      format: uri
+      example: "https://example.com/static/logo.png"
+      maxLength: 2000
+      nullable: true
+    website:
+      type: string
+      description: Work title of the user.
+      format: uri
+      example: "https://example.com"
+      maxLength: 2000
+      nullable: true
+    status:
+      $ref: "#/components/schemas/OrganizationStatus"
+    member_count:
+      type: integer
+      format: int64
+      description: Number of members in the organization when projected.
+      example: 12
+      nullable: true
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents that belong to the organization when projected.
+      example: 4
+      nullable: true
+    team_count:
+      type: integer
+      format: int64
+      description: Number of teams in the organization when projected.
+      example: 3
+      nullable: true
+    namespace_count:
+      type: integer
+      format: int64
+      description: Number of namespaces in the organization when projected.
+      example: 2
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the organization was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the organization was updated.
+      nullable: true
+  required:
+    - id
+    - name
+    - email
+    - logo
+    - website
+    - status
+    - created_at
+    - updated_at
+OrganizationStatus:
+  type: string
+  enum:
+    - active
+    - deleted
+  example: active
+  description: Status of the organization.
+  title: OrganizationStatus
+PartialOrganization:
+  title: PartialOrganization
+  type: object
+  description: Owning organization stub returned with a reachable namespace.
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the organization.
+      example: 9bsv0s46s6s002p9ltq0
+    name:
+      type: string
+      description: Name of the organization.
+      example: ACME Inc.
+  required:
+    - id
+    - name
+OrganizationPage:
+  title: OrganizationPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/Organization"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info
+OrganizationMemberPage:
+  title: OrganizationMemberPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/OrganizationMember"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

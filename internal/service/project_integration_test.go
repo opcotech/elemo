@@ -41,27 +41,28 @@ func (s *ProjectServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 	s.SetupSearch(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	searchService, err := service.NewSearchService(
 		s.SearchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 	)
 	s.Require().NoError(err)
 
 	s.projectService, err = service.NewProjectService(
-		service.WithProjectRepository(s.ProjectRepo),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
-		service.WithSearchService(searchService),
+		s.ProjectRepo,
+		permissionService,
+		licenseService,
+		searchService,
 	)
 	s.Require().NoError(err)
 }
@@ -163,7 +164,7 @@ func (s *ProjectServiceIntegrationTestSuite) TestGetByKey() {
 	s.Assert().Equal(created.Name, project.Name)
 }
 
-func (s *ProjectServiceIntegrationTestSuite) TestGetAll() {
+func (s *ProjectServiceIntegrationTestSuite) TestList() {
 	_, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
 	s.Require().NoError(err)
 	_, err = s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())

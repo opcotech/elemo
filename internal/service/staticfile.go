@@ -15,7 +15,7 @@ const (
 
 // StaticFileService serves the business logic of creating and retrieving files.
 //
-//go:generate go tool mockgen -destination=staticfile_mock_gen.go -package=service -mock_names StaticFileService=MockStaticFileService . StaticFileService
+//go:generate go tool mockgen -destination=mock/mock_staticfile_gen.go -package=mocksvc . StaticFileService
 type StaticFileService interface {
 	// Create puts a new file in the static storage for the given path, reading
 	// its data from the reader. It returns an error if the operation failed.
@@ -32,7 +32,8 @@ type StaticFileService interface {
 }
 
 type staticFileService struct {
-	*baseService
+	runtime
+	licenseService LicenseService
 	staticFileRepo repository.StaticFileRepository
 }
 
@@ -114,14 +115,15 @@ func (s *staticFileService) Delete(ctx context.Context, path string) error {
 }
 
 // NewStaticFileService returns a new instance of the StaticFileService interface.
-func NewStaticFileService(repo repository.StaticFileRepository, opts ...Option) (StaticFileService, error) {
-	s, err := newService(opts...)
+func NewStaticFileService(repo repository.StaticFileRepository, licenseService LicenseService, opts ...Option) (StaticFileService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &staticFileService{
-		baseService:    s,
+		runtime:        rt,
+		licenseService: licenseService,
 		staticFileRepo: repo,
 	}
 

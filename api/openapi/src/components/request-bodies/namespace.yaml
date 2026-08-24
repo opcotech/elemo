@@ -1,0 +1,44 @@
+NamespaceCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Name of the namespace.
+            maxLength: 120
+            example: Engineering
+            minLength: 3
+          description:
+            type: string
+            description: Description of the namespace.
+            maxLength: 500
+            example: Engineering team namespace
+            minLength: 5
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+        required:
+          - name
+NamespacePatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Name of the namespace.
+            maxLength: 120
+            example: Engineering
+            minLength: 3
+          description:
+            type: string
+            description: Description of the namespace.
+            maxLength: 500
+            example: Engineering team namespace
+            minLength: 5
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true

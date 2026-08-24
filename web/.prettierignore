@@ -11,6 +11,7 @@ build/
 *.d.ts
 *.map
 src/routeTree.gen.ts
+src/lib/client/**
 
 # Package manager files
 pnpm-lock.yaml

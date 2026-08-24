@@ -1,0 +1,11 @@
+NotificationPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          read:
+            type: boolean
+            description: Whether the notification was read by the user.
+        required:
+          - read

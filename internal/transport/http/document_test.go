@@ -16,12 +16,13 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func newTestDocumentController(t *testing.T, ds service.DocumentService) DocumentController {
 	t.Helper()
-	c, err := NewDocumentController(WithDocumentService(ds))
+	c, err := NewDocumentController(ds)
 	require.NoError(t, err)
 	return c
 }
@@ -66,20 +67,14 @@ func TestNewDocumentController(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c, err := NewDocumentController(WithDocumentService(service.NewMockDocumentService(ctrl)))
+		c, err := NewDocumentController(mocksvc.NewMockDocumentService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing document service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewDocumentController()
-		assert.ErrorIs(t, err, ErrNoDocumentService)
-	})
-
-	t.Run("nil document service option", func(t *testing.T) {
-		t.Parallel()
-		_, err := NewDocumentController(WithDocumentService(nil))
+		_, err := NewDocumentController(nil)
 		assert.ErrorIs(t, err, ErrNoDocumentService)
 	})
 }
@@ -95,7 +90,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), projectID, service.CreateDocumentOpts{
 			Title:   "Project Plan",
 			Excerpt: "Overview of the project plan",
@@ -124,7 +119,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1ProjectsDocumentsCreate(context.Background(), api.V1ProjectsDocumentsCreateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1ProjectsDocumentsCreateJSONRequestBody{
@@ -142,7 +137,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1ProjectsDocumentsCreate(context.Background(), api.V1ProjectsDocumentsCreateRequestObject{
 			Id:   projectID.String(),
 			Body: nil,
@@ -157,7 +152,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -178,7 +173,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, errors.Join(service.ErrDocumentCreate, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -199,7 +194,7 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c := newTestDocumentController(t, ds)
@@ -227,7 +222,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), namespaceID, service.CreateDocumentOpts{
 			Title:   "Project Plan",
 			Content: []byte("# Project Plan"),
@@ -253,7 +248,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1NamespacesDocumentsCreate(context.Background(), api.V1NamespacesDocumentsCreateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1NamespacesDocumentsCreateJSONRequestBody{
@@ -271,7 +266,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1NamespacesDocumentsCreate(context.Background(), api.V1NamespacesDocumentsCreateRequestObject{
 			Id:   namespaceID.String(),
 			Body: nil,
@@ -286,7 +281,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -307,7 +302,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, errors.Join(service.ErrDocumentCreate, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -328,7 +323,7 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c := newTestDocumentController(t, ds)
@@ -356,7 +351,7 @@ func TestDocumentController_V1OrganizationsDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().ListLibrary(gomock.Any(), organizationID, service.LibraryListFilter{}, gomock.Any()).Return(service.Page[*service.PartialDocument]{
 			Items: []*service.PartialDocument{doc},
 		}, nil)
@@ -379,7 +374,7 @@ func TestDocumentController_V1OrganizationsDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1OrganizationsDocumentsGet(context.Background(), api.V1OrganizationsDocumentsGetRequestObject{
 			Id: "not-a-xid",
 		})
@@ -393,7 +388,7 @@ func TestDocumentController_V1OrganizationsDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().ListLibrary(gomock.Any(), organizationID, service.LibraryListFilter{}, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -410,8 +405,8 @@ func TestDocumentController_V1OrganizationsDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
-		ds.EXPECT().ListLibrary(gomock.Any(), organizationID, service.LibraryListFilter{}, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, errors.Join(service.ErrDocumentGetAll, repository.ErrNotFound))
+		ds := mocksvc.NewMockDocumentService(ctrl)
+		ds.EXPECT().ListLibrary(gomock.Any(), organizationID, service.LibraryListFilter{}, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, errors.Join(service.ErrDocumentList, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
 		resp, err := c.V1OrganizationsDocumentsGet(context.Background(), api.V1OrganizationsDocumentsGetRequestObject{
@@ -427,7 +422,7 @@ func TestDocumentController_V1OrganizationsDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1OrganizationsDocumentsGet(context.Background(), api.V1OrganizationsDocumentsGetRequestObject{
 			Id: organizationID.String(),
 			Params: api.V1OrganizationsDocumentsGetParams{
@@ -451,7 +446,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), organizationID, service.CreateDocumentOpts{
 			Title:   "Project Plan",
 			Excerpt: "Overview of the project plan",
@@ -480,7 +475,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1OrganizationsDocumentsCreate(context.Background(), api.V1OrganizationsDocumentsCreateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1OrganizationsDocumentsCreateJSONRequestBody{
@@ -498,7 +493,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1OrganizationsDocumentsCreate(context.Background(), api.V1OrganizationsDocumentsCreateRequestObject{
 			Id:   organizationID.String(),
 			Body: nil,
@@ -513,7 +508,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), organizationID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -534,7 +529,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), organizationID, gomock.Any()).Return(nil, errors.Join(service.ErrDocumentCreate, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -555,7 +550,7 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), organizationID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c := newTestDocumentController(t, ds)
@@ -583,7 +578,7 @@ func TestDocumentController_V1IssuesDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().ListRelated(gomock.Any(), issueID, gomock.Any()).Return(service.Page[*service.PartialDocument]{
 			Items: []*service.PartialDocument{doc},
 		}, nil)
@@ -606,7 +601,7 @@ func TestDocumentController_V1IssuesDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1IssuesDocumentsGet(context.Background(), api.V1IssuesDocumentsGetRequestObject{
 			Id: "not-a-xid",
 		})
@@ -620,7 +615,7 @@ func TestDocumentController_V1IssuesDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().ListRelated(gomock.Any(), issueID, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -637,8 +632,8 @@ func TestDocumentController_V1IssuesDocumentsGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
-		ds.EXPECT().ListRelated(gomock.Any(), issueID, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, errors.Join(service.ErrDocumentGetAll, repository.ErrNotFound))
+		ds := mocksvc.NewMockDocumentService(ctrl)
+		ds.EXPECT().ListRelated(gomock.Any(), issueID, gomock.Any()).Return(service.Page[*service.PartialDocument]{}, errors.Join(service.ErrDocumentList, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
 		resp, err := c.V1IssuesDocumentsGet(context.Background(), api.V1IssuesDocumentsGetRequestObject{
@@ -661,7 +656,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), issueID, service.CreateDocumentOpts{
 			Title:   "Project Plan",
 			Content: []byte("# Project Plan"),
@@ -687,7 +682,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1IssuesDocumentsCreate(context.Background(), api.V1IssuesDocumentsCreateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1IssuesDocumentsCreateJSONRequestBody{
@@ -705,7 +700,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1IssuesDocumentsCreate(context.Background(), api.V1IssuesDocumentsCreateRequestObject{
 			Id:   issueID.String(),
 			Body: nil,
@@ -720,7 +715,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), issueID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -741,7 +736,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), issueID, gomock.Any()).Return(nil, errors.Join(service.ErrDocumentCreate, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -762,7 +757,7 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Create(gomock.Any(), issueID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c := newTestDocumentController(t, ds)
@@ -789,7 +784,7 @@ func TestDocumentController_V1DocumentGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Get(gomock.Any(), doc.ID).Return(doc, nil)
 
 		c := newTestDocumentController(t, ds)
@@ -811,7 +806,7 @@ func TestDocumentController_V1DocumentGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1DocumentGet(context.Background(), api.V1DocumentGetRequestObject{
 			Id: "not-a-xid",
 		})
@@ -825,7 +820,7 @@ func TestDocumentController_V1DocumentGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Get(gomock.Any(), doc.ID).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -842,7 +837,7 @@ func TestDocumentController_V1DocumentGet(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Get(gomock.Any(), doc.ID).Return(nil, errors.Join(service.ErrDocumentGet, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -868,7 +863,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Update(gomock.Any(), doc.ID, service.UpdateDocumentOpts{
 			Title:   optional.Some("Updated Plan"),
 			Content: optional.Some([]byte("# Updated")),
@@ -897,7 +892,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		cleared := *doc
 		cleared.Folder = nil
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Update(gomock.Any(), doc.ID, service.UpdateDocumentOpts{
 			FolderID: optional.Null[model.ID](),
 		}).Return(&cleared, nil)
@@ -924,7 +919,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		moved := *doc
 		moved.Folder = &service.DocumentFolder{ID: folderID, Name: "Guides"}
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Update(gomock.Any(), doc.ID, gomock.Cond(func(opts service.UpdateDocumentOpts) bool {
 			return opts.FolderID.Defined &&
 				opts.FolderID.Value != nil &&
@@ -966,7 +961,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1DocumentUpdate(context.Background(), api.V1DocumentUpdateRequestObject{
 			Id: "not-a-xid",
 			Body: &api.V1DocumentUpdateJSONRequestBody{
@@ -983,7 +978,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1DocumentUpdate(context.Background(), api.V1DocumentUpdateRequestObject{
 			Id:   doc.ID.String(),
 			Body: nil,
@@ -998,7 +993,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Update(gomock.Any(), doc.ID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -1018,7 +1013,7 @@ func TestDocumentController_V1DocumentUpdate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Update(gomock.Any(), doc.ID, gomock.Any()).Return(nil, errors.Join(service.ErrDocumentUpdate, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -1044,7 +1039,7 @@ func TestDocumentController_V1DocumentDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Delete(gomock.Any(), docID).Return(nil)
 
 		c := newTestDocumentController(t, ds)
@@ -1061,7 +1056,7 @@ func TestDocumentController_V1DocumentDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c := newTestDocumentController(t, service.NewMockDocumentService(ctrl))
+		c := newTestDocumentController(t, mocksvc.NewMockDocumentService(ctrl))
 		resp, err := c.V1DocumentDelete(context.Background(), api.V1DocumentDeleteRequestObject{
 			Id: "not-a-xid",
 		})
@@ -1075,7 +1070,7 @@ func TestDocumentController_V1DocumentDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Delete(gomock.Any(), docID).Return(service.ErrNoPermission)
 
 		c := newTestDocumentController(t, ds)
@@ -1092,7 +1087,7 @@ func TestDocumentController_V1DocumentDelete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Delete(gomock.Any(), docID).Return(errors.Join(service.ErrDocumentDelete, repository.ErrNotFound))
 
 		c := newTestDocumentController(t, ds)
@@ -1116,7 +1111,7 @@ func TestDocumentController_V1ProjectsDocumentsRelate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Relate(gomock.Any(), documentID, projectID).Return(nil)
 
 		c := newTestDocumentController(t, ds)
@@ -1141,7 +1136,7 @@ func TestDocumentController_V1ProjectsDocumentsUnrelate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ds := service.NewMockDocumentService(ctrl)
+		ds := mocksvc.NewMockDocumentService(ctrl)
 		ds.EXPECT().Unrelate(gomock.Any(), documentID, projectID).Return(nil)
 
 		c := newTestDocumentController(t, ds)

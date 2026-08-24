@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type CommentRepositoryIntegrationTestSuite struct {
@@ -73,7 +74,7 @@ func (s *CommentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Nil(comment.UpdatedAt)
 }
 
-func (s *CommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *CommentRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.CommentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.CommentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))
@@ -193,7 +194,7 @@ func (s *CachedCommentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedCommentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *CachedCommentRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.commentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.commentRepo.Create(context.Background(), testModel.NewCreateCommentOpts(s.testDoc.ID, s.testUser.ID))

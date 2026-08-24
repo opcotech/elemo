@@ -333,7 +333,7 @@ func Neo4jParsePartialAssigneesFromRecord(record *neo4j.Record, key string) ([]P
 	return parsePartialAssignees(val)
 }
 
-//go:generate go tool mockgen -source=issue.go -destination=issue_mock_gen.go -package=repository -mock_names "IssueRepository=MockIssueRepository"
+//go:generate go tool mockgen -source=issue.go -destination=mock/mock_issue_gen.go -package=mockrepo
 type IssueRepository interface {
 	Create(ctx context.Context, opts CreateIssueOpts) (*Issue, error)
 	Get(ctx context.Context, id model.ID, proj IssueProjection) (*Issue, error)
@@ -617,7 +617,8 @@ func applyIssueParentLoader(ctx context.Context, tx neo4j.ManagedTransaction, qu
 	parentRows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		IssueID string
 		Parent  *PartialIssue
-	}, error) {
+	}, error,
+	) {
 		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
 		if err != nil {
 			return struct {
@@ -677,7 +678,8 @@ func applyIssueAssignmentsLoader(ctx context.Context, tx neo4j.ManagedTransactio
 	assignmentRows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		IssueID     string
 		Assignments []PartialAssignee
-	}, error) {
+	}, error,
+	) {
 		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
 		if err != nil {
 			return struct {
@@ -714,7 +716,8 @@ func applyIssueLabelsLoader(ctx context.Context, tx neo4j.ManagedTransaction, qu
 	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		IssueID string
 		Labels  []PartialLabel
-	}, error) {
+	}, error,
+	) {
 		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
 		if err != nil {
 			return struct {
@@ -751,7 +754,8 @@ func applyIssueCountLoader(ctx context.Context, tx neo4j.ManagedTransaction, que
 	rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 		IssueID string
 		Count   int64
-	}, error) {
+	}, error,
+	) {
 		issueID, err := Neo4jParseValueFromRecord[string](rec, "issue_id")
 		if err != nil {
 			return struct {
@@ -1741,19 +1745,12 @@ func (r *RedisCachedIssueRepository) GetByKey(ctx context.Context, namespaceID m
 	return issue, nil
 }
 
-func issueListForProjectCacheKey(query IssueListQuery) (string, error) {
+func issueListForProjectScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListQuery) (string, error) {
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return "", err
 	}
-	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForProject", query.ProjectID.String()), nil
-}
-
-func issueListForProjectScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListQuery) (string, error) {
-	baseKey, err := issueListForProjectCacheKey(query)
-	if err != nil {
-		return "", err
-	}
+	baseKey := plan.CacheKey(model.ResourceTypeIssue.String(), "ListForProject", query.ProjectID.String())
 	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
 	projectGen := issueListReadGeneration(ctx, cacheRepo, issueListProjectGenKey(query.ProjectID))
 	return composeCacheKey(
@@ -1805,19 +1802,12 @@ func (r *RedisCachedIssueRepository) ListForProject(ctx context.Context, query I
 	return issues, nil
 }
 
-func issueListForNamespaceCacheKey(query IssueListForNamespaceQuery) (string, error) {
+func issueListForNamespaceScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForNamespaceQuery) (string, error) {
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return "", err
 	}
-	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForNamespace", query.NamespaceID.String()), nil
-}
-
-func issueListForNamespaceScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForNamespaceQuery) (string, error) {
-	baseKey, err := issueListForNamespaceCacheKey(query)
-	if err != nil {
-		return "", err
-	}
+	baseKey := plan.CacheKey(model.ResourceTypeIssue.String(), "ListForNamespace", query.NamespaceID.String())
 	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
 	namespaceGen := issueListReadGeneration(ctx, cacheRepo, issueListNamespaceGenKey(query.NamespaceID))
 	return composeCacheKey(
@@ -1859,19 +1849,12 @@ func (r *RedisCachedIssueRepository) ListForNamespace(ctx context.Context, query
 	return issues, nil
 }
 
-func issueListForUserCacheKey(query IssueListForUserQuery) (string, error) {
+func issueListForUserScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForUserQuery) (string, error) {
 	plan, err := CompileQuery(query)
 	if err != nil {
 		return "", err
 	}
-	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListForUser", query.UserID.String()), nil
-}
-
-func issueListForUserScopedCacheKey(ctx context.Context, cacheRepo *redisBaseRepository, query IssueListForUserQuery) (string, error) {
-	baseKey, err := issueListForUserCacheKey(query)
-	if err != nil {
-		return "", err
-	}
+	baseKey := plan.CacheKey(model.ResourceTypeIssue.String(), "ListForUser", query.UserID.String())
 	authzEpoch, projectionEpoch := issueListCurrentEpochs(ctx, cacheRepo)
 	userGen := issueListReadGeneration(ctx, cacheRepo, issueListUserGenKey(query.UserID))
 	return composeCacheKey(
@@ -2002,22 +1985,15 @@ func (r *RedisCachedIssueRepository) GetRelation(ctx context.Context, relationID
 	return r.issueRepo.GetRelation(ctx, relationID)
 }
 
-func issueListRelationsCacheKey(query IssueRelationListQuery) (string, error) {
-	plan, err := CompileQuery(query)
-	if err != nil {
-		return "", err
-	}
-	return plan.CacheKey(model.ResourceTypeIssue.String(), "ListRelations", query.IssueID.String()), nil
-}
-
 func (r *RedisCachedIssueRepository) ListRelations(ctx context.Context, query IssueRelationListQuery) (Page[*IssueRelationItem], error) {
 	var relations Page[*IssueRelationItem]
 	var err error
 
-	key, err := issueListRelationsCacheKey(query)
+	plan, err := CompileQuery(query)
 	if err != nil {
 		return Page[*IssueRelationItem]{}, err
 	}
+	key := plan.CacheKey(model.ResourceTypeIssue.String(), "ListRelations", query.IssueID.String())
 	if err = r.cacheRepo.Get(ctx, key, &relations); err != nil {
 		return Page[*IssueRelationItem]{}, err
 	}

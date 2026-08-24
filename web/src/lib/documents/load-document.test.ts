@@ -73,4 +73,13 @@ describe("loadDocumentPage", () => {
       error
     );
   });
+
+  it("propagates validation errors", async () => {
+    const error = new ApiError(400, "invalid");
+    const queryClient = createQueryClient(error);
+
+    await expect(loadDocumentPage(queryClient, "document-live")).rejects.toBe(
+      error
+    );
+  });
 });

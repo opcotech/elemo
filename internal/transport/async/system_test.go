@@ -14,8 +14,10 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 	"github.com/opcotech/elemo/internal/queue"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 )
 
 func TestNewSystemHealthCheckTaskHandler(t *testing.T) {
@@ -32,14 +34,14 @@ func TestNewSystemHealthCheckTaskHandler(t *testing.T) {
 			name: "create new task handler",
 			args: args{
 				opts: []TaskHandlerOption{
-					WithTaskLogger(mock.NewMockLogger(nil)),
-					WithTaskTracer(mock.NewMockTracer(nil)),
+					WithTaskLogger(mocklog.NewMockLogger(nil)),
+					WithTaskTracer(mocktrace.NewMockTracer(nil)),
 				},
 			},
 			want: &SystemHealthCheckTaskHandler{
 				baseTaskHandler: &baseTaskHandler{
-					logger: mock.NewMockLogger(nil),
-					tracer: mock.NewMockTracer(nil),
+					logger: mocklog.NewMockLogger(nil),
+					tracer: mocktrace.NewMockTracer(nil),
 				},
 			},
 		},
@@ -83,14 +85,14 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 			name: "process task",
 			fields: fields{
 				baseTaskHandler: func(ctx context.Context, _ *asynq.Task, ctrl *gomock.Controller) *baseTaskHandler {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.SystemHealthCheckTaskHandler/ProcessTask").Return(ctx, span)
 
 					return &baseTaskHandler{
-						logger: mock.NewMockLogger(nil),
+						logger: mocklog.NewMockLogger(nil),
 						tracer: tracer,
 					}
 				},
@@ -107,14 +109,14 @@ func TestSystemHealthCheckTaskHandler_ProcessTask(t *testing.T) {
 			name: "process task with invalid payload",
 			fields: fields{
 				baseTaskHandler: func(ctx context.Context, _ *asynq.Task, ctrl *gomock.Controller) *baseTaskHandler {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.SystemHealthCheckTaskHandler/ProcessTask").Return(ctx, span)
 
 					return &baseTaskHandler{
-						logger: mock.NewMockLogger(nil),
+						logger: mocklog.NewMockLogger(nil),
 						tracer: tracer,
 					}
 				},
@@ -164,16 +166,16 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 			name: "create new task handler",
 			args: args{
 				opts: []TaskHandlerOption{
-					WithTaskEmailService(mock.NewEmailService(gomock.NewController(t))),
-					WithTaskLogger(mock.NewMockLogger(nil)),
-					WithTaskTracer(mock.NewMockTracer(nil)),
+					WithTaskEmailService(mocksvc.NewMockEmailService(gomock.NewController(t))),
+					WithTaskLogger(mocklog.NewMockLogger(nil)),
+					WithTaskTracer(mocktrace.NewMockTracer(nil)),
 				},
 			},
 			want: &SystemLicenseExpiryTaskHandler{
 				baseTaskHandler: &baseTaskHandler{
-					logger:       mock.NewMockLogger(nil),
-					tracer:       mock.NewMockTracer(nil),
-					emailService: mock.NewEmailService(gomock.NewController(t)),
+					logger:       mocklog.NewMockLogger(nil),
+					tracer:       mocktrace.NewMockTracer(nil),
+					emailService: mocksvc.NewMockEmailService(gomock.NewController(t)),
 				},
 			},
 		},
@@ -190,8 +192,8 @@ func TestNewSystemLicenseExpiryTaskHandler(t *testing.T) {
 			name: "create new task handler with no email service",
 			args: args{
 				opts: []TaskHandlerOption{
-					WithTaskLogger(mock.NewMockLogger(nil)),
-					WithTaskTracer(mock.NewMockTracer(nil)),
+					WithTaskLogger(mocklog.NewMockLogger(nil)),
+					WithTaskTracer(mocktrace.NewMockTracer(nil)),
 				},
 			},
 			wantErr: ErrNoEmailService,
@@ -227,15 +229,15 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 			name: "process task",
 			fields: fields{
 				baseTaskHandler: func(ctx context.Context, task *asynq.Task, ctrl *gomock.Controller) *baseTaskHandler {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask").Return(ctx, span)
 
 					var payload queue.LicenseExpiryTaskPayload
 					_ = json.Unmarshal(task.Payload(), &payload)
-					emailService := mock.NewEmailService(ctrl)
+					emailService := mocksvc.NewMockEmailService(ctrl)
 					emailService.EXPECT().SendSystemLicenseExpiryEmail(ctx,
 						payload.LicenseID,
 						payload.LicenseEmail,
@@ -244,7 +246,7 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 					).Return(nil)
 
 					return &baseTaskHandler{
-						logger:       mock.NewMockLogger(nil),
+						logger:       mocklog.NewMockLogger(nil),
 						tracer:       tracer,
 						emailService: emailService,
 					}
@@ -267,19 +269,19 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 			name: "process task skip email sending",
 			fields: fields{
 				baseTaskHandler: func(ctx context.Context, task *asynq.Task, ctrl *gomock.Controller) *baseTaskHandler {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask").Return(ctx, span)
 
 					var payload queue.LicenseExpiryTaskPayload
 					_ = json.Unmarshal(task.Payload(), &payload)
 
 					return &baseTaskHandler{
-						logger:       mock.NewMockLogger(nil),
+						logger:       mocklog.NewMockLogger(nil),
 						tracer:       tracer,
-						emailService: mock.NewEmailService(ctrl),
+						emailService: mocksvc.NewMockEmailService(ctrl),
 					}
 				},
 			},
@@ -300,14 +302,14 @@ func TestSystemLicenseExpiryTaskHandler_ProcessTask(t *testing.T) {
 			name: "process task with invalid payload",
 			fields: fields{
 				baseTaskHandler: func(ctx context.Context, _ *asynq.Task, ctrl *gomock.Controller) *baseTaskHandler {
-					span := mock.NewMockSpan(ctrl)
+					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End().Return()
 
-					tracer := mock.NewMockTracer(ctrl)
+					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask").Return(ctx, span)
 
 					return &baseTaskHandler{
-						logger: mock.NewMockLogger(nil),
+						logger: mocklog.NewMockLogger(nil),
 						tracer: tracer,
 					}
 				},

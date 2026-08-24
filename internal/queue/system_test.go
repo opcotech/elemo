@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/opcotech/elemo/internal/license"
 )
 
 func TestNewSystemHealthCheckTask(t *testing.T) {

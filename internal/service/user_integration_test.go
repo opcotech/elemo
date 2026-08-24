@@ -57,21 +57,20 @@ func (s *UserServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo)
+	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
 	licenseService, err := service.NewLicenseService(
 		testutil.ParseLicense(s.T()),
 		s.LicenseRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
 	)
 	s.Require().NoError(err)
 
 	s.userService, err = service.NewUserService(
-		service.WithUserRepository(s.UserRepo),
-		service.WithUserTokenRepository(s.UserTokenRepository),
-		service.WithPermissionService(permissionService),
-		service.WithLicenseService(licenseService),
+		s.UserRepo,
+		s.UserTokenRepository,
+		licenseService,
 	)
 	s.Require().NoError(err)
 }
@@ -120,7 +119,7 @@ func (s *UserServiceIntegrationTestSuite) TestGetByEmail() {
 	s.Assert().Equal(s.other.Username, got.Username)
 }
 
-func (s *UserServiceIntegrationTestSuite) TestGetAll() {
+func (s *UserServiceIntegrationTestSuite) TestList() {
 	users, err := s.userService.List(s.actorContext, service.CursorPage{Size: 10})
 	s.Assert().NoError(err)
 	s.Assert().Len(users.Items, 2)

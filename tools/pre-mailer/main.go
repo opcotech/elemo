@@ -41,7 +41,7 @@ func main() {
 	}
 
 	log.Printf("Write minified HTML to %s\n", os.Args[1])
-	if err := os.WriteFile(os.Args[1], out.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(os.Args[1], out.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 }

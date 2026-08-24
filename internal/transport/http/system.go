@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"errors"
+	"net/http"
 	"time"
 
 	oapiTypes "github.com/oapi-codegen/runtime/types"
@@ -24,6 +24,8 @@ type SystemController interface {
 // systemController is the concrete implementation of SystemController.
 type systemController struct {
 	*baseController
+	systemService  service.SystemService
+	licenseService service.LicenseService
 }
 
 func (c *systemController) V1SystemHealth(ctx context.Context, _ api.V1SystemHealthRequestObject) (api.V1SystemHealthResponseObject, error) {
@@ -59,31 +61,43 @@ func (c *systemController) V1SystemLicense(ctx context.Context, _ api.V1SystemLi
 
 	l, err := c.licenseService.GetLicense(ctx)
 	if err != nil {
-		if errors.Is(err, service.ErrNoPermission) {
+		switch classifyServiceError(err) {
+		case http.StatusForbidden:
 			return api.V1SystemLicense403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		default:
+			return api.V1SystemLicense500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		}
-		return api.V1SystemLicenseResponseObject(nil), err
 	}
 
 	return api.V1SystemLicense200JSONResponse(*licenseToDTO(&l)), nil
 }
 
 // NewSystemController creates a new SystemController.
-func NewSystemController(opts ...ControllerOption) (SystemController, error) {
+func NewSystemController(
+	systemService service.SystemService,
+	licenseService service.LicenseService,
+	opts ...ControllerOption,
+) (SystemController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &systemController{
-		baseController: c,
-	}
-
-	if controller.systemService == nil {
+	if systemService == nil {
 		return nil, ErrNoSystemService
 	}
 
-	return controller, nil
+	if licenseService == nil {
+		return nil, ErrNoLicenseService
+	}
+
+	return &systemController{
+		baseController: c,
+		systemService:  systemService,
+		licenseService: licenseService,
+	}, nil
 }
 
 func healthStatusToDTO(status map[model.HealthCheckComponent]model.HealthStatus) *api.SystemHealth {

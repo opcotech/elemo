@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type UserRepositoryIntegrationTestSuite struct {
@@ -83,7 +84,7 @@ func (s *UserRepositoryIntegrationTestSuite) TestGetByEmail() {
 	s.Assert().Equal(s.createOpts.Email, user.Email)
 }
 
-func (s *UserRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *UserRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.UserRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.UserRepo.Create(context.Background(), testModel.NewCreateUserOpts())
@@ -230,7 +231,7 @@ func (s *CachedUserRepositoryIntegrationTestSuite) TestGetByEmail() {
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 
-func (s *CachedUserRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *CachedUserRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.userRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.userRepo.Create(context.Background(), testModel.NewCreateUserOpts())

@@ -1,7 +1,6 @@
 import { withErrorHandling } from "./error-handler";
 
-import type { Document, DocumentCreate, DocumentPatch } from "@/lib/api/types";
-import type { Client } from "@/lib/client/client";
+import type { Client } from "@/lib/api/client";
 import {
   v1DocumentGet,
   v1DocumentUpdate,
@@ -9,7 +8,8 @@ import {
   v1NamespacesDocumentsCreate,
   v1OrganizationsDocumentsCreate,
   v1ProjectsDocumentsCreate,
-} from "@/lib/client/sdk.gen";
+} from "@/lib/api/sdk";
+import type { Document, DocumentCreate, DocumentPatch } from "@/lib/api/types";
 
 type DocumentCreateFields = Partial<DocumentCreate> & { title: string };
 

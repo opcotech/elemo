@@ -1,0 +1,97 @@
+/v1/permissions:
+  post:
+    summary: Create grant
+    operationId: v1PermissionsCreate
+    responses:
+      "201":
+        $ref: "#/components/responses/201"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
+    security:
+      - oauth2: []
+    tags:
+      - Permission
+    requestBody:
+      $ref: "#/components/requestBodies/GrantCreate"
+"/v1/permissions/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  delete:
+    summary: Delete grant
+    operationId: v1PermissionDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete a grant by its ID.
+    security:
+      - oauth2: []
+    tags:
+      - Permission
+  get:
+    summary: Get grant
+    operationId: v1PermissionGet
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Grant"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Get a grant by its ID.
+    security:
+      - oauth2: []
+    tags:
+      - Permission
+"/v1/permissions/resources/{resourceId}":
+  parameters:
+    - $ref: "#/components/parameters/resourceId"
+  get:
+    summary: Get effective actions for a resource
+    operationId: v1PermissionResourceGet
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EffectiveActions"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Returns the caller's effective actions on the given resource.
+    security:
+      - oauth2: []
+    tags:
+      - Permission

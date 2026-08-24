@@ -11,7 +11,7 @@ import (
 
 // LicenseService serves the business logic of retrieving license information.
 //
-//go:generate go tool mockgen -destination ../testutil/mock/license_service_gen.go -package mock github.com/opcotech/elemo/internal/service LicenseService
+//go:generate go tool mockgen -destination=mock/mock_license_gen.go -package=mocksvc . LicenseService
 type LicenseService interface {
 	// Expired returns true if the license has expired.
 	Expired(ctx context.Context) (bool, error)
@@ -27,9 +27,10 @@ type LicenseService interface {
 
 // licenseService is the concrete implementation of LicenseService.
 type licenseService struct {
-	*baseService
-	licenseRepo repository.LicenseRepository
-	license     *license.License
+	runtime
+	permissionService PermissionService
+	licenseRepo       repository.LicenseRepository
+	license           *license.License
 }
 
 func (s *licenseService) Expired(ctx context.Context) (bool, error) {
@@ -81,8 +82,8 @@ func (s *licenseService) GetLicense(ctx context.Context) (license.License, error
 	ctx, span := s.tracer.Start(ctx, "service.licenseService/GetLicense")
 	defer span.End()
 
-	if !s.permissionService.CtxUserHas(ctx, model.InstallationID(), model.ActionOrganizationCreate) {
-		return license.License{}, errors.Join(ErrLicenseGet, ErrNoPermission)
+	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionOrganizationCreate); err != nil {
+		return license.License{}, errors.Join(ErrLicenseGet, err)
 	}
 
 	return *s.license, nil
@@ -100,16 +101,22 @@ func (s *licenseService) Ping(ctx context.Context) error {
 }
 
 // NewLicenseService returns a new LicenseService.
-func NewLicenseService(l *license.License, repo repository.LicenseRepository, opts ...Option) (LicenseService, error) {
-	s, err := newService(opts...)
+func NewLicenseService(
+	l *license.License,
+	repo repository.LicenseRepository,
+	permissionService PermissionService,
+	opts ...Option,
+) (LicenseService, error) {
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &licenseService{
-		baseService: s,
-		license:     l,
-		licenseRepo: repo,
+		runtime:           rt,
+		permissionService: permissionService,
+		license:           l,
+		licenseRepo:       repo,
 	}
 
 	if svc.license == nil {

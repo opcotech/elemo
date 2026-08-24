@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-
 	"log/slog"
 
 	"github.com/spf13/cobra"
@@ -54,8 +53,18 @@ func initSearchService() (*repository.Neo4jDatabase, service.SearchService, erro
 		return nil, nil, err
 	}
 
+	roleRepo, err := repository.NewNeo4jRoleRepository(
+		repository.WithNeo4jDatabase(graphDB),
+		repository.WithNeo4jRepositoryLogger(logger.Named("role_repository")),
+		repository.WithNeo4jRepositoryTracer(tracer),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	permissionService, err := service.NewPermissionService(
 		permissionRepo,
+		roleRepo,
 		service.WithLogger(logger.Named("permission_service")),
 		service.WithTracer(tracer),
 	)
@@ -65,7 +74,8 @@ func initSearchService() (*repository.Neo4jDatabase, service.SearchService, erro
 
 	searchService, err := service.NewSearchService(
 		searchRepo,
-		service.WithPermissionService(permissionService),
+		permissionService,
+		nil,
 		service.WithLogger(logger.Named("search_service")),
 		service.WithTracer(tracer),
 	)

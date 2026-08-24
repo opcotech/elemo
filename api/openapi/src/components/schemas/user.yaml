@@ -1,0 +1,200 @@
+User:
+  title: User
+  type: object
+  description: A user in the system.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      username: test-user
+      first_name: Test
+      last_name: User
+      email: test.user@example.com
+      picture: "https://example.com/users/my-user.png"
+      title: Senior Software Engineer
+      bio: I'm working smart on software.
+      address: Remote
+      phone: "+15555551234"
+      links:
+        - "https://example.com/my-user"
+      languages:
+        - en
+        - hu
+      status:
+        id: active
+      created_at: "2023-01-01T00:00:00Z"
+      updated_at: null
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the user.
+      example: 9bsv0s46s6s002p9ltq0
+    username:
+      type: string
+      description: The unique username of the user.
+      pattern: "^[a-z0-9-_]{3,50}$"
+      minLength: 3
+      maxLength: 50
+      example: test-user
+    first_name:
+      type: string
+      description: First name of the user.
+      minLength: 1
+      maxLength: 50
+      example: Test
+    last_name:
+      type: string
+      description: Last name of the user.
+      example: User
+      minLength: 1
+      maxLength: 50
+    email:
+      type: string
+      format: email
+      example: user@example.com
+      minLength: 6
+      maxLength: 254
+      description: Email address of the user.
+    picture:
+      type: string
+      description: Profile picture of the user.
+      format: uri
+      example: "https://example.com/users/my-user.png"
+      maxLength: 2000
+      nullable: true
+    title:
+      type: string
+      description: Work title of the user.
+      example: Senior Software Engineer
+      minLength: 3
+      maxLength: 50
+      nullable: true
+    bio:
+      type: string
+      description: Self description of the user.
+      maxLength: 500
+      example: I'm working smart on software.
+      nullable: true
+    address:
+      type: string
+      minLength: 3
+      maxLength: 500
+      example: Remote
+      description: Working address of the user.
+      nullable: true
+    phone:
+      type: string
+      example: "+15555551234"
+      minLength: 7
+      maxLength: 16
+      description: Phone number of the user.
+      nullable: true
+    links:
+      type: array
+      description: Links to show on profile page.
+      uniqueItems: true
+      nullable: true
+      items:
+        type: string
+        format: uri
+        example: "https://example.com/my-user"
+        maxLength: 2000
+    languages:
+      type: array
+      description: Languages of the user.
+      uniqueItems: true
+      items:
+        $ref: "#/components/schemas/Language"
+    status:
+      $ref: "#/components/schemas/UserStatus"
+    document_count:
+      type: integer
+      format: int64
+      description: Number of documents the user created when projected.
+      example: 3
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+      description: Date when the user was created.
+    updated_at:
+      type: string
+      format: date-time
+      description: Date when the user was updated.
+      nullable: true
+  required:
+    - id
+    - username
+    - first_name
+    - last_name
+    - email
+    - picture
+    - title
+    - bio
+    - address
+    - phone
+    - links
+    - languages
+    - status
+    - created_at
+    - updated_at
+UserStatus:
+  type: string
+  enum:
+    - active
+    - pending
+    - inactive
+    - deleted
+  example: active
+  description: Status of the user.
+  title: UserStatus
+PartialUser:
+  title: PartialUser
+  type: object
+  description: A simplified user used on issue list and detail responses.
+  x-examples:
+    example:
+      id: 9bsv0s46s6s002p9ltq0
+      first_name: Test
+      last_name: User
+      picture: "https://example.com/users/my-user.png"
+  properties:
+    id:
+      type: string
+      description: Unique identifier of the user.
+      example: 9bsv0s46s6s002p9ltq0
+    first_name:
+      type: string
+      description: First name of the user.
+      minLength: 1
+      maxLength: 50
+      example: Test
+    last_name:
+      type: string
+      description: Last name of the user.
+      minLength: 1
+      maxLength: 50
+      example: User
+    picture:
+      type: string
+      description: Profile picture of the user.
+      format: uri
+      example: "https://example.com/users/my-user.png"
+      maxLength: 2000
+      nullable: true
+  required:
+    - id
+    - first_name
+    - last_name
+UserPage:
+  title: UserPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/User"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

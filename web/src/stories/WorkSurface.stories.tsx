@@ -9,7 +9,7 @@ import { WorkSurface } from "@/components/work/work-surface";
 import { WorkTable } from "@/components/work/work-table";
 import { WorkTimeline } from "@/components/work/work-timeline";
 import { mockWorkItems } from "@/lib/mock-data";
-import type { WorkItem } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
 const defaultSearch: WorkRouteSearch = {

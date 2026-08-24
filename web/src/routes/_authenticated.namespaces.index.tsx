@@ -37,6 +37,7 @@ import {
 } from "@/lib/api/accessible-namespaces";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NamespacesGetOptions } from "@/lib/api/query-options";
+import { withRouteErrors } from "@/lib/route-errors";
 import { cn } from "@/lib/utils";
 
 const namespacesListSearchSchema = z.object({
@@ -47,8 +48,10 @@ const namespacesListSearchSchema = z.object({
 export const Route = createFileRoute("/_authenticated/namespaces/")({
   validateSearch: namespacesListSearchSchema,
   loader: ({ context }) =>
-    context.queryClient.fetchQuery(
-      accessibleNamespacesOptions(context.queryClient)
+    withRouteErrors(() =>
+      context.queryClient.fetchQuery(
+        accessibleNamespacesOptions(context.queryClient)
+      )
     ),
   component: NamespacesListPage,
 });

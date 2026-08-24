@@ -33,6 +33,7 @@ type DocumentController interface {
 
 type documentController struct {
 	*baseController
+	documentService service.DocumentService
 }
 
 func (c *documentController) V1ProjectsDocumentsGet(ctx context.Context, request api.V1ProjectsDocumentsGetRequestObject) (api.V1ProjectsDocumentsGetResponseObject, error) {
@@ -687,19 +688,18 @@ func partialDocumentPageToDTO(page service.Page[*service.PartialDocument]) api.P
 }
 
 // NewDocumentController creates a new DocumentController.
-func NewDocumentController(opts ...ControllerOption) (DocumentController, error) {
+func NewDocumentController(documentService service.DocumentService, opts ...ControllerOption) (DocumentController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	controller := &documentController{
-		baseController: c,
-	}
-
-	if controller.documentService == nil {
+	if documentService == nil {
 		return nil, ErrNoDocumentService
 	}
 
-	return controller, nil
+	return &documentController{
+		baseController:  c,
+		documentService: documentService,
+	}, nil
 }

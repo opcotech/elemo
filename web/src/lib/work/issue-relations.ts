@@ -13,7 +13,7 @@ import type {
   IssueRelationDirection,
   IssueRelationKind,
   PartialIssue,
-} from "@/lib/client";
+} from "@/lib/api/types";
 
 export const ISSUE_RELATIONS_PAGE_SIZE = 100;
 export const ISSUE_RELATIONS_PREVIEW_PAGE_SIZE = 4;

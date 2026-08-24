@@ -1,0 +1,73 @@
+TodoCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          title:
+            type: string
+            minLength: 3
+            maxLength: 250
+            example: Do something great
+            description: Title of the todo item.
+          description:
+            type: string
+            minLength: 10
+            maxLength: 500
+            example: I'll make the world a better place today.
+            description: Description of the todo item.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          priority:
+            $ref: "#/components/schemas/TodoPriority"
+          owned_by:
+            type: string
+            description: ID of the user who owns the todo item.
+          due_date:
+            type: string
+            format: date-time
+            description: Completion due date of the todo item.
+            nullable: true
+            x-go-type: "Optional[*time.Time]"
+            x-go-type-skip-optional-pointer: true
+        required:
+          - title
+          - priority
+          - owned_by
+TodoPatch:
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          title:
+            type: string
+            minLength: 3
+            maxLength: 250
+            example: Do something great
+            description: Title of the todo item.
+          description:
+            type: string
+            minLength: 10
+            maxLength: 500
+            example: I'll make the world a better place today.
+            description: Description of the todo item.
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
+          priority:
+            $ref: "#/components/schemas/TodoPriority"
+          completed:
+            type: boolean
+            description: Completion status of the todo item.
+          owned_by:
+            type: string
+            description: ID of the user who owns the todo item.
+          due_date:
+            type: string
+            format: date-time
+            description: Completion due date of the todo item.
+            nullable: true
+            x-go-type: "Optional[*time.Time]"
+            x-go-type-skip-optional-pointer: true

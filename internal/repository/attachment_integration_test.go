@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type AttachmentRepositoryIntegrationTestSuite struct {
@@ -69,7 +70,7 @@ func (s *AttachmentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().WithinDuration(*created.CreatedAt, *attachment.CreatedAt, 100*time.Millisecond)
 }
 
-func (s *AttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *AttachmentRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.AttachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	_, err = s.AttachmentRepo.Create(context.Background(), testModel.NewCreateAttachmentOpts(s.testDoc.ID, s.testUser.ID))
@@ -168,7 +169,7 @@ func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestGetAllBelongsTo() {
+func (s *CachedAttachmentRepositoryIntegrationTestSuite) TestListBelongsTo() {
 	_, err := s.attachmentRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	original, err := s.AttachmentRepo.ListBelongsTo(context.Background(), s.testDoc.ID, repository.CursorPage{Size: 10}, repository.AttachmentListProjection())

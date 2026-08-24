@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -16,19 +15,18 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFormMutation } from "@/hooks/use-form-mutation";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
-import { v1OrganizationTeamMembersAddMutation } from "@/lib/api/mutation-options";
 import {
   v1OrganizationMembersGetOptions,
   v1OrganizationTeamMembersGetOptions,
 } from "@/lib/api/query-options";
 import {
   v1OrganizationMembersGet,
+  v1OrganizationTeamMembersAdd,
   v1OrganizationTeamMembersGet,
 } from "@/lib/api/sdk";
 import type { OrganizationMember, User } from "@/lib/api/types";
-import { runMutationSuccessWorkflow } from "@/lib/mutation-workflow";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { getInitials } from "@/lib/utils";
 
 const memberFormSchema = z.object({
@@ -52,10 +50,6 @@ export function TeamMemberAddDialog({
   onOpenChange,
   onSuccess,
 }: TeamMemberAddDialogProps) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const [error, setError] = useState<Error | null>(null);
-
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberFormSchema),
     defaultValues: {
@@ -108,57 +102,31 @@ export function TeamMemberAddDialog({
     enabled: open,
   });
 
-  const teamMembersQueryKey = v1OrganizationTeamMembersGetOptions({
-    path: {
-      id: organizationId,
-      team_id: teamId,
+  const mutation = useFormMutation({
+    mutationFn: async (variables: {
+      path: { id: string; team_id: string };
+      body: { user_id: string };
+    }) => {
+      const { data } = await v1OrganizationTeamMembersAdd({
+        ...variables,
+        throwOnError: true,
+      });
+      return data;
     },
-  }).queryKey;
-  const mutation = useMutation({
-    ...v1OrganizationTeamMembersAddMutation(),
-    onSuccess: () =>
-      runMutationSuccessWorkflow({
-        invalidateQueries: [
-          () =>
-            queryClient.invalidateQueries({
-              queryKey: teamMembersQueryKey,
-            }),
-          () =>
-            queryClient.invalidateQueries({
-              queryKey: v1OrganizationTeamMembersGetOptions({
-                path: { id: organizationId, team_id: teamId },
-              }).queryKey,
-            }),
-        ],
-        invalidateRouter: () => router.invalidate(),
-        callbacks: [
-          async () => {
-            setError(null);
-            showSuccessToast(
-              "Member added",
-              "Member added to team successfully"
-            );
-            form.reset();
-            onOpenChange(false);
-            await onSuccess?.();
-          },
-        ],
-      }),
-    onError: (err) => {
-      setError(new Error(err.message));
-      showErrorToast("Failed to add member", err.message);
-    },
-  });
-
-  useEffect(() => {
-    if (open) {
-      setError(null);
-    }
-  }, [open]);
-
-  const onSubmit = (values: MemberFormValues) => {
-    setError(null);
-    mutation.mutate({
+    form,
+    successMessage: "Member added",
+    successDescription: "Member added to team successfully",
+    errorMessagePrefix: "Failed to add member",
+    queryKeysToInvalidate: [
+      v1OrganizationTeamMembersGetOptions({
+        path: {
+          id: organizationId,
+          team_id: teamId,
+        },
+      }).queryKey,
+    ],
+    resetFormOnSuccess: true,
+    transformValues: (values) => ({
       path: {
         id: organizationId,
         team_id: teamId,
@@ -166,8 +134,18 @@ export function TeamMemberAddDialog({
       body: {
         user_id: values.userId,
       },
-    });
-  };
+    }),
+    onSuccess: async () => {
+      onOpenChange(false);
+      await onSuccess?.();
+    },
+  });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({ userId: "" });
+    }
+  }, [open, form]);
 
   const organizationMembers: OrganizationMember[] =
     organizationMembersPage?.items ?? [];
@@ -193,9 +171,9 @@ export function TeamMemberAddDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Add Member to Team"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={mutation.handleSubmit}
       isPending={mutation.isPending}
-      error={error}
+      error={mutation.error}
       submitButtonText="Add Member"
       onReset={() => form.reset()}
       className="sm:max-w-125"

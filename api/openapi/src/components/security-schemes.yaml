@@ -1,0 +1,76 @@
+oauth2:
+  type: oauth2
+  flows:
+    password:
+      tokenUrl: /oauth/token
+      scopes:
+        organization: Read and write access to organizations.
+        organization.read: Read access to organizations.
+        namespace: Read and write access to namespaces.
+        namespace.read: Read access to namespaces.
+        project: Read and write access to projects.
+        project.read: Read access to projects.
+        issue: Read and write access to issues.
+        issue.read: Read access to issues.
+        document: Read and write access to documents.
+        document.read: Read access to documents.
+        label: Read and write access to labels.
+        label.read: Read access to labels.
+        user: Read and write access to users.
+        user.read: Read access to users.
+        todo: Read and write access to todo items.
+        todo.read: Read access to todo items.
+        role: Read and write access to roles.
+        role.read: Read access to roles.
+        notification: Read and write access to in-app notifications.
+        notification.read: Read access to in-app notifications.
+      refreshUrl: /oauth/authorize
+    clientCredentials:
+      tokenUrl: /oauth/token
+      refreshUrl: /oauth/authorize
+      scopes:
+        organization: Read and write access to organizations.
+        organization.read: Read access to organizations.
+        namespace: Read and write access to namespaces.
+        namespace.read: Read access to namespaces.
+        project: Read and write access to projects.
+        project.read: Read access to projects.
+        issue: Read and write access to issues.
+        issue.read: Read access to issues.
+        document: Read and write access to documents.
+        document.read: Read access to documents.
+        label: Read and write access to labels.
+        label.read: Read access to labels.
+        user: Read and write access to users.
+        user.read: Read access to users.
+        todo: Read and write access to todo items.
+        todo.read: Read access to todo items.
+        role: Read and write access to roles.
+        role.read: Read access to roles.
+        notification: Read and write access to in-app notifications.
+        notification.read: Read access to in-app notifications.
+    authorizationCode:
+      authorizationUrl: /oauth/authorize
+      tokenUrl: /oauth/token
+      refreshUrl: /oauth/token
+      scopes:
+        organization: Read and write access to organizations.
+        organization.read: Read access to organizations.
+        namespace: Read and write access to namespaces.
+        namespace.read: Read access to namespaces.
+        project: Read and write access to projects.
+        project.read: Read access to projects.
+        issue: Read and write access to issues.
+        issue.read: Read access to issues.
+        document: Read and write access to documents.
+        document.read: Read access to documents.
+        label: Read and write access to labels.
+        label.read: Read access to labels.
+        user: Read and write access to users.
+        user.read: Read access to users.
+        todo: Read and write access to todo items.
+        todo.read: Read access to todo items.
+        role: Read and write access to roles.
+        role.read: Read access to roles.
+        notification: Read and write access to in-app notifications.
+        notification.read: Read access to in-app notifications.

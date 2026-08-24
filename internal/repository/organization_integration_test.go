@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/testutil"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
-	"github.com/stretchr/testify/suite"
 )
 
 type OrganizationRepositoryIntegrationTestSuite struct {
@@ -78,7 +79,7 @@ func (s *OrganizationRepositoryIntegrationTestSuite) grantOrganizationRead(orgID
 	s.Require().NoError(err)
 }
 
-func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *OrganizationRepositoryIntegrationTestSuite) TestList() {
 	org, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
 	s.grantOrganizationRead(org.ID)
@@ -89,11 +90,11 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGetAll() {
 	s.Require().NoError(err)
 	s.grantOrganizationRead(org.ID)
 
-	orgs, err := s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
+	orgs, err := s.OrganizationRepo.ListForUser(context.Background(), repository.OrganizationListQuery{UserID: s.testUser.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
 	s.Require().Len(orgs.Items, 3)
 
-	orgs, err = s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 2}, repository.OrganizationListProjection())
+	orgs, err = s.OrganizationRepo.ListForUser(context.Background(), repository.OrganizationListQuery{UserID: s.testUser.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 2}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
 	s.Require().Len(orgs.Items, 2)
 }
@@ -265,12 +266,12 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
-func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetAll() {
+func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestList() {
 	_, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.OrganizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
+	original, err := s.OrganizationRepo.ListForUser(context.Background(), repository.OrganizationListQuery{UserID: s.testUser.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
-	usingCache, err := s.organizationRepo.List(context.Background(), s.testUser.ID, repository.CursorPage{Size: 10}, repository.OrganizationListProjection())
+	usingCache, err := s.organizationRepo.ListForUser(context.Background(), repository.OrganizationListQuery{UserID: s.testUser.ID, Action: model.ActionOrganizationRead, Page: repository.CursorPage{Size: 10}, Order: repository.SortDirectionDesc, Projection: repository.OrganizationListProjection()})
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)

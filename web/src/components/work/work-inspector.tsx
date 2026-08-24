@@ -17,7 +17,7 @@ import { InternalLink } from "@/components/ui/internal-link";
 import { Section, SectionAccordion } from "@/components/ui/section";
 import { internalPath } from "@/lib/internal-url";
 import { selectActivity, selectRelations } from "@/lib/mock-data";
-import type { WorkItem } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 import { workItemPeople } from "@/lib/work/resolve-work-people";
 
 export function WorkInspector({ item }: { item: WorkItem }) {

@@ -18,8 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { internalPath } from "@/lib/internal-url";
-import type { WorkItem } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import type { WorkItem } from "@/lib/work/model";
 import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
 
 const TABLE_PAGE_SIZE = 50;

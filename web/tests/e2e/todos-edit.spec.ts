@@ -6,8 +6,8 @@ import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { createUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
 
+import type { Client } from "@/lib/api/client";
 import type { User } from "@/lib/api/types";
-import type { Client } from "@/lib/client/client";
 
 function localNoonIso(daysFromToday: number): string {
   const date = new Date();

@@ -30,18 +30,28 @@ help: ## Show help message
 	@grep -E '^[a-z.A-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}';
 
 .PHONY: generate
-generate: generate.email generate.server generate.client ## Generate resources
+generate: generate.email generate.openapi generate.server generate.client ## Generate resources
+
+.PHONY: generate.openapi
+generate.openapi: ## Assemble OpenAPI spec from split sources
+	$(call log, assembling OpenAPI spec)
+	@$(GO_EXEC) -C '$(ROOT_DIR)/tools/openapi-assemble' run . -src '$(API_DIR)/src' -out '$(API_DIR)/openapi.yaml'
 
 .PHONY: generate.server
-generate.server: ## Generate API server
+generate.server: generate.openapi ## Generate API server
 	$(call log, generating backend files)
-	@go generate ./...
+	@$(GO_EXEC) generate ./...
 
 	$(call log, generating backend API server)
-	@oapi-codegen -config '$(API_DIR)/generator.config.yml' -o '$(API_SERVER_DIR)/server.go' '$(API_DIR)/openapi.yaml'
+	@$(GO_EXEC) tool oapi-codegen -config '$(API_DIR)/generator.config.yml' -o '$(API_SERVER_DIR)/server.go' '$(API_DIR)/openapi.yaml'
+
+.PHONY: generate.backend.check
+generate.backend.check: ## Check backend generated artifacts are up to date
+	$(call log, check backend generated files)
+	@$(MAKE) generate.server
 
 .PHONY: generate.client
-generate.client: ## Generate API client
+generate.client: generate.openapi ## Generate API client
 	$(call log, generating front-end API client)
 	@$(PNPM_RUN) generate 2>&1 >/dev/null
 
@@ -145,6 +155,7 @@ test.backend.unit: ## Run backend unit tests
 	$(call log, execute backend unit tests)
 	@rm -f "$(BACKEND_COVER_OUT_UNIT)"
 	@gotestsum --format testname -- -shuffle=on -cover -covermode=atomic -ldflags="-extldflags=-Wl,-ld_classic" -race -short -coverprofile="$(BACKEND_COVER_OUT_UNIT)" ./...
+	@$(GO_EXEC) -C '$(ROOT_DIR)/tools/openapi-assemble' test ./...
 
 .PHONY: test.backend.integration
 test.backend.integration: ## Run backend integration tests
@@ -223,8 +234,14 @@ format: format.backend format.frontend ## Run formatters for the backend and fro
 .PHONY: format.backend
 format.backend: ## Run formatters for the backend
 	$(call log, run backend formatters)
-	@gofmt -l -s -w $(shell pwd)
-	@goimports -w $(shell pwd)
+	@gofmt -l -s -w cmd internal tools
+	@goimports -w cmd internal tools
+
+.PHONY: format.backend.check
+format.backend.check: ## Check backend formatting
+	$(call log, check backend formatting)
+	@files="$$(gofmt -l -s cmd internal tools)"; \
+	if [ -n "$$files" ]; then echo "unformatted Go files:"; echo "$$files"; exit 1; fi
 
 .PHONY: format.frontend
 format.frontend: ## Run formatters for the front-end

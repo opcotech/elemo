@@ -1,9 +1,13 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 	"time"
+
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,17 +20,20 @@ import (
 	"github.com/opcotech/elemo/internal/repository"
 )
 
-func newSearchServiceForTest(perm PermissionService, repo repository.SearchRepository) *searchService {
-	return &searchService{
-		baseService: &baseService{
-			logger:            log.DefaultLogger(),
-			tracer:            tracing.NoopTracer(),
-			permissionService: perm,
-		},
-		searchRepo:            repo,
-		listSearchableRecords: repository.ListSearchableRecords,
-		listSearchableByIDs:   repository.ListSearchableRecordsByIDs,
-	}
+func newSearchServiceForTest(perm service.PermissionService, repo repository.SearchRepository) service.SearchService {
+	return func() service.SearchService {
+		svc, err := service.NewSearchService(
+			repo,
+			perm,
+			nil,
+			service.WithLogger(log.DefaultLogger()),
+			service.WithTracer(tracing.NoopTracer()),
+		)
+		if err != nil {
+			panic(err)
+		}
+		return svc
+	}()
 }
 
 func TestSearchService_Search(t *testing.T) {
@@ -41,15 +48,15 @@ func TestSearchService_Search(t *testing.T) {
 	t.Run("empty grant scopes return without querying", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		perm := NewMockPermissionService(ctrl)
-		repo := repository.NewMockSearchRepository(ctrl)
+		perm := mocksvc.NewMockPermissionService(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionIssueRead).Return([]model.ID{}, nil)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionProjectRead).Return([]model.ID{}, nil)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionOrganizationRead).Return([]model.ID{}, nil)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionNamespaceRead).Return([]model.ID{}, nil)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionDocumentRead).Return([]model.ID{}, nil)
 
-		page, err := newSearchServiceForTest(perm, repo).Search(ctx, SearchQuery{})
+		page, err := newSearchServiceForTest(perm, repo).Search(ctx, service.SearchQuery{})
 		require.NoError(t, err)
 		assert.Empty(t, page.Items)
 		assert.False(t, page.PageInfo.HasMore)
@@ -59,17 +66,17 @@ func TestSearchService_Search(t *testing.T) {
 	t.Run("missing user fails closed", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		perm := NewMockPermissionService(ctrl)
-		repo := repository.NewMockSearchRepository(ctrl)
-		_, err := newSearchServiceForTest(perm, repo).Search(context.Background(), SearchQuery{})
-		assert.ErrorIs(t, err, ErrNoUser)
+		perm := mocksvc.NewMockPermissionService(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
+		_, err := newSearchServiceForTest(perm, repo).Search(context.Background(), service.SearchQuery{})
+		assert.ErrorIs(t, err, service.ErrNoUser)
 	})
 
 	t.Run("post filter drops unauthorized hits and omits totals", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		perm := NewMockPermissionService(ctrl)
-		repo := repository.NewMockSearchRepository(ctrl)
+		perm := mocksvc.NewMockPermissionService(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionIssueRead).Return([]model.ID{projectID}, nil)
 		repo.EXPECT().Search(gomock.Any(), gomock.Any()).Return(&repository.SearchHits{
 			Documents: []repository.SearchDocument{{
@@ -84,7 +91,7 @@ func TestSearchService_Search(t *testing.T) {
 		}, nil)
 		perm.EXPECT().Has(gomock.Any(), userID, issueID, model.ActionIssueRead).Return(false, nil)
 
-		page, err := newSearchServiceForTest(perm, repo).Search(ctx, SearchQuery{
+		page, err := newSearchServiceForTest(perm, repo).Search(ctx, service.SearchQuery{
 			Types: []model.ResourceType{model.ResourceTypeIssue},
 		})
 		require.NoError(t, err)
@@ -95,8 +102,8 @@ func TestSearchService_Search(t *testing.T) {
 	t.Run("client organization filter is anded onto authz", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		perm := NewMockPermissionService(ctrl)
-		repo := repository.NewMockSearchRepository(ctrl)
+		perm := mocksvc.NewMockPermissionService(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		perm.EXPECT().ListGrantScopes(gomock.Any(), userID, model.ActionIssueRead).Return([]model.ID{orgID}, nil)
 		repo.EXPECT().Search(gomock.Any(), gomock.AssignableToTypeOf(repository.SearchQuery{})).DoAndReturn(
 			func(_ context.Context, q repository.SearchQuery) (*repository.SearchHits, error) {
@@ -108,7 +115,7 @@ func TestSearchService_Search(t *testing.T) {
 			},
 		)
 
-		page, err := newSearchServiceForTest(perm, repo).Search(ctx, SearchQuery{
+		page, err := newSearchServiceForTest(perm, repo).Search(ctx, service.SearchQuery{
 			Types:          []model.ResourceType{model.ResourceTypeIssue},
 			OrganizationID: &orgID,
 		})
@@ -127,8 +134,8 @@ func TestSearchService_Index(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 
 	ctrl := gomock.NewController(t)
-	perm := NewMockPermissionService(ctrl)
-	repo := repository.NewMockSearchRepository(ctrl)
+	perm := mocksvc.NewMockPermissionService(ctrl)
+	repo := mockrepo.NewMockSearchRepository(ctrl)
 	perm.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID, orgID}, nil)
 	repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, docs ...repository.SearchDocument) error {
@@ -142,7 +149,7 @@ func TestSearchService_Index(t *testing.T) {
 		},
 	)
 
-	err := newSearchServiceForTest(perm, repo).Index(context.Background(), IndexInput{
+	err := newSearchServiceForTest(perm, repo).Index(context.Background(), service.IndexInput{
 		ID:        issueID,
 		Title:     "Bug",
 		Key:       "ELE-1",
@@ -156,15 +163,15 @@ func TestNewSearchService(t *testing.T) {
 
 	t.Run("requires search repository", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewSearchService(nil, WithPermissionService(NewMockPermissionService(gomock.NewController(t))))
-		assert.ErrorIs(t, err, ErrNoSearchRepository)
+		_, err := service.NewSearchService(nil, mocksvc.NewMockPermissionService(gomock.NewController(t)), nil)
+		assert.ErrorIs(t, err, service.ErrNoSearchRepository)
 	})
 
 	t.Run("requires permission service", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		_, err := NewSearchService(repository.NewMockSearchRepository(ctrl))
-		assert.ErrorIs(t, err, ErrNoPermissionService)
+		_, err := service.NewSearchService(mockrepo.NewMockSearchRepository(ctrl), nil, nil)
+		assert.ErrorIs(t, err, service.ErrNoPermissionService)
 	})
 }
 
@@ -175,25 +182,25 @@ func TestSearchService_Reindex(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		svc := newSearchServiceForTest(
-			NewMockPermissionService(ctrl),
-			repository.NewMockSearchRepository(ctrl),
+			mocksvc.NewMockPermissionService(ctrl),
+			mockrepo.NewMockSearchRepository(ctrl),
 		)
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{}, SearchReindexOptions{})
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{}, service.SearchReindexOptions{})
 		require.Error(t, err)
-		assert.ErrorIs(t, err, ErrSearchReindex)
+		assert.ErrorIs(t, err, service.ErrSearchReindex)
 		assert.ErrorIs(t, err, repository.ErrNoDriver)
 	})
 
 	t.Run("upserts records in batches", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		repo := repository.NewMockSearchRepository(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		issueID := model.MustNewID(model.ResourceTypeIssue)
 		projectID := model.MustNewID(model.ResourceTypeProject)
 
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-		svc.listSearchableRecords = func(
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+		service.SetSearchServiceListRecords(svc, func(
 			_ context.Context,
 			_ *repository.Neo4jDatabase,
 			resourceType model.ResourceType,
@@ -210,7 +217,7 @@ func TestSearchService_Reindex(t *testing.T) {
 				Key:      "ELE-1",
 				Ancestry: []model.ID{issueID, projectID},
 			}}, nil
-		}
+		})
 		repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, docs ...repository.SearchDocument) error {
 				require.Len(t, docs, 1)
@@ -221,24 +228,24 @@ func TestSearchService_Reindex(t *testing.T) {
 			},
 		)
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		}, SearchReindexOptions{BatchSize: 2, Concurrency: 1})
+		}, service.SearchReindexOptions{BatchSize: 2, Concurrency: 1})
 		require.NoError(t, err)
 	})
 
 	t.Run("delete all runs before listing", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		repo := repository.NewMockSearchRepository(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		listed := false
 		repo.EXPECT().DeleteAll(gomock.Any()).DoAndReturn(func(context.Context) error {
 			assert.False(t, listed)
 			return nil
 		})
 
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-		svc.listSearchableRecords = func(
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+		service.SetSearchServiceListRecords(svc, func(
 			_ context.Context,
 			_ *repository.Neo4jDatabase,
 			_ model.ResourceType,
@@ -247,11 +254,11 @@ func TestSearchService_Reindex(t *testing.T) {
 		) ([]repository.SearchableRecord, error) {
 			listed = true
 			return []repository.SearchableRecord{}, nil
-		}
+		})
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		}, SearchReindexOptions{DeleteAll: true, Concurrency: 1})
+		}, service.SearchReindexOptions{DeleteAll: true, Concurrency: 1})
 		require.NoError(t, err)
 		assert.True(t, listed)
 	})
@@ -259,9 +266,9 @@ func TestSearchService_Reindex(t *testing.T) {
 	t.Run("skips delete all by default", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		repo := repository.NewMockSearchRepository(ctrl)
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-		svc.listSearchableRecords = func(
+		repo := mockrepo.NewMockSearchRepository(ctrl)
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+		service.SetSearchServiceListRecords(svc, func(
 			_ context.Context,
 			_ *repository.Neo4jDatabase,
 			_ model.ResourceType,
@@ -269,23 +276,23 @@ func TestSearchService_Reindex(t *testing.T) {
 			_ int,
 		) ([]repository.SearchableRecord, error) {
 			return []repository.SearchableRecord{}, nil
-		}
+		})
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		}, SearchReindexOptions{Concurrency: 1})
+		}, service.SearchReindexOptions{Concurrency: 1})
 		require.NoError(t, err)
 	})
 
 	t.Run("upserts pages concurrently", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		repo := repository.NewMockSearchRepository(ctrl)
+		repo := mockrepo.NewMockSearchRepository(ctrl)
 		first := model.MustNewID(model.ResourceTypeIssue)
 		second := model.MustNewID(model.ResourceTypeIssue)
 
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-		svc.listSearchableRecords = func(
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+		service.SetSearchServiceListRecords(svc, func(
 			_ context.Context,
 			_ *repository.Neo4jDatabase,
 			resourceType model.ResourceType,
@@ -304,21 +311,21 @@ func TestSearchService_Reindex(t *testing.T) {
 			default:
 				return []repository.SearchableRecord{}, nil
 			}
-		}
+		})
 		repo.EXPECT().Upsert(gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		}, SearchReindexOptions{BatchSize: 1, Concurrency: 2})
+		}, service.SearchReindexOptions{BatchSize: 1, Concurrency: 2})
 		require.NoError(t, err)
 	})
 
 	t.Run("joins listing errors", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		repo := repository.NewMockSearchRepository(ctrl)
-		svc := newSearchServiceForTest(NewMockPermissionService(ctrl), repo)
-		svc.listSearchableRecords = func(
+		repo := mockrepo.NewMockSearchRepository(ctrl)
+		svc := newSearchServiceForTest(mocksvc.NewMockPermissionService(ctrl), repo)
+		service.SetSearchServiceListRecords(svc, func(
 			_ context.Context,
 			_ *repository.Neo4jDatabase,
 			_ model.ResourceType,
@@ -326,13 +333,13 @@ func TestSearchService_Reindex(t *testing.T) {
 			_ int,
 		) ([]repository.SearchableRecord, error) {
 			return nil, assert.AnError
-		}
+		})
 
-		err := svc.Reindex(context.Background(), SearchReindexSources{
+		err := svc.Reindex(context.Background(), service.SearchReindexSources{
 			DB: &repository.Neo4jDatabase{},
-		}, SearchReindexOptions{Concurrency: 1})
+		}, service.SearchReindexOptions{Concurrency: 1})
 		require.Error(t, err)
-		assert.ErrorIs(t, err, ErrSearchReindex)
+		assert.ErrorIs(t, err, service.ErrSearchReindex)
 		assert.ErrorIs(t, err, assert.AnError)
 	})
 }

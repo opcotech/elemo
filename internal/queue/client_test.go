@@ -7,8 +7,9 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
-	"github.com/opcotech/elemo/internal/testutil/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 )
 
 func TestWithClientConfig(t *testing.T) {
@@ -65,9 +66,9 @@ func TestWithClientLogger(t *testing.T) {
 		{
 			name: "create new option with logger",
 			args: args{
-				logger: mock.NewMockLogger(nil),
+				logger: mocklog.NewMockLogger(nil),
 			},
-			want: mock.NewMockLogger(nil),
+			want: mocklog.NewMockLogger(nil),
 		},
 		{
 			name: "create new option with nil logger",
@@ -102,9 +103,9 @@ func TestWithClientTracer(t *testing.T) {
 		{
 			name: "create new option with tracer",
 			args: args{
-				tracer: mock.NewMockTracer(nil),
+				tracer: mocktrace.NewMockTracer(nil),
 			},
-			want: mock.NewMockTracer(nil),
+			want: mocktrace.NewMockTracer(nil),
 		},
 		{
 			name: "create new option with nil tracer",

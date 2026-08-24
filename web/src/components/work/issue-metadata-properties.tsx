@@ -7,7 +7,7 @@ import { InternalLink } from "@/components/ui/internal-link";
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
 import { PropertyList } from "@/components/ui/property-list";
 import { internalPath } from "@/lib/internal-url";
-import type { DataSource } from "@/lib/mock-data";
+import type { DataSource } from "@/lib/work/model";
 
 export function IssueParentLink({
   parent,

@@ -77,7 +77,7 @@ func (o UpdateRoleOpts) patch() map[string]any {
 	return p
 }
 
-//go:generate go tool mockgen -source=role.go -destination=role_mock_gen.go -package=repository -mock_names "RoleRepository=MockRoleRepository"
+//go:generate go tool mockgen -source=role.go -destination=mock/mock_role_gen.go -package=mockrepo
 type RoleRepository interface {
 	Create(ctx context.Context, opts CreateRoleOpts) (*Role, error)
 	Get(ctx context.Context, id, belongsTo model.ID, proj RoleProjection) (*Role, error)
@@ -154,7 +154,8 @@ func (r *Neo4jRoleRepository) applyRoleLoaders(ctx context.Context, tx neo4j.Man
 			rows, _, err := Neo4jRunQuery(ctx, tx, query, func(rec *neo4j.Record) (struct {
 				RoleID        string
 				PermissionIDs []model.ID
-			}, error) {
+			}, error,
+			) {
 				roleID, err := Neo4jParseValueFromRecord[string](rec, "role_id")
 				if err != nil {
 					return struct {
@@ -223,7 +224,7 @@ func (r *Neo4jRoleRepository) Create(ctx context.Context, opts CreateRoleOpts) (
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(err, ErrRoleCreate)
+		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
 	return r.Get(ctx, id, opts.BelongsTo, RoleDetailProjection())
@@ -236,7 +237,7 @@ func (r *Neo4jRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, p
 
 	plan, err := CompileQuery(RoleGetQuery{ID: id, BelongsTo: belongsTo, Projection: proj})
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 
 	var role *Role
@@ -249,7 +250,7 @@ func (r *Neo4jRoleRepository) Get(ctx context.Context, id, belongsTo model.ID, p
 		return r.applyRoleLoaders(ctx, tx, plan, []*Role{role})
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 
 	return role, nil
@@ -261,7 +262,7 @@ func (r *Neo4jRoleRepository) GetByID(ctx context.Context, id model.ID) (*Role, 
 	defer span.End()
 
 	if err := id.Validate(); err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 
 	cypher := `
@@ -270,7 +271,7 @@ func (r *Neo4jRoleRepository) GetByID(ctx context.Context, id model.ID) (*Role, 
 
 	role, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, map[string]any{"id": id.String()}, r.scan(RoleDetailProjection()))
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 	return role, nil
 }
@@ -281,7 +282,7 @@ func (r *Neo4jRoleRepository) GetByKey(ctx context.Context, belongsTo model.ID, 
 	defer span.End()
 
 	if err := belongsTo.Validate(); err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 
 	cypher := `
@@ -293,7 +294,7 @@ func (r *Neo4jRoleRepository) GetByKey(ctx context.Context, belongsTo model.ID, 
 		"key":           key,
 	}, r.scan(RoleDetailProjection()))
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleRead)
+		return nil, errors.Join(ErrRoleRead, err)
 	}
 	return role, nil
 }
@@ -411,7 +412,7 @@ func (r *Neo4jRoleRepository) Update(ctx context.Context, id, belongsTo model.ID
 		return &struct{}{}, nil
 	})
 	if err != nil {
-		return nil, errors.Join(err, ErrRoleUpdate)
+		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
 	return r.Get(ctx, id, belongsTo, RoleDetailProjection())

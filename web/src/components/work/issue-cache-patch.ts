@@ -9,8 +9,12 @@ import {
   v1IssueGetOptions,
   v1NamespacesIssuesKeyGetOptions,
 } from "@/lib/api/query-options";
-import type { Issue, IssuePatch } from "@/lib/api/types";
-import type { PartialIssue, PartialIssuePage } from "@/lib/client";
+import type {
+  Issue,
+  IssuePatch,
+  PartialIssue,
+  PartialIssuePage,
+} from "@/lib/api/types";
 import { rollbackOptimisticQueryData } from "@/lib/mutation-workflow";
 
 export type IssueCacheTarget = {

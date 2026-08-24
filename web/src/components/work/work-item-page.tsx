@@ -41,9 +41,9 @@ import {
 import type { Issue, Options, V1IssueDeleteData } from "@/lib/api/types";
 import { internalPath } from "@/lib/internal-url";
 import { selectActivity, selectRelations } from "@/lib/mock-data";
-import type { WorkItem } from "@/lib/mock-data";
 import { uiActions } from "@/lib/ui-store";
 import { issueToWorkItem } from "@/lib/work/issue-adapter";
+import type { WorkItem } from "@/lib/work/model";
 import {
   partialUserToPerson,
   workItemPeople,
@@ -55,7 +55,7 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
   useEffect(() => {
     uiActions.rememberRecentEntity({
       id: item.id,
-      type: "work",
+      type: "work-item",
       label: `${item.key} ${item.title}`,
       href: recentHref,
       namespaceId: item.namespaceId || undefined,
@@ -316,7 +316,7 @@ function LiveWorkItemPage({
   useEffect(() => {
     uiActions.rememberRecentEntity({
       id: issue.id,
-      type: "work",
+      type: "work-item",
       label: `${issue.key} ${issue.title}`,
       href: recentHref,
       namespaceId,

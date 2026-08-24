@@ -1,6 +1,6 @@
 package service
 
-//go:generate go tool mockgen -source=system.go -destination=../testutil/mock/system_service_gen.go -package=mock -mock_names "Pingable=PingableResource,SystemService=SystemService"
+//go:generate go tool mockgen -destination=mock/mock_system_gen.go -package=mocksvc . Pingable,SystemService
 
 import (
 	"context"
@@ -32,7 +32,7 @@ type SystemService interface {
 
 // systemService is the concrete implementation of SystemService.
 type systemService struct {
-	*baseService
+	runtime
 	versionInfo *model.VersionInfo
 	resources   map[model.HealthCheckComponent]Pingable
 }
@@ -114,13 +114,13 @@ func (s *systemService) GetVersion(ctx context.Context) *model.VersionInfo {
 
 // NewSystemService creates a new SystemService.
 func NewSystemService(resources map[model.HealthCheckComponent]Pingable, version *model.VersionInfo, opts ...Option) (SystemService, error) {
-	s, err := newService(opts...)
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &systemService{
-		baseService: s,
+		runtime:     rt,
 		versionInfo: version,
 		resources:   resources,
 	}

@@ -3,7 +3,7 @@ import type { z } from "zod";
 
 import { FieldGroup } from "@/components/ui/field";
 import { NameDescriptionFields } from "@/components/ui/name-description-fields";
-import { zTeamCreate } from "@/lib/client/zod.gen";
+import { zTeamCreate } from "@/lib/api/schemas";
 import { createFormSchema } from "@/lib/forms";
 
 export const teamFormSchema = createFormSchema(zTeamCreate);

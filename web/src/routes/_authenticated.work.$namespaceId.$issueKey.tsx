@@ -27,16 +27,12 @@ export const Route = createFileRoute(
 function WorkItemRoute() {
   const data = Route.useLoaderData();
 
-  if (data.source === "api") {
-    return (
-      <WorkItemPage
-        item={data.item}
-        issue={data.issue}
-        namespaceId={data.namespaceId}
-        issueKey={data.issueKey}
-      />
-    );
-  }
-
-  return <WorkItemPage item={data.item} />;
+  return (
+    <WorkItemPage
+      item={data.item}
+      issue={data.issue}
+      namespaceId={data.namespaceId}
+      issueKey={data.issueKey}
+    />
+  );
 }

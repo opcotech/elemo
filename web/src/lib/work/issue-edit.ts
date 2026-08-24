@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { PartialProject } from "@/lib/client";
+import type { PartialProject } from "@/lib/api/types";
 
 const titleSchema = z.string().min(3).max(120);
 const descriptionPlainTextSchema = z.string().min(3);

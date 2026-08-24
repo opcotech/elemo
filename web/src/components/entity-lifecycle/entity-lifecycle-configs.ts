@@ -14,6 +14,7 @@ import {
   v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
+import { zOrganizationStatus } from "@/lib/api/schemas";
 import type {
   Document,
   EffectiveActions,
@@ -32,7 +33,6 @@ import type {
   V1ProjectDeleteData,
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
-import { zOrganizationStatus } from "@/lib/client/zod.gen";
 
 interface OrganizationLifecycleEntity extends Pick<
   Organization,

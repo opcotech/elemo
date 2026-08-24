@@ -1,0 +1,443 @@
+"/v1/organizations/{id}/documents":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get organization documents
+    tags:
+      - Organization
+      - Document
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialDocumentPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1OrganizationsDocumentsGet
+    security:
+      - oauth2:
+          - organization.read
+          - document.read
+    description: Return a cursor-paginated page of documents in the organization library.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/folder_id"
+      - $ref: "#/components/parameters/all"
+  post:
+    summary: Create document in organization
+    operationId: v1OrganizationsDocumentsCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new document in the organization library.
+    security:
+      - oauth2:
+          - organization
+          - document
+    tags:
+      - Organization
+      - Document
+    requestBody:
+      $ref: "#/components/requestBodies/DocumentCreate"
+"/v1/namespaces/{id}/documents":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get namespace documents
+    tags:
+      - Namespace
+      - Document
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialDocumentPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesDocumentsGet
+    security:
+      - oauth2:
+          - namespace.read
+          - document.read
+    description: Return a cursor-paginated page of documents in the namespace library.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+      - $ref: "#/components/parameters/folder_id"
+      - $ref: "#/components/parameters/all"
+  post:
+    summary: Create document in namespace
+    operationId: v1NamespacesDocumentsCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new document in the namespace library.
+    security:
+      - oauth2:
+          - namespace
+          - document
+    tags:
+      - Namespace
+      - Document
+    requestBody:
+      $ref: "#/components/requestBodies/DocumentCreate"
+"/v1/projects/{id}/documents":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get project documents
+    tags:
+      - Project
+      - Document
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialDocumentPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1ProjectsDocumentsGet
+    security:
+      - oauth2:
+          - project.read
+          - document.read
+    description: Return a cursor-paginated page of documents related to the project.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+  post:
+    summary: Create document in project
+    operationId: v1ProjectsDocumentsCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new document in the namespace library, related to the project.
+    security:
+      - oauth2:
+          - project
+          - document
+    tags:
+      - Project
+      - Document
+    requestBody:
+      $ref: "#/components/requestBodies/DocumentCreate"
+"/v1/projects/{id}/documents/{documentId}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/documentId"
+  post:
+    summary: Relate document to project
+    operationId: v1ProjectsDocumentsRelate
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Relate an existing document to the project.
+    security:
+      - oauth2:
+          - project
+          - document
+    tags:
+      - Project
+      - Document
+  delete:
+    summary: Unrelate document from project
+    operationId: v1ProjectsDocumentsUnrelate
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Remove the relation between the document and the project.
+    security:
+      - oauth2:
+          - project
+          - document
+    tags:
+      - Project
+      - Document
+"/v1/documents/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get document
+    tags:
+      - Document
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1DocumentGet
+    security:
+      - oauth2:
+          - document.read
+    description: Return the requested document by its ID, including the stored body.
+  patch:
+    summary: Update document
+    operationId: v1DocumentUpdate
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Update the document by its ID. Optional library_id moves the document to another library and clears its folder. Optional folder_id moves it within the library; JSON null removes it from the folder.
+    security:
+      - oauth2:
+          - document
+    tags:
+      - Document
+    requestBody:
+      $ref: "#/components/requestBodies/DocumentPatch"
+  delete:
+    summary: Delete document
+    operationId: v1DocumentDelete
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Delete the document by its ID.
+    security:
+      - oauth2:
+          - document
+    tags:
+      - Document
+"/v1/issues/{id}/documents":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get issue documents
+    tags:
+      - Issue
+      - Document
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialDocumentPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1IssuesDocumentsGet
+    security:
+      - oauth2:
+          - issue.read
+          - document.read
+    description: Return a cursor-paginated page of documents related to the issue.
+    parameters:
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+  post:
+    summary: Create document in issue
+    operationId: v1IssuesDocumentsCreate
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Create a new document in the namespace library, related to the issue.
+    security:
+      - oauth2:
+          - issue
+          - document
+    tags:
+      - Issue
+      - Document
+    requestBody:
+      $ref: "#/components/requestBodies/DocumentCreate"
+"/v1/issues/{id}/documents/{documentId}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/documentId"
+  post:
+    summary: Relate document to issue
+    operationId: v1IssuesDocumentsRelate
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Relate an existing document to the issue.
+    security:
+      - oauth2:
+          - issue
+          - document
+    tags:
+      - Issue
+      - Document
+  delete:
+    summary: Unrelate document from issue
+    operationId: v1IssuesDocumentsUnrelate
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    description: Remove the relation between the document and the issue.
+    security:
+      - oauth2:
+          - issue
+          - document
+    tags:
+      - Issue
+      - Document

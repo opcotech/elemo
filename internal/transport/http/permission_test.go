@@ -14,12 +14,13 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
 
 func newTestPermissionController(t *testing.T, ps service.PermissionService) PermissionController {
 	t.Helper()
-	c, err := NewPermissionController(WithPermissionService(ps))
+	c, err := NewPermissionController(ps)
 	require.NoError(t, err)
 	return c
 }
@@ -55,20 +56,14 @@ func TestNewPermissionController(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		c, err := NewPermissionController(WithPermissionService(service.NewMockPermissionService(ctrl)))
+		c, err := NewPermissionController(mocksvc.NewMockPermissionService(ctrl))
 		require.NoError(t, err)
 		assert.NotNil(t, c)
 	})
 
 	t.Run("missing permission service", func(t *testing.T) {
 		t.Parallel()
-		_, err := NewPermissionController()
-		assert.ErrorIs(t, err, ErrNoPermissionService)
-	})
-
-	t.Run("nil permission service option", func(t *testing.T) {
-		t.Parallel()
-		_, err := NewPermissionController(WithPermissionService(nil))
+		_, err := NewPermissionController(nil)
 		assert.ErrorIs(t, err, ErrNoPermissionService)
 	})
 }
@@ -85,7 +80,7 @@ func TestPermissionController_V1PermissionsCreate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserCreate(gomock.Any(), service.CreateGrantOpts{
 			Principal: principal,
 			Scope:     scope,
@@ -104,7 +99,7 @@ func TestPermissionController_V1PermissionsCreate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		c := newTestPermissionController(t, service.NewMockPermissionService(ctrl))
+		c := newTestPermissionController(t, mocksvc.NewMockPermissionService(ctrl))
 		resp, err := c.V1PermissionsCreate(context.Background(), api.V1PermissionsCreateRequestObject{})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1PermissionsCreate400JSONResponse)
@@ -115,7 +110,7 @@ func TestPermissionController_V1PermissionsCreate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserCreate(gomock.Any(), gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestPermissionController(t, ps)
@@ -129,7 +124,7 @@ func TestPermissionController_V1PermissionsCreate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserCreate(gomock.Any(), gomock.Any()).Return(nil, model.ErrPrivilegeEscalation)
 
 		c := newTestPermissionController(t, ps)
@@ -143,7 +138,7 @@ func TestPermissionController_V1PermissionsCreate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserCreate(gomock.Any(), gomock.Any()).Return(nil, errors.New("boom"))
 
 		c := newTestPermissionController(t, ps)
@@ -163,7 +158,7 @@ func TestPermissionController_V1PermissionGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), grant.ID).Return(grant, nil)
 
 		c := newTestPermissionController(t, ps)
@@ -180,7 +175,7 @@ func TestPermissionController_V1PermissionGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		c := newTestPermissionController(t, service.NewMockPermissionService(ctrl))
+		c := newTestPermissionController(t, mocksvc.NewMockPermissionService(ctrl))
 		resp, err := c.V1PermissionGet(context.Background(), api.V1PermissionGetRequestObject{Id: "not-a-xid"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1PermissionGet400JSONResponse)
@@ -191,7 +186,7 @@ func TestPermissionController_V1PermissionGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), grant.ID).Return(nil, errors.Join(service.ErrPermissionGet, repository.ErrNotFound))
 
 		c := newTestPermissionController(t, ps)
@@ -205,7 +200,7 @@ func TestPermissionController_V1PermissionGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().Get(gomock.Any(), grant.ID).Return(nil, errors.New("boom"))
 
 		c := newTestPermissionController(t, ps)
@@ -225,7 +220,7 @@ func TestPermissionController_V1PermissionDelete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserDelete(gomock.Any(), grantID).Return(nil)
 
 		c := newTestPermissionController(t, ps)
@@ -239,7 +234,7 @@ func TestPermissionController_V1PermissionDelete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserDelete(gomock.Any(), grantID).Return(service.ErrNoPermission)
 
 		c := newTestPermissionController(t, ps)
@@ -253,7 +248,7 @@ func TestPermissionController_V1PermissionDelete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserDelete(gomock.Any(), grantID).Return(errors.Join(service.ErrPermissionDelete, repository.ErrNotFound))
 
 		c := newTestPermissionController(t, ps)
@@ -274,7 +269,7 @@ func TestPermissionController_V1PermissionResourceGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserEffectiveActions(gomock.Any(), orgID).Return([]model.Action{model.ActionOrganizationRead}, nil)
 
 		c := newTestPermissionController(t, ps)
@@ -289,7 +284,7 @@ func TestPermissionController_V1PermissionResourceGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		c := newTestPermissionController(t, service.NewMockPermissionService(ctrl))
+		c := newTestPermissionController(t, mocksvc.NewMockPermissionService(ctrl))
 		resp, err := c.V1PermissionResourceGet(context.Background(), api.V1PermissionResourceGetRequestObject{ResourceId: "not-a-resource"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1PermissionResourceGet400JSONResponse)
@@ -300,7 +295,7 @@ func TestPermissionController_V1PermissionResourceGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		ps := service.NewMockPermissionService(ctrl)
+		ps := mocksvc.NewMockPermissionService(ctrl)
 		ps.EXPECT().CtxUserEffectiveActions(gomock.Any(), orgID).Return(nil, service.ErrNoPermission)
 
 		c := newTestPermissionController(t, ps)

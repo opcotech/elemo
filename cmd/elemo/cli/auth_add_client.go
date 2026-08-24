@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-
 	"log/slog"
 
 	authStore "github.com/gabor-boros/go-oauth2-pg"

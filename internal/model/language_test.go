@@ -230,7 +230,6 @@ func TestLanguage_MarshalText(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-
 }
 
 func TestLanguage_UnmarshalText(t *testing.T) {

@@ -1,8 +1,13 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
+
+	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
+	"github.com/opcotech/elemo/internal/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,23 +18,19 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
-	"github.com/opcotech/elemo/internal/testutil/mock"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 )
 
 //nolint:revive // test helpers take gomock.Controller first
-func newPermissionTestBase(ctrl *gomock.Controller, ctx context.Context) (*baseService, *repository.MockPermissionRepository) {
-	span := mock.NewMockSpan(ctrl)
+func newPermissionTestBase(ctrl *gomock.Controller, ctx context.Context) (service.Runtime, *mockrepo.MockPermissionRepository) {
+	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0)).AnyTimes()
 
-	tracer := mock.NewMockTracer(ctrl)
+	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(gomock.Any(), gomock.Any(), gomock.Len(0)).Return(ctx, span).AnyTimes()
 
-	repo := repository.NewMockPermissionRepository(ctrl)
-	return &baseService{
-		logger: mock.NewMockLogger(ctrl),
-		tracer: tracer,
-	}, repo
+	repo := mockrepo.NewMockPermissionRepository(ctrl)
+	return service.NewRuntimeForTest(mocklog.NewMockLogger(ctrl), tracer), repo
 }
 
 func TestNewPermissionService(t *testing.T) {
@@ -38,56 +39,56 @@ func TestNewPermissionService(t *testing.T) {
 	tests := []struct {
 		name    string
 		repo    repository.PermissionRepository
-		opts    []Option
+		opts    []service.Option
 		wantErr error
 	}{
 		{
 			name: "new permission service",
-			repo: repository.NewMockPermissionRepository(nil),
-			opts: []Option{
-				WithLogger(mock.NewMockLogger(nil)),
-				WithTracer(mock.NewMockTracer(nil)),
+			repo: mockrepo.NewMockPermissionRepository(nil),
+			opts: []service.Option{
+				service.WithLogger(mocklog.NewMockLogger(nil)),
+				service.WithTracer(mocktrace.NewMockTracer(nil)),
 			},
 		},
 		{
 			name: "nil permission repository",
 			repo: nil,
-			opts: []Option{
-				WithLogger(mock.NewMockLogger(nil)),
-				WithTracer(mock.NewMockTracer(nil)),
+			opts: []service.Option{
+				service.WithLogger(mocklog.NewMockLogger(nil)),
+				service.WithTracer(mocktrace.NewMockTracer(nil)),
 			},
-			wantErr: ErrNoPermissionRepository,
+			wantErr: service.ErrNoPermissionRepository,
 		},
 		{
 			name: "nil logger",
-			repo: repository.NewMockPermissionRepository(nil),
-			opts: []Option{
-				WithLogger(nil),
-				WithTracer(mock.NewMockTracer(nil)),
+			repo: mockrepo.NewMockPermissionRepository(nil),
+			opts: []service.Option{
+				service.WithLogger(nil),
+				service.WithTracer(mocktrace.NewMockTracer(nil)),
 			},
 			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "nil tracer",
-			repo: repository.NewMockPermissionRepository(nil),
-			opts: []Option{
-				WithLogger(mock.NewMockLogger(nil)),
-				WithTracer(nil),
+			repo: mockrepo.NewMockPermissionRepository(nil),
+			opts: []service.Option{
+				service.WithLogger(mocklog.NewMockLogger(nil)),
+				service.WithTracer(nil),
 			},
 			wantErr: tracing.ErrNoTracer,
 		},
 		{
 			name: "missing logger uses default",
-			repo: repository.NewMockPermissionRepository(nil),
-			opts: []Option{
-				WithTracer(mock.NewMockTracer(nil)),
+			repo: mockrepo.NewMockPermissionRepository(nil),
+			opts: []service.Option{
+				service.WithTracer(mocktrace.NewMockTracer(nil)),
 			},
 		},
 		{
 			name: "missing tracer uses noop",
-			repo: repository.NewMockPermissionRepository(nil),
-			opts: []Option{
-				WithLogger(mock.NewMockLogger(nil)),
+			repo: mockrepo.NewMockPermissionRepository(nil),
+			opts: []service.Option{
+				service.WithLogger(mocklog.NewMockLogger(nil)),
 			},
 		},
 	}
@@ -98,7 +99,7 @@ func TestNewPermissionService(t *testing.T) {
 			is := assert.New(t)
 			must := require.New(t)
 
-			got, err := NewPermissionService(tt.repo, tt.opts...)
+			got, err := service.NewPermissionService(tt.repo, nil, tt.opts...)
 			if tt.wantErr != nil {
 				must.ErrorIs(err, tt.wantErr)
 				is.Nil(got)
@@ -119,13 +120,13 @@ func Test_permissionService_CtxUserHas(t *testing.T) {
 	tests := []struct {
 		name  string
 		ctx   context.Context
-		setup func(repo *repository.MockPermissionRepository)
+		setup func(repo *mockrepo.MockPermissionRepository)
 		want  bool
 	}{
 		{
 			name: "true when repo allows",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionOrganizationRead).Return(true, nil)
 			},
 			want: true,
@@ -133,7 +134,7 @@ func Test_permissionService_CtxUserHas(t *testing.T) {
 		{
 			name: "false when repo denies",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionOrganizationRead).Return(false, nil)
 			},
 			want: false,
@@ -141,7 +142,7 @@ func Test_permissionService_CtxUserHas(t *testing.T) {
 		{
 			name:  "false when context has no user",
 			ctx:   context.Background(),
-			setup: func(_ *repository.MockPermissionRepository) {},
+			setup: func(_ *mockrepo.MockPermissionRepository) {},
 			want:  false,
 		},
 	}
@@ -150,16 +151,31 @@ func Test_permissionService_CtxUserHas(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			is := assert.New(t)
+			must := require.New(t)
 			ctrl := gomock.NewController(t)
 
 			base, repo := newPermissionTestBase(ctrl, tt.ctx)
 			tt.setup(repo)
 
-			s := &permissionService{
-				baseService:    base,
-				permissionRepo: repo,
+			s := func() service.PermissionService {
+				svc, err := service.NewPermissionService(
+					repo,
+					nil,
+					service.WithLogger(service.RuntimeLogger(base)),
+					service.WithTracer(service.RuntimeTracer(base)),
+				)
+				if err != nil {
+					panic(err)
+				}
+				return svc
+			}()
+			got, err := s.CtxUserHas(tt.ctx, orgID, model.ActionOrganizationRead)
+			if tt.ctx == context.Background() {
+				must.ErrorIs(err, service.ErrNoUser)
+				return
 			}
-			is.Equal(tt.want, s.CtxUserHas(tt.ctx, orgID, model.ActionOrganizationRead))
+			must.NoError(err)
+			is.Equal(tt.want, got)
 		})
 	}
 }
@@ -172,7 +188,7 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	grant := testModel.NewRepositoryGrant(principal, orgID, model.ActionOrganizationRead)
 
-	opts := CreateGrantOpts{
+	opts := service.CreateGrantOpts{
 		Principal: principal,
 		Scope:     orgID,
 		Actions:   []model.Action{model.ActionOrganizationRead},
@@ -181,13 +197,13 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 	tests := []struct {
 		name    string
 		ctx     context.Context
-		setup   func(repo *repository.MockPermissionRepository)
+		setup   func(repo *mockrepo.MockPermissionRepository)
 		wantErr error
 	}{
 		{
 			name: "creates when caller has permission.manage and held actions",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(true, nil)
 				repo.EXPECT().EffectiveActions(gomock.Any(), userID, orgID).Return([]model.Action{
 					model.ActionPermissionManage,
@@ -204,15 +220,15 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name: "denied without permission.manage",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(false, nil)
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "denied when granting unheld action",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(true, nil)
 				repo.EXPECT().EffectiveActions(gomock.Any(), userID, orgID).Return([]model.Action{
 					model.ActionPermissionManage,
@@ -223,8 +239,8 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 		{
 			name:    "missing user",
 			ctx:     context.Background(),
-			setup:   func(_ *repository.MockPermissionRepository) {},
-			wantErr: ErrNoUser,
+			setup:   func(_ *mockrepo.MockPermissionRepository) {},
+			wantErr: service.ErrNoUser,
 		},
 	}
 
@@ -238,10 +254,18 @@ func Test_permissionService_CtxUserCreate(t *testing.T) {
 			base, repo := newPermissionTestBase(ctrl, tt.ctx)
 			tt.setup(repo)
 
-			s := &permissionService{
-				baseService:    base,
-				permissionRepo: repo,
-			}
+			s := func() service.PermissionService {
+				svc, err := service.NewPermissionService(
+					repo,
+					nil,
+					service.WithLogger(service.RuntimeLogger(base)),
+					service.WithTracer(service.RuntimeTracer(base)),
+				)
+				if err != nil {
+					panic(err)
+				}
+				return svc
+			}()
 			got, err := s.CtxUserCreate(tt.ctx, opts)
 			if tt.wantErr != nil {
 				must.ErrorIs(err, tt.wantErr)
@@ -268,13 +292,13 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 	tests := []struct {
 		name    string
 		ctx     context.Context
-		setup   func(repo *repository.MockPermissionRepository)
+		setup   func(repo *mockrepo.MockPermissionRepository)
 		wantErr error
 	}{
 		{
 			name: "deletes when caller has permission.manage on scope",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Get(gomock.Any(), grantID).Return(grant, nil)
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(true, nil)
 				repo.EXPECT().Delete(gomock.Any(), grantID).Return(nil)
@@ -283,25 +307,25 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 		{
 			name: "denied without permission.manage",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Get(gomock.Any(), grantID).Return(grant, nil)
 				repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(false, nil)
 			},
-			wantErr: ErrNoPermission,
+			wantErr: service.ErrNoPermission,
 		},
 		{
 			name:    "missing user",
 			ctx:     context.Background(),
-			setup:   func(_ *repository.MockPermissionRepository) {},
-			wantErr: ErrNoUser,
+			setup:   func(_ *mockrepo.MockPermissionRepository) {},
+			wantErr: service.ErrNoUser,
 		},
 		{
-			name: "get not found wraps ErrPermissionDelete and ErrPermissionGet",
+			name: "get not found wraps service.ErrPermissionDelete and service.ErrPermissionGet",
 			ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().Get(gomock.Any(), grantID).Return(nil, repository.ErrNotFound)
 			},
-			wantErr: ErrPermissionDelete,
+			wantErr: service.ErrPermissionDelete,
 		},
 	}
 
@@ -314,15 +338,23 @@ func Test_permissionService_CtxUserDelete(t *testing.T) {
 			base, repo := newPermissionTestBase(ctrl, tt.ctx)
 			tt.setup(repo)
 
-			s := &permissionService{
-				baseService:    base,
-				permissionRepo: repo,
-			}
+			s := func() service.PermissionService {
+				svc, err := service.NewPermissionService(
+					repo,
+					nil,
+					service.WithLogger(service.RuntimeLogger(base)),
+					service.WithTracer(service.RuntimeTracer(base)),
+				)
+				if err != nil {
+					panic(err)
+				}
+				return svc
+			}()
 			err := s.CtxUserDelete(tt.ctx, grantID)
 			if tt.wantErr != nil {
 				must.ErrorIs(err, tt.wantErr)
-				if tt.name == "get not found wraps ErrPermissionDelete and ErrPermissionGet" {
-					must.ErrorIs(err, ErrPermissionGet)
+				if tt.name == "get not found wraps service.ErrPermissionDelete and service.ErrPermissionGet" {
+					must.ErrorIs(err, service.ErrPermissionGet)
 				}
 				return
 			}
@@ -353,7 +385,18 @@ func Test_permissionService_BootstrapCreator(t *testing.T) {
 		}).Return(grant, nil)
 		repo.EXPECT().BumpGeneration(gomock.Any(), creator).Return(nil)
 
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		must.NoError(s.BootstrapCreator(ctx, creator, resource, actions))
 	})
 }
@@ -381,7 +424,18 @@ func Test_permissionService_GrantRole(t *testing.T) {
 		}).Return(grant, nil)
 		repo.EXPECT().BumpGeneration(gomock.Any(), principal).Return(nil)
 
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		must.NoError(s.GrantRole(ctx, principal, scope, roleID))
 	})
 }
@@ -393,21 +447,21 @@ func Test_permissionService_BumpGeneration(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		setup   func(repo *repository.MockPermissionRepository)
+		setup   func(repo *mockrepo.MockPermissionRepository)
 		wantErr error
 	}{
 		{
 			name: "bumps generation",
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().BumpGeneration(gomock.Any(), principal).Return(nil)
 			},
 		},
 		{
 			name: "wraps repository error",
-			setup: func(repo *repository.MockPermissionRepository) {
+			setup: func(repo *mockrepo.MockPermissionRepository) {
 				repo.EXPECT().BumpGeneration(gomock.Any(), principal).Return(assert.AnError)
 			},
-			wantErr: ErrPermissionUpdate,
+			wantErr: service.ErrPermissionUpdate,
 		},
 	}
 
@@ -421,7 +475,18 @@ func Test_permissionService_BumpGeneration(t *testing.T) {
 			base, repo := newPermissionTestBase(ctrl, ctx)
 			tt.setup(repo)
 
-			s := &permissionService{baseService: base, permissionRepo: repo}
+			s := func() service.PermissionService {
+				svc, err := service.NewPermissionService(
+					repo,
+					nil,
+					service.WithLogger(service.RuntimeLogger(base)),
+					service.WithTracer(service.RuntimeTracer(base)),
+				)
+				if err != nil {
+					panic(err)
+				}
+				return svc
+			}()
 			err := s.BumpGeneration(ctx, principal)
 			if tt.wantErr != nil {
 				must.ErrorIs(err, tt.wantErr)
@@ -443,7 +508,18 @@ func Test_permissionService_Has(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Has(gomock.Any(), actor, resource, model.ActionOrganizationRead).Return(true, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.Has(ctx, actor, resource, model.ActionOrganizationRead)
 		require.NoError(t, err)
 		require.True(t, got)
@@ -454,9 +530,20 @@ func Test_permissionService_Has(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Has(gomock.Any(), actor, resource, model.ActionOrganizationRead).Return(false, repository.ErrPermissionRead)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.Has(ctx, actor, resource, model.ActionOrganizationRead)
-		require.ErrorIs(t, err, ErrPermissionHasPermission)
+		require.ErrorIs(t, err, service.ErrPermissionHasPermission)
 		require.ErrorIs(t, err, repository.ErrPermissionRead)
 	})
 }
@@ -473,7 +560,18 @@ func Test_permissionService_EffectiveActions(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().EffectiveActions(gomock.Any(), actor, resource).Return(actions, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.EffectiveActions(ctx, actor, resource)
 		require.NoError(t, err)
 		require.Equal(t, actions, got)
@@ -484,9 +582,20 @@ func Test_permissionService_EffectiveActions(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().EffectiveActions(gomock.Any(), actor, resource).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.EffectiveActions(ctx, actor, resource)
-		require.ErrorIs(t, err, ErrPermissionGet)
+		require.ErrorIs(t, err, service.ErrPermissionGet)
 	})
 }
 
@@ -502,7 +611,18 @@ func Test_permissionService_CtxUserEffectiveActions(t *testing.T) {
 		ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().EffectiveActions(gomock.Any(), userID, resource).Return(actions, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.CtxUserEffectiveActions(ctx, resource)
 		require.NoError(t, err)
 		require.Equal(t, actions, got)
@@ -513,9 +633,20 @@ func Test_permissionService_CtxUserEffectiveActions(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		ctx := context.Background()
 		base, repo := newPermissionTestBase(ctrl, ctx)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.CtxUserEffectiveActions(ctx, resource)
-		require.ErrorIs(t, err, ErrNoUser)
+		require.ErrorIs(t, err, service.ErrNoUser)
 	})
 }
 
@@ -531,7 +662,18 @@ func Test_permissionService_Explain(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Explain(gomock.Any(), actor, resource, model.ActionOrganizationRead).Return(decision, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.Explain(ctx, actor, resource, model.ActionOrganizationRead)
 		require.NoError(t, err)
 		require.Equal(t, decision, got)
@@ -542,9 +684,20 @@ func Test_permissionService_Explain(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Explain(gomock.Any(), actor, resource, model.ActionOrganizationRead).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.Explain(ctx, actor, resource, model.ActionOrganizationRead)
-		require.ErrorIs(t, err, ErrPermissionHasPermission)
+		require.ErrorIs(t, err, service.ErrPermissionHasPermission)
 	})
 }
 
@@ -553,7 +706,7 @@ func Test_permissionService_Create(t *testing.T) {
 	principal := model.MustNewID(model.ResourceTypeUser)
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	grant := testModel.NewRepositoryGrant(principal, orgID, model.ActionOrganizationRead)
-	opts := CreateGrantOpts{Principal: principal, Scope: orgID, Actions: []model.Action{model.ActionOrganizationRead}}
+	opts := service.CreateGrantOpts{Principal: principal, Scope: orgID, Actions: []model.Action{model.ActionOrganizationRead}}
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
@@ -564,7 +717,18 @@ func Test_permissionService_Create(t *testing.T) {
 			Principal: principal, Scope: orgID, Actions: opts.Actions,
 		}).Return(grant, nil)
 		repo.EXPECT().BumpGeneration(gomock.Any(), principal).Return(assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.Create(ctx, opts)
 		require.NoError(t, err)
 		require.Equal(t, grant.ID, got.ID)
@@ -574,8 +738,19 @@ func Test_permissionService_Create(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		_, err := s.Create(ctx, CreateGrantOpts{})
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		_, err := s.Create(ctx, service.CreateGrantOpts{})
 		require.ErrorIs(t, err, model.ErrInvalidGrant)
 	})
 
@@ -584,9 +759,20 @@ func Test_permissionService_Create(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.Create(ctx, opts)
-		require.ErrorIs(t, err, ErrPermissionCreate)
+		require.ErrorIs(t, err, service.ErrPermissionCreate)
 	})
 }
 
@@ -602,7 +788,18 @@ func Test_permissionService_Get(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Get(gomock.Any(), id).Return(grant, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.Get(ctx, id)
 		require.NoError(t, err)
 		require.Equal(t, id, got.ID)
@@ -613,9 +810,20 @@ func Test_permissionService_Get(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Get(gomock.Any(), id).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.Get(ctx, id)
-		require.ErrorIs(t, err, ErrPermissionGet)
+		require.ErrorIs(t, err, service.ErrPermissionGet)
 	})
 }
 
@@ -630,7 +838,18 @@ func Test_permissionService_ListByPrincipal(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().ListByPrincipal(gomock.Any(), principal).Return([]*repository.Grant{grant}, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.ListByPrincipal(ctx, principal)
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -641,9 +860,20 @@ func Test_permissionService_ListByPrincipal(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().ListByPrincipal(gomock.Any(), principal).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.ListByPrincipal(ctx, principal)
-		require.ErrorIs(t, err, ErrPermissionGetBySubject)
+		require.ErrorIs(t, err, service.ErrPermissionGetBySubject)
 	})
 }
 
@@ -658,7 +888,18 @@ func Test_permissionService_ListByScope(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().ListByScope(gomock.Any(), scope).Return([]*repository.Grant{grant}, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.ListByScope(ctx, scope)
 		require.NoError(t, err)
 		require.Len(t, got, 1)
@@ -669,9 +910,20 @@ func Test_permissionService_ListByScope(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().ListByScope(gomock.Any(), scope).Return(nil, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.ListByScope(ctx, scope)
-		require.ErrorIs(t, err, ErrPermissionGetByTarget)
+		require.ErrorIs(t, err, service.ErrPermissionGetByTarget)
 	})
 }
 
@@ -685,7 +937,18 @@ func Test_permissionService_Delete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Delete(gomock.Any(), id).Return(nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		require.NoError(t, s.Delete(ctx, id))
 	})
 
@@ -694,8 +957,19 @@ func Test_permissionService_Delete(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Delete(gomock.Any(), id).Return(assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		require.ErrorIs(t, s.Delete(ctx, id), ErrPermissionDelete)
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		require.ErrorIs(t, s.Delete(ctx, id), service.ErrPermissionDelete)
 	})
 }
 
@@ -710,7 +984,18 @@ func Test_permissionService_LinkInScopeOf(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().LinkInScopeOf(gomock.Any(), child, parent).Return(nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		require.NoError(t, s.LinkInScopeOf(ctx, child, parent))
 	})
 
@@ -719,8 +1004,19 @@ func Test_permissionService_LinkInScopeOf(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().LinkInScopeOf(gomock.Any(), child, parent).Return(assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		require.ErrorIs(t, s.LinkInScopeOf(ctx, child, parent), ErrPermissionCreate)
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		require.ErrorIs(t, s.LinkInScopeOf(ctx, child, parent), service.ErrPermissionCreate)
 	})
 }
 
@@ -732,14 +1028,14 @@ func Test_permissionService_CtxUserCreate_RoleID(t *testing.T) {
 	roleID := model.MustNewID(model.ResourceTypeRole)
 	grant := testModel.NewRepositoryGrant(principal, orgID)
 	grant.RoleID = &roleID
-	opts := CreateGrantOpts{Principal: principal, Scope: orgID, RoleID: &roleID}
+	opts := service.CreateGrantOpts{Principal: principal, Scope: orgID, RoleID: &roleID}
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
 
 	t.Run("resolves role actions", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
-		roleRepo := repository.NewMockRoleRepository(ctrl)
+		roleRepo := mockrepo.NewMockRoleRepository(ctrl)
 		repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(true, nil)
 		repo.EXPECT().EffectiveActions(gomock.Any(), userID, orgID).Return([]model.Action{
 			model.ActionPermissionManage, model.ActionOrganizationRead,
@@ -751,8 +1047,18 @@ func Test_permissionService_CtxUserCreate_RoleID(t *testing.T) {
 			Principal: principal, Scope: orgID, RoleID: &roleID,
 		}).Return(grant, nil)
 		repo.EXPECT().BumpGeneration(gomock.Any(), principal).Return(nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		s.roleRepo = roleRepo
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				roleRepo,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		got, err := s.CtxUserCreate(ctx, opts)
 		require.NoError(t, err)
 		require.Equal(t, grant.ID, got.ID)
@@ -764,9 +1070,20 @@ func Test_permissionService_CtxUserCreate_RoleID(t *testing.T) {
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionPermissionManage).Return(true, nil)
 		repo.EXPECT().EffectiveActions(gomock.Any(), userID, orgID).Return([]model.Action{model.ActionPermissionManage}, nil)
-		s := &permissionService{baseService: base, permissionRepo: repo}
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
 		_, err := s.CtxUserCreate(ctx, opts)
-		require.ErrorIs(t, err, ErrNoRoleRepository)
+		require.ErrorIs(t, err, service.ErrNoRoleRepository)
 	})
 }
 
@@ -776,21 +1093,47 @@ func Test_permissionService_CtxUserHas_RepoErrors(t *testing.T) {
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
 
-	t.Run("permission read error returns allowed value", func(t *testing.T) {
+	t.Run("permission read error is returned", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionOrganizationRead).Return(false, repository.ErrPermissionRead)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		require.False(t, s.CtxUserHas(ctx, orgID, model.ActionOrganizationRead))
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		allowed, err := s.CtxUserHas(ctx, orgID, model.ActionOrganizationRead)
+		require.ErrorIs(t, err, repository.ErrPermissionRead)
+		require.False(t, allowed)
 	})
 
-	t.Run("other errors deny", func(t *testing.T) {
+	t.Run("other errors are returned", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		base, repo := newPermissionTestBase(ctrl, ctx)
 		repo.EXPECT().Has(gomock.Any(), userID, orgID, model.ActionOrganizationRead).Return(false, assert.AnError)
-		s := &permissionService{baseService: base, permissionRepo: repo}
-		require.False(t, s.CtxUserHas(ctx, orgID, model.ActionOrganizationRead))
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		allowed, err := s.CtxUserHas(ctx, orgID, model.ActionOrganizationRead)
+		require.ErrorIs(t, err, assert.AnError)
+		require.False(t, allowed)
 	})
 }

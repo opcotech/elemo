@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 )
@@ -50,6 +49,8 @@ type UpdateNotificationOpts struct {
 
 // NotificationService serves the business logic of interacting with
 // notifications.
+//
+//go:generate go tool mockgen -destination=mock/mock_notification_gen.go -package=mocksvc . NotificationService
 type NotificationService interface {
 	// Create creates a new notification.
 	Create(ctx context.Context, opts CreateNotificationOpts) (*Notification, error)
@@ -69,7 +70,7 @@ type NotificationService interface {
 
 // notificationService is the concrete implementation of NotificationService.
 type notificationService struct {
-	*baseService
+	runtime
 	notificationRepo repository.NotificationRepository
 }
 
@@ -117,7 +118,8 @@ func (s *notificationService) Get(ctx context.Context, id, recipient model.ID) (
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Get")
 	defer span.End()
 
-	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
+	userID, err := ctxUserID(ctx)
+	if err != nil || userID != recipient {
 		return nil, errors.Join(ErrNotificationGet, ErrNoPermission)
 	}
 
@@ -146,17 +148,18 @@ func (s *notificationService) ListByRecipient(ctx context.Context, recipient mod
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/ListByRecipient")
 	defer span.End()
 
-	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
-		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, ErrNoPermission)
+	userID, err := ctxUserID(ctx)
+	if err != nil || userID != recipient {
+		return Page[*Notification]{}, errors.Join(ErrNotificationListByRecipient, ErrNoPermission)
 	}
 
 	if err := recipient.Validate(); err != nil {
-		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
+		return Page[*Notification]{}, errors.Join(ErrNotificationListByRecipient, err)
 	}
 
 	normalized, err := page.Normalize()
 	if err != nil {
-		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
+		return Page[*Notification]{}, errors.Join(ErrNotificationListByRecipient, err)
 	}
 
 	notifications, err := s.notificationRepo.ListByRecipient(
@@ -166,7 +169,7 @@ func (s *notificationService) ListByRecipient(ctx context.Context, recipient mod
 		repository.NotificationListProjection(),
 	)
 	if err != nil {
-		return Page[*Notification]{}, errors.Join(ErrNotificationGetAllByRecipient, err)
+		return Page[*Notification]{}, errors.Join(ErrNotificationListByRecipient, err)
 	}
 
 	return mapPage(notifications, notificationFromRepository), nil
@@ -176,7 +179,8 @@ func (s *notificationService) Update(ctx context.Context, id, recipient model.ID
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Update")
 	defer span.End()
 
-	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
+	userID, err := ctxUserID(ctx)
+	if err != nil || userID != recipient {
 		return nil, errors.Join(ErrNotificationUpdate, ErrNoPermission)
 	}
 
@@ -202,7 +206,8 @@ func (s *notificationService) Delete(ctx context.Context, id, recipient model.ID
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Delete")
 	defer span.End()
 
-	if userID, ok := ctx.Value(pkg.CtxKeyUserID).(model.ID); !ok || userID != recipient {
+	userID, err := ctxUserID(ctx)
+	if err != nil || userID != recipient {
 		return errors.Join(ErrNotificationDelete, ErrNoPermission)
 	}
 
@@ -224,13 +229,13 @@ func (s *notificationService) Delete(ctx context.Context, id, recipient model.ID
 // NewNotificationService returns a new instance of the NotificationService
 // interface.
 func NewNotificationService(notificationRepo repository.NotificationRepository, opts ...Option) (NotificationService, error) {
-	s, err := newService(opts...)
+	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &notificationService{
-		baseService:      s,
+		runtime:          rt,
 		notificationRepo: notificationRepo,
 	}
 

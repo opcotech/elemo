@@ -45,14 +45,13 @@ import {
   v1ProjectsIssuesGet,
   v1UsersIssuesGet,
 } from "@/lib/api/sdk";
-import type { PartialIssue } from "@/lib/client";
+import type { PartialIssue } from "@/lib/api/types";
+import { selectSavedViews, selectWorkItems } from "@/lib/mock-data";
+import { issuesToWorkItems } from "@/lib/work/issue-adapter";
 import {
-  getWorkItem,
-  isInScope,
-  queryWorkItems,
-  selectSavedViews,
-  selectWorkItems,
-} from "@/lib/mock-data";
+  buildIssueListApiQuery,
+  issueListClientOnlyFilters,
+} from "@/lib/work/issue-list-query";
 import type {
   Scope,
   WorkFilters,
@@ -60,12 +59,8 @@ import type {
   WorkPriority,
   WorkSortField,
   WorkStatus,
-} from "@/lib/mock-data";
-import { issuesToWorkItems } from "@/lib/work/issue-adapter";
-import {
-  buildIssueListApiQuery,
-  issueListClientOnlyFilters,
-} from "@/lib/work/issue-list-query";
+} from "@/lib/work/model";
+import { isWorkItemInScope, queryWorkItems } from "@/lib/work/query";
 import { resolveWorkScope } from "@/lib/work-route-search";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
@@ -116,11 +111,7 @@ function parseWorkSort(sort: string) {
 }
 
 function workItemMatchesScope(item: WorkItem, scope: Scope) {
-  if (scope.type === "person") return item.assigneeId === scope.personId;
-  return isInScope(
-    { namespaceId: item.namespaceId, projectId: item.projectId },
-    scope
-  );
+  return isWorkItemInScope(item, scope);
 }
 
 function useMockScopedWorkItems({
@@ -306,9 +297,9 @@ function WorkSurfaceBody({
 
   const selectedId = selectedWorkId(search.selected);
   const selectedCandidate = selectedId
-    ? (displayItems.find(
+    ? displayItems.find(
         (item) => item.id === selectedId || item.key === selectedId
-      ) ?? getWorkItem(selectedId))
+      )
     : undefined;
   const selectedItem =
     selectedCandidate && workItemMatchesScope(selectedCandidate, effectiveScope)
