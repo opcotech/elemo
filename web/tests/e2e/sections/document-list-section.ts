@@ -117,7 +117,10 @@ export class DocumentListSection extends SectionContainerMixin(
   }
 
   async clickCreate(): Promise<void> {
-    await this.getCreateButton().first().click();
+    await clickUntilVisible(
+      this.getCreateButton().first(),
+      this.page.getByRole("dialog", { name: "Quick create" })
+    );
   }
 
   async clickDocument(name: string): Promise<void> {

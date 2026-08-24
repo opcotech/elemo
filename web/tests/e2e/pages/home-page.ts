@@ -1,7 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
-import { navigateAndWait, waitForElementVisible } from "../helpers";
+import {
+  clickUntilVisible,
+  navigateAndWait,
+  waitForElementVisible,
+} from "../helpers";
 import { SectionContainerMixin } from "../mixins";
 import { QuickCreateSection } from "../sections/quick-create-section";
 
@@ -102,6 +106,9 @@ export class HomePage extends BaseComponent {
   }
 
   async clickCreate(): Promise<void> {
-    await this.getCreateButton().click();
+    await clickUntilVisible(
+      this.getCreateButton(),
+      this.page.getByRole("dialog", { name: "Quick create" })
+    );
   }
 }

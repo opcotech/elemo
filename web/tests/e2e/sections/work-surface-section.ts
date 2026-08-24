@@ -1,7 +1,9 @@
+import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import {
+  clickUntilVisible,
   fillLocator,
   waitForAnimations,
   waitForElementVisible,
@@ -37,7 +39,10 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async clickCreate(): Promise<void> {
-    await this.getCreateButton().click();
+    await clickUntilVisible(
+      this.getCreateButton(),
+      this.page.getByRole("dialog", { name: "Quick create" })
+    );
   }
 
   getQuickCreateButton(): Locator {
@@ -47,7 +52,10 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async clickQuickCreate(): Promise<void> {
-    await this.getQuickCreateButton().click();
+    await clickUntilVisible(
+      this.getQuickCreateButton(),
+      this.page.getByRole("dialog", { name: "Quick create" })
+    );
   }
 
   getLayoutButton(layout: WorkLayoutName): Locator {
@@ -90,13 +98,18 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
     await chip.click();
   }
 
+  getOpenMenu(name: string): Locator {
+    return this.page
+      .getByRole("menu", { name, exact: true })
+      .and(this.page.locator("[data-open]"));
+  }
+
   getGroupButton(): Locator {
     return this.getSectionContainer().getByRole("button", { name: "Group by" });
   }
 
   async selectGroup(name: WorkGroupName): Promise<void> {
-    await this.getGroupButton().click();
-    await this.page.getByRole("menuitemradio", { name }).click();
+    await this.selectMenuRadio(this.getGroupButton(), name);
   }
 
   getSortButton(): Locator {
@@ -104,8 +117,7 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async selectSort(name: WorkSortName): Promise<void> {
-    await this.getSortButton().click();
-    await this.page.getByRole("menuitemradio", { name }).click();
+    await this.selectMenuRadio(this.getSortButton(), name);
   }
 
   getDisplayButton(): Locator {
@@ -115,8 +127,25 @@ export class WorkSurfaceSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async selectDisplay(name: WorkDisplayName): Promise<void> {
-    await this.getDisplayButton().click();
-    await this.page.getByRole("menuitemradio", { name }).click();
+    await this.selectMenuRadio(this.getDisplayButton(), name);
+  }
+
+  private async selectMenuRadio(trigger: Locator, name: string): Promise<void> {
+    const menuName = (await trigger.getAttribute("aria-label")) ?? "";
+    const menu = this.getOpenMenu(menuName);
+    const option = menu.getByRole("menuitemradio", {
+      name,
+      exact: true,
+    });
+
+    await this.page.keyboard.press("Escape");
+    await clickUntilVisible(trigger, option);
+    await waitForAnimations(menu);
+    await option.evaluate((element: HTMLElement) => {
+      element.click();
+    });
+    await expect(trigger).toContainText(name);
+    await this.page.keyboard.press("Escape");
   }
 
   getInspectButton(key: string, title?: string): Locator {
