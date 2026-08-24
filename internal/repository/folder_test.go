@@ -33,7 +33,7 @@ func TestCachedFolderRepository_Create(t *testing.T) {
 		defer ctrl.Finish()
 
 		ctx := context.Background()
-		listKey := composeCacheKey(model.ResourceTypeFolder.String(), "ListForLibrary", "*")
+		listKey := composeCacheKey(model.ResourceTypeFolder.String(), "*", "ListForLibrary", "*")
 		listKeyResult := new(redis.StringSliceCmd)
 		listKeyResult.SetVal([]string{listKey})
 

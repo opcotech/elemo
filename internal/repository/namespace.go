@@ -345,10 +345,11 @@ func clearNamespacesKey(ctx context.Context, r *redisBaseRepository, id model.ID
 }
 
 func clearNamespacesAllLists(ctx context.Context, r *redisBaseRepository) error {
-	if err := clearNamespacesPattern(ctx, r, "ListForOrganization", "*"); err != nil {
+	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
+	if err := clearNamespacesPattern(ctx, r, "*", "ListForOrganization", "*"); err != nil {
 		return err
 	}
-	return clearNamespacesPattern(ctx, r, "ListAccessible", "*")
+	return clearNamespacesPattern(ctx, r, "*", "ListAccessible", "*")
 }
 
 func clearNamespaceAllCrossCache(ctx context.Context, r *redisBaseRepository) error {

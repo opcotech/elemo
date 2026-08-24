@@ -60,8 +60,8 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			name: "add new namespace",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -121,8 +121,8 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			name: "add new namespace with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -183,7 +183,7 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			name: "add new namespace with cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
 					getAllKeyResult.SetVal([]string{getAllKey})
@@ -231,8 +231,8 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 			name: "add new namespace with organization cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateNamespaceOpts) []repository.RedisRepositoryOption {
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyResult := new(redis.StringSliceCmd)
@@ -1158,8 +1158,8 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
 
@@ -1314,7 +1314,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), projectionCacheValue(repository.NamespaceDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1411,8 +1411,8 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
@@ -1480,8 +1480,8 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 					namespaceGenKey := issueListNamespaceGenKey(id)
 					projectionEpochKey := issueListProjectionEpochKey()
@@ -1594,7 +1594,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1643,8 +1643,8 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeNamespace.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*")
-					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*")
+					listAccessibleKey := composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*")
 					organizationKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)

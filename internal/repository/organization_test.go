@@ -53,7 +53,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -104,7 +104,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization with error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -156,7 +156,7 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 			name: "add new organization get all cache delete error",
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, _ repository.CreateOrganizationOpts) []repository.RedisRepositoryOption {
-					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					ownerKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					ownerKeyResult := new(redis.StringSliceCmd)
 					ownerKeyResult.SetVal([]string{ownerKey})
@@ -828,7 +828,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -972,7 +972,7 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, organization *repository.Organization) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), projectionCacheValue(repository.OrganizationDetailProjection()))
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1068,7 +1068,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1119,7 +1119,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1216,7 +1216,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1305,7 +1305,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1356,7 +1356,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1453,7 +1453,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1541,7 +1541,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1591,7 +1591,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1686,7 +1686,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", id.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1774,7 +1774,7 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1825,7 +1825,7 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -1921,7 +1921,7 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -2010,7 +2010,7 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -2061,7 +2061,7 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})
@@ -2157,7 +2157,7 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 			fields: fields{
 				cacheRepo: func(ctrl *gomock.Controller, ctx context.Context, orgID, _ model.ID) []repository.RedisRepositoryOption {
 					key := composeCacheKey(model.ResourceTypeOrganization.String(), "Get", orgID.String(), "*")
-					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*")
+					getAllKey := composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*")
 
 					getAllKeyCmd := new(redis.StringSliceCmd)
 					getAllKeyCmd.SetVal([]string{getAllKey})

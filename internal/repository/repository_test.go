@@ -445,14 +445,14 @@ func permissionCrossCachePatterns() []string {
 	return []string{
 		composeCacheKey(model.ResourceTypeRole.String(), "*"),
 		composeCacheKey(model.ResourceTypeUser.String(), "*"),
-		composeCacheKey(model.ResourceTypeOrganization.String(), "ListForUser", "*"),
-		composeCacheKey(model.ResourceTypeNamespace.String(), "ListForOrganization", "*"),
-		composeCacheKey(model.ResourceTypeNamespace.String(), "ListAccessible", "*"),
+		composeCacheKey(model.ResourceTypeOrganization.String(), "*", "ListForUser", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListForOrganization", "*"),
+		composeCacheKey(model.ResourceTypeNamespace.String(), "*", "ListAccessible", "*"),
 		composeCacheKey(model.ResourceTypeProject.String(), "*", "ListForNamespace", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListLibrary", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", "*"),
 		composeCacheKey(model.ResourceTypeDocument.String(), "ListByCreator", "*"),
-		composeCacheKey(model.ResourceTypeFolder.String(), "ListForLibrary", "*"),
+		composeCacheKey(model.ResourceTypeFolder.String(), "*", "ListForLibrary", "*"),
 	}
 }
 

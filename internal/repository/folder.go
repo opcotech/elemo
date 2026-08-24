@@ -424,7 +424,8 @@ func clearFoldersKey(ctx context.Context, r *redisBaseRepository, id model.ID) e
 }
 
 func clearFolderAllLists(ctx context.Context, r *redisBaseRepository) error {
-	return clearFoldersPattern(ctx, r, "ListForLibrary", "*")
+	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
+	return clearFoldersPattern(ctx, r, "*", "ListForLibrary", "*")
 }
 
 func clearFolderAllCrossCache(ctx context.Context, r *redisBaseRepository) error {

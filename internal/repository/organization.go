@@ -644,7 +644,8 @@ func clearOrganizationsKey(ctx context.Context, r *redisBaseRepository, id model
 }
 
 func clearOrganizationAllLists(ctx context.Context, r *redisBaseRepository) error {
-	return clearOrganizationsPattern(ctx, r, "ListForUser", "*")
+	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
+	return clearOrganizationsPattern(ctx, r, "*", "ListForUser", "*")
 }
 
 // RedisCachedOrganizationRepository implements caching on the
