@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { DemoLoginAlert } from "@/components/auth/demo-login-alert";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <DemoLoginAlert />
           <form method="post" onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
