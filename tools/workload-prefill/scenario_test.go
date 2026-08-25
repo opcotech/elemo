@@ -67,6 +67,7 @@ func TestFullScenarioCounts(t *testing.T) {
 	}
 
 	assert.NotEmpty(t, spec.collaborations)
+	assertNoBannedProjectKeys(t, spec)
 }
 
 func TestSmokeScenarioCounts(t *testing.T) {
@@ -74,8 +75,63 @@ func TestSmokeScenarioCounts(t *testing.T) {
 
 	spec := smokeScenario()
 	assert.Equal(t, 8, spec.main.userCount)
-	assert.Len(t, spec.partners, 1)
+	assert.Equal(t, adminEmail, spec.main.adminEmail)
+	assert.Len(t, spec.partners, 5)
 	assert.Equal(t, 1, spec.migratedProjectCount())
 	assert.Less(t, spec.documentCount, 200)
 	assert.Equal(t, 20, spec.documentCount)
+	assertNoBannedProjectKeys(t, spec)
+
+	wantAdmins := map[string]string{
+		"Kite Analytics":        "maya.chen@kite.example",
+		"Harbor Logistics":      "luis.navarro@harbor.example",
+		"Nimbus Cloud":          "priya.shah@nimbus.example",
+		"Brightline Design":     "aisha.okoro@brightline.example",
+		"Fieldstone Consulting": "jordan.lee@fieldstone.example",
+	}
+	gotAdmins := make(map[string]string, len(spec.partners))
+	for _, partner := range spec.partners {
+		gotAdmins[partner.name] = partner.adminEmail
+	}
+	assert.Equal(t, wantAdmins, gotAdmins)
+
+	keysByOrg := projectKeysByOrg(spec)
+	for _, collab := range spec.collaborations {
+		if collab.toProjectKey == "" {
+			continue
+		}
+		_, ok := keysByOrg[collab.toOrg][collab.toProjectKey]
+		assert.True(t, ok, "collaboration %s -> %s missing project %s", collab.fromOrg, collab.toOrg, collab.toProjectKey)
+	}
+}
+
+func assertNoBannedProjectKeys(t *testing.T, spec scenarioSpec) {
+	t.Helper()
+
+	banned := map[string]struct{}{"ANAL": {}}
+	for orgName, keys := range projectKeysByOrg(spec) {
+		for key := range keys {
+			_, hit := banned[key]
+			assert.False(t, hit, "org %s has banned project key %s", orgName, key)
+		}
+	}
+	for _, collab := range spec.collaborations {
+		_, hit := banned[collab.toProjectKey]
+		assert.False(t, hit, "collaboration targets banned project key %s", collab.toProjectKey)
+	}
+}
+
+func projectKeysByOrg(spec scenarioSpec) map[string]map[string]struct{} {
+	orgs := append([]orgSpec{spec.main}, spec.partners...)
+	out := make(map[string]map[string]struct{}, len(orgs))
+	for _, org := range orgs {
+		keys := make(map[string]struct{})
+		for _, ns := range org.namespaces {
+			for _, project := range ns.projects {
+				keys[project.key] = struct{}{}
+			}
+		}
+		out[org.name] = keys
+	}
+	return out
 }

@@ -13,7 +13,7 @@ Required environment variables:
 
 Optional overrides:
 
-- `K6_USER_EMAIL` (default `demo@meridian.example`)
+- `K6_USER_EMAIL` (default `demo@elemo.example`)
 - `K6_USER_PASSWORD` (default `AppleTree123`)
 - `K6_PROJECT_ID`, `K6_NAMESPACE_ID`, `K6_USER_ID` (auto-discovered when empty)
 - `K6_ISSUE_Q`, `K6_ISSUE_STATUS`, `K6_ISSUE_PRIORITY`, `K6_ISSUE_ORDER`

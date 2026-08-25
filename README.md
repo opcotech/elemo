@@ -58,7 +58,7 @@ on Linux, MacOS, or Windows WSL2. Follow the steps below and get ready to contri
    make start # or "make dev" for development
    ```
 
-4. Now, you can try Elemo. Navigate to http://127.0.0.1:3000 and log in using the `demo@elemo.app` email
+4. Now, you can try Elemo. Navigate to http://127.0.0.1:3000 and log in using the `demo@elemo.example` email
    and `AppleTree123` password.
 
 ## Contributing

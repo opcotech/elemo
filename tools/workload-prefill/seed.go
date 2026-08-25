@@ -67,7 +67,7 @@ func (s *seeder) run(ctx context.Context) (seedSummary, error) {
 		username: adminUsername,
 		email:    s.spec.main.adminEmail,
 		title:    s.spec.main.adminTitle,
-		bio:      "Demo administrator for the Meridian Systems mature-company workspace.",
+		bio:      "Demo administrator for the Elemo mature-company workspace.",
 		phone:    phoneNumber(0),
 		address:  "100 Market Street, San Francisco, CA",
 		picture:  pictureURL(0),
@@ -408,8 +408,8 @@ func (s *seeder) seedProjectIssues(ctx context.Context, job issueJob) error {
 			id := issue.ID
 			lastEpic = &id
 		}
-		if job.spec.live && rng.IntN(100) < 40 && len(job.assignees) > 1 {
-			assignee := job.assignees[1+rng.IntN(len(job.assignees)-1)]
+		assignee := pickIssueAssignee(rng, job.assignees, job.spec.live, job.orgName == mainOrgName, i)
+		if assignee != nil {
 			if _, err := s.deps.issues.Update(adminCtx, issue.ID, service.UpdateIssueOpts{
 				Assignees: optional.Some([]model.ID{assignee.ID}),
 			}); err != nil {
