@@ -48,12 +48,13 @@ Redis, and clears the search index.
 | `-queries-dir` | `assets/queries` | `bootstrap.cypher` / `bootstrap.sql` |
 | `-skip-reindex` | false | Skip Meilisearch rebuild |
 
-`smoke` is a tiny subset (about 10 users, a few projects, tens of issues) for
-iterating on the tool itself.
+`smoke` seeds the same six organizations and demo login users as `full`,
+with a few stub live projects, tens of issues, and 20 documents. Use it for
+fast iteration and local demo resets (`make demo.reset`).
 
 ## Full profile
 
-Main organization **Meridian Systems** (`meridian.example`):
+Main organization **Elemo** (`elemo.example`):
 
 - 300 users and 12 teams
 - Namespaces: Product, Platform, Operations, Customer (19 live projects total,
@@ -68,13 +69,19 @@ rather than dual org membership, plus a few dual-org members.
 Expected volume is about 100 projects and 10k–12k issues. A full run takes
 several minutes on a local Docker stack.
 
+## Smoke profile
+
+Same organizations and login accounts as full. Elemo has 8 users; each partner
+has 3. Live work is a handful of stub projects (CORE, DESN, INFR, IMPL, plus
+one project per partner), one migrated archive, and 20 documents.
+
 ## Logins
 
 Every account uses the same password (`AppleTree123` unless `-password` is set).
 
 | Email | Role |
 | --- | --- |
-| `demo@meridian.example` | Installation `organization.create` + Meridian org-admin |
+| `demo@elemo.example` | Installation `organization.create` + Elemo org-admin |
 | `maya.chen@kite.example` | Kite Analytics org-admin |
 | `luis.navarro@harbor.example` | Harbor Logistics org-admin |
 | `priya.shah@nimbus.example` | Nimbus Cloud org-admin |

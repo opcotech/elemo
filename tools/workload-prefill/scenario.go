@@ -5,9 +5,9 @@ const (
 	profileSmoke = "smoke"
 
 	defaultPassword = "AppleTree123"
-	adminEmail      = "demo@meridian.example"
+	adminEmail      = "demo@elemo.example"
 	adminUsername   = "demo"
-	mainOrgName     = "Meridian Systems"
+	mainOrgName     = "Elemo"
 	migratedNS      = "Migrated"
 )
 
@@ -88,7 +88,7 @@ func scenarioFor(profile string) scenarioSpec {
 }
 
 func fullScenario() scenarioSpec {
-	engineering := teamSpec{name: "Engineering", description: "Builds and maintains Meridian product and platform."}
+	engineering := teamSpec{name: "Engineering", description: "Builds and maintains Elemo product and platform."}
 	design := teamSpec{name: "Design", description: "Product design, research, and the design system."}
 	management := teamSpec{name: "Management", description: "Leadership team spanning product and operations."}
 	operations := teamSpec{name: "Operations", description: "Runs internal tooling, billing, and procurement."}
@@ -105,9 +105,9 @@ func fullScenario() scenarioSpec {
 		documentCount: 280,
 		main: orgSpec{
 			name:       mainOrgName,
-			email:      "hello@meridian.example",
-			domain:     "meridian.example",
-			website:    "https://meridian.example",
+			email:      "hello@elemo.example",
+			domain:     "elemo.example",
+			website:    "https://elemo.example",
 			userCount:  300,
 			adminFirst: "Demo",
 			adminLast:  "User",
@@ -206,9 +206,9 @@ func fullScenario() scenarioSpec {
 				},
 				[]namespaceSpec{{
 					name:        "Delivery",
-					description: "Analytics delivery programs for Meridian.",
+					description: "Analytics delivery programs for Elemo.",
 					projects: []projectSpec{
-						{key: "ANAL", name: "Meridian Analytics", description: "Embedded analytics for Meridian CORE.", issueCount: 100, live: true},
+						{key: "ANLT", name: "Elemo Analytics", description: "Embedded analytics for Elemo CORE.", issueCount: 100, live: true},
 						{key: "PIPE", name: "Pipeline Kit", description: "Shared ingest jobs and models.", issueCount: 100, live: true},
 					},
 				}},
@@ -229,7 +229,7 @@ func fullScenario() scenarioSpec {
 					name:        "Integrations",
 					description: "Carrier and warehouse integrations.",
 					projects: []projectSpec{
-						{key: "INTG", name: "Meridian Link", description: "Shipment events into Meridian CORE.", issueCount: 100, live: true},
+						{key: "INTG", name: "Elemo Link", description: "Shipment events into Elemo CORE.", issueCount: 100, live: true},
 						{key: "YARD", name: "Yard Systems", description: "Dock scheduling and yard cameras.", issueCount: 100, live: true},
 					},
 				}},
@@ -248,9 +248,9 @@ func fullScenario() scenarioSpec {
 				},
 				[]namespaceSpec{{
 					name:        "Platform",
-					description: "Managed cloud offerings used by Meridian.",
+					description: "Managed cloud offerings used by Elemo.",
 					projects: []projectSpec{
-						{key: "HOST", name: "Managed Hosting", description: "Dedicated Meridian runtime cluster.", issueCount: 100, live: true},
+						{key: "HOST", name: "Managed Hosting", description: "Dedicated Elemo runtime cluster.", issueCount: 100, live: true},
 						{key: "KUBE", name: "Kubernetes Control", description: "Cluster add-ons and policy.", issueCount: 100, live: true},
 					},
 				}},
@@ -269,9 +269,9 @@ func fullScenario() scenarioSpec {
 				},
 				[]namespaceSpec{{
 					name:        "Studio",
-					description: "Retained design work for Meridian.",
+					description: "Retained design work for Elemo.",
 					projects: []projectSpec{
-						{key: "BRND", name: "Meridian Brand", description: "Brand evolution with Meridian Design.", issueCount: 100, live: true},
+						{key: "BRND", name: "Elemo Brand", description: "Brand evolution with Elemo Design.", issueCount: 100, live: true},
 						{key: "UXRS", name: "UX Research", description: "Research sprints on the customer portal.", issueCount: 100, live: true},
 					},
 				}},
@@ -292,7 +292,7 @@ func fullScenario() scenarioSpec {
 					name:        "Engagements",
 					description: "Paid implementation engagements.",
 					projects: []projectSpec{
-						{key: "ROLL", name: "Meridian Rollouts", description: "Joint delivery on Meridian IMPL.", issueCount: 100, live: true},
+						{key: "ROLL", name: "Elemo Rollouts", description: "Joint delivery on Elemo IMPL.", issueCount: 100, live: true},
 						{key: "PLAY", name: "Playbooks", description: "Reusable implementation playbooks.", issueCount: 100, live: true},
 					},
 				}},
@@ -305,7 +305,7 @@ func fullScenario() scenarioSpec {
 			{kind: collabTeamMaintainer, fromOrg: "Nimbus Cloud", fromTeam: "Cloud Operations", toOrg: mainOrgName, toProjectKey: "INFR"},
 			{kind: collabOrgViewer, fromOrg: "Brightline Design", toOrg: mainOrgName, toProjectKey: "DESN"},
 			{kind: collabOrgViewer, fromOrg: "Fieldstone Consulting", toOrg: mainOrgName, toProjectKey: "IMPL"},
-			{kind: collabTeamViewer, fromOrg: mainOrgName, fromTeam: "Engineering", toOrg: "Kite Analytics", toProjectKey: "ANAL"},
+			{kind: collabTeamViewer, fromOrg: mainOrgName, fromTeam: "Engineering", toOrg: "Kite Analytics", toProjectKey: "ANLT"},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Kite Analytics", dualMemberN: 2},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Harbor Logistics", dualMemberN: 1},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Nimbus Cloud", dualMemberN: 1},
@@ -318,9 +318,9 @@ func smokeScenario() scenarioSpec {
 		documentCount: 20,
 		main: orgSpec{
 			name:       mainOrgName,
-			email:      "hello@meridian.example",
-			domain:     "meridian.example",
-			website:    "https://meridian.example",
+			email:      "hello@elemo.example",
+			domain:     "elemo.example",
+			website:    "https://elemo.example",
 			userCount:  8,
 			adminFirst: "Demo",
 			adminLast:  "User",
@@ -328,7 +328,7 @@ func smokeScenario() scenarioSpec {
 			adminTitle: "Organization Admin",
 			isMain:     true,
 			teams: []teamSpec{
-				{name: "Engineering", description: "Builds Meridian product."},
+				{name: "Engineering", description: "Builds Elemo product."},
 				{name: "Design", description: "Product design team."},
 				{name: "Management", description: "Leadership team."},
 			},
@@ -338,6 +338,21 @@ func smokeScenario() scenarioSpec {
 					description: "Customer-facing product work.",
 					projects: []projectSpec{
 						{key: "CORE", name: "Core Platform", description: "Shared product services and identity.", issueCount: 15, live: true},
+						{key: "DESN", name: "Design System", description: "Component library and brand guidelines.", issueCount: 5, live: true},
+					},
+				},
+				{
+					name:        "Platform",
+					description: "Internal developer platform.",
+					projects: []projectSpec{
+						{key: "INFR", name: "Infrastructure", description: "Cloud accounts, networking, and capacity.", issueCount: 5, live: true},
+					},
+				},
+				{
+					name:        "Customer",
+					description: "Implementation programs.",
+					projects: []projectSpec{
+						{key: "IMPL", name: "Implementations", description: "Paid onboarding and rollout programs.", issueCount: 5, live: true},
 					},
 				},
 				{
@@ -350,8 +365,10 @@ func smokeScenario() scenarioSpec {
 			},
 			teamGrants: []teamGrantSpec{
 				{team: "Engineering", namespace: "Product", roleKey: "namespace-admin"},
+				{team: "Engineering", namespace: "Platform", roleKey: "namespace-admin"},
 				{team: "Design", namespace: "Product", roleKey: "project-viewer"},
 				{team: "Management", namespace: "Product", roleKey: "project-viewer"},
+				{team: "Management", namespace: "Customer", roleKey: "project-viewer"},
 			},
 		},
 		partners: []orgSpec{
@@ -367,16 +384,90 @@ func smokeScenario() scenarioSpec {
 					name:        "Delivery",
 					description: "Analytics delivery programs.",
 					projects: []projectSpec{
-						{key: "ANAL", name: "Meridian Analytics", description: "Embedded analytics for Meridian CORE.", issueCount: 5, live: true},
+						{key: "ANLT", name: "Elemo Analytics", description: "Embedded analytics for Elemo CORE.", issueCount: 5, live: true},
 					},
 				}},
 				[]teamGrantSpec{{team: "Analytics Eng", namespace: "Delivery", roleKey: "namespace-admin"}},
 			),
+			partnerOrg(
+				"Harbor Logistics",
+				"ops@harbor.example",
+				"harbor.example",
+				"https://harbor.example",
+				3,
+				"Luis", "Navarro", "luis.navarro@harbor.example", "Operations Lead",
+				[]teamSpec{{name: "Integrations", description: "EDI and API integrations with shippers."}},
+				[]namespaceSpec{{
+					name:        "Integrations",
+					description: "Carrier and warehouse integrations.",
+					projects: []projectSpec{
+						{key: "INTG", name: "Elemo Link", description: "Shipment events into Elemo CORE.", issueCount: 5, live: true},
+					},
+				}},
+				[]teamGrantSpec{{team: "Integrations", namespace: "Integrations", roleKey: "namespace-admin"}},
+			),
+			partnerOrg(
+				"Nimbus Cloud",
+				"cloud@nimbus.example",
+				"nimbus.example",
+				"https://nimbus.example",
+				3,
+				"Priya", "Shah", "priya.shah@nimbus.example", "Cloud Architect",
+				[]teamSpec{{name: "Cloud Operations", description: "Managed Kubernetes and account vending."}},
+				[]namespaceSpec{{
+					name:        "Platform",
+					description: "Managed cloud offerings used by Elemo.",
+					projects: []projectSpec{
+						{key: "HOST", name: "Managed Hosting", description: "Dedicated Elemo runtime cluster.", issueCount: 5, live: true},
+					},
+				}},
+				[]teamGrantSpec{{team: "Cloud Operations", namespace: "Platform", roleKey: "namespace-admin"}},
+			),
+			partnerOrg(
+				"Brightline Design",
+				"studio@brightline.example",
+				"brightline.example",
+				"https://brightline.example",
+				3,
+				"Aisha", "Okoro", "aisha.okoro@brightline.example", "Design Director",
+				[]teamSpec{{name: "Studio", description: "Brand and product design studio."}},
+				[]namespaceSpec{{
+					name:        "Studio",
+					description: "Retained design work for Elemo.",
+					projects: []projectSpec{
+						{key: "BRND", name: "Elemo Brand", description: "Brand evolution with Elemo Design.", issueCount: 5, live: true},
+					},
+				}},
+				[]teamGrantSpec{{team: "Studio", namespace: "Studio", roleKey: "namespace-admin"}},
+			),
+			partnerOrg(
+				"Fieldstone Consulting",
+				"hello@fieldstone.example",
+				"fieldstone.example",
+				"https://fieldstone.example",
+				3,
+				"Jordan", "Lee", "jordan.lee@fieldstone.example", "Engagement Lead",
+				[]teamSpec{{name: "Delivery", description: "Implementation consultants."}},
+				[]namespaceSpec{{
+					name:        "Engagements",
+					description: "Paid implementation engagements.",
+					projects: []projectSpec{
+						{key: "ROLL", name: "Elemo Rollouts", description: "Joint delivery on Elemo IMPL.", issueCount: 5, live: true},
+					},
+				}},
+				[]teamGrantSpec{{team: "Delivery", namespace: "Engagements", roleKey: "namespace-admin"}},
+			),
 		},
 		collaborations: []collabSpec{
 			{kind: collabOrgViewer, fromOrg: "Kite Analytics", toOrg: mainOrgName, toProjectKey: "CORE"},
-			{kind: collabTeamViewer, fromOrg: mainOrgName, fromTeam: "Engineering", toOrg: "Kite Analytics", toProjectKey: "ANAL"},
+			{kind: collabOrgViewer, fromOrg: "Harbor Logistics", toOrg: mainOrgName, toProjectKey: "CORE"},
+			{kind: collabTeamMaintainer, fromOrg: "Nimbus Cloud", fromTeam: "Cloud Operations", toOrg: mainOrgName, toProjectKey: "INFR"},
+			{kind: collabOrgViewer, fromOrg: "Brightline Design", toOrg: mainOrgName, toProjectKey: "DESN"},
+			{kind: collabOrgViewer, fromOrg: "Fieldstone Consulting", toOrg: mainOrgName, toProjectKey: "IMPL"},
+			{kind: collabTeamViewer, fromOrg: mainOrgName, fromTeam: "Engineering", toOrg: "Kite Analytics", toProjectKey: "ANLT"},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Kite Analytics", dualMemberN: 1},
+			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Harbor Logistics", dualMemberN: 1},
+			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Nimbus Cloud", dualMemberN: 1},
 		},
 	}
 }

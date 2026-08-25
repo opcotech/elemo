@@ -289,3 +289,20 @@ func documentExcerpt(scope string) string {
 func documentBody(title string) []byte {
 	return fmt.Appendf(nil, "# %s\n\nThis document was generated for the workload prefill demo.\n\n## Context\n\nUse it to browse libraries, search, and related project links.\n", title)
 }
+
+// pickIssueAssignee returns a user to assign, or nil to leave the issue unassigned.
+// For the main org, every fifth live issue goes to the admin (demo user) so the
+// default login always has work. Other live issues are assigned 40% of the time
+// from the full member list, including the admin.
+func pickIssueAssignee(rng *rand.Rand, assignees []*service.User, live, preferAdmin bool, issueIndex int) *service.User {
+	if !live || len(assignees) == 0 {
+		return nil
+	}
+	if preferAdmin && issueIndex%5 == 0 {
+		return assignees[0]
+	}
+	if rng.IntN(100) >= 40 {
+		return nil
+	}
+	return assignees[rng.IntN(len(assignees))]
+}

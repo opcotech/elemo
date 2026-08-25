@@ -56,19 +56,22 @@ function wipeNeo4j() {
   echo "MATCH (n) DETACH DELETE n" | compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
 }
 
-function loadDemoGraph() {
-  log "loading demo graph"
+function bootstrapDatabase() {
+  log "bootstrapping databases"
   compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
-  compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
-}
-
-function resetPostgres() {
-  log "resetting postgres data (keeping oauth2_clients)"
   compose exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo < "${QUERIES_DIR}/bootstrap.sql"
   compose exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo -v ON_ERROR_STOP=1 <<'SQL'
 TRUNCATE TABLE user_tokens, notifications RESTART IDENTITY CASCADE;
 TRUNCATE TABLE oauth2_tokens RESTART IDENTITY CASCADE;
 SQL
+}
+
+function loadDemoData() {
+  log "loading demo data"
+  go run "${TOOLS_DIR}/workload-prefill" \
+    -config "${CONFIG_DIR}/config.local.gen.yml" \
+    -profile smoke \
+    -yes
 }
 
 function flushRedis() {
@@ -88,12 +91,13 @@ function reindexSearch() {
 
 requireYes "$@"
 checkInstalled "docker"
+checkInstalled "go"
 
 wipeNeo4j
-loadDemoGraph
-resetPostgres
-flushRedis
 emptyS3
+bootstrapDatabase
+loadDemoData
+flushRedis
 reindexSearch
 
-success "demo data reset; OAuth2 clients were left in place"
+success "demo data reset"

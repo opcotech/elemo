@@ -259,7 +259,7 @@ function selectedScopes(ids) {
 
 export function setupIssueListBenchmark() {
   const baseUrl = globalThis.BASE_URL || 'http://127.0.0.1:35478';
-  const userEmail = requiredEnv('K6_USER_EMAIL', 'demo@meridian.example');
+  const userEmail = requiredEnv('K6_USER_EMAIL', 'demo@elemo.example');
   const userPassword = requiredEnv('K6_USER_PASSWORD', 'AppleTree123');
   const clientId = requiredEnv('AUTH_CLIENT_ID');
   const clientSecret = requiredEnv('AUTH_CLIENT_SECRET');

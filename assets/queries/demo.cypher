@@ -8,20 +8,20 @@
 //   Nova Labs   — Delivery (INTEG); partner org collaborating on ACME PLAT
 //
 // Logins (password AppleTree123 for every account)
-//   demo@elemo.app       ACME org-admin; can create orgs (direct Installation grant)
-//   hector@elemo.app     ACME engineering; also Nova Labs member
-//   priya@elemo.app      ACME operations
-//   luis@elemo.app       ACME mobile
-//   aisha@elemo.app      ACME design
-//   maya@novalabs.dev    Nova Labs org-admin
-//   jordan@novalabs.dev  Nova engineer; not an ACME member (PLAT via Nova grant)
-//   sam@elemo.app        pending ACME invite (not a member yet)
+//   demo@elemo.example    ACME org-admin; can create orgs
+//   hector@elemo.example  ACME engineering; also Nova Labs member
+//   priya@elemo.example   ACME operations
+//   luis@elemo.example    ACME mobile
+//   aisha@elemo.example   ACME design
+//   maya@novalabs.dev     Nova Labs org-admin
+//   jordan@novalabs.dev   Nova engineer; not an ACME member (PLAT via Nova)
+//   sam@elemo.example     pending ACME invite (not a member yet)
 //
 // Authorization
 //   Access is scoped ReBAC: Principal -[:GRANTED]-> scope, plus IN_SCOPE_OF.
 //   There are no system roles and no wildcard actions. organization.create is a
-//   direct grant on the Installation node for demo@elemo.app (not a role, not
-//   org membership). Nova Labs holds project-viewer on ACME's PLAT project;
+//   direct grant on the Installation node for demo@elemo.example (not a role,
+//   not org membership). Nova Labs holds project-viewer on ACME's PLAT project;
 //   Nova members are not members of ACME.
 //
 // Covers: all issue kinds/statuses/priorities, common resolutions, parent
@@ -39,7 +39,7 @@
 MERGE (u:User:Principal {id: '9bsv0s46s6s002p9ltq0'})
   ON CREATE SET u += {
     username:   'demo',
-    email:      'demo@elemo.app',
+    email:      'demo@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Demo',
@@ -58,7 +58,7 @@ MERGE (u:User:Principal {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (u:User:Principal {id: '9bsv0s314mtg02goaimg'})
   ON CREATE SET u += {
     username:   'hector-henrik',
-    email:      'hector@elemo.app',
+    email:      'hector@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Hector',
@@ -115,7 +115,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainj00'})
 MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainj0g'})
   ON CREATE SET u += {
     username:   'sam-rivera',
-    email:      'sam@elemo.app',
+    email:      'sam@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Sam',
@@ -134,7 +134,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainj0g'})
 MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm00'})
   ON CREATE SET u += {
     username:   'priya-shah',
-    email:      'priya@elemo.app',
+    email:      'priya@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Priya',
@@ -153,7 +153,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm00'})
 MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm0g'})
   ON CREATE SET u += {
     username:   'luis-ortega',
-    email:      'luis@elemo.app',
+    email:      'luis@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Luis',
@@ -172,7 +172,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm0g'})
 MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm10'})
   ON CREATE SET u += {
     username:   'aisha-khan',
-    email:      'aisha@elemo.app',
+    email:      'aisha@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'active',
     first_name: 'Aisha',
@@ -191,7 +191,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm10'})
 MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm1g'})
   ON CREATE SET u += {
     username:   'riley-nash',
-    email:      'riley@elemo.app',
+    email:      'riley@elemo.example',
     password:   '$2a$10$LLoJgBl7Y24MPz8smg4ruO9GARZ9SW2uZ2qI0D9AwhYpZYs/AHC/C', // AppleTree123
     status:     'inactive',
     first_name: 'Riley',
@@ -1612,7 +1612,7 @@ WHERE n:User OR n:Team OR n:Organization
 SET n:Principal;
 
 // Direct Installation grant so demo can create orgs. Not a role. Not org membership.
-MATCH (u:User {email: 'demo@elemo.app'})
+MATCH (u:User {email: 'demo@elemo.example'})
 MATCH (i:Installation {id: '00000000000000000000'})
 SET u:Principal
 MERGE (u)-[g:GRANTED {id: 'd9tcjmf92rs8isait00'}]->(i)
