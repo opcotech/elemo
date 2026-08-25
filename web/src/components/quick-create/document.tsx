@@ -15,6 +15,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import {
+  namespaceRefPath,
+  organizationRefPath,
+  projectIdPath,
+} from "@/lib/api/refs";
+import {
   v1NamespacesDocumentsCreate,
   v1OrganizationsDocumentsCreate,
   v1ProjectsDocumentsCreate,
@@ -44,18 +49,29 @@ export function DocumentQuickCreate({
 
   const mutation = useFormMutation<
     Document,
-    { path: { id: string }; body: DocumentCreate },
+    { body: DocumentCreate },
     DocumentCreateFormValues
   >({
     mutationFn: async (variables) => {
-      const create =
-        parent?.type === "project"
-          ? v1ProjectsDocumentsCreate
-          : parent?.type === "namespace"
-            ? v1NamespacesDocumentsCreate
-            : v1OrganizationsDocumentsCreate;
-      const { data } = await create({
-        ...variables,
+      if (parent?.type === "project") {
+        const { data } = await v1ProjectsDocumentsCreate({
+          path: projectIdPath(parent.id),
+          body: variables.body,
+          throwOnError: true,
+        });
+        return data;
+      }
+      if (parent?.type === "namespace") {
+        const { data } = await v1NamespacesDocumentsCreate({
+          path: namespaceRefPath(parent.organizationId ?? parent.id, parent.id),
+          body: variables.body,
+          throwOnError: true,
+        });
+        return data;
+      }
+      const { data } = await v1OrganizationsDocumentsCreate({
+        path: organizationRefPath(parent?.id ?? ""),
+        body: variables.body,
         throwOnError: true,
       });
       return data;
@@ -65,14 +81,11 @@ export function DocumentQuickCreate({
     errorMessagePrefix: "Failed to create document",
     resetFormOnSuccess: true,
     queryKeysToInvalidate: parent
-      ? [documentListQueryKey(parent.type, parent.id)]
+      ? [documentListQueryKey(parent.type, parent.id, parent.organizationId)]
       : [],
-    transformValues: (values) => {
-      return {
-        path: { id: parent!.id },
-        body: documentCreateBody(values),
-      };
-    },
+    transformValues: (values) => ({
+      body: documentCreateBody(values),
+    }),
     navigateOnSuccess: (navigate, document) =>
       navigate({
         to: "/documents/$documentId",

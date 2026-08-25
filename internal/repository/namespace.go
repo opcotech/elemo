@@ -22,18 +22,21 @@ var (
 // PartialNamespace is a lean namespace used on issue reads.
 type PartialNamespace struct {
 	ID   model.ID `json:"id"`
+	Slug string   `json:"slug"`
 	Name string   `json:"name"`
 }
 
 // PartialOrganization is a lean organization used on accessible namespace lists.
 type PartialOrganization struct {
 	ID   model.ID `json:"id"`
+	Slug string   `json:"slug"`
 	Name string   `json:"name"`
 }
 
 // Namespace represents a namespace persisted by the repository.
 type Namespace struct {
 	ID            model.ID   `json:"id"`
+	Slug          string     `json:"slug"`
 	Name          string     `json:"name"`
 	Description   string     `json:"description"`
 	ProjectCount  *int64     `json:"project_count"`
@@ -51,6 +54,7 @@ type AccessibleNamespace struct {
 // CreateNamespaceOpts holds the data required to create a namespace.
 type CreateNamespaceOpts struct {
 	Name        string
+	Slug        string
 	Description string
 	CreatorID   model.ID
 	OrgID       model.ID
@@ -85,6 +89,7 @@ func (o UpdateNamespaceOpts) patch() map[string]any {
 type NamespaceRepository interface {
 	Create(ctx context.Context, opts CreateNamespaceOpts) (*Namespace, error)
 	Get(ctx context.Context, id model.ID, proj NamespaceProjection) (*Namespace, error)
+	GetByRef(ctx context.Context, orgID model.ID, id model.ID, slug string, actorID model.ID, proj NamespaceProjection) (*AccessibleNamespace, error)
 	ListForOrganization(ctx context.Context, query NamespaceListQuery) (Page[*Namespace], error)
 	ListAccessible(ctx context.Context, query NamespaceListAccessibleQuery) (Page[*AccessibleNamespace], error)
 	Update(ctx context.Context, id model.ID, opts UpdateNamespaceOpts) (*Namespace, error)
@@ -141,12 +146,13 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 	cypher := `
 	MATCH (u:` + opts.CreatorID.Label() + ` {id: $creator_id})
 	MATCH (org:` + opts.OrgID.Label() + ` {id: $org_id})
-	CREATE (ns:` + id.Label() + ` {id: $id, name: $name, description: $description, created_at: datetime($created_at)}),
+	CREATE (ns:` + id.Label() + ` {id: $id, slug: $slug, organization_id: $org_id, name: $name, description: $description, created_at: datetime($created_at)}),
 		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns),
 		(ns)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(org)`
 
 	params := map[string]any{
 		"id":          id.String(),
+		"slug":        opts.Slug,
 		"name":        opts.Name,
 		"description": opts.Description,
 		"created_at":  createdAt.Format(time.RFC3339Nano),
@@ -157,7 +163,7 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(ErrNamespaceCreate, err)
+		return nil, errors.Join(ErrNamespaceCreate, mapUniquenessError(err))
 	}
 
 	return r.Get(ctx, id, NamespaceDetailProjection())
@@ -179,6 +185,37 @@ func (r *Neo4jNamespaceRepository) Get(ctx context.Context, id model.ID, proj Na
 	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
 		var runErr error
 		namespace, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan(proj))
+		if runErr != nil {
+			return runErr
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceRead, err)
+	}
+
+	return namespace, nil
+}
+
+func (r *Neo4jNamespaceRepository) GetByRef(ctx context.Context, orgID model.ID, id model.ID, slug string, actorID model.ID, proj NamespaceProjection) (*AccessibleNamespace, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.NamespaceRepository/GetByRef")
+	defer span.End()
+
+	plan, err := CompileQuery(NamespaceGetByRefQuery{
+		OrganizationID: orgID,
+		ID:             id,
+		Slug:           slug,
+		ActorID:        actorID,
+		Projection:     proj,
+	})
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceRead, err)
+	}
+
+	var namespace *AccessibleNamespace
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var runErr error
+		namespace, _, runErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scanAccessible(proj))
 		if runErr != nil {
 			return runErr
 		}
@@ -244,6 +281,9 @@ func (r *Neo4jNamespaceRepository) scanAccessible(proj NamespaceProjection) func
 		}
 		if name, ok := orgNode.GetProperties()["name"].(string); ok {
 			accessible.Organization.Name = name
+		}
+		if slug, ok := orgNode.GetProperties()["slug"].(string); ok {
+			accessible.Organization.Slug = slug
 		}
 		return accessible, nil
 	}
@@ -344,6 +384,10 @@ func clearNamespacesKey(ctx context.Context, r *redisBaseRepository, id model.ID
 	return clearNamespacesPattern(ctx, r, "Get", id.String(), "*")
 }
 
+func clearNamespaceAllRefs(ctx context.Context, r *redisBaseRepository) error {
+	return clearNamespacesPattern(ctx, r, "GetByRef", "*")
+}
+
 func clearNamespacesAllLists(ctx context.Context, r *redisBaseRepository) error {
 	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
 	if err := clearNamespacesPattern(ctx, r, "*", "ListForOrganization", "*"); err != nil {
@@ -376,6 +420,9 @@ func (r *RedisCachedNamespaceRepository) Create(ctx context.Context, opts Create
 	if err := clearNamespacesAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
+	if err := clearNamespaceAllRefs(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 	if err := clearNamespaceAllCrossCache(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
@@ -397,6 +444,34 @@ func (r *RedisCachedNamespaceRepository) Get(ctx context.Context, id model.ID, p
 	}
 
 	if namespace, err = r.namespaceRepo.Get(ctx, id, proj); err != nil {
+		return nil, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, namespace); err != nil {
+		return nil, err
+	}
+
+	return namespace, nil
+}
+
+func (r *RedisCachedNamespaceRepository) GetByRef(ctx context.Context, orgID model.ID, id model.ID, slug string, actorID model.ID, proj NamespaceProjection) (*AccessibleNamespace, error) {
+	var namespace *AccessibleNamespace
+	var err error
+
+	ref := slug
+	if !id.IsNil() {
+		ref = id.String()
+	}
+	key := composeCacheKey(model.ResourceTypeNamespace.String(), "GetByRef", orgID.String(), ref, actorID.String(), projectionCacheValue(proj))
+	if err = r.cacheRepo.Get(ctx, key, &namespace); err != nil {
+		return nil, err
+	}
+
+	if namespace != nil {
+		return namespace, nil
+	}
+
+	if namespace, err = r.namespaceRepo.GetByRef(ctx, orgID, id, slug, actorID, proj); err != nil {
 		return nil, err
 	}
 
@@ -491,6 +566,9 @@ func (r *RedisCachedNamespaceRepository) Update(ctx context.Context, id model.ID
 	if err := clearNamespacesAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
+	if err := clearNamespaceAllRefs(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
 	if err := bumpIssueListNamespaceGeneration(ctx, r.cacheRepo, id); err != nil {
 		return nil, err
 	}
@@ -507,6 +585,10 @@ func (r *RedisCachedNamespaceRepository) Delete(ctx context.Context, id model.ID
 	}
 
 	if err := clearNamespacesAllLists(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearNamespaceAllRefs(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

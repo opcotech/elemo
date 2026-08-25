@@ -14,6 +14,11 @@ import {
   v1OrganizationsNamespacesGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
+import {
+  namespaceRefPath,
+  organizationRefPath,
+  projectIdPath,
+} from "@/lib/api/refs";
 import { zOrganizationStatus } from "@/lib/api/schemas";
 import type {
   Document,
@@ -41,10 +46,12 @@ interface OrganizationLifecycleEntity extends Pick<
 
 interface NamespaceLifecycleContext {
   organizationId: string;
+  organizationSlug: string;
 }
 
 interface ProjectLifecycleContext extends NamespaceLifecycleContext {
   namespaceId: string;
+  namespaceSlug: string;
 }
 
 interface RoleLifecycleContext {
@@ -130,12 +137,12 @@ export const organizationLifecycleConfig: EntityLifecycleConfig<
     organization.status === zOrganizationStatus.enum.active &&
     can(permissions, Action.OrganizationDelete),
   deleteVariables: (organization) => ({
-    path: { id: organization.id },
+    path: { organizationRef: organization.id },
     query: { force: false },
   }),
   queryKeys: (organization) => [
     v1OrganizationGetOptions({
-      path: { id: organization.id },
+      path: { organizationRef: organization.id },
     }).queryKey,
     v1OrganizationsGetOptions().queryKey,
     accessibleNamespacesQueryKey,
@@ -180,22 +187,22 @@ export const namespaceLifecycleConfig: EntityLifecycleConfig<
     buttonLabel: "Delete Namespace",
   },
   canDelete: hasNamespaceDeletePermission,
-  deleteVariables: (namespace) => ({
-    path: { id: namespace.id },
+  deleteVariables: (namespace, { organizationId }) => ({
+    path: namespaceRefPath(organizationId, namespace.id),
   }),
   queryKeys: (namespace, { organizationId }) => [
     v1OrganizationsNamespacesGetOptions({
-      path: { id: organizationId },
+      path: organizationRefPath(organizationId),
     }).queryKey,
     v1NamespaceGetOptions({
-      path: { id: namespace.id },
+      path: namespaceRefPath(organizationId, namespace.id),
     }).queryKey,
     accessibleNamespacesQueryKey,
   ],
-  navigateAfterDelete: (navigate, { organizationId }) =>
+  navigateAfterDelete: (navigate, { organizationSlug }) =>
     navigate({
-      to: "/settings/organizations/$organizationId",
-      params: { organizationId },
+      to: "/settings/organizations/$organizationSlug",
+      params: { organizationSlug },
     }),
 };
 
@@ -238,24 +245,24 @@ export const projectLifecycleConfig: EntityLifecycleConfig<
   },
   canDelete: hasProjectDeletePermission,
   deleteVariables: (project) => ({
-    path: { id: project.id },
+    path: projectIdPath(project.id),
   }),
-  queryKeys: (project, { namespaceId }) => [
+  queryKeys: (project, { organizationId, namespaceId }) => [
     v1ProjectGetOptions({
-      path: { id: project.id },
+      path: projectIdPath(project.id),
     }).queryKey,
     v1NamespaceGetOptions({
-      path: { id: namespaceId },
+      path: namespaceRefPath(organizationId, namespaceId),
     }).queryKey,
     v1NamespacesProjectsGetOptions({
-      path: { id: namespaceId },
+      path: namespaceRefPath(organizationId, namespaceId),
     }).queryKey,
     accessibleNamespacesQueryKey,
   ],
-  navigateAfterDelete: (navigate, { organizationId, namespaceId }) =>
+  navigateAfterDelete: (navigate, { organizationSlug, namespaceSlug }) =>
     navigate({
-      to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
-      params: { organizationId, namespaceId },
+      to: "/settings/organizations/$organizationSlug/namespaces/$namespaceSlug",
+      params: { organizationSlug, namespaceSlug },
     }),
 };
 
@@ -278,17 +285,17 @@ export const roleLifecycleConfig: EntityLifecycleConfig<
   canDelete: hasRoleManagePermission,
   deleteVariables: (role, { organizationId }) => ({
     path: {
-      id: organizationId,
+      organizationRef: organizationId,
       role_id: role.id,
     },
   }),
   queryKeys: (role, { organizationId }) => [
     v1OrganizationRolesGetOptions({
-      path: { id: organizationId },
+      path: organizationRefPath(organizationId),
     }).queryKey,
     v1OrganizationRoleGetOptions({
       path: {
-        id: organizationId,
+        organizationRef: organizationId,
         role_id: role.id,
       },
     }).queryKey,
@@ -314,17 +321,17 @@ export const teamLifecycleConfig: EntityLifecycleConfig<
   canDelete: hasTeamManagePermission,
   deleteVariables: (team, { organizationId }) => ({
     path: {
-      id: organizationId,
+      organizationRef: organizationId,
       team_id: team.id,
     },
   }),
   queryKeys: (team, { organizationId }) => [
     v1OrganizationTeamsGetOptions({
-      path: { id: organizationId },
+      path: organizationRefPath(organizationId),
     }).queryKey,
     v1OrganizationTeamGetOptions({
       path: {
-        id: organizationId,
+        organizationRef: organizationId,
         team_id: team.id,
       },
     }).queryKey,

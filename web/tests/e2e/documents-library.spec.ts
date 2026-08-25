@@ -15,7 +15,7 @@ import {
   grantActionsToUser,
   grantMembershipToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type { Document } from "@/lib/api/types";
@@ -65,9 +65,14 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     page,
   }) => {
     const folderName = `Hub ${getRandomString(8)}`;
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: folderName,
-    });
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: folderName,
+      }
+    );
 
     await loginOwner(page);
     await page.getByRole("link", { name: "Documents", exact: true }).click();
@@ -92,7 +97,9 @@ test.describe("@documents.library Document Library E2E Tests", () => {
 
     await listPage.getHubLibraryLink(workspace.namespaceName).click();
     await expect(page).toHaveURL(
-      new RegExp(`/namespaces/${workspace.namespaceId}/documents`)
+      new RegExp(
+        `/organizations/${workspace.organizationSlug}/namespaces/${workspace.namespaceSlug}/documents`
+      )
     );
     await listPage.waitForLoad();
     await expect(listPage.list.getFolderLink(folderName)).toBeVisible();
@@ -105,13 +112,21 @@ test.describe("@documents.library Document Library E2E Tests", () => {
   }) => {
     const folderName = `Guides ${getRandomString(8)}`;
     const title = `Library move ${getRandomString(8)}`;
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title,
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toBeVisible();
 
@@ -136,14 +151,20 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     );
     await expect(documentPage.getLocation()).toContainText(folderName);
 
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await listPage.list.clickFolder(folderName);
     await listPage.waitForLoad();
     await listPage.moveDocument(title, "Library root");
     await waitForSuccessToast(page, "Document moved");
 
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toBeVisible();
   });
@@ -156,19 +177,28 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const projectTitle = `Project related ${getRandomString(8)}`;
     const folder = await createNamespaceFolder(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { name: folderName }
     );
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: filedTitle,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: filedTitle,
+      }
+    );
     await createProjectDocument(workspace.client, workspace.projectId, {
       title: projectTitle,
     });
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getFolderLink(folderName)).toBeVisible();
     await expect(listPage.list.getDocumentLink(projectTitle)).toBeVisible();
@@ -185,12 +215,20 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     await expect(listPage.list.getDocumentLink(projectTitle)).toBeVisible();
     await expect(listPage.list.getFolderLink(folderName)).toHaveCount(0);
 
-    await listPage.gotoProject(workspace.namespaceId, workspace.projectId);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(projectTitle)).toBeVisible();
     await expect(listPage.list.getDocumentLink(filedTitle)).toHaveCount(0);
 
-    await listPage.gotoNamespace(workspace.namespaceId, { folder: folder.id });
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      { folder: folder.id }
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(filedTitle)).toBeVisible();
   });
@@ -200,13 +238,21 @@ test.describe("@documents.library Document Library E2E Tests", () => {
   }) => {
     const folderName = `Rename me ${getRandomString(8)}`;
     const nextName = `Renamed ${getRandomString(8)}`;
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: folderName,
-    });
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: folderName,
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getFolderLink(folderName)).toBeVisible();
 
@@ -221,13 +267,21 @@ test.describe("@documents.library Document Library E2E Tests", () => {
   }) => {
     const title = `Rename doc ${getRandomString(8)}`;
     const nextTitle = `Renamed doc ${getRandomString(8)}`;
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title,
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toBeVisible();
 
@@ -245,15 +299,22 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const title = `Reparented ${getRandomString(8)}`;
     const parent = await createNamespaceFolder(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { name: parentName }
     );
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: childName,
-      parent_id: parent.id,
-    });
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: childName,
+        parent_id: parent.id,
+      }
+    );
     const document = await createNamespaceDocument(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { title }
     );
@@ -263,7 +324,10 @@ test.describe("@documents.library Document Library E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getFolderLink(parentName)).toBeVisible();
     await expect(listPage.list.getFolderLink(childName)).toHaveCount(0);
@@ -284,20 +348,34 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const destinationName = `Destination ${getRandomString(8)}`;
     const source = await createNamespaceFolder(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { name: sourceName }
     );
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: nestedName,
-      parent_id: source.id,
-    });
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: destinationName,
-    });
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: nestedName,
+        parent_id: source.id,
+      }
+    );
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: destinationName,
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
 
     await listPage.openFolderMovePicker(sourceName);
@@ -335,21 +413,39 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const matchTitle = `Needle ${token}`;
     const otherTitle = `Other ${getRandomString(8)}`;
     const folderName = `Search folder ${getRandomString(8)}`;
-    await createNamespaceFolder(workspace.client, workspace.namespaceId, {
-      name: folderName,
-    });
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: matchTitle,
-      excerpt: "Searchable summary for the matching document",
-    });
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: otherTitle,
-      excerpt: "Different summary that should be filtered out",
-    });
+    await createNamespaceFolder(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        name: folderName,
+      }
+    );
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: matchTitle,
+        excerpt: "Searchable summary for the matching document",
+      }
+    );
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: otherTitle,
+        excerpt: "Different summary that should be filtered out",
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(matchTitle)).toBeVisible();
     await expect(listPage.list.getDocumentLink(otherTitle)).toBeVisible();
@@ -390,6 +486,7 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const lastTitle = `Zulu lib ${getRandomString(8)}`;
     const lastDocument = await createNamespaceDocument(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       {
         title: lastTitle,
@@ -397,6 +494,7 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     );
     const firstDocument = await createNamespaceDocument(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       {
         title: firstTitle,
@@ -405,7 +503,10 @@ test.describe("@documents.library Document Library E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(firstTitle)).toBeVisible();
     await expect(listPage.list.getDocumentLink(lastTitle)).toBeVisible();
@@ -465,19 +566,32 @@ test.describe("@documents.library Document Library E2E Tests", () => {
       writer.email,
       USER_DEFAULT_PASSWORD
     );
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: ownerTitle,
-    });
-    await createNamespaceDocument(writerClient, workspace.namespaceId, {
-      title: writerTitle,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: ownerTitle,
+      }
+    );
+    await createNamespaceDocument(
+      writerClient,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: writerTitle,
+      }
+    );
 
     const ownerName = `${workspace.owner.first_name} ${workspace.owner.last_name}`;
     const writerName = `${writer.first_name} ${writer.last_name}`;
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(ownerTitle)).toBeVisible();
     await expect(listPage.list.getDocumentLink(writerTitle)).toBeVisible();
@@ -502,11 +616,13 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const title = `Change library ${getRandomString(8)}`;
     const folder = await createNamespaceFolder(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { name: folderName }
     );
     const document = await createNamespaceDocument(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { title }
     );
@@ -533,14 +649,17 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     await expect(documentPage.getLocation()).not.toContainText(folderName);
 
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toHaveCount(0);
 
     await expect(async () => {
-      await listPage.gotoOrganization(workspace.organizationId);
+      await listPage.gotoOrganization(workspace.organizationSlug);
       await expect(page).toHaveURL(
-        new RegExp(`/organizations/${workspace.organizationId}/documents`)
+        new RegExp(`/organizations/${workspace.organizationSlug}/documents`)
       );
       await listPage.waitForLoad();
       await expect(listPage.list.getDocumentLink(title)).toBeVisible({
@@ -555,20 +674,22 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     const title = `Namespace hop ${getRandomString(8)}`;
     const document = await createNamespaceDocument(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       { title }
     );
     const nextNamespaceName = `Library hop ${getRandomString(8)}`;
-    const nextNamespace = await v1OrganizationsNamespacesCreate({
+    const nextNamespaceSlug = getRandomSlug("ns");
+    await v1OrganizationsNamespacesCreate({
       client: workspace.client,
-      path: { id: workspace.organizationId },
+      path: { organizationRef: workspace.organizationId },
       body: {
+        slug: nextNamespaceSlug,
         name: nextNamespaceName,
         description: "Destination library for a document move",
       },
       throwOnError: true,
     });
-    const nextNamespaceId = nextNamespace.data.id ?? "";
 
     await loginOwner(page);
     const documentPage = new DocumentPage(page);
@@ -586,14 +707,22 @@ test.describe("@documents.library Document Library E2E Tests", () => {
     );
 
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toHaveCount(0);
 
     await expect(async () => {
-      await listPage.gotoNamespace(nextNamespaceId);
+      await listPage.gotoNamespace(
+        workspace.organizationSlug,
+        nextNamespaceSlug
+      );
       await expect(page).toHaveURL(
-        new RegExp(`/namespaces/${nextNamespaceId}/documents`)
+        new RegExp(
+          `/organizations/${workspace.organizationSlug}/namespaces/${nextNamespaceSlug}/documents`
+        )
       );
       await listPage.waitForLoad();
       await expect(listPage.list.getDocumentLink(title)).toBeVisible({

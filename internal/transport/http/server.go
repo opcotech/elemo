@@ -137,23 +137,23 @@ func NewServer(deps ServerDeps, opts ...ControllerOption) (StrictServer, error) 
 		return nil, err
 	}
 
-	if s.NamespaceController, err = NewNamespaceController(deps.NamespaceService, opts...); err != nil {
+	if s.NamespaceController, err = NewNamespaceController(deps.OrganizationService, deps.NamespaceService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.ProjectController, err = NewProjectController(deps.ProjectService, opts...); err != nil {
+	if s.ProjectController, err = NewProjectController(deps.OrganizationService, deps.NamespaceService, deps.ProjectService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.IssueController, err = NewIssueController(deps.IssueService, opts...); err != nil {
+	if s.IssueController, err = NewIssueController(deps.OrganizationService, deps.NamespaceService, deps.IssueService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.DocumentController, err = NewDocumentController(deps.DocumentService, opts...); err != nil {
+	if s.DocumentController, err = NewDocumentController(deps.OrganizationService, deps.NamespaceService, deps.DocumentService, opts...); err != nil {
 		return nil, err
 	}
 
-	if s.FolderController, err = NewFolderController(deps.FolderService, opts...); err != nil {
+	if s.FolderController, err = NewFolderController(deps.OrganizationService, deps.NamespaceService, deps.FolderService, opts...); err != nil {
 		return nil, err
 	}
 

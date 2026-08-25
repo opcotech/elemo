@@ -92,7 +92,7 @@ export function OrganizationMembersList({
     error,
   } = useQuery(
     v1OrganizationMembersGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: cursorPageQuery(pageNav.pageToken),
     })
   );

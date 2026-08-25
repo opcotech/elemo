@@ -34,8 +34,8 @@ export function OrganizationRow({
     <TableRow>
       <TableCell className="font-medium">
         <ConditionalLink
-          to="/settings/organizations/$organizationId"
-          params={{ organizationId: organization.id }}
+          to="/settings/organizations/$organizationSlug"
+          params={{ organizationSlug: organization.slug }}
           condition={hasReadPermission}
         >
           {organization.name}
@@ -79,8 +79,8 @@ export function OrganizationRow({
                   size="sm"
                   render={
                     <Link
-                      to="/settings/organizations/$organizationId/edit"
-                      params={{ organizationId: organization.id }}
+                      to="/settings/organizations/$organizationSlug/edit"
+                      params={{ organizationSlug: organization.slug }}
                     />
                   }
                 >

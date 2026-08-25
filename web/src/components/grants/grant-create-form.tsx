@@ -121,14 +121,14 @@ export function GrantCreateForm({ organizationId }: GrantCreateFormProps) {
   });
 
   const membersOptions = v1OrganizationMembersGetOptions({
-    path: { id: organizationId },
+    path: { organizationRef: organizationId },
   });
   const { data: membersPage } = useQuery({
     ...collectedListQuery<OrganizationMember>(
       membersOptions,
       async (pageToken, signal) => {
         const { data } = await v1OrganizationMembersGet({
-          path: { id: organizationId },
+          path: { organizationRef: organizationId },
           query: cursorPageQuery(pageToken),
           signal,
           throwOnError: true,
@@ -140,12 +140,12 @@ export function GrantCreateForm({ organizationId }: GrantCreateFormProps) {
   });
 
   const teamsOptions = v1OrganizationTeamsGetOptions({
-    path: { id: organizationId },
+    path: { organizationRef: organizationId },
   });
   const { data: teamsPage } = useQuery({
     ...collectedListQuery<Team>(teamsOptions, async (pageToken, signal) => {
       const { data } = await v1OrganizationTeamsGet({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
         query: cursorPageQuery(pageToken),
         signal,
         throwOnError: true,
@@ -156,12 +156,12 @@ export function GrantCreateForm({ organizationId }: GrantCreateFormProps) {
   });
 
   const rolesOptions = v1OrganizationRolesGetOptions({
-    path: { id: organizationId },
+    path: { organizationRef: organizationId },
   });
   const { data: rolesPage } = useQuery({
     ...collectedListQuery<Role>(rolesOptions, async (pageToken, signal) => {
       const { data } = await v1OrganizationRolesGet({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
         query: cursorPageQuery(pageToken),
         signal,
         throwOnError: true,

@@ -59,7 +59,6 @@ func (o *CreateProjectOpts) Validate() error {
 // UpdateProjectOpts holds the fields that can be updated on a project.
 // Undefined fields (Defined == false) are left unchanged.
 type UpdateProjectOpts struct {
-	Key         optional.Optional[string]
 	Name        optional.Optional[string]
 	Description optional.Optional[string]
 	Logo        optional.Optional[string]
@@ -78,7 +77,7 @@ type ProjectService interface {
 	Get(ctx context.Context, id model.ID) (*Project, error)
 	// GetByKey returns a project by its key. If the project does not exist, an
 	// error is returned.
-	GetByKey(ctx context.Context, key string) (*Project, error)
+	GetByKey(ctx context.Context, namespaceID model.ID, key string) (*Project, error)
 	// List returns a cursor-paginated page of projects for a namespace.
 	List(ctx context.Context, namespaceID model.ID, page CursorPage) (Page[*Project], error)
 	// Update updates a project. If the project does not exist, an error is
@@ -158,6 +157,9 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 	if err := opts.Validate(); err != nil {
 		return nil, errors.Join(ErrProjectCreate, err)
 	}
+	if err := validate.ProjectKey(opts.Key); err != nil {
+		return nil, errors.Join(ErrProjectCreate, model.ErrInvalidProjectDetails, err)
+	}
 
 	if err := requireAction(ctx, s.permissionService, namespaceID, model.ActionProjectCreate); err != nil {
 		return nil, errors.Join(ErrProjectCreate, err)
@@ -219,15 +221,20 @@ func (s *projectService) Get(ctx context.Context, id model.ID) (*Project, error)
 	return projectFromRepository(project), nil
 }
 
-func (s *projectService) GetByKey(ctx context.Context, key string) (*Project, error) {
+func (s *projectService) GetByKey(ctx context.Context, namespaceID model.ID, key string) (*Project, error) {
 	ctx, span := s.tracer.Start(ctx, "service.projectService/GetByKey")
 	defer span.End()
 
-	if key == "" {
-		return nil, errors.Join(ErrProjectGet, model.ErrInvalidProjectDetails)
+	if err := namespaceID.Validate(); err != nil {
+		return nil, errors.Join(ErrProjectGet, err)
 	}
 
-	project, err := s.projectRepo.GetByKey(ctx, key, repository.ProjectDetailProjection())
+	key = strings.ToUpper(key)
+	if err := validate.ProjectKey(key); err != nil {
+		return nil, errors.Join(ErrProjectGet, err)
+	}
+
+	project, err := s.projectRepo.GetByKey(ctx, namespaceID, key, repository.ProjectDetailProjection())
 	if err != nil {
 		return nil, errors.Join(ErrProjectGet, err)
 	}
@@ -296,12 +303,7 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
-	if opts.Key.Defined && opts.Key.Value != nil {
-		opts.Key = optional.Some(strings.ToUpper(*opts.Key.Value))
-	}
-
 	project, err := s.projectRepo.Update(ctx, id, repository.UpdateProjectOpts{
-		Key:         opts.Key,
 		Name:        opts.Name,
 		Description: opts.Description,
 		Logo:        opts.Logo,

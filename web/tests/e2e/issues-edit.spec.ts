@@ -34,7 +34,11 @@ test.describe("@issues.edit Issue Edit E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
     return workItem;
   };

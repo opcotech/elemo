@@ -10,9 +10,11 @@ import {
   RolesSection,
 } from "../sections";
 
+import { settingsOrganizationPath } from "@/lib/paths";
+
 /**
  * Page Object Model for Organization Details page.
- * Represents the organization detail view at /settings/organizations/:id
+ * Represents the organization detail view at /settings/organizations/:organizationSlug
  */
 export class SettingsOrganizationDetailsPage extends BaseComponent {
   public readonly organizationInfo: OrganizationInfoSection;
@@ -33,12 +35,12 @@ export class SettingsOrganizationDetailsPage extends BaseComponent {
   /**
    * Navigate to the organization details page.
    *
-   * @param organizationId - The ID of the organization to navigate to.
+   * @param organizationSlug - Canonical organization slug.
    */
-  async goto(organizationId: string): Promise<void> {
+  async goto(organizationSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}`
+      settingsOrganizationPath({ organizationSlug })
     );
   }
 }

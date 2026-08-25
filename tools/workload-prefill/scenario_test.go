@@ -135,3 +135,31 @@ func projectKeysByOrg(spec scenarioSpec) map[string]map[string]struct{} {
 	}
 	return out
 }
+
+func TestScenarioSlugUniqueness(t *testing.T) {
+	t.Parallel()
+
+	for _, spec := range []scenarioSpec{fullScenario(), smokeScenario()} {
+		orgSlugs := make(map[string]string)
+		platformOrgs := 0
+		for _, org := range append([]orgSpec{spec.main}, spec.partners...) {
+			require.NotEmpty(t, org.slug, "org %s missing slug", org.name)
+			_, exists := orgSlugs[org.slug]
+			require.False(t, exists, "duplicate organization slug %s", org.slug)
+			orgSlugs[org.slug] = org.name
+
+			nsSlugs := make(map[string]string)
+			for _, ns := range org.namespaces {
+				require.NotEmpty(t, ns.slug, "namespace %s in %s missing slug", ns.name, org.name)
+				_, exists := nsSlugs[ns.slug]
+				require.False(t, exists, "duplicate namespace slug %s in %s", ns.slug, org.name)
+				nsSlugs[ns.slug] = ns.name
+				if ns.slug == "platform" {
+					platformOrgs++
+				}
+			}
+		}
+		require.Equal(t, "elemo", spec.main.slug)
+		assert.GreaterOrEqual(t, platformOrgs, 2, "platform namespace slug should be reused across organizations")
+	}
+}

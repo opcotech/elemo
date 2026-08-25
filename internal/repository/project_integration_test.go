@@ -91,7 +91,7 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	_, err = s.DocumentRepo.Create(context.Background(), docOpts)
 	s.Require().NoError(err)
 
-	project, err := s.ProjectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
+	project, err := s.ProjectRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, project.ID, repository.ProjectDetailProjection())
 	s.Assert().Equal(created.Key, project.Key)
@@ -135,6 +135,69 @@ func (s *ProjectRepositoryIntegrationTestSuite) TestDelete() {
 	s.Require().NoError(s.ProjectRepo.Delete(context.Background(), created.ID))
 	_, err = s.ProjectRepo.Get(context.Background(), created.ID, repository.ProjectDetailProjection())
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
+}
+
+func (s *ProjectRepositoryIntegrationTestSuite) TestGetByKeyScoped() {
+	created, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	got, err := s.ProjectRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.ProjectDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, got.ID)
+
+	otherNS, err := s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
+	s.Require().NoError(err)
+	_, err = s.ProjectRepo.GetByKey(context.Background(), otherNS.ID, created.Key, repository.ProjectDetailProjection())
+	s.Assert().ErrorIs(err, repository.ErrNotFound)
+}
+
+func (s *ProjectRepositoryIntegrationTestSuite) TestCreateDuplicateKey() {
+	_, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	dup := testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID)
+	dup.Key = s.createOpts.Key
+	_, err = s.ProjectRepo.Create(context.Background(), dup)
+	s.Assert().ErrorIs(err, repository.ErrProjectKeyConflict)
+}
+
+func (s *ProjectRepositoryIntegrationTestSuite) TestCreateSameKeyDifferentNamespaces() {
+	_, err := s.ProjectRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	otherNS, err := s.NamespaceRepo.Create(context.Background(), testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID))
+	s.Require().NoError(err)
+	other := testModel.NewCreateProjectOpts(otherNS.ID, s.testUser.ID)
+	other.Key = s.createOpts.Key
+	project, err := s.ProjectRepo.Create(context.Background(), other)
+	s.Require().NoError(err)
+	s.Assert().Equal(s.createOpts.Key, project.Key)
+}
+
+func (s *ProjectRepositoryIntegrationTestSuite) TestCreateConcurrentDuplicateKey() {
+	key := s.createOpts.Key
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			opts := testModel.NewCreateProjectOpts(s.testNamespace.ID, s.testUser.ID)
+			opts.Key = key
+			_, err := s.ProjectRepo.Create(context.Background(), opts)
+			errs <- err
+		}()
+	}
+
+	var succeeded, conflicted int
+	for range 2 {
+		err := <-errs
+		if err == nil {
+			succeeded++
+			continue
+		}
+		s.Assert().ErrorIs(err, repository.ErrProjectKeyConflict)
+		conflicted++
+	}
+	s.Assert().Equal(1, succeeded)
+	s.Assert().Equal(1, conflicted)
 }
 
 func TestProjectRepositoryIntegrationTestSuite(t *testing.T) {
@@ -210,9 +273,9 @@ func (s *CachedProjectRepositoryIntegrationTestSuite) TestGet() {
 func (s *CachedProjectRepositoryIntegrationTestSuite) TestGetByKey() {
 	created, err := s.projectRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
-	original, err := s.ProjectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
+	original, err := s.ProjectRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
-	usingCache, err := s.projectRepo.GetByKey(context.Background(), created.Key, repository.ProjectDetailProjection())
+	usingCache, err := s.projectRepo.GetByKey(context.Background(), s.testNamespace.ID, created.Key, repository.ProjectDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)

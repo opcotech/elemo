@@ -60,10 +60,12 @@ function useIssueRelationQueries(issueId: string, pageSize: number) {
 
 function useIssueRelationMutations({
   issueId,
+  organizationId,
   namespaceId,
   issueKey,
 }: {
   issueId: string;
+  organizationId: string;
   namespaceId: string;
   issueKey?: string;
 }) {
@@ -76,6 +78,7 @@ function useIssueRelationMutations({
     runMutationSuccessWorkflow({
       invalidateQueries: issueRelationInvalidationKeys({
         issueId,
+        organizationId,
         namespaceId,
         issueKey,
         related,
@@ -134,13 +137,15 @@ function useIssueRelationMutations({
 
 function IssueRelationItem({
   relation,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
   onUpdateKind,
   onRemove,
   disabled = false,
 }: {
   relation: IssueRelation;
-  namespaceId: string;
+  organizationSlug: string;
+  namespaceSlug: string;
   onUpdateKind?: (kind: EditableIssueRelationKind) => void;
   onRemove?: () => void;
   disabled?: boolean;
@@ -150,7 +155,10 @@ function IssueRelationItem({
     relation.direction
   );
   const kindLabel = issueRelationKindLabel(displayKind);
-  const href = relatedIssueWorkPath(relation.related, namespaceId);
+  const href = relatedIssueWorkPath(relation.related, {
+    organizationSlug,
+    namespaceSlug,
+  });
 
   return (
     <Item
@@ -233,13 +241,15 @@ function IssueRelationItem({
 
 function IssueRelationList({
   relations,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
   onUpdateKind,
   onRemove,
   disabled,
 }: {
   relations: readonly IssueRelation[];
-  namespaceId: string;
+  organizationSlug: string;
+  namespaceSlug: string;
   onUpdateKind?: (
     relation: IssueRelation,
     kind: EditableIssueRelationKind
@@ -253,7 +263,8 @@ function IssueRelationList({
         <IssueRelationItem
           key={item.id}
           relation={item}
-          namespaceId={namespaceId}
+          organizationSlug={organizationSlug}
+          namespaceSlug={namespaceSlug}
           onUpdateKind={
             onUpdateKind
               ? (kind) => {
@@ -278,14 +289,20 @@ function IssueRelationList({
 interface IssueRelationsProps {
   issueId: string;
   issueKey: string;
+  organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
   disabled?: boolean;
 }
 
 export function IssueRelations({
   issueId,
   issueKey,
+  organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
   disabled = false,
 }: IssueRelationsProps) {
   const [addOpen, setAddOpen] = useState(false);
@@ -295,6 +312,7 @@ export function IssueRelations({
   );
   const { updateKind, removeRelation, isPending } = useIssueRelationMutations({
     issueId,
+    organizationId,
     namespaceId,
     issueKey,
   });
@@ -337,7 +355,8 @@ export function IssueRelations({
       ) : (
         <IssueRelationList
           relations={relations}
-          namespaceId={namespaceId}
+          organizationSlug={organizationSlug}
+          namespaceSlug={namespaceSlug}
           onUpdateKind={(relation, kind) => {
             void updateKind(relation, kind);
           }}
@@ -350,6 +369,7 @@ export function IssueRelations({
       <IssueRelationAddDialog
         issueId={issueId}
         issueKey={issueKey}
+        organizationId={organizationId}
         namespaceId={namespaceId}
         relatedIds={relatedIds}
         open={addOpen}
@@ -361,12 +381,14 @@ export function IssueRelations({
 
 interface IssueRelationsPreviewProps {
   issueId: string;
-  namespaceId: string;
+  organizationSlug: string;
+  namespaceSlug: string;
 }
 
 export function IssueRelationsPreview({
   issueId,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
 }: IssueRelationsPreviewProps) {
   const { data, isLoading } = useIssueRelationQueries(
     issueId,
@@ -391,7 +413,11 @@ export function IssueRelationsPreview({
   return (
     <Section title="Relations" data-section="issue-relations">
       {relations.length > 0 ? (
-        <IssueRelationList relations={relations} namespaceId={namespaceId} />
+        <IssueRelationList
+          relations={relations}
+          organizationSlug={organizationSlug}
+          namespaceSlug={namespaceSlug}
+        />
       ) : (
         <EmptyState
           compact

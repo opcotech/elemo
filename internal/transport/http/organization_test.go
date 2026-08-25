@@ -85,6 +85,7 @@ func newTestOrganizationController(t *testing.T, os service.OrganizationService,
 func newServiceOrganization() *service.Organization {
 	return &service.Organization{
 		ID:        model.MustNewID(model.ResourceTypeOrganization),
+		Slug:      "acme",
 		Name:      "ACME Inc.",
 		Email:     "info@example.com",
 		Status:    model.OrganizationStatusActive,
@@ -169,6 +170,7 @@ func TestOrganizationController_V1OrganizationsCreate(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
 		os.EXPECT().Create(gomock.Any(), userID, service.CreateOrganizationOpts{
+			Slug:  "acme",
 			Name:  "ACME Inc.",
 			Email: "info@example.com",
 		}).Return(org, nil)
@@ -176,6 +178,7 @@ func TestOrganizationController_V1OrganizationsCreate(t *testing.T) {
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationsCreate(ctx, api.V1OrganizationsCreateRequestObject{
 			Body: &api.V1OrganizationsCreateJSONRequestBody{
+				Slug:  "acme",
 				Name:  "ACME Inc.",
 				Email: oapiTypes.Email("info@example.com"),
 			},
@@ -189,7 +192,9 @@ func TestOrganizationController_V1OrganizationsCreate(t *testing.T) {
 	t.Run("missing user", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, org.ID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationsCreate(context.Background(), api.V1OrganizationsCreateRequestObject{
 			Body: &api.V1OrganizationsCreateJSONRequestBody{Name: "ACME Inc.", Email: oapiTypes.Email("info@example.com")},
 		})
@@ -212,6 +217,21 @@ func TestOrganizationController_V1OrganizationsCreate(t *testing.T) {
 		_, ok := resp.(api.V1OrganizationsCreate403JSONResponse)
 		assert.True(t, ok)
 	})
+
+	t.Run("slug conflict", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		os.EXPECT().Create(gomock.Any(), userID, gomock.Any()).Return(nil, errors.Join(service.ErrOrganizationCreate, repository.ErrSlugConflict))
+
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		resp, err := c.V1OrganizationsCreate(ctx, api.V1OrganizationsCreateRequestObject{
+			Body: &api.V1OrganizationsCreateJSONRequestBody{Slug: "acme", Name: "ACME Inc.", Email: oapiTypes.Email("info@example.com")},
+		})
+		require.NoError(t, err)
+		_, ok := resp.(api.V1OrganizationsCreate409JSONResponse)
+		assert.True(t, ok)
+	})
 }
 
 func TestOrganizationController_V1OrganizationGet(t *testing.T) {
@@ -223,10 +243,10 @@ func TestOrganizationController_V1OrganizationGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
-		os.EXPECT().Get(gomock.Any(), org.ID).Return(org, nil)
+		os.EXPECT().GetByRef(gomock.Any(), org.ID, "").Return(org, nil)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{Id: org.ID.String()})
+		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{OrganizationRef: org.ID.String()})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationGet200JSONResponse)
 		require.True(t, ok)
@@ -236,8 +256,10 @@ func TestOrganizationController_V1OrganizationGet(t *testing.T) {
 	t.Run("bad id", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{Id: "not-a-xid"})
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, org.ID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{OrganizationRef: "AB"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationGet400JSONResponse)
 		assert.True(t, ok)
@@ -247,10 +269,10 @@ func TestOrganizationController_V1OrganizationGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
-		os.EXPECT().Get(gomock.Any(), org.ID).Return(nil, service.ErrNoPermission)
+		os.EXPECT().GetByRef(gomock.Any(), org.ID, "").Return(nil, service.ErrNoPermission)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{Id: org.ID.String()})
+		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{OrganizationRef: org.ID.String()})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationGet403JSONResponse)
 		assert.True(t, ok)
@@ -260,13 +282,28 @@ func TestOrganizationController_V1OrganizationGet(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
-		os.EXPECT().Get(gomock.Any(), org.ID).Return(nil, errors.Join(service.ErrOrganizationGet, repository.ErrNotFound))
+		os.EXPECT().GetByRef(gomock.Any(), org.ID, "").Return(nil, errors.Join(service.ErrOrganizationGet, repository.ErrNotFound))
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{Id: org.ID.String()})
+		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{OrganizationRef: org.ID.String()})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationGet404JSONResponse)
 		assert.True(t, ok)
+	})
+
+	t.Run("success by slug", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		os.EXPECT().GetByRef(gomock.Any(), model.ID{}, "acme").Return(org, nil)
+
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		resp, err := c.V1OrganizationGet(context.Background(), api.V1OrganizationGetRequestObject{OrganizationRef: "acme"})
+		require.NoError(t, err)
+		got, ok := resp.(api.V1OrganizationGet200JSONResponse)
+		require.True(t, ok)
+		assert.Equal(t, org.ID.String(), got.Id)
+		assert.Equal(t, "acme", got.Slug)
 	})
 }
 
@@ -280,12 +317,13 @@ func TestOrganizationController_V1OrganizationUpdate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, org.ID)
 		os.EXPECT().Update(gomock.Any(), org.ID, gomock.Any()).Return(org, nil)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationUpdate(context.Background(), api.V1OrganizationUpdateRequestObject{
-			Id:   org.ID.String(),
-			Body: &api.V1OrganizationUpdateJSONRequestBody{Name: &name},
+			OrganizationRef: org.ID.String(),
+			Body:            &api.V1OrganizationUpdateJSONRequestBody{Name: &name},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationUpdate200JSONResponse)
@@ -296,12 +334,13 @@ func TestOrganizationController_V1OrganizationUpdate(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, org.ID)
 		os.EXPECT().Update(gomock.Any(), org.ID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationUpdate(context.Background(), api.V1OrganizationUpdateRequestObject{
-			Id:   org.ID.String(),
-			Body: &api.V1OrganizationUpdateJSONRequestBody{Name: &name},
+			OrganizationRef: org.ID.String(),
+			Body:            &api.V1OrganizationUpdateJSONRequestBody{Name: &name},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationUpdate403JSONResponse)
@@ -318,10 +357,12 @@ func TestOrganizationController_V1OrganizationDelete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		stubOrganizationResolve(os, orgID)
 		os.EXPECT().Delete(gomock.Any(), orgID, false).Return(nil)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationDelete(context.Background(), api.V1OrganizationDeleteRequestObject{Id: orgID.String()})
+		resp, err := c.V1OrganizationDelete(context.Background(), api.V1OrganizationDeleteRequestObject{OrganizationRef: orgID.String()})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationDelete204Response)
 		assert.True(t, ok)
@@ -331,10 +372,11 @@ func TestOrganizationController_V1OrganizationDelete(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
 		os.EXPECT().Delete(gomock.Any(), orgID, false).Return(errors.Join(service.ErrOrganizationDelete, repository.ErrNotFound))
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationDelete(context.Background(), api.V1OrganizationDeleteRequestObject{Id: orgID.String()})
+		resp, err := c.V1OrganizationDelete(context.Background(), api.V1OrganizationDeleteRequestObject{OrganizationRef: orgID.String()})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationDelete404JSONResponse)
 		assert.True(t, ok)
@@ -345,34 +387,33 @@ func TestOrganizationController_V1OrganizationMembersAdd(t *testing.T) {
 	t.Parallel()
 
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
-	// The handler parses request.Id as both the organization and the user, and ignores Body.UserId.
-	userIDFromOrg, err := model.NewIDFromString(orgID.String(), model.ResourceTypeUser.String())
-	require.NoError(t, err)
+	userID := model.MustNewID(model.ResourceTypeUser)
 
-	t.Run("success uses path id as user id", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
-		os.EXPECT().AddMember(gomock.Any(), orgID, userIDFromOrg).Return(nil)
+		stubOrganizationResolve(os, orgID)
+		os.EXPECT().AddMember(gomock.Any(), orgID, userID).Return(nil)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationMembersAdd(context.Background(), api.V1OrganizationMembersAddRequestObject{
-			Id: orgID.String(),
+			OrganizationRef: orgID.String(),
 			Body: &api.V1OrganizationMembersAddJSONRequestBody{
-				UserId: model.MustNewID(model.ResourceTypeUser).String(),
+				UserId: userID.String(),
 			},
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationMembersAdd201JSONResponse)
 		require.True(t, ok)
-		assert.Equal(t, userIDFromOrg.String(), got.Id)
+		assert.Equal(t, userID.String(), got.Id)
 	})
 
-	t.Run("bad id", func(t *testing.T) {
+	t.Run("bad org ref", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationMembersAdd(context.Background(), api.V1OrganizationMembersAddRequestObject{Id: "not-a-xid"})
+		resp, err := c.V1OrganizationMembersAdd(context.Background(), api.V1OrganizationMembersAddRequestObject{OrganizationRef: "AB"})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationMembersAdd400JSONResponse)
 		assert.True(t, ok)
@@ -382,10 +423,14 @@ func TestOrganizationController_V1OrganizationMembersAdd(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		os := mocksvc.NewMockOrganizationService(ctrl)
-		os.EXPECT().AddMember(gomock.Any(), orgID, userIDFromOrg).Return(service.ErrNoPermission)
+		stubOrganizationResolve(os, orgID)
+		os.EXPECT().AddMember(gomock.Any(), orgID, userID).Return(service.ErrNoPermission)
 
 		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
-		resp, err := c.V1OrganizationMembersAdd(context.Background(), api.V1OrganizationMembersAddRequestObject{Id: orgID.String()})
+		resp, err := c.V1OrganizationMembersAdd(context.Background(), api.V1OrganizationMembersAddRequestObject{
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationMembersAddJSONRequestBody{UserId: userID.String()},
+		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationMembersAdd403JSONResponse)
 		assert.True(t, ok)
@@ -406,10 +451,12 @@ func TestOrganizationController_V1OrganizationRolesCreate(t *testing.T) {
 		rs := mocksvc.NewMockRoleService(ctrl)
 		rs.EXPECT().Create(gomock.Any(), userID, orgID, service.CreateRoleOpts{Name: "Custom role"}).Return(role, nil)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), rs, mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, rs, mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationRolesCreate(ctx, api.V1OrganizationRolesCreateRequestObject{
-			Id:   orgID.String(),
-			Body: &api.V1OrganizationRolesCreateJSONRequestBody{Name: "Custom role"},
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationRolesCreateJSONRequestBody{Name: "Custom role"},
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationRolesCreate201JSONResponse)
@@ -423,10 +470,12 @@ func TestOrganizationController_V1OrganizationRolesCreate(t *testing.T) {
 		rs := mocksvc.NewMockRoleService(ctrl)
 		rs.EXPECT().Create(gomock.Any(), userID, orgID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), rs, mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, rs, mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationRolesCreate(ctx, api.V1OrganizationRolesCreateRequestObject{
-			Id:   orgID.String(),
-			Body: &api.V1OrganizationRolesCreateJSONRequestBody{Name: "Custom role"},
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationRolesCreateJSONRequestBody{Name: "Custom role"},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationRolesCreate403JSONResponse)
@@ -446,10 +495,12 @@ func TestOrganizationController_V1OrganizationRoleGet(t *testing.T) {
 		rs := mocksvc.NewMockRoleService(ctrl)
 		rs.EXPECT().Get(gomock.Any(), role.ID, orgID).Return(role, nil)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), rs, mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, rs, mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationRoleGet(context.Background(), api.V1OrganizationRoleGetRequestObject{
-			Id:     orgID.String(),
-			RoleId: role.ID.String(),
+			OrganizationRef: orgID.String(),
+			RoleId:          role.ID.String(),
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationRoleGet200JSONResponse)
@@ -463,10 +514,12 @@ func TestOrganizationController_V1OrganizationRoleGet(t *testing.T) {
 		rs := mocksvc.NewMockRoleService(ctrl)
 		rs.EXPECT().Get(gomock.Any(), role.ID, orgID).Return(nil, errors.Join(service.ErrRoleGet, repository.ErrNotFound))
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), rs, mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, rs, mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationRoleGet(context.Background(), api.V1OrganizationRoleGetRequestObject{
-			Id:     orgID.String(),
-			RoleId: role.ID.String(),
+			OrganizationRef: orgID.String(),
+			RoleId:          role.ID.String(),
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationRoleGet404JSONResponse)
@@ -486,10 +539,12 @@ func TestOrganizationController_V1OrganizationTeamsCreate(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Create(gomock.Any(), orgID, service.CreateTeamOpts{Name: "Platform"}).Return(team, nil)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamsCreate(context.Background(), api.V1OrganizationTeamsCreateRequestObject{
-			Id:   orgID.String(),
-			Body: &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationTeamsCreate201JSONResponse)
@@ -500,10 +555,12 @@ func TestOrganizationController_V1OrganizationTeamsCreate(t *testing.T) {
 	t.Run("bad org id", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationTeamsCreate(context.Background(), api.V1OrganizationTeamsCreateRequestObject{
-			Id:   "not-a-xid",
-			Body: &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
+			OrganizationRef: "AB",
+			Body:            &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamsCreate400JSONResponse)
@@ -516,10 +573,12 @@ func TestOrganizationController_V1OrganizationTeamsCreate(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Create(gomock.Any(), orgID, gomock.Any()).Return(nil, service.ErrNoPermission)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamsCreate(context.Background(), api.V1OrganizationTeamsCreateRequestObject{
-			Id:   orgID.String(),
-			Body: &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamsCreate403JSONResponse)
@@ -532,10 +591,12 @@ func TestOrganizationController_V1OrganizationTeamsCreate(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Create(gomock.Any(), orgID, gomock.Any()).Return(nil, errors.Join(service.ErrTeamCreate, repository.ErrNotFound))
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamsCreate(context.Background(), api.V1OrganizationTeamsCreateRequestObject{
-			Id:   orgID.String(),
-			Body: &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
+			OrganizationRef: orgID.String(),
+			Body:            &api.V1OrganizationTeamsCreateJSONRequestBody{Name: "Platform"},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamsCreate404JSONResponse)
@@ -555,10 +616,12 @@ func TestOrganizationController_V1OrganizationTeamGet(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Get(gomock.Any(), team.ID, orgID).Return(team, nil)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamGet(context.Background(), api.V1OrganizationTeamGetRequestObject{
-			Id:     orgID.String(),
-			TeamId: team.ID.String(),
+			OrganizationRef: orgID.String(),
+			TeamId:          team.ID.String(),
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationTeamGet200JSONResponse)
@@ -572,10 +635,12 @@ func TestOrganizationController_V1OrganizationTeamGet(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Get(gomock.Any(), team.ID, orgID).Return(nil, service.ErrNoPermission)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamGet(context.Background(), api.V1OrganizationTeamGetRequestObject{
-			Id:     orgID.String(),
-			TeamId: team.ID.String(),
+			OrganizationRef: orgID.String(),
+			TeamId:          team.ID.String(),
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamGet403JSONResponse)
@@ -588,10 +653,12 @@ func TestOrganizationController_V1OrganizationTeamGet(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().Get(gomock.Any(), team.ID, orgID).Return(nil, errors.Join(service.ErrTeamGet, repository.ErrNotFound))
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamGet(context.Background(), api.V1OrganizationTeamGetRequestObject{
-			Id:     orgID.String(),
-			TeamId: team.ID.String(),
+			OrganizationRef: orgID.String(),
+			TeamId:          team.ID.String(),
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamGet404JSONResponse)
@@ -612,11 +679,13 @@ func TestOrganizationController_V1OrganizationTeamMembersAdd(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().AddMember(gomock.Any(), teamID, userID, orgID).Return(nil)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamMembersAdd(context.Background(), api.V1OrganizationTeamMembersAddRequestObject{
-			Id:     orgID.String(),
-			TeamId: teamID.String(),
-			Body:   &api.V1OrganizationTeamMembersAddJSONRequestBody{UserId: userID.String()},
+			OrganizationRef: orgID.String(),
+			TeamId:          teamID.String(),
+			Body:            &api.V1OrganizationTeamMembersAddJSONRequestBody{UserId: userID.String()},
 		})
 		require.NoError(t, err)
 		got, ok := resp.(api.V1OrganizationTeamMembersAdd201JSONResponse)
@@ -627,10 +696,12 @@ func TestOrganizationController_V1OrganizationTeamMembersAdd(t *testing.T) {
 	t.Run("missing user id", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), mocksvc.NewMockTeamService(ctrl))
 		resp, err := c.V1OrganizationTeamMembersAdd(context.Background(), api.V1OrganizationTeamMembersAddRequestObject{
-			Id:     orgID.String(),
-			TeamId: teamID.String(),
+			OrganizationRef: orgID.String(),
+			TeamId:          teamID.String(),
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamMembersAdd400JSONResponse)
@@ -643,11 +714,13 @@ func TestOrganizationController_V1OrganizationTeamMembersAdd(t *testing.T) {
 		ts := mocksvc.NewMockTeamService(ctrl)
 		ts.EXPECT().AddMember(gomock.Any(), teamID, userID, orgID).Return(service.ErrNoPermission)
 
-		c := newTestOrganizationController(t, mocksvc.NewMockOrganizationService(ctrl), mocksvc.NewMockRoleService(ctrl), ts)
+		os := mocksvc.NewMockOrganizationService(ctrl)
+		stubOrganizationResolve(os, orgID)
+		c := newTestOrganizationController(t, os, mocksvc.NewMockRoleService(ctrl), ts)
 		resp, err := c.V1OrganizationTeamMembersAdd(context.Background(), api.V1OrganizationTeamMembersAddRequestObject{
-			Id:     orgID.String(),
-			TeamId: teamID.String(),
-			Body:   &api.V1OrganizationTeamMembersAddJSONRequestBody{UserId: userID.String()},
+			OrganizationRef: orgID.String(),
+			TeamId:          teamID.String(),
+			Body:            &api.V1OrganizationTeamMembersAddJSONRequestBody{UserId: userID.String()},
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1OrganizationTeamMembersAdd403JSONResponse)

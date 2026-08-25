@@ -29,7 +29,8 @@ export function DocumentMoveDialog({
   documentId,
   documentTitle,
   kind,
-  libraryId,
+  organizationId,
+  namespaceId,
   currentFolderId,
   open,
   onOpenChange,
@@ -37,14 +38,15 @@ export function DocumentMoveDialog({
   documentId: string;
   documentTitle: string;
   kind: DocumentLibraryKind;
-  libraryId: string;
+  organizationId: string;
+  namespaceId?: string;
   currentFolderId?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const { data: folders, isLoading } = useQuery({
-    ...libraryFolderOptionsQuery(kind, libraryId),
+    ...libraryFolderOptionsQuery(kind, organizationId, namespaceId),
     enabled: open,
   });
   const form = useForm<MoveFormValues>({

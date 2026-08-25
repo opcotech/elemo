@@ -27,6 +27,7 @@ import (
 func newCreateNamespaceOpts() service.CreateNamespaceOpts {
 	return service.CreateNamespaceOpts{
 		Name:        "test namespace",
+		Slug:        "test-namespace",
 		Description: "test description",
 	}
 }
@@ -169,6 +170,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
 						Name:        opts.Name,
+						Slug:        opts.Slug,
 						Description: opts.Description,
 						CreatorID:   userID,
 						OrgID:       orgID,
@@ -364,6 +366,7 @@ func TestNamespaceService_Create(t *testing.T) {
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
 					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
 						Name:        opts.Name,
+						Slug:        opts.Slug,
 						Description: opts.Description,
 						CreatorID:   userID,
 						OrgID:       orgID,
@@ -647,6 +650,78 @@ func TestNamespaceService_Get(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNamespaceService_GetByRef(t *testing.T) {
+	t.Parallel()
+
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	userID := model.MustNewID(model.ResourceTypeUser)
+	repoNS := testModel.NewRepositoryNamespace()
+	accessible := &repository.AccessibleNamespace{
+		Namespace: *repoNS,
+		Organization: repository.PartialOrganization{
+			ID:   orgID,
+			Slug: "acme",
+			Name: "ACME",
+		},
+	}
+	want := service.AccessibleNamespaceFromRepository(accessible)
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
+
+	t.Run("get reachable namespace by slug", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
+
+		namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
+		namespaceRepo.EXPECT().GetByRef(ctx, orgID, model.ID{}, repoNS.Slug, userID, repository.NamespaceDetailProjection()).Return(accessible, nil)
+
+		svc, err := service.NewNamespaceService(
+			namespaceRepo,
+			mocksvc.NewMockPermissionService(ctrl),
+			mocksvc.NewMockLicenseService(ctrl),
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		require.NoError(t, err)
+
+		got, err := svc.GetByRef(ctx, orgID, model.ID{}, repoNS.Slug)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("namespace xid under wrong organization", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
+
+		namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
+		namespaceRepo.EXPECT().GetByRef(ctx, orgID, repoNS.ID, "", userID, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNotFound)
+
+		svc, err := service.NewNamespaceService(
+			namespaceRepo,
+			mocksvc.NewMockPermissionService(ctrl),
+			mocksvc.NewMockLicenseService(ctrl),
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		require.NoError(t, err)
+
+		got, err := svc.GetByRef(ctx, orgID, repoNS.ID, "")
+		require.ErrorIs(t, err, repository.ErrNotFound)
+		require.Nil(t, got)
+	})
 }
 
 func TestNamespaceService_List(t *testing.T) {

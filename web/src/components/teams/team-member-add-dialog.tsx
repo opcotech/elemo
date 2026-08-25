@@ -58,7 +58,7 @@ export function TeamMemberAddDialog({
   });
 
   const membersOptions = v1OrganizationMembersGetOptions({
-    path: { id: organizationId },
+    path: { organizationRef: organizationId },
   });
   const { data: organizationMembersPage, isLoading: isLoadingMembers } =
     useQuery({
@@ -66,7 +66,7 @@ export function TeamMemberAddDialog({
         membersOptions,
         async (pageToken, signal) => {
           const { data } = await v1OrganizationMembersGet({
-            path: { id: organizationId },
+            path: { organizationRef: organizationId },
             query: cursorPageQuery(pageToken),
             signal,
             throwOnError: true,
@@ -78,20 +78,14 @@ export function TeamMemberAddDialog({
     });
 
   const teamMembersOptions = v1OrganizationTeamMembersGetOptions({
-    path: {
-      id: organizationId,
-      team_id: teamId,
-    },
+    path: { organizationRef: organizationId, team_id: teamId },
   });
   const { data: teamMembersPage, isLoading: isLoadingTeamMembers } = useQuery({
     ...collectedListQuery<User>(
       teamMembersOptions,
       async (pageToken, signal) => {
         const { data } = await v1OrganizationTeamMembersGet({
-          path: {
-            id: organizationId,
-            team_id: teamId,
-          },
+          path: { organizationRef: organizationId, team_id: teamId },
           query: cursorPageQuery(pageToken),
           signal,
           throwOnError: true,
@@ -104,7 +98,7 @@ export function TeamMemberAddDialog({
 
   const mutation = useFormMutation({
     mutationFn: async (variables: {
-      path: { id: string; team_id: string };
+      path: { organizationRef: string; team_id: string };
       body: { user_id: string };
     }) => {
       const { data } = await v1OrganizationTeamMembersAdd({
@@ -119,18 +113,12 @@ export function TeamMemberAddDialog({
     errorMessagePrefix: "Failed to add member",
     queryKeysToInvalidate: [
       v1OrganizationTeamMembersGetOptions({
-        path: {
-          id: organizationId,
-          team_id: teamId,
-        },
+        path: { organizationRef: organizationId, team_id: teamId },
       }).queryKey,
     ],
     resetFormOnSuccess: true,
     transformValues: (values) => ({
-      path: {
-        id: organizationId,
-        team_id: teamId,
-      },
+      path: { organizationRef: organizationId, team_id: teamId },
       body: {
         user_id: values.userId,
       },

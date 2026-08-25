@@ -12,12 +12,15 @@ import {
 
 const organization = {
   id: "organization-1",
+  slug: "acme",
   name: "Acme",
 };
 
 const namespace = {
   id: "namespace-1",
+  slug: "product",
   name: "Product",
+  organization,
 };
 
 const project = {
@@ -52,6 +55,7 @@ function createQueryClient(
 
   return {
     fetchQuery,
+    setQueryData: vi.fn(),
   } as unknown as QueryClient;
 }
 
@@ -60,29 +64,25 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadNamespaceHierarchy(queryClient, "organization-1", "namespace-1")
+      loadNamespaceHierarchy(queryClient, "acme", "product")
     ).resolves.toEqual({ organization, namespace });
   });
 
-  it("throws not-found when the namespace is not owned by the organization", async () => {
+  it("maps a missing namespace onto not-found", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
-      if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([{ id: "other-namespace" }]);
+      if (queryId(options) === "v1NamespaceGet") {
+        throw new ApiError(404, "missing");
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadNamespaceHierarchy(queryClient, "organization-1", "namespace-1")
+      loadNamespaceHierarchy(queryClient, "acme", "product")
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
@@ -90,16 +90,13 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
       if (queryId(options) === "v1PermissionResourceGet")
         return namespaceReadPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadNamespaceDetail(queryClient, "organization-1", "namespace-1")
+      loadNamespaceDetail(queryClient, "acme", "product")
     ).resolves.toEqual({
       organization,
       namespace,
@@ -111,89 +108,55 @@ describe("settings hierarchy loaders", () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
       if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadNamespaceDetail(queryClient, "organization-1", "namespace-1")
+      loadNamespaceDetail(queryClient, "acme", "product")
     ).rejects.toMatchObject({ status: 403 });
   });
 
-  it("throws not-found when the project is outside the namespace", async () => {
+  it("throws not-found when the project key is unknown in the namespace", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
+      if (queryId(options) === "v1NamespacesProjectsKeyGet") {
+        throw new ApiError(404, "missing");
       }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([{ id: "other-project" }]);
-      }
-      if (queryId(options) === "v1ProjectGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectHierarchy(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectHierarchy(queryClient, "acme", "product", "WEB")
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
-  it("loads a project after validating the namespace membership", async () => {
+  it("loads a project by namespace-scoped key", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([project]);
-      }
-      if (queryId(options) === "v1ProjectGet") return project;
+      if (queryId(options) === "v1NamespacesProjectsKeyGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectHierarchy(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectHierarchy(queryClient, "acme", "product", "WEB")
     ).resolves.toEqual({ organization, namespace, project });
   });
 
-  it("refreshes the namespace when loading project detail", async () => {
+  it("includes verified project permissions in detail context", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([project]);
-      }
+      if (queryId(options) === "v1NamespacesProjectsKeyGet") return project;
       if (queryId(options) === "v1PermissionResourceGet")
         return projectReadPermissions;
-      if (queryId(options) === "v1ProjectGet") return project;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectDetail(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectDetail(queryClient, "acme", "product", "WEB")
     ).resolves.toEqual({
       organization,
       namespace,
@@ -256,82 +219,36 @@ describe("settings hierarchy loaders", () => {
     expect(queryClient.fetchQuery).toHaveBeenCalledTimes(2);
   });
 
-  it("throws not-found from project detail when the refreshed namespace lacks the project", async () => {
+  it("throws not-found from project detail when the key lookup misses", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
-      if (queryId(options) === "v1PermissionResourceGet")
-        return projectReadPermissions;
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([{ id: "other-project" }]);
+      if (queryId(options) === "v1NamespacesProjectsKeyGet") {
+        throw new ApiError(404, "missing");
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectDetail(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectDetail(queryClient, "acme", "product", "WEB")
     ).rejects.toMatchObject({ isNotFound: true });
-  });
-
-  it("throws permission denied when the project is omitted from the filtered namespace list", async () => {
-    const queryClient = createQueryClient((options) => {
-      if (queryId(options) === "v1OrganizationGet") return organization;
-      if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
-      if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
-      throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
-    });
-
-    await expect(
-      loadProjectDetail(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
-    ).rejects.toMatchObject({ status: 403 });
   });
 
   it("throws permission denied when the user cannot read the project", async () => {
     const queryClient = createQueryClient((options) => {
       if (queryId(options) === "v1OrganizationGet") return organization;
       if (queryId(options) === "v1NamespaceGet") return namespace;
-      if (queryId(options) === "v1OrganizationsNamespacesGet") {
-        return listedPage([namespace]);
-      }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([project]);
-      }
+      if (queryId(options) === "v1NamespacesProjectsKeyGet") return project;
       if (queryId(options) === "v1PermissionResourceGet") return noPermissions;
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectDetail(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectDetail(queryClient, "acme", "product", "WEB")
     ).rejects.toBeInstanceOf(ApiError);
 
     await expect(
-      loadProjectDetail(
-        queryClient,
-        "organization-1",
-        "namespace-1",
-        "project-1"
-      )
+      loadProjectDetail(queryClient, "acme", "product", "WEB")
     ).rejects.toMatchObject({ status: 403 });
   });
 });

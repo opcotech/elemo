@@ -6,6 +6,7 @@ import type { z } from "zod";
 
 import { FieldGroup, FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
+import { ImmutableIdentifierField } from "@/components/ui/immutable-identifier-field";
 import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
@@ -13,6 +14,7 @@ import {
   v1NamespaceGetOptions,
   v1OrganizationsNamespacesGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath, organizationRefPath } from "@/lib/api/refs";
 import { zNamespacePatch } from "@/lib/api/schemas";
 import { v1NamespaceUpdate } from "@/lib/api/sdk";
 import type {
@@ -28,15 +30,22 @@ const namespaceEditFormSchema = createFormSchema(zNamespacePatch);
 type NamespaceEditFormValues = z.infer<typeof namespaceEditFormSchema>;
 
 interface NamespaceEditFormProps {
-  namespace: Namespace;
+  namespace: Namespace & { slug: string };
   organizationId: string;
+  organizationSlug: string;
 }
 
 export function NamespaceEditForm({
   namespace,
   organizationId,
+  organizationSlug,
 }: NamespaceEditFormProps) {
   const navigate = useNavigate();
+  const organizationRoute = {
+    to: "/settings/organizations/$organizationSlug",
+    params: { organizationSlug },
+  } as const;
+
   const form = useForm<NamespaceEditFormValues>({
     resolver: zodResolver(namespaceEditFormSchema),
     defaultValues: {
@@ -71,18 +80,20 @@ export function NamespaceEditForm({
     errorMessagePrefix: "Failed to update namespace",
     queryKeysToInvalidate: [
       v1OrganizationsNamespacesGetOptions({
-        path: { id: organizationId },
+        path: organizationRefPath(organizationId),
+      }).queryKey,
+      v1OrganizationsNamespacesGetOptions({
+        path: organizationRefPath(organizationSlug),
       }).queryKey,
       v1NamespaceGetOptions({
-        path: { id: namespace.id },
+        path: namespaceRefPath(organizationId, namespace.id),
+      }).queryKey,
+      v1NamespaceGetOptions({
+        path: namespaceRefPath(organizationSlug, namespace.slug),
       }).queryKey,
       accessibleNamespacesQueryKey,
     ],
-    navigateOnSuccess: (navigateTo) =>
-      navigateTo({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
-      }),
+    navigateOnSuccess: (navigateTo) => navigateTo(organizationRoute),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(
         namespaceEditFormSchema,
@@ -93,9 +104,7 @@ export function NamespaceEditForm({
         }
       );
       return {
-        path: {
-          id: namespace.id,
-        },
+        path: namespaceRefPath(organizationId, namespace.id),
         body: normalizedBody,
       };
     },
@@ -105,17 +114,13 @@ export function NamespaceEditForm({
     <FormCard
       description="Update the namespace details below."
       onSubmit={mutation.handleSubmit}
-      onCancel={() =>
-        navigate({
-          to: "/settings/organizations/$organizationId",
-          params: { organizationId },
-        })
-      }
+      onCancel={() => navigate(organizationRoute)}
       isPending={mutation.isPending}
       error={mutation.error || null}
     >
       <FieldProvider {...form}>
         <FieldGroup>
+          <ImmutableIdentifierField label="Slug" value={namespace.slug} />
           <NameDescriptionFields
             control={form.control}
             isPending={mutation.isPending}

@@ -54,10 +54,7 @@ export function TeamMemberAssignment({
     error,
   } = useQuery(
     v1OrganizationTeamMembersGetOptions({
-      path: {
-        id: organizationId,
-        team_id: teamId,
-      },
+      path: { organizationRef: organizationId, team_id: teamId },
     })
   );
   const members = membersPage?.items;

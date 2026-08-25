@@ -17,15 +17,15 @@ import { formatDate } from "@/lib/format-date";
 
 interface ProjectDetailInfoProps {
   project: Project;
-  organizationId: string;
-  namespaceId: string;
+  organizationSlug: string;
+  namespaceSlug: string;
   namespaceName: string;
 }
 
 export function ProjectDetailInfo({
   project,
-  organizationId,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
   namespaceName,
 }: ProjectDetailInfoProps) {
   const { data: permissions } = usePermissions(
@@ -49,10 +49,11 @@ export function ProjectDetailInfo({
             size="sm"
             render={
               <Link
-                to="/namespaces/$namespaceId/projects/$projectId"
+                to="/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey"
                 params={{
-                  namespaceId,
-                  projectId: project.id,
+                  organizationSlug,
+                  namespaceSlug,
+                  projectKey: project.key,
                 }}
               />
             }
@@ -65,11 +66,11 @@ export function ProjectDetailInfo({
               size="sm"
               render={
                 <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
+                  to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit"
                   params={{
-                    organizationId,
-                    namespaceId,
-                    projectId: project.id,
+                    organizationSlug,
+                    namespaceSlug,
+                    projectKey: project.key,
                   }}
                 />
               }
@@ -95,8 +96,8 @@ export function ProjectDetailInfo({
 
       <DetailField label="Namespace">
         <Link
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId"
-          params={{ organizationId, namespaceId }}
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug"
+          params={{ organizationSlug, namespaceSlug }}
           className="text-primary hover:underline"
         >
           {namespaceName}

@@ -7,17 +7,19 @@ interface NamespaceDangerZoneProps {
   namespace: Namespace;
   permissions: EffectiveActions;
   organizationId: string;
+  organizationSlug: string;
 }
 
 export function NamespaceDangerZone({
   namespace,
   permissions,
   organizationId,
+  organizationSlug,
 }: NamespaceDangerZoneProps) {
   return (
     <EntityDangerZone
       entity={namespace}
-      context={{ organizationId }}
+      context={{ organizationId, organizationSlug }}
       permissions={permissions}
       config={namespaceLifecycleConfig}
       mutationOptions={v1NamespaceDeleteMutation()}

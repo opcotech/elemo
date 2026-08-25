@@ -51,7 +51,7 @@ export function OrganizationMemberInviteDialog({
 }: OrganizationMemberInviteDialogProps) {
   const { data: rolesPage, isLoading: isLoadingRoles } = useQuery(
     v1OrganizationRolesGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
     })
   );
   const roles = rolesPage?.items;
@@ -82,15 +82,13 @@ export function OrganizationMemberInviteDialog({
     errorMessagePrefix: "Failed to send invitation",
     queryKeysToInvalidate: [
       v1OrganizationMembersGetOptions({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
       }).queryKey,
     ],
     resetFormOnSuccess: true,
     transformValues: (values) => {
       return {
-        path: {
-          id: organizationId,
-        },
+        path: { organizationRef: organizationId },
         body: {
           email: values.email,
           role_id:

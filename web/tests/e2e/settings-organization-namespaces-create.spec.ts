@@ -12,7 +12,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import type { User } from "@/lib/api/types";
@@ -22,6 +22,7 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let organizationName: string;
   let ownerApiClient: Client;
 
@@ -43,6 +44,7 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
       email: `namespaces-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
     organizationName = organization.name;
 
     await grantMembershipToUser(
@@ -106,13 +108,14 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
     const namespaceDescription = `Namespace description ${getRandomString(8)}`;
     await namespaceCreatePage.namespaceForm.fillFields({
       Name: namespaceName,
+      Slug: getRandomSlug("ns"),
       Description: namespaceDescription,
     });
     await namespaceCreatePage.namespaceForm.submit("Create Namespace");
     await waitForSuccessToast(page, "Namespace created");
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     await expect(
       orgDetailsPage.namespaces.getRowByNamespaceName(namespaceName)
@@ -127,17 +130,18 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     await orgDetailsPage.namespaces.clickCreateNamespaceButton();
 
     // Should navigate to create namespace page
     await expect(page).toHaveURL(
-      new RegExp(`/settings/organizations/${organizationId}/namespaces/new`)
+      new RegExp(`/settings/organizations/${organizationSlug}/namespaces/new`)
     );
 
     // Verify form fields are present
     await expect(page.getByRole("textbox", { name: "Name" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Slug" })).toBeVisible();
   });
 
   test("should allow creating namespace with only name field", async ({
@@ -157,12 +161,13 @@ test.describe("@settings.organization-namespaces-create Organization Namespaces 
     const namespaceName = getFullNamespaceName();
     await namespaceCreatePage.namespaceForm.fillFields({
       Name: namespaceName,
+      Slug: getRandomSlug("ns"),
     });
     await namespaceCreatePage.namespaceForm.submit("Create Namespace");
     await waitForSuccessToast(page, "Namespace created");
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     await expect(
       orgDetailsPage.namespaces.getRowByNamespaceName(namespaceName)

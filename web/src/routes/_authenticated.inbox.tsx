@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompactWorkList } from "@/components/work/work-list";
 import { useAuth } from "@/hooks/use-auth";
+import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
   v1NotificationsGetOptions,
@@ -18,7 +19,7 @@ import {
 import { v1UsersIssuesGet } from "@/lib/api/sdk";
 import { selectAttentionSignals } from "@/lib/mock-data";
 import { withRouteErrors } from "@/lib/route-errors";
-import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import { issuesToWorkItemsWithNamespaces } from "@/lib/work/issue-adapter";
 import { queryWorkItems } from "@/lib/work/query";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
@@ -90,6 +91,8 @@ function InboxPage() {
 function InboxContent() {
   const { user } = useAuth();
   const userId = user?.id;
+  const { data: accessibleWorkspace } = useAccessibleNamespaces();
+  const namespaces = accessibleWorkspace?.namespaces ?? [];
   const userIssuesOptions = v1UsersIssuesGetOptions({
     path: { id: userId ?? "" },
     query: cursorPageQuery(),
@@ -107,8 +110,8 @@ function InboxContent() {
     enabled: Boolean(userId),
   });
   const userWorkItems = useMemo(
-    () => issuesToWorkItems(issuesPage?.items ?? []),
-    [issuesPage?.items]
+    () => issuesToWorkItemsWithNamespaces(issuesPage?.items ?? [], namespaces),
+    [issuesPage?.items, namespaces]
   );
   const userWorkItemById = useMemo(
     () =>

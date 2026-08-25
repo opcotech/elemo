@@ -38,31 +38,42 @@ import {
   v1NamespacesDocumentsGetOptions,
   v1NamespacesProjectsGetOptions,
 } from "@/lib/api/query-options";
-import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
+import { namespaceRefPath } from "@/lib/api/refs";
+import type {
+  AccessibleNamespace,
+  PartialDocument,
+  Project,
+} from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import type { DocumentLibrarySearch } from "@/lib/documents/library";
 import { internalPath } from "@/lib/internal-url";
 import { selectAttentionSignals, selectWorkItems } from "@/lib/mock-data";
+import {
+  namespaceDocumentsPath,
+  namespaceProjectsPath,
+  projectPath,
+  settingsProjectNewPath,
+} from "@/lib/paths";
 
 export function NamespaceOverviewPage({
   namespace,
   organization,
 }: {
-  namespace: Namespace;
-  organization?: { id: string; name: string };
+  namespace: AccessibleNamespace;
+  organization: AccessibleNamespace["organization"];
 }) {
   const { data: permissions } = usePermissions(
     withResourceType(ResourceType.Namespace, namespace.id)
   );
   const { data: projectsPage, isLoading: isProjectsLoading } = useQuery(
     v1NamespacesProjectsGetOptions({
-      path: { id: namespace.id },
+      path: namespaceRefPath(organization.id, namespace.id),
       query: { page_size: 6 },
     })
   );
   const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery(
     v1NamespacesDocumentsGetOptions({
-      path: { id: namespace.id },
+      path: namespaceRefPath(organization.id, namespace.id),
       query: { page_size: 5, all: true },
     })
   );
@@ -106,11 +117,14 @@ export function NamespaceOverviewPage({
               )
             }
             secondary={[
-              ...(mayCreateProject && organization
+              ...(mayCreateProject
                 ? [
                     {
                       label: "Create project",
-                      href: `/settings/organizations/${organization.id}/namespaces/${namespace.id}/projects/new`,
+                      href: settingsProjectNewPath({
+                        organizationSlug: organization.slug,
+                        namespaceSlug: namespace.slug,
+                      }),
                     },
                   ]
                 : []),
@@ -137,7 +151,12 @@ export function NamespaceOverviewPage({
                 size="sm"
                 render={
                   <InternalLink
-                    to={internalPath(`/namespaces/${namespace.id}/projects`)}
+                    to={internalPath(
+                      namespaceProjectsPath({
+                        organizationSlug: organization.slug,
+                        namespaceSlug: namespace.slug,
+                      })
+                    )}
                   />
                 }
               >
@@ -153,7 +172,11 @@ export function NamespaceOverviewPage({
                   <EntityLink
                     key={project.id}
                     type="project"
-                    href={`/namespaces/${namespace.id}/projects/${project.id}`}
+                    href={projectPath({
+                      organizationSlug: organization.slug,
+                      namespaceSlug: namespace.slug,
+                      projectKey: project.key,
+                    })}
                     title={project.name}
                     imageUrl={project.logo}
                     subtitle={
@@ -246,7 +269,10 @@ export function NamespaceOverviewPage({
                     render={
                       <InternalLink
                         to={internalPath(
-                          `/namespaces/${namespace.id}/documents`
+                          namespaceDocumentsPath({
+                            organizationSlug: organization.slug,
+                            namespaceSlug: namespace.slug,
+                          })
                         )}
                       />
                     }
@@ -285,8 +311,8 @@ export function NamespaceProjectsPage({
   namespace,
   organization,
 }: {
-  namespace: Namespace;
-  organization?: { id: string; name: string };
+  namespace: AccessibleNamespace;
+  organization: AccessibleNamespace["organization"];
 }) {
   const [query, setQuery] = useState("");
   const { data: permissions } = usePermissions(
@@ -295,7 +321,7 @@ export function NamespaceProjectsPage({
   const pageNav = useCursorPageNav({ resetKey: query });
   const { data: projectsPage, isLoading } = useQuery(
     v1NamespacesProjectsGetOptions({
-      path: { id: namespace.id },
+      path: namespaceRefPath(organization.id, namespace.id),
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -322,9 +348,12 @@ export function NamespaceProjectsPage({
         description={`Real undertakings in ${namespace.name}.`}
         showIcon={false}
         actions={
-          mayCreateProject && organization ? (
+          mayCreateProject ? (
             <CreateButton
-              href={`/settings/organizations/${organization.id}/namespaces/${namespace.id}/projects/new`}
+              href={settingsProjectNewPath({
+                organizationSlug: organization.slug,
+                namespaceSlug: namespace.slug,
+              })}
             >
               New project
             </CreateButton>
@@ -358,7 +387,11 @@ export function NamespaceProjectsPage({
               <InternalLink
                 key={project.id}
                 to={internalPath(
-                  `/namespaces/${namespace.id}/projects/${project.id}`
+                  projectPath({
+                    organizationSlug: organization.slug,
+                    namespaceSlug: namespace.slug,
+                    projectKey: project.key,
+                  })
                 )}
                 className="hover:bg-muted/40 focus-visible:ring-ring grid gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"
               >
@@ -428,9 +461,11 @@ export function NamespaceProjectsPage({
 
 export function NamespaceDocumentsPage({
   namespace,
+  organization,
   search,
 }: {
-  namespace: Namespace;
+  namespace: AccessibleNamespace;
+  organization: AccessibleNamespace["organization"];
   search: DocumentLibrarySearch;
 }) {
   const { data: permissions } = usePermissions(
@@ -444,6 +479,10 @@ export function NamespaceDocumentsPage({
     <DocumentLibraryPage
       kind="namespace"
       libraryId={namespace.id}
+      organizationId={organization.id}
+      organizationSlug={organization.slug}
+      namespaceId={namespace.id}
+      namespaceSlug={namespace.slug}
       libraryName={namespace.name}
       search={search}
       mayWrite={mayWrite}

@@ -58,15 +58,15 @@ Main organization **Elemo** (`elemo.example`):
 
 - 300 users and 12 teams
 - Namespaces: Product, Platform, Operations, Customer (19 live projects total,
-  2–5 per namespace, at least 100 issues each)
-- **Migrated** namespace: 72 archived projects, 75–125 issues each
+  2-5 per namespace, at least 100 issues each)
+- **Migrated** namespace: 72 archived projects, 75-125 issues each
 - 280 documents split across org, namespace, and project libraries
 
 Five partner organizations (Kite Analytics, Harbor Logistics, Nimbus Cloud,
 Brightline Design, Fieldstone Consulting) collaborate through ReBAC grants
 rather than dual org membership, plus a few dual-org members.
 
-Expected volume is about 100 projects and 10k–12k issues. A full run takes
+Expected volume is about 100 projects and 10k-12k issues. A full run takes
 several minutes on a local Docker stack.
 
 ## Smoke profile

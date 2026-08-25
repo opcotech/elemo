@@ -26,6 +26,7 @@ export {
   v1NamespacesFoldersGetOptions,
   v1NamespacesGetOptions,
   v1NamespacesProjectsGetOptions,
+  v1NamespacesProjectsKeyGetOptions,
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
   v1OrganizationRoleGetOptions,

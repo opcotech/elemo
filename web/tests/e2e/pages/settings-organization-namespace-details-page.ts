@@ -7,6 +7,8 @@ import {
   NamespaceProjectsSection,
 } from "../sections";
 
+import { settingsNamespacePath } from "@/lib/paths";
+
 export class SettingsOrganizationNamespaceDetailsPage extends BaseComponent {
   public readonly projects: NamespaceProjectsSection;
   public readonly dangerZone: NamespaceDangerZoneSection;
@@ -17,10 +19,10 @@ export class SettingsOrganizationNamespaceDetailsPage extends BaseComponent {
     this.dangerZone = new NamespaceDangerZoneSection(page);
   }
 
-  async goto(organizationId: string, namespaceId: string): Promise<void> {
+  async goto(organizationSlug: string, namespaceSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/${namespaceId}`
+      settingsNamespacePath({ organizationSlug, namespaceSlug })
     );
   }
 

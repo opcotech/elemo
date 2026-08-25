@@ -9,6 +9,7 @@ import { cacheProfiles } from "@/lib/query-client";
 export interface AccessibleNamespace extends ApiAccessibleNamespace {
   organizationId: string;
   organizationName: string;
+  organizationSlug: string;
 }
 
 export interface AccessibleWorkspace {
@@ -49,6 +50,7 @@ export function accessibleNamespacesOptions(queryClient: QueryClient) {
         ...namespace,
         organizationId: namespace.organization.id,
         organizationName: namespace.organization.name,
+        organizationSlug: namespace.organization.slug,
       }));
 
       return {

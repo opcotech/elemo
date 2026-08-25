@@ -51,7 +51,7 @@ interface NamespaceRowProps {
   namespace: Namespace;
   permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
-  organizationId: string;
+  organizationSlug: string;
   onDeleteClick: (namespace: Namespace) => void;
 }
 
@@ -59,7 +59,7 @@ function NamespaceRow({
   namespace,
   permissions,
   isPermissionsLoading,
-  organizationId,
+  organizationSlug,
   onDeleteClick,
 }: NamespaceRowProps) {
   const projectCount = namespace.project_count ?? 0;
@@ -73,8 +73,8 @@ function NamespaceRow({
     <TableRow>
       <TableCell className="font-medium">
         <ConditionalLink
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId"
-          params={{ organizationId, namespaceId: namespace.id }}
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug"
+          params={{ organizationSlug, namespaceSlug: namespace.slug }}
           condition={hasNamespaceReadPermission}
         >
           {namespace.name}
@@ -109,10 +109,10 @@ function NamespaceRow({
                 size="sm"
                 render={
                   <Link
-                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                    to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit"
                     params={{
-                      organizationId,
-                      namespaceId: namespace.id,
+                      organizationSlug,
+                      namespaceSlug: namespace.slug,
                     }}
                   />
                 }
@@ -140,11 +140,13 @@ function NamespaceRow({
 
 interface NamespacesListProps {
   organizationId: string;
+  organizationSlug: string;
   organizationPermissions: EffectiveActions;
 }
 
 export function NamespacesList({
   organizationId,
+  organizationSlug,
   organizationPermissions,
 }: NamespacesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,7 +161,7 @@ export function NamespacesList({
     error,
   } = useQuery(
     v1OrganizationsNamespacesGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -208,8 +210,8 @@ export function NamespacesList({
       size="sm"
       render={
         <Link
-          to="/settings/organizations/$organizationId/namespaces/new"
-          params={{ organizationId }}
+          to="/settings/organizations/$organizationSlug/namespaces/new"
+          params={{ organizationSlug }}
         />
       }
     >
@@ -244,8 +246,8 @@ export function NamespacesList({
               size="sm"
               render={
                 <Link
-                  to="/settings/organizations/$organizationId/namespaces/new"
-                  params={{ organizationId }}
+                  to="/settings/organizations/$organizationSlug/namespaces/new"
+                  params={{ organizationSlug }}
                 />
               }
             >
@@ -286,7 +288,7 @@ export function NamespacesList({
                   namespace={namespace}
                   permissions={permissionQuery?.data}
                   isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                  organizationId={organizationId}
+                  organizationSlug={organizationSlug}
                   onDeleteClick={handleDeleteClick}
                 />
               );
@@ -300,6 +302,7 @@ export function NamespacesList({
         <NamespaceDeleteDialog
           namespace={selectedNamespace}
           organizationId={organizationId}
+          organizationSlug={organizationSlug}
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           onSuccess={handleDeleteSuccess}

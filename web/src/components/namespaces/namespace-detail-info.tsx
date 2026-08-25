@@ -12,14 +12,14 @@ import { formatDate } from "@/lib/format-date";
 interface NamespaceDetailInfoProps {
   namespace: Namespace;
   permissions: EffectiveActions;
-  organizationId: string;
+  organizationSlug: string;
   organizationName: string;
 }
 
 export function NamespaceDetailInfo({
   namespace,
   permissions,
-  organizationId,
+  organizationSlug,
   organizationName,
 }: NamespaceDetailInfoProps) {
   const hasWritePermission = can(permissions, Action.NamespaceUpdate);
@@ -38,8 +38,11 @@ export function NamespaceDetailInfo({
             size="sm"
             render={
               <Link
-                to="/namespaces/$namespaceId"
-                params={{ namespaceId: namespace.id }}
+                to="/organizations/$organizationSlug/namespaces/$namespaceSlug"
+                params={{
+                  organizationSlug,
+                  namespaceSlug: namespace.slug,
+                }}
               />
             }
           >
@@ -51,10 +54,10 @@ export function NamespaceDetailInfo({
               size="sm"
               render={
                 <Link
-                  to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                  to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit"
                   params={{
-                    organizationId,
-                    namespaceId: namespace.id,
+                    organizationSlug,
+                    namespaceSlug: namespace.slug,
                   }}
                 />
               }
@@ -68,10 +71,12 @@ export function NamespaceDetailInfo({
     >
       <DetailField label="Name" value={namespace.name} />
 
+      <DetailField label="Slug" value={namespace.slug} />
+
       <DetailField label="Organization">
         <Link
-          to="/settings/organizations/$organizationId"
-          params={{ organizationId }}
+          to="/settings/organizations/$organizationSlug"
+          params={{ organizationSlug }}
           className="text-primary hover:underline"
         >
           {organizationName}

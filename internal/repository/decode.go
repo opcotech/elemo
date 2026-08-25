@@ -270,7 +270,11 @@ func partialNamespaceFromNode(node neo4j.Node) (*PartialNamespace, error) {
 	if err != nil {
 		return nil, errors.Join(ErrMalformedResult, err)
 	}
-	return &PartialNamespace{ID: id, Name: name}, nil
+	slug, err := Neo4jNodeProperty[string](node, "slug")
+	if err != nil {
+		return nil, errors.Join(ErrMalformedResult, err)
+	}
+	return &PartialNamespace{ID: id, Slug: slug, Name: name}, nil
 }
 
 func Neo4jRecordOptionalPartialNamespace(record *neo4j.Record, key string) (*PartialNamespace, error) {

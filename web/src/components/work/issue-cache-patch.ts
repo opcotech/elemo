@@ -9,6 +9,7 @@ import {
   v1IssueGetOptions,
   v1NamespacesIssuesKeyGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import type {
   Issue,
   IssuePatch,
@@ -20,6 +21,7 @@ import { rollbackOptimisticQueryData } from "@/lib/mutation-workflow";
 export type IssueCacheTarget = {
   issueId: string;
   projectId?: string | null;
+  organizationId?: string | null;
   namespaceId?: string | null;
   issueKey?: string | null;
 };
@@ -58,10 +60,12 @@ export function isProjectsIssuesQueryForProject(
 
   const record = key as {
     _id?: string;
-    path?: { id?: string };
+    path?: { id?: string; projectId?: string };
   };
 
-  return record._id === "v1ProjectsIssuesGet" && record.path?.id === projectId;
+  return (
+    record._id === "v1ProjectsIssuesGet" && record.path?.projectId === projectId
+  );
 }
 
 export function mergePartialIssueFields(
@@ -152,9 +156,12 @@ function issueDetailQueryKeys(target: IssueCacheTarget): {
     path: { id: target.issueId },
   }).queryKey;
   const byKeyQueryKey =
-    target.namespaceId && target.issueKey
+    target.organizationId && target.namespaceId && target.issueKey
       ? v1NamespacesIssuesKeyGetOptions({
-          path: { id: target.namespaceId, key: target.issueKey },
+          path: {
+            ...namespaceRefPath(target.organizationId, target.namespaceId),
+            key: target.issueKey,
+          },
         }).queryKey
       : undefined;
 

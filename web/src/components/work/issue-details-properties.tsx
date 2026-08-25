@@ -26,6 +26,7 @@ import {
   v1LabelsGetOptions,
   v1ProjectsIssuesGetOptions,
 } from "@/lib/api/query-options";
+import { projectIdPath } from "@/lib/api/refs";
 import { v1ProjectsIssuesGet } from "@/lib/api/sdk";
 import type {
   Issue,
@@ -90,7 +91,7 @@ export function IssueParentSelect({
 }) {
   const project = issue.project;
   const listOptions = v1ProjectsIssuesGetOptions({
-    path: { id: project?.id ?? "" },
+    path: projectIdPath(project?.id ?? ""),
     query: { page_size: ISSUE_RELATIONS_PAGE_SIZE },
   });
   const { data: issuesPage } = useQuery({
@@ -101,7 +102,7 @@ export function IssueParentSelect({
     queryFn: async ({ signal }) =>
       collectListedPage(async (pageToken) => {
         const { data } = await v1ProjectsIssuesGet({
-          path: { id: project?.id ?? "" },
+          path: projectIdPath(project?.id ?? ""),
           query: {
             page_size: ISSUE_RELATIONS_PAGE_SIZE,
             ...(pageToken ? { page_token: pageToken } : {}),

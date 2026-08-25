@@ -49,10 +49,16 @@ export function useCommandPalette(): CommandPaletteState &
   const navigationContext = useNavigationContext();
   const { theme, setTheme } = useTheme();
 
-  const { organizationId, namespaceId, projectId } = navigationContext;
-  const hasOrganization = !!organizationId;
-  const hasNamespace = !!namespaceId;
-  const hasProject = hasNamespace && !!projectId;
+  const {
+    organizationId,
+    organizationSlug,
+    namespaceId,
+    namespaceSlug,
+    projectKey,
+  } = navigationContext;
+  const hasOrganization = !!organizationSlug;
+  const hasNamespace = !!namespaceSlug;
+  const hasProject = hasNamespace && !!projectKey;
 
   const { data: systemOrganizationPermissions } = usePermissions(
     withResourceType(ResourceType.Installation),
@@ -119,25 +125,25 @@ export function useCommandPalette(): CommandPaletteState &
   }, [navigate]);
 
   const handleGoToOrganization = useCallback(() => {
-    if (!organizationId) return;
+    if (!organizationSlug) return;
     setOpen(false);
     navigate({
-      to: "/organizations/$organizationId",
-      params: { organizationId },
+      to: "/organizations/$organizationSlug",
+      params: { organizationSlug },
     });
-  }, [navigate, organizationId]);
+  }, [navigate, organizationSlug]);
 
   const handleCreateNamespace = useCallback(() => {
     setOpen(false);
-    if (organizationId) {
+    if (organizationSlug) {
       navigate({
-        to: "/settings/organizations/$organizationId/namespaces/new",
-        params: { organizationId },
+        to: "/settings/organizations/$organizationSlug/namespaces/new",
+        params: { organizationSlug },
       });
       return;
     }
     navigate({ to: "/settings/namespaces/new" });
-  }, [navigate, organizationId]);
+  }, [navigate, organizationSlug]);
 
   const handleShowNamespaces = useCallback(() => {
     setOpen(false);
@@ -145,40 +151,40 @@ export function useCommandPalette(): CommandPaletteState &
   }, [navigate]);
 
   const handleGoToNamespace = useCallback(() => {
-    if (!namespaceId) return;
+    if (!organizationSlug || !namespaceSlug) return;
     setOpen(false);
     navigate({
-      to: "/namespaces/$namespaceId",
-      params: { namespaceId },
+      to: "/organizations/$organizationSlug/namespaces/$namespaceSlug",
+      params: { organizationSlug, namespaceSlug },
     });
-  }, [navigate, namespaceId]);
+  }, [navigate, organizationSlug, namespaceSlug]);
 
   const handleCreateProject = useCallback(() => {
-    if (!organizationId || !namespaceId) return;
+    if (!organizationSlug || !namespaceSlug) return;
     setOpen(false);
     navigate({
-      to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new",
-      params: { organizationId, namespaceId },
+      to: "/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new",
+      params: { organizationSlug, namespaceSlug },
     });
-  }, [navigate, organizationId, namespaceId]);
+  }, [navigate, organizationSlug, namespaceSlug]);
 
   const handleShowProjects = useCallback(() => {
-    if (!namespaceId) return;
+    if (!organizationSlug || !namespaceSlug) return;
     setOpen(false);
     navigate({
-      to: "/namespaces/$namespaceId/projects",
-      params: { namespaceId },
+      to: "/organizations/$organizationSlug/namespaces/$namespaceSlug/projects",
+      params: { organizationSlug, namespaceSlug },
     });
-  }, [navigate, namespaceId]);
+  }, [navigate, organizationSlug, namespaceSlug]);
 
   const handleGoToProject = useCallback(() => {
-    if (!namespaceId || !projectId) return;
+    if (!organizationSlug || !namespaceSlug || !projectKey) return;
     setOpen(false);
     navigate({
-      to: "/namespaces/$namespaceId/projects/$projectId",
-      params: { namespaceId, projectId },
+      to: "/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey",
+      params: { organizationSlug, namespaceSlug, projectKey },
     });
-  }, [navigate, namespaceId, projectId]);
+  }, [navigate, organizationSlug, namespaceSlug, projectKey]);
 
   // Consolidated keyboard event handling
   useEffect(() => {

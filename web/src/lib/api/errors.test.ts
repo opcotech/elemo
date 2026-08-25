@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   ApiError,
+  isConflict,
   isNotFound,
   isPermissionDenied,
+  throwIfApiFailed,
   toApiError,
 } from "@/lib/api/errors";
 
@@ -11,12 +13,14 @@ describe("api error helpers", () => {
   it("detects ApiError instances by status", () => {
     expect(isNotFound(new ApiError(404, "missing"))).toBe(true);
     expect(isPermissionDenied(new ApiError(403, "denied"))).toBe(true);
+    expect(isConflict(new ApiError(409, "taken"))).toBe(true);
     expect(isNotFound(new ApiError(500, "boom"))).toBe(false);
   });
 
   it("detects plain objects that carry a numeric status", () => {
     expect(isNotFound({ status: 404, message: "missing" })).toBe(true);
     expect(isPermissionDenied({ status: 403 })).toBe(true);
+    expect(isConflict({ response: { status: 409 } })).toBe(true);
   });
 
   it("walks nested cause chains for status", () => {
@@ -42,5 +46,14 @@ describe("api error helpers", () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(404);
     expect(error.message).toBe("gone");
+  });
+
+  it("throws ApiError when the transport returns a failed response", () => {
+    expect(() =>
+      throwIfApiFailed({
+        error: { message: "taken" },
+        response: { status: 409, statusText: "Conflict" } as Response,
+      })
+    ).toThrow(ApiError);
   });
 });

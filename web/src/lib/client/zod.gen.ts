@@ -297,6 +297,7 @@ export const zOrganizationStatus = z.enum(['active', 'deleted']);
  */
 export const zOrganization = z.object({
     id: z.string(),
+    slug: z.string().min(3).max(50).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     name: z.string().min(1).max(120),
     email: z.email().min(6).max(254),
     logo: z.url().max(2000).nullable(),
@@ -317,6 +318,7 @@ export const zOrganization = z.object({
  */
 export const zPartialOrganization = z.object({
     id: z.string(),
+    slug: z.string(),
     name: z.string()
 });
 
@@ -343,6 +345,7 @@ export const zOrganizationMemberPage = z.object({
  */
 export const zNamespace = z.object({
     id: z.string(),
+    slug: z.string().min(3).max(50).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     name: z.string().min(3).max(120),
     description: z.string().min(5).max(500).nullish(),
     project_count: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullish(),
@@ -358,6 +361,7 @@ export const zNamespace = z.object({
  */
 export const zAccessibleNamespace = z.object({
     id: z.string(),
+    slug: z.string().min(3).max(50).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     name: z.string().min(3).max(120),
     description: z.string().min(5).max(500).nullish(),
     project_count: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).nullish(),
@@ -374,6 +378,7 @@ export const zAccessibleNamespace = z.object({
  */
 export const zPartialNamespace = z.object({
     id: z.string(),
+    slug: z.string(),
     name: z.string().min(3).max(120)
 });
 
@@ -945,6 +950,8 @@ export const zSearchResult = z.object({
     organization_id: z.string().nullish(),
     namespace_id: z.string().nullish(),
     project_id: z.string().nullish(),
+    organization_slug: z.string().optional(),
+    namespace_slug: z.string().optional(),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime().nullish()
 });
@@ -1131,6 +1138,28 @@ export const zSearchProjectId = z.string();
 export const zId = z.string();
 
 /**
+ * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+ *
+ */
+export const zOrganizationRef = z.string();
+
+/**
+ * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+ *
+ */
+export const zNamespaceRef = z.string();
+
+/**
+ * Namespace-scoped project key. Uppercased on write; `NEW` is reserved.
+ */
+export const zProjectKey = z.string().regex(/^[A-Z]{2,6}$/);
+
+/**
+ * Project xid.
+ */
+export const zProjectId = z.string();
+
+/**
  * ID of the document.
  */
 export const zDocumentId = z.string();
@@ -1224,6 +1253,7 @@ export const zOrganizationInvitationAccept = z.object({
 });
 
 export const zOrganizationCreate = z.object({
+    slug: z.string().min(3).max(50).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     name: z.string().min(1).max(120),
     email: z.email().min(6).max(254),
     logo: z.url().max(2000).optional(),
@@ -1240,6 +1270,7 @@ export const zOrganizationPatch = z.object({
 
 export const zNamespaceCreate = z.object({
     name: z.string().min(3).max(120),
+    slug: z.string().min(3).max(50).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     description: z.string().min(5).max(500).nullish()
 });
 
@@ -1249,7 +1280,7 @@ export const zNamespacePatch = z.object({
 });
 
 export const zProjectCreate = z.object({
-    key: z.string().min(2).max(6),
+    key: z.string().min(2).max(6).regex(/^[A-Z]{2,6}$/),
     name: z.string().min(3).max(120),
     description: z.string().min(10).max(500).nullish(),
     logo: z.url().max(2000).nullish(),
@@ -1257,7 +1288,6 @@ export const zProjectCreate = z.object({
 });
 
 export const zProjectPatch = z.object({
-    key: z.string().min(2).max(6).optional(),
     name: z.string().min(3).max(120).optional(),
     description: z.string().min(10).max(500).nullish(),
     logo: z.url().max(2000).nullish(),
@@ -1605,7 +1635,7 @@ export const zV1OrganizationsCreateResponse = z.object({
 });
 
 export const zV1OrganizationDeletePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationDeleteQuery = z.object({
@@ -1618,7 +1648,7 @@ export const zV1OrganizationDeleteQuery = z.object({
 export const zV1OrganizationDeleteResponse = z.void();
 
 export const zV1OrganizationGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1629,7 +1659,7 @@ export const zV1OrganizationGetResponse = zOrganization;
 export const zV1OrganizationUpdateBody = zOrganizationPatch;
 
 export const zV1OrganizationUpdatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1638,7 +1668,7 @@ export const zV1OrganizationUpdatePath = z.object({
 export const zV1OrganizationUpdateResponse = zOrganization;
 
 export const zV1OrganizationMembersGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationMembersGetQuery = z.object({
@@ -1656,7 +1686,7 @@ export const zV1OrganizationMembersAddBody = z.object({
 });
 
 export const zV1OrganizationMembersAddPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1672,7 +1702,7 @@ export const zV1OrganizationMembersInviteBody = z.object({
 });
 
 export const zV1OrganizationMembersInvitePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1683,7 +1713,7 @@ export const zV1OrganizationMembersInviteResponse = z.object({
 });
 
 export const zV1OrganizationMemberRemovePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     user_id: z.string()
 });
 
@@ -1693,7 +1723,7 @@ export const zV1OrganizationMemberRemovePath = z.object({
 export const zV1OrganizationMemberRemoveResponse = z.void();
 
 export const zV1OrganizationMemberInviteRevokePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     user_id: z.string()
 });
 
@@ -1708,7 +1738,7 @@ export const zV1OrganizationMemberInviteRevokeResponse = z.void();
 export const zV1OrganizationMembersAcceptBody = zOrganizationInvitationAccept;
 
 export const zV1OrganizationMembersAcceptPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationMembersAcceptResponse = z.union([
@@ -1717,7 +1747,7 @@ export const zV1OrganizationMembersAcceptResponse = z.union([
 ]);
 
 export const zV1OrganizationRolesGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationRolesGetQuery = z.object({
@@ -1733,7 +1763,7 @@ export const zV1OrganizationRolesGetResponse = zRolePage;
 export const zV1OrganizationRolesCreateBody = zRoleCreate;
 
 export const zV1OrganizationRolesCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1744,7 +1774,7 @@ export const zV1OrganizationRolesCreateResponse = z.object({
 });
 
 export const zV1OrganizationRoleDeletePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     role_id: z.string()
 });
 
@@ -1754,7 +1784,7 @@ export const zV1OrganizationRoleDeletePath = z.object({
 export const zV1OrganizationRoleDeleteResponse = z.void();
 
 export const zV1OrganizationRoleGetPath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     role_id: z.string()
 });
 
@@ -1766,7 +1796,7 @@ export const zV1OrganizationRoleGetResponse = zRole;
 export const zV1OrganizationRoleUpdateBody = zRolePatch;
 
 export const zV1OrganizationRoleUpdatePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     role_id: z.string()
 });
 
@@ -1776,7 +1806,7 @@ export const zV1OrganizationRoleUpdatePath = z.object({
 export const zV1OrganizationRoleUpdateResponse = zRole;
 
 export const zV1OrganizationTeamsGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationTeamsGetQuery = z.object({
@@ -1792,7 +1822,7 @@ export const zV1OrganizationTeamsGetResponse = zTeamPage;
 export const zV1OrganizationTeamsCreateBody = zTeamCreate;
 
 export const zV1OrganizationTeamsCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1803,7 +1833,7 @@ export const zV1OrganizationTeamsCreateResponse = z.object({
 });
 
 export const zV1OrganizationTeamDeletePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string()
 });
 
@@ -1813,7 +1843,7 @@ export const zV1OrganizationTeamDeletePath = z.object({
 export const zV1OrganizationTeamDeleteResponse = z.void();
 
 export const zV1OrganizationTeamGetPath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string()
 });
 
@@ -1825,7 +1855,7 @@ export const zV1OrganizationTeamGetResponse = zTeam;
 export const zV1OrganizationTeamUpdateBody = zTeamPatch;
 
 export const zV1OrganizationTeamUpdatePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string()
 });
 
@@ -1835,7 +1865,7 @@ export const zV1OrganizationTeamUpdatePath = z.object({
 export const zV1OrganizationTeamUpdateResponse = zTeam;
 
 export const zV1OrganizationTeamMembersGetPath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string()
 });
 
@@ -1854,7 +1884,7 @@ export const zV1OrganizationTeamMembersAddBody = z.object({
 });
 
 export const zV1OrganizationTeamMembersAddPath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string()
 });
 
@@ -1866,7 +1896,7 @@ export const zV1OrganizationTeamMembersAddResponse = z.object({
 });
 
 export const zV1OrganizationTeamMemberRemovePath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
     team_id: z.string(),
     user_id: z.string()
 });
@@ -1877,7 +1907,7 @@ export const zV1OrganizationTeamMemberRemovePath = z.object({
 export const zV1OrganizationTeamMemberRemoveResponse = z.void();
 
 export const zV1OrganizationsNamespacesGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationsNamespacesGetQuery = z.object({
@@ -1893,7 +1923,7 @@ export const zV1OrganizationsNamespacesGetResponse = zNamespacePage;
 export const zV1OrganizationsNamespacesCreateBody = zNamespaceCreate;
 
 export const zV1OrganizationsNamespacesCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -1914,7 +1944,8 @@ export const zV1NamespacesGetQuery = z.object({
 export const zV1NamespacesGetResponse = zAccessibleNamespacePage;
 
 export const zV1NamespaceDeletePath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**
@@ -1923,18 +1954,20 @@ export const zV1NamespaceDeletePath = z.object({
 export const zV1NamespaceDeleteResponse = z.void();
 
 export const zV1NamespaceGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**
  * OK
  */
-export const zV1NamespaceGetResponse = zNamespace;
+export const zV1NamespaceGetResponse = zAccessibleNamespace;
 
 export const zV1NamespaceUpdateBody = zNamespacePatch;
 
 export const zV1NamespaceUpdatePath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**
@@ -1943,7 +1976,8 @@ export const zV1NamespaceUpdatePath = z.object({
 export const zV1NamespaceUpdateResponse = zNamespace;
 
 export const zV1NamespacesProjectsGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 export const zV1NamespacesProjectsGetQuery = z.object({
@@ -1959,7 +1993,8 @@ export const zV1NamespacesProjectsGetResponse = zProjectPage;
 export const zV1NamespacesProjectsCreateBody = zProjectCreate;
 
 export const zV1NamespacesProjectsCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**
@@ -1969,8 +2004,19 @@ export const zV1NamespacesProjectsCreateResponse = z.object({
     id: z.string()
 });
 
+export const zV1NamespacesProjectsKeyGetPath = z.object({
+    organizationRef: z.string(),
+    namespaceRef: z.string(),
+    projectKey: z.string().regex(/^[A-Z]{2,6}$/)
+});
+
+/**
+ * OK
+ */
+export const zV1NamespacesProjectsKeyGetResponse = zProject;
+
 export const zV1ProjectDeletePath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 /**
@@ -1979,7 +2025,7 @@ export const zV1ProjectDeletePath = z.object({
 export const zV1ProjectDeleteResponse = z.void();
 
 export const zV1ProjectGetPath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 /**
@@ -1990,7 +2036,7 @@ export const zV1ProjectGetResponse = zProject;
 export const zV1ProjectUpdateBody = zProjectPatch;
 
 export const zV1ProjectUpdatePath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 /**
@@ -1999,7 +2045,8 @@ export const zV1ProjectUpdatePath = z.object({
 export const zV1ProjectUpdateResponse = zProject;
 
 export const zV1NamespacesIssuesGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 export const zV1NamespacesIssuesGetQuery = z.object({
@@ -2034,7 +2081,8 @@ export const zV1NamespacesIssuesGetQuery = z.object({
 export const zV1NamespacesIssuesGetResponse = zPartialIssuePage;
 
 export const zV1NamespacesIssuesKeyGetPath = z.object({
-    id: z.string(),
+    organizationRef: z.string(),
+    namespaceRef: z.string(),
     key: z.string().regex(/^[A-Z]{2,6}-[1-9][0-9]*$/)
 });
 
@@ -2044,7 +2092,7 @@ export const zV1NamespacesIssuesKeyGetPath = z.object({
 export const zV1NamespacesIssuesKeyGetResponse = zIssue;
 
 export const zV1ProjectsIssuesGetPath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 export const zV1ProjectsIssuesGetQuery = z.object({
@@ -2081,7 +2129,7 @@ export const zV1ProjectsIssuesGetResponse = zPartialIssuePage;
 export const zV1ProjectsIssuesCreateBody = zIssueCreate;
 
 export const zV1ProjectsIssuesCreatePath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 /**
@@ -2166,7 +2214,7 @@ export const zV1IssueRelationUpdatePath = z.object({
 export const zV1IssueRelationUpdateResponse = zIssueRelation;
 
 export const zV1OrganizationsDocumentsGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationsDocumentsGetQuery = z.object({
@@ -2184,7 +2232,7 @@ export const zV1OrganizationsDocumentsGetResponse = zPartialDocumentPage;
 export const zV1OrganizationsDocumentsCreateBody = zDocumentCreate;
 
 export const zV1OrganizationsDocumentsCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -2193,7 +2241,8 @@ export const zV1OrganizationsDocumentsCreatePath = z.object({
 export const zV1OrganizationsDocumentsCreateResponse = zDocument;
 
 export const zV1NamespacesDocumentsGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 export const zV1NamespacesDocumentsGetQuery = z.object({
@@ -2211,7 +2260,8 @@ export const zV1NamespacesDocumentsGetResponse = zPartialDocumentPage;
 export const zV1NamespacesDocumentsCreateBody = zDocumentCreate;
 
 export const zV1NamespacesDocumentsCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**
@@ -2220,7 +2270,7 @@ export const zV1NamespacesDocumentsCreatePath = z.object({
 export const zV1NamespacesDocumentsCreateResponse = zDocument;
 
 export const zV1ProjectsDocumentsGetPath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 export const zV1ProjectsDocumentsGetQuery = z.object({
@@ -2236,7 +2286,7 @@ export const zV1ProjectsDocumentsGetResponse = zPartialDocumentPage;
 export const zV1ProjectsDocumentsCreateBody = zDocumentCreate;
 
 export const zV1ProjectsDocumentsCreatePath = z.object({
-    id: z.string()
+    projectId: z.string()
 });
 
 /**
@@ -2245,7 +2295,7 @@ export const zV1ProjectsDocumentsCreatePath = z.object({
 export const zV1ProjectsDocumentsCreateResponse = zDocument;
 
 export const zV1ProjectsDocumentsUnrelatePath = z.object({
-    id: z.string(),
+    projectId: z.string(),
     documentId: z.string()
 });
 
@@ -2255,7 +2305,7 @@ export const zV1ProjectsDocumentsUnrelatePath = z.object({
 export const zV1ProjectsDocumentsUnrelateResponse = z.void();
 
 export const zV1ProjectsDocumentsRelatePath = z.object({
-    id: z.string(),
+    projectId: z.string(),
     documentId: z.string()
 });
 
@@ -2339,7 +2389,7 @@ export const zV1IssuesDocumentsRelatePath = z.object({
 export const zV1IssuesDocumentsRelateResponse = z.void();
 
 export const zV1OrganizationsFoldersGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 export const zV1OrganizationsFoldersGetQuery = z.object({
@@ -2356,7 +2406,7 @@ export const zV1OrganizationsFoldersGetResponse = zFolderPage;
 export const zV1OrganizationsFoldersCreateBody = zFolderCreate;
 
 export const zV1OrganizationsFoldersCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string()
 });
 
 /**
@@ -2365,7 +2415,8 @@ export const zV1OrganizationsFoldersCreatePath = z.object({
 export const zV1OrganizationsFoldersCreateResponse = zFolder;
 
 export const zV1NamespacesFoldersGetPath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 export const zV1NamespacesFoldersGetQuery = z.object({
@@ -2382,7 +2433,8 @@ export const zV1NamespacesFoldersGetResponse = zFolderPage;
 export const zV1NamespacesFoldersCreateBody = zFolderCreate;
 
 export const zV1NamespacesFoldersCreatePath = z.object({
-    id: z.string()
+    organizationRef: z.string(),
+    namespaceRef: z.string()
 });
 
 /**

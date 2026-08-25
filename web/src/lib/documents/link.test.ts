@@ -17,7 +17,7 @@ describe("document link helpers", () => {
   });
 
   it("loads the picker catalog from namespace documents", () => {
-    const options = relatedDocumentCatalogQueryOptions("ns-1");
+    const options = relatedDocumentCatalogQueryOptions("org-1", "ns-1");
     const queryKey = JSON.stringify(options.queryKey);
 
     expect(queryKey).toContain("v1NamespacesDocumentsGet");

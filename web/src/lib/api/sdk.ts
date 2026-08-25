@@ -25,6 +25,7 @@ export {
   v1NamespacesIssuesKeyGet,
   v1NamespacesProjectsCreate,
   v1NamespacesProjectsGet,
+  v1NamespacesProjectsKeyGet,
   v1OrganizationGet,
   v1OrganizationMembersAccept,
   v1OrganizationMembersAdd,

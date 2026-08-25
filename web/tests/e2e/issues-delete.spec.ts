@@ -28,7 +28,11 @@ test.describe("@issues.delete Issue Delete E2E Tests", () => {
     });
 
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
 
     await workItem.openDeleteDialog();
@@ -40,7 +44,7 @@ test.describe("@issues.delete Issue Delete E2E Tests", () => {
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}/work`
+        `/organizations/${workspace.organizationSlug}/namespaces/${workspace.namespaceSlug}/projects/${workspace.projectKey}/work`
       )
     );
 

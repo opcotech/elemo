@@ -22,6 +22,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
 
   const getFullName = (user: User) => `${user.first_name} ${user.last_name}`;
 
@@ -42,6 +43,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       email: `members-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -97,7 +99,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.members.waitForLoad();
 
     await orgDetailsPage.members.clickInviteMemberButton();
@@ -128,7 +130,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.members.waitForLoad();
     await orgDetailsPage.members.clickInviteMemberButton();
 
@@ -154,7 +156,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       email: invitedUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.members.waitForLoad();
 
     await expect(
@@ -173,7 +175,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.members.waitForLoad();
 
     await orgDetailsPage.members.clickInviteMemberButton();
@@ -206,7 +208,7 @@ test.describe("@settings.organization-members-invite Organization Members Invite
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.members.waitForLoad();
 
     await orgDetailsPage.members.clickInviteMemberButton();

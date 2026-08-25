@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 
 	"github.com/opcotech/elemo/internal/model"
@@ -10,10 +11,16 @@ import (
 	"github.com/opcotech/elemo/internal/testutil"
 )
 
+// UniqueSlug returns a canonical kebab-case slug that is not xid-shaped.
+func UniqueSlug() string {
+	return strings.ToLower(pkg.GenerateRandomStringAlpha(8))
+}
+
 // NewCreateOrganizationOpts creates repository.CreateOrganizationOpts for tests.
 func NewCreateOrganizationOpts(owner model.ID) repository.CreateOrganizationOpts {
 	return repository.CreateOrganizationOpts{
 		Owner:   owner,
+		Slug:    UniqueSlug(),
 		Name:    pkg.GenerateRandomString(10),
 		Email:   testutil.GenerateEmail(10),
 		Logo:    imageURL,
@@ -26,6 +33,7 @@ func NewCreateOrganizationOpts(owner model.ID) repository.CreateOrganizationOpts
 func NewRepositoryOrganization() *repository.Organization {
 	return &repository.Organization{
 		ID:             model.MustNewID(model.ResourceTypeOrganization),
+		Slug:           UniqueSlug(),
 		Name:           pkg.GenerateRandomString(10),
 		Email:          testutil.GenerateEmail(10),
 		Logo:           imageURL,

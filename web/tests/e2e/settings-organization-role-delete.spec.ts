@@ -17,6 +17,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
   let testUser: User;
   let readOnlyUser: User;
   let organizationId: string;
+  let organizationSlug: string;
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
     testUser = await createUser(testConfig);
@@ -35,6 +36,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
       email: `test-role-delete-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     // Grant read-only user read permission on the organization
     await grantActionsToUser(
@@ -67,7 +69,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Verify role is visible
@@ -86,7 +88,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
@@ -126,7 +128,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Click delete button
@@ -178,7 +180,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Delete role
@@ -209,7 +211,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Click delete button
@@ -248,7 +250,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
@@ -291,7 +293,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Verify delete button is visible
@@ -318,7 +320,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     await createRole(apiClient, organizationId, { name: role2Name });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Verify both roles exist
@@ -358,7 +360,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     // Delete role
@@ -399,7 +401,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     await createRole(apiClient, testOrg.id, { name: roleName });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(testOrg.id);
+    await orgDetailsPage.goto(testOrg.slug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(roleName);
@@ -435,7 +437,7 @@ test.describe("@settings.organization-role-delete Organization Role Delete E2E T
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);

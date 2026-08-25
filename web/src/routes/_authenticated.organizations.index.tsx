@@ -34,6 +34,7 @@ import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
 import { zOrganizationStatus } from "@/lib/api/schemas";
 import { Action, can } from "@/lib/auth/permissions";
+import { organizationPath } from "@/lib/paths";
 import { loadOrganizations } from "@/lib/route-data";
 import { withRouteErrors } from "@/lib/route-errors";
 import { pluralize } from "@/lib/utils";
@@ -179,7 +180,9 @@ function OrganizationsListPage() {
               <EntityLink
                 key={organization.id}
                 type="organization"
-                href={`/organizations/${organization.id}`}
+                href={organizationPath({
+                  organizationSlug: organization.slug,
+                })}
                 title={organization.name}
                 imageUrl={organization.logo}
                 subtitle={

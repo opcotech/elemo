@@ -10,11 +10,11 @@ import type { OrganizationMember } from "@/lib/api/types";
 
 function organizationMembersCollectedQuery(organizationId: string) {
   const membersOptions = v1OrganizationMembersGetOptions({
-    path: { id: organizationId },
+    path: { organizationRef: organizationId },
   });
   return collectedListQuery(membersOptions, async (pageToken, signal) => {
     const { data } = await v1OrganizationMembersGet({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: cursorPageQuery(pageToken),
       signal,
       throwOnError: true,

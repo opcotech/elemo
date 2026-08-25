@@ -71,6 +71,7 @@ import {
 } from "@/lib/documents/document-list";
 import type { DocumentListSort } from "@/lib/documents/document-list";
 import {
+  documentLibraryApiPath,
   documentLibraryHref,
   documentLibrarySearchParams,
   folderPathQuery,
@@ -86,6 +87,10 @@ import { pluralize } from "@/lib/utils";
 export function DocumentLibraryPage({
   kind,
   libraryId,
+  organizationId,
+  organizationSlug,
+  namespaceId,
+  namespaceSlug,
   libraryName,
   search,
   mayWrite,
@@ -96,6 +101,10 @@ export function DocumentLibraryPage({
 }: {
   kind: DocumentLibraryKind;
   libraryId: string;
+  organizationId: string;
+  organizationSlug: string;
+  namespaceId?: string;
+  namespaceSlug?: string;
   libraryName: string;
   search: DocumentLibrarySearch;
   mayWrite: boolean;
@@ -120,7 +129,15 @@ export function DocumentLibraryPage({
     useState<PartialDocument | null>(null);
   const navigate = useNavigate();
   const { folderId, showAll } = resolveDocumentLibrarySearch(search);
-  const documentsHref = documentLibraryHref(kind, libraryId);
+  const documentsHref = documentLibraryHref(
+    kind === "organization"
+      ? { kind: "organization", organizationSlug }
+      : {
+          kind: "namespace",
+          organizationSlug,
+          namespaceSlug: namespaceSlug ?? "",
+        }
+  );
   const BrowseIcon = showAll ? FilesIcon : FolderIcon;
   const browseLabel = showAll ? "All" : "Library";
   const documentsQuery = showAll
@@ -131,47 +148,58 @@ export function DocumentLibraryPage({
   const documentsNav = useCursorPageNav({
     resetKey: `${kind}:${libraryId}:${folderId ?? ""}:${showAll}:${query}`,
   });
-  const listOptions =
-    kind === "organization"
-      ? v1OrganizationsDocumentsGetOptions({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(documentsNav.pageToken),
-            ...documentsQuery,
-          },
-        })
-      : v1NamespacesDocumentsGetOptions({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(documentsNav.pageToken),
-            ...documentsQuery,
-          },
-        });
-  const folderListOptions =
-    kind === "organization"
-      ? v1OrganizationsFoldersGetOptions({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(),
-            ...(folderId ? { parent_id: folderId } : {}),
-          },
-        })
-      : v1NamespacesFoldersGetOptions({
-          path: { id: libraryId },
-          query: {
-            ...cursorPageQuery(),
-            ...(folderId ? { parent_id: folderId } : {}),
-          },
-        });
-
-  const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery({
-    ...listOptions,
-    enabled: hasReadAccess,
+  const orgDocumentsQuery = useQuery({
+    ...v1OrganizationsDocumentsGetOptions({
+      path: documentLibraryApiPath("organization", organizationId),
+      query: {
+        ...cursorPageQuery(documentsNav.pageToken),
+        ...documentsQuery,
+      },
+    }),
+    enabled: hasReadAccess && kind === "organization",
   });
-  const { data: foldersPage, isLoading: isFoldersLoading } = useQuery({
-    ...folderListOptions,
-    enabled: hasReadAccess && !showAll,
+  const nsDocumentsQuery = useQuery({
+    ...v1NamespacesDocumentsGetOptions({
+      path: documentLibraryApiPath("namespace", organizationId, namespaceId),
+      query: {
+        ...cursorPageQuery(documentsNav.pageToken),
+        ...documentsQuery,
+      },
+    }),
+    enabled: hasReadAccess && kind === "namespace",
   });
+  const orgFoldersQuery = useQuery({
+    ...v1OrganizationsFoldersGetOptions({
+      path: documentLibraryApiPath("organization", organizationId),
+      query: {
+        ...cursorPageQuery(),
+        ...(folderId ? { parent_id: folderId } : {}),
+      },
+    }),
+    enabled: hasReadAccess && !showAll && kind === "organization",
+  });
+  const nsFoldersQuery = useQuery({
+    ...v1NamespacesFoldersGetOptions({
+      path: documentLibraryApiPath("namespace", organizationId, namespaceId),
+      query: {
+        ...cursorPageQuery(),
+        ...(folderId ? { parent_id: folderId } : {}),
+      },
+    }),
+    enabled: hasReadAccess && !showAll && kind === "namespace",
+  });
+  const documentsPage =
+    kind === "organization" ? orgDocumentsQuery.data : nsDocumentsQuery.data;
+  const isDocumentsLoading =
+    kind === "organization"
+      ? orgDocumentsQuery.isLoading
+      : nsDocumentsQuery.isLoading;
+  const foldersPage =
+    kind === "organization" ? orgFoldersQuery.data : nsFoldersQuery.data;
+  const isFoldersLoading =
+    kind === "organization"
+      ? orgFoldersQuery.isLoading
+      : nsFoldersQuery.isLoading;
   const { data: folderPath } = useQuery({
     ...folderPathQuery(folderId ?? ""),
     enabled: hasReadAccess && Boolean(folderId),
@@ -396,7 +424,8 @@ export function DocumentLibraryPage({
         <>
           <FolderCreateDialog
             kind={kind}
-            libraryId={libraryId}
+            organizationId={organizationId}
+            namespaceId={namespaceId}
             parentId={folderId}
             open={createFolderOpen}
             onOpenChange={setCreateFolderOpen}
@@ -413,7 +442,8 @@ export function DocumentLibraryPage({
           <FolderMoveDialog
             folder={movingFolder}
             kind={kind}
-            libraryId={libraryId}
+            organizationId={organizationId}
+            namespaceId={namespaceId}
             open={movingFolder != null}
             onOpenChange={(open) => {
               if (!open) {
@@ -448,7 +478,8 @@ export function DocumentLibraryPage({
           documentId={movingDocument.id}
           documentTitle={movingDocument.title}
           kind={kind}
-          libraryId={libraryId}
+          organizationId={organizationId}
+          namespaceId={namespaceId}
           currentFolderId={folderId}
           open
           onOpenChange={(open) => {

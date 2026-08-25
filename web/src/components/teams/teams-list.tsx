@@ -42,11 +42,13 @@ const teamsListSkeletonColumns = [
 
 interface TeamsListProps {
   organizationId: string;
+  organizationSlug: string;
   organizationPermissions: EffectiveActions;
 }
 
 export function TeamsList({
   organizationId,
+  organizationSlug,
   organizationPermissions,
 }: TeamsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +61,7 @@ export function TeamsList({
     error,
   } = useQuery(
     v1OrganizationTeamsGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -83,8 +85,8 @@ export function TeamsList({
       size="sm"
       render={
         <Link
-          to="/settings/organizations/$organizationId/teams/new"
-          params={{ organizationId }}
+          to="/settings/organizations/$organizationSlug/teams/new"
+          params={{ organizationSlug }}
         />
       }
     >
@@ -157,9 +159,9 @@ export function TeamsList({
                         size="sm"
                         render={
                           <Link
-                            to="/settings/organizations/$organizationId/teams/$teamId/edit"
+                            to="/settings/organizations/$organizationSlug/teams/$teamId/edit"
                             params={{
-                              organizationId,
+                              organizationSlug,
                               teamId: team.id,
                             }}
                           />

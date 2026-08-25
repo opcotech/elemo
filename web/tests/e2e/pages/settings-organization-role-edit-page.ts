@@ -4,9 +4,11 @@ import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { RoleEditFormSection } from "../sections";
 
+import { settingsOrganizationPath } from "@/lib/paths";
+
 /**
  * Page Object Model for Organization Role Edit page.
- * Represents the role edit view at /settings/organizations/:id/roles/:roleId/edit
+ * Represents the role edit view at /settings/organizations/:organizationSlug/roles/:roleId/edit
  */
 export class SettingsOrganizationRoleEditPage extends BaseComponent {
   public readonly roleEditForm: RoleEditFormSection;
@@ -19,13 +21,13 @@ export class SettingsOrganizationRoleEditPage extends BaseComponent {
   /**
    * Navigate to the role edit page.
    *
-   * @param organizationId - The ID of the organization.
+   * @param organizationSlug - Canonical organization slug.
    * @param roleId - The ID of the role to edit.
    */
-  async goto(organizationId: string, roleId: string): Promise<void> {
+  async goto(organizationSlug: string, roleId: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/roles/${roleId}/edit`
+      `${settingsOrganizationPath({ organizationSlug })}/roles/${roleId}/edit`
     );
   }
 }

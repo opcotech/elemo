@@ -31,6 +31,7 @@ import { useNavigationContext } from "@/hooks/use-navigation-context";
 import type { AccessibleNamespace } from "@/lib/api/accessible-namespaces";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { internalPath } from "@/lib/internal-url";
+import { namespacePath } from "@/lib/paths";
 import { uiActions } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +76,12 @@ export function NamespaceSwitcher() {
   );
 
   const selectNamespace = (namespace: AccessibleNamespace) => {
-    const href = internalPath(`/namespaces/${namespace.id}`);
+    const href = internalPath(
+      namespacePath({
+        organizationSlug: namespace.organizationSlug,
+        namespaceSlug: namespace.slug,
+      })
+    );
     uiActions.rememberRecentEntity({
       id: namespace.id,
       type: "namespace",
@@ -85,8 +91,11 @@ export function NamespaceSwitcher() {
     });
     setOpen(false);
     void navigate({
-      to: "/namespaces/$namespaceId",
-      params: { namespaceId: namespace.id },
+      to: "/organizations/$organizationSlug/namespaces/$namespaceSlug",
+      params: {
+        organizationSlug: namespace.organizationSlug,
+        namespaceSlug: namespace.slug,
+      },
     });
   };
 

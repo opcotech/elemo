@@ -26,7 +26,6 @@ export const projectCreateFormSchema = createFormSchema(
 export const projectEditFormSchema = createFormSchema(
   zProjectPatch.omit({ logo: true })
 ).extend({
-  key: projectKeySchema,
   name: zProjectCreate.shape.name,
   status: zProjectStatus,
 });

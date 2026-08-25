@@ -108,7 +108,11 @@ test.describe("@issues.create Issue Create E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const workPage = new WorkPage(page);
-    await workPage.gotoProjectWork(workspace.namespaceId, workspace.projectId);
+    await workPage.gotoProjectWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await workPage.waitForLoad(`${workspace.projectName} / Work`);
     return workPage;
   };
@@ -266,7 +270,11 @@ test.describe("@issues.create Issue Create E2E Tests", () => {
     });
 
     const workPage = new WorkPage(page);
-    await workPage.gotoProjectWork(workspace.namespaceId, workspace.projectId);
+    await workPage.gotoProjectWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await workPage.waitForLoad(`${workspace.projectName} / Work`);
 
     const title = `Reader create ${getRandomString(8)}`;

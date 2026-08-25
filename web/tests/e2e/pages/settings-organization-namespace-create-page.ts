@@ -4,6 +4,8 @@ import { Form } from "../components";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 
+import { settingsNamespaceNewPath } from "@/lib/paths";
+
 export class SettingsOrganizationNamespaceCreatePage extends BaseComponent {
   public readonly namespaceForm: Form;
 
@@ -12,14 +14,14 @@ export class SettingsOrganizationNamespaceCreatePage extends BaseComponent {
     this.namespaceForm = new Form(page);
   }
 
-  async goto(organizationId: string): Promise<void> {
-    await this.gotoForOrganization(organizationId);
+  async goto(organizationSlug: string): Promise<void> {
+    await this.gotoForOrganization(organizationSlug);
   }
 
-  async gotoForOrganization(organizationId: string): Promise<void> {
+  async gotoForOrganization(organizationSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/new`
+      settingsNamespaceNewPath({ organizationSlug })
     );
   }
 

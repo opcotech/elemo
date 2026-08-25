@@ -29,19 +29,21 @@ type MoveFormValues = z.infer<typeof moveFormSchema>;
 export function FolderMoveDialog({
   folder,
   kind,
-  libraryId,
+  organizationId,
+  namespaceId,
   open,
   onOpenChange,
 }: {
   folder: Pick<Folder, "id" | "name" | "parent"> | null;
   kind: DocumentLibraryKind;
-  libraryId: string;
+  organizationId: string;
+  namespaceId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const { data: folders, isLoading } = useQuery({
-    ...libraryFolderOptionsQuery(kind, libraryId),
+    ...libraryFolderOptionsQuery(kind, organizationId, namespaceId),
     enabled: open && folder != null,
   });
   const currentParentId = folder?.parent?.id ?? LIBRARY_ROOT_FOLDER_VALUE;

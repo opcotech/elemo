@@ -6,6 +6,7 @@ import type { Namespace } from "@/lib/api/types";
 interface NamespaceDeleteDialogProps {
   namespace: Namespace;
   organizationId: string;
+  organizationSlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -15,6 +16,7 @@ interface NamespaceDeleteDialogProps {
 export function NamespaceDeleteDialog({
   namespace,
   organizationId,
+  organizationSlug,
   open,
   onOpenChange,
   onSuccess,
@@ -23,7 +25,7 @@ export function NamespaceDeleteDialog({
   return (
     <EntityDeleteDialog
       entity={namespace}
-      context={{ organizationId }}
+      context={{ organizationId, organizationSlug }}
       config={namespaceLifecycleConfig}
       mutationOptions={v1NamespaceDeleteMutation()}
       open={open}

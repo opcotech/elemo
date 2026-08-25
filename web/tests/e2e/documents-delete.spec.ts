@@ -58,7 +58,11 @@ test.describe("@documents.delete Document Delete E2E Tests", () => {
     await expect(page).not.toHaveURL(new RegExp(`/documents/${document.id}`));
 
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoProject(workspace.namespaceId, workspace.projectId);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(name)).toHaveCount(0);
   });

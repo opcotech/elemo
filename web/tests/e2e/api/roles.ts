@@ -32,7 +32,7 @@ export async function createRole(
     async () => {
       return await v1OrganizationRolesCreate({
         client,
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
         body: roleCreateData,
         throwOnError: true,
       });
@@ -47,7 +47,7 @@ export async function createRole(
     async () => {
       return await v1OrganizationRoleGet({
         client,
-        path: { id: organizationId, role_id: response.data.id },
+        path: { organizationRef: organizationId, role_id: response.data.id },
         throwOnError: true,
       });
     },
@@ -73,7 +73,7 @@ export async function updateRole(
     async () => {
       return await v1OrganizationRoleUpdate({
         client,
-        path: { id: organizationId, role_id: roleId },
+        path: { organizationRef: organizationId, role_id: roleId },
         body: patch,
         throwOnError: true,
       });

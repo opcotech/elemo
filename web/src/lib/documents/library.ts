@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import type { AccessibleWorkspace } from "@/lib/api/accessible-namespaces";
 import { collectCursorPages, cursorPageQuery } from "@/lib/api/cursor-pages";
+import { namespaceRefPath, organizationRefPath } from "@/lib/api/refs";
 import {
   v1FolderGet,
   v1NamespacesFoldersGet,
@@ -9,6 +11,7 @@ import {
 import type { DocumentLibrary, Folder } from "@/lib/api/types";
 import type { InternalPath } from "@/lib/internal-url";
 import { internalPath } from "@/lib/internal-url";
+import { namespaceDocumentsPath, organizationDocumentsPath } from "@/lib/paths";
 
 export const LIBRARY_ROOT_FOLDER_VALUE = "root";
 export const LIBRARY_ROOT_FOLDER_LABEL = "Library root";
@@ -65,13 +68,42 @@ export function documentLibrarySearchParams(state: {
 }
 
 export function documentLibraryHref(
-  kind: DocumentLibraryKind,
-  libraryId: string
+  library:
+    | { kind: "organization"; organizationSlug: string }
+    | { kind: "namespace"; organizationSlug: string; namespaceSlug: string }
 ): InternalPath {
-  if (kind === "organization") {
-    return internalPath(`/organizations/${libraryId}/documents`);
+  if (library.kind === "organization") {
+    return internalPath(organizationDocumentsPath(library));
   }
-  return internalPath(`/namespaces/${libraryId}/documents`);
+  return internalPath(namespaceDocumentsPath(library));
+}
+
+export function documentLibraryApiPath(
+  kind: "organization",
+  organizationId: string,
+  namespaceId?: string
+): { organizationRef: string };
+export function documentLibraryApiPath(
+  kind: "namespace",
+  organizationId: string,
+  namespaceId?: string
+): { organizationRef: string; namespaceRef: string };
+export function documentLibraryApiPath(
+  kind: DocumentLibraryKind,
+  organizationId: string,
+  namespaceId?: string
+):
+  | { organizationRef: string }
+  | { organizationRef: string; namespaceRef: string };
+export function documentLibraryApiPath(
+  kind: DocumentLibraryKind,
+  organizationId: string,
+  namespaceId?: string
+) {
+  if (kind === "organization") {
+    return organizationRefPath(organizationId);
+  }
+  return namespaceRefPath(organizationId, namespaceId ?? "");
 }
 
 export type DocumentLibraryTypeLabel = "Organization" | "Namespace";
@@ -95,6 +127,8 @@ export function documentLibraryListItem(library: {
   kind: DocumentLibraryKind;
   id: string;
   name: string;
+  organizationSlug: string;
+  namespaceSlug?: string;
   documentCount?: number | null;
 }): DocumentLibraryListItem {
   return {
@@ -102,7 +136,17 @@ export function documentLibraryListItem(library: {
     kind: library.kind,
     name: library.name,
     typeLabel: documentLibraryTypeLabel(library.kind),
-    href: documentLibraryHref(library.kind, library.id),
+    href:
+      library.kind === "organization"
+        ? documentLibraryHref({
+            kind: "organization",
+            organizationSlug: library.organizationSlug,
+          })
+        : documentLibraryHref({
+            kind: "namespace",
+            organizationSlug: library.organizationSlug,
+            namespaceSlug: library.namespaceSlug ?? "",
+          }),
     documentCount: library.documentCount ?? 0,
   };
 }
@@ -111,11 +155,14 @@ export function documentLibraryListItems(
   organizations: readonly {
     id: string;
     name: string;
+    slug: string;
     document_count?: number | null;
   }[],
   namespaces: readonly {
     id: string;
     name: string;
+    slug: string;
+    organizationSlug: string;
     document_count?: number | null;
   }[]
 ): DocumentLibraryListItem[] {
@@ -131,6 +178,7 @@ export function documentLibraryListItems(
           kind: "organization",
           id: organization.id,
           name: organization.name,
+          organizationSlug: organization.slug,
           documentCount: organization.document_count,
         })
       )
@@ -141,6 +189,8 @@ export function documentLibraryListItems(
           kind: "namespace",
           id: namespace.id,
           name: namespace.name,
+          organizationSlug: namespace.organizationSlug,
+          namespaceSlug: namespace.slug,
           documentCount: namespace.document_count,
         })
       )
@@ -169,12 +219,33 @@ export function documentLibraryKindFromType(
 }
 
 export function documentLibraryPageHref(
-  library: DocumentLibrary
-): InternalPath {
-  return documentLibraryHref(
-    documentLibraryKindFromType(library.type),
-    library.id
+  library: DocumentLibrary,
+  workspace?: AccessibleWorkspace
+): InternalPath | null {
+  if (library.type === "Organization") {
+    const organization = workspace?.organizations.find(
+      (item) => item.id === library.id
+    );
+    if (!organization) {
+      return null;
+    }
+    return documentLibraryHref({
+      kind: "organization",
+      organizationSlug: organization.slug,
+    });
+  }
+
+  const namespace = workspace?.namespaces.find(
+    (item) => item.id === library.id
   );
+  if (!namespace) {
+    return null;
+  }
+  return documentLibraryHref({
+    kind: "namespace",
+    organizationSlug: namespace.organizationSlug,
+    namespaceSlug: namespace.slug,
+  });
 }
 
 export function folderPathLabel(names: readonly string[]): string {
@@ -209,18 +280,27 @@ export interface LibraryFolderOption {
 
 export async function listLibraryFolders(
   kind: DocumentLibraryKind,
-  libraryId: string,
+  organizationId: string,
+  namespaceId: string | undefined,
   parentId: string | undefined,
   signal?: AbortSignal
 ): Promise<Folder[]> {
-  const get =
-    kind === "organization"
-      ? v1OrganizationsFoldersGet
-      : v1NamespacesFoldersGet;
-
   return collectCursorPages(async (pageToken) => {
-    const { data } = await get({
-      path: { id: libraryId },
+    if (kind === "organization") {
+      const { data } = await v1OrganizationsFoldersGet({
+        path: organizationRefPath(organizationId),
+        query: {
+          ...cursorPageQuery(pageToken),
+          ...(parentId ? { parent_id: parentId } : {}),
+        },
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    }
+
+    const { data } = await v1NamespacesFoldersGet({
+      path: namespaceRefPath(organizationId, namespaceId ?? ""),
       query: {
         ...cursorPageQuery(pageToken),
         ...(parentId ? { parent_id: parentId } : {}),
@@ -234,13 +314,20 @@ export async function listLibraryFolders(
 
 export async function collectLibraryFolderOptions(
   kind: DocumentLibraryKind,
-  libraryId: string,
+  organizationId: string,
+  namespaceId: string | undefined,
   signal?: AbortSignal
 ): Promise<LibraryFolderOption[]> {
   const options: LibraryFolderOption[] = [];
 
   async function walk(parentId: string | undefined, prefix: string) {
-    const folders = await listLibraryFolders(kind, libraryId, parentId, signal);
+    const folders = await listLibraryFolders(
+      kind,
+      organizationId,
+      namespaceId,
+      parentId,
+      signal
+    );
     folders.sort((left, right) => left.name.localeCompare(right.name));
     for (const folder of folders) {
       const pathLabel = prefix
@@ -262,17 +349,19 @@ export async function collectLibraryFolderOptions(
 
 export const libraryFolderOptionsQueryKey = (
   kind: DocumentLibraryKind,
-  libraryId: string
-) => ["library-folder-options", kind, libraryId] as const;
+  organizationId: string,
+  namespaceId?: string
+) => ["library-folder-options", kind, organizationId, namespaceId] as const;
 
 export function libraryFolderOptionsQuery(
   kind: DocumentLibraryKind,
-  libraryId: string
+  organizationId: string,
+  namespaceId?: string
 ) {
   return {
-    queryKey: libraryFolderOptionsQueryKey(kind, libraryId),
+    queryKey: libraryFolderOptionsQueryKey(kind, organizationId, namespaceId),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
-      collectLibraryFolderOptions(kind, libraryId, signal),
+      collectLibraryFolderOptions(kind, organizationId, namespaceId, signal),
   };
 }
 

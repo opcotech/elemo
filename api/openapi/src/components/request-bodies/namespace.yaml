@@ -10,6 +10,13 @@ NamespaceCreate:
             maxLength: 120
             example: Engineering
             minLength: 3
+          slug:
+            type: string
+            description: Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
+            minLength: 3
+            maxLength: 50
+            pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            example: platform
           description:
             type: string
             description: Description of the namespace.
@@ -21,6 +28,7 @@ NamespaceCreate:
             x-go-type-skip-optional-pointer: true
         required:
           - name
+          - slug
 NamespacePatch:
   content:
     application/json:

@@ -33,14 +33,16 @@ type IssueController interface {
 // issueController is the concrete implementation of IssueController.
 type issueController struct {
 	*baseController
-	issueService service.IssueService
+	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
+	issueService        service.IssueService
 }
 
 func (c *issueController) V1ProjectsIssuesCreate(ctx context.Context, request api.V1ProjectsIssuesCreateRequestObject) (api.V1ProjectsIssuesCreateResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsIssuesCreate")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsIssuesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -76,7 +78,7 @@ func (c *issueController) V1ProjectsIssuesGet(ctx context.Context, request api.V
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsIssuesGet")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -126,7 +128,7 @@ func (c *issueController) V1NamespacesIssuesGet(ctx context.Context, request api
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesIssuesGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesIssuesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -254,7 +256,7 @@ func (c *issueController) V1NamespacesIssuesKeyGet(ctx context.Context, request 
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesIssuesKeyGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesIssuesKeyGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -501,19 +503,32 @@ func (c *issueController) V1IssueRelationDelete(ctx context.Context, request api
 }
 
 // NewIssueController creates a new IssueController.
-func NewIssueController(issueService service.IssueService, opts ...ControllerOption) (IssueController, error) {
+func NewIssueController(
+	organizationService service.OrganizationService,
+	namespaceService service.NamespaceService,
+	issueService service.IssueService,
+	opts ...ControllerOption,
+) (IssueController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	if organizationService == nil {
+		return nil, ErrNoOrganizationService
+	}
+	if namespaceService == nil {
+		return nil, ErrNoNamespaceService
+	}
 	if issueService == nil {
 		return nil, ErrNoIssueService
 	}
 
 	return &issueController{
-		baseController: c,
-		issueService:   issueService,
+		baseController:      c,
+		organizationService: organizationService,
+		namespaceService:    namespaceService,
+		issueService:        issueService,
 	}, nil
 }
 

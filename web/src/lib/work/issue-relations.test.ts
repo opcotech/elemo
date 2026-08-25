@@ -152,7 +152,7 @@ describe("issue relation list helpers", () => {
   });
 
   it("loads the picker catalog from namespace issues, not a single project", () => {
-    const options = relatedIssueCatalogQueryOptions("ns-1");
+    const options = relatedIssueCatalogQueryOptions("org-1", "ns-1");
     const queryKey = JSON.stringify(options.queryKey);
 
     expect(queryKey).toContain("v1NamespacesIssuesGet");
@@ -166,17 +166,17 @@ describe("issue relation list helpers", () => {
         partialIssue({
           id: "issue-2",
           key: "PLAT-2",
-          namespace: { id: "ns-other", name: "Other" },
+          namespace: { id: "ns-other", slug: "other", name: "Other" },
         }),
-        "ns-1"
+        { organizationSlug: "acme", namespaceSlug: "product" }
       )
-    ).toBe("/work/ns-other/PLAT-2");
+    ).toBe("/work/acme/other/PLAT-2");
     expect(
-      relatedIssueWorkPath(
-        partialIssue({ id: "issue-2", key: "PLAT-2" }),
-        "ns-1"
-      )
-    ).toBe("/work/ns-1/PLAT-2");
+      relatedIssueWorkPath(partialIssue({ id: "issue-2", key: "PLAT-2" }), {
+        organizationSlug: "acme",
+        namespaceSlug: "product",
+      })
+    ).toBe("/work/acme/product/PLAT-2");
   });
 });
 
@@ -226,12 +226,13 @@ describe("issue relation cache invalidation", () => {
   it("includes issue detail and the related issue keys", () => {
     const keys = issueRelationInvalidationKeys({
       issueId: "issue-1",
+      organizationId: "org-1",
       namespaceId: "ns-1",
       issueKey: "PLAT-1",
       related: partialIssue({
         id: "issue-2",
         key: "PLAT-2",
-        namespace: { id: "ns-1", name: "Engineering" },
+        namespace: { id: "ns-1", slug: "engineering", name: "Engineering" },
       }),
     });
 

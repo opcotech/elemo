@@ -43,7 +43,11 @@ describe("document create helpers", () => {
         organizationId: "org-1",
         namespaceId: "ns-1",
       })
-    ).toEqual({ type: "namespace", id: "ns-1" });
+    ).toEqual({
+      type: "namespace",
+      id: "ns-1",
+      organizationId: "org-1",
+    });
     expect(
       documentCreateParentFromNavigation({
         type: "organization",

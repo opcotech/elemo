@@ -17,23 +17,34 @@ function result(
 }
 
 describe("searchResultHref", () => {
-  it("maps organizations, namespaces, and documents by id", () => {
+  it("maps organizations, namespaces, and documents from slugs", () => {
     expect(
       searchResultHref(
-        result({ id: "org-1", type: "Organization", title: "Acme" })
+        result({
+          id: "org-1",
+          type: "Organization",
+          title: "Acme",
+          organization_slug: "acme",
+        })
       )
-    ).toBe("/organizations/org-1");
+    ).toBe("/organizations/acme");
     expect(
       searchResultHref(
-        result({ id: "ns-1", type: "Namespace", title: "Product" })
+        result({
+          id: "ns-1",
+          type: "Namespace",
+          title: "Product",
+          organization_slug: "acme",
+          namespace_slug: "product",
+        })
       )
-    ).toBe("/namespaces/ns-1");
+    ).toBe("/organizations/acme/namespaces/product");
     expect(
       searchResultHref(result({ id: "doc-1", type: "Document", title: "Spec" }))
     ).toBe("/documents/doc-1");
   });
 
-  it("requires namespace ancestry for projects and issues", () => {
+  it("requires slug ancestry for projects and issues, not xids", () => {
     expect(
       searchResultHref(
         result({ id: "proj-1", type: "Project", title: "Platform" })
@@ -46,9 +57,12 @@ describe("searchResultHref", () => {
           type: "Project",
           title: "Platform",
           namespace_id: "ns-1",
+          key: "PLAT",
+          organization_slug: "acme",
+          namespace_slug: "product",
         })
       )
-    ).toBe("/namespaces/ns-1/projects/proj-1");
+    ).toBe("/organizations/acme/namespaces/product/projects/PLAT");
     expect(
       searchResultHref(
         result({
@@ -67,9 +81,11 @@ describe("searchResultHref", () => {
           title: "Broken search",
           key: "LMO-12",
           namespace_id: "ns-1",
+          organization_slug: "acme",
+          namespace_slug: "product",
         })
       )
-    ).toBe("/work/ns-1/LMO-12");
+    ).toBe("/work/acme/product/LMO-12");
   });
 
   it("maps issue hits to work-item entity types", () => {

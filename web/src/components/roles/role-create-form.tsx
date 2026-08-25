@@ -21,9 +21,13 @@ import { showSuccessToast } from "@/lib/toast";
 
 interface RoleCreateFormProps {
   organizationId: string;
+  organizationSlug: string;
 }
 
-export function RoleCreateForm({ organizationId }: RoleCreateFormProps) {
+export function RoleCreateForm({
+  organizationId,
+  organizationSlug,
+}: RoleCreateFormProps) {
   const navigate = useNavigate();
   const { pendingActions } = usePendingPermissions();
 
@@ -54,7 +58,7 @@ export function RoleCreateForm({ organizationId }: RoleCreateFormProps) {
     errorMessagePrefix: "Failed to create role",
     queryKeysToInvalidate: [
       v1OrganizationRolesGetOptions({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
       }).queryKey,
     ],
     navigateOnSuccess: undefined,
@@ -64,9 +68,7 @@ export function RoleCreateForm({ organizationId }: RoleCreateFormProps) {
         values
       ) as RoleCreate;
       return {
-        path: {
-          id: organizationId,
-        },
+        path: { organizationRef: organizationId },
         body: {
           ...normalizedBody,
           actions: values.actions ?? pendingActions,
@@ -76,16 +78,16 @@ export function RoleCreateForm({ organizationId }: RoleCreateFormProps) {
     onSuccess: () => {
       showSuccessToast("Role created", "The role was created successfully");
       navigate({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
+        to: "/settings/organizations/$organizationSlug",
+        params: { organizationSlug },
       });
     },
   });
 
   const handleCancel = () => {
     navigate({
-      to: "/settings/organizations/$organizationId",
-      params: { organizationId },
+      to: "/settings/organizations/$organizationSlug",
+      params: { organizationSlug },
     });
   };
 

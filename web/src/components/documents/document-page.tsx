@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { v1DocumentGetOptions } from "@/lib/api/query-options";
 import type { Document, DocumentPatch } from "@/lib/api/types";
 import {
@@ -289,6 +290,17 @@ export function DocumentPage({
   const copyUrl = documentUrl(document.id);
   const relocateDisabled = saving || isPending || dirty;
   const libraryKind = documentLibraryKindFromType(document.library.type);
+  const { data: workspace } = useAccessibleNamespaces();
+  const libraryNamespace =
+    libraryKind === "namespace"
+      ? workspace?.namespaces.find((item) => item.id === document.library.id)
+      : undefined;
+  const libraryOrganizationId =
+    libraryKind === "organization"
+      ? document.library.id
+      : libraryNamespace?.organizationId;
+  const libraryNamespaceId =
+    libraryKind === "namespace" ? document.library.id : undefined;
 
   return (
     <>
@@ -445,7 +457,8 @@ export function DocumentPage({
         documentId={document.id}
         documentTitle={document.title}
         kind={libraryKind}
-        libraryId={document.library.id}
+        organizationId={libraryOrganizationId ?? ""}
+        namespaceId={libraryNamespaceId}
         currentFolderId={document.folder?.id}
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}

@@ -24,11 +24,13 @@ function listedPage<T>(items: T[]) {
 
 const organization = {
   id: "organization-1",
+  slug: "acme",
   name: "Acme",
 };
 
 const namespace = {
   id: "namespace-1",
+  slug: "product",
   name: "Product",
   organization,
 };
@@ -72,10 +74,12 @@ describe("accessible namespace cache", () => {
   it("maps reachable namespaces with owning organization stubs", async () => {
     const secondOrganization = {
       id: "organization-2",
+      slug: "globex",
       name: "Globex",
     };
     const secondNamespace = {
       id: "namespace-2",
+      slug: "platform",
       name: "Platform",
       organization: secondOrganization,
     };
@@ -94,11 +98,13 @@ describe("accessible namespace cache", () => {
         ...namespace,
         organizationId: organization.id,
         organizationName: organization.name,
+        organizationSlug: organization.slug,
       },
       {
         ...secondNamespace,
         organizationId: secondOrganization.id,
         organizationName: secondOrganization.name,
+        organizationSlug: secondOrganization.slug,
       },
     ]);
   });

@@ -7,7 +7,7 @@ import {
 import { expect, test } from "./fixtures";
 import { USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import {
   v1NamespaceGet,
@@ -46,8 +46,9 @@ test.describe("@permissions.cross-org Cross-organization sharing E2E Tests", () 
 
     const namespace = await v1OrganizationsNamespacesCreate({
       client: clientA,
-      path: { id: orgA.id },
+      path: { organizationRef: orgA.id },
       body: {
+        slug: getRandomSlug("ns"),
         name: `NS ${uniqueId}`,
         description: `Namespace ${uniqueId}`,
       },
@@ -55,11 +56,11 @@ test.describe("@permissions.cross-org Cross-organization sharing E2E Tests", () 
     });
     const namespaceId = namespace.data.id ?? "";
 
-    const sharedProject = await createProject(clientA, namespaceId, {
+    const sharedProject = await createProject(clientA, orgA.id, namespaceId, {
       key: getRandomProjectKey(),
       name: `Shared ${uniqueId}`,
     });
-    const siblingProject = await createProject(clientA, namespaceId, {
+    const siblingProject = await createProject(clientA, orgA.id, namespaceId, {
       key: getRandomProjectKey(),
       name: `Sibling ${uniqueId}`,
     });
@@ -72,21 +73,21 @@ test.describe("@permissions.cross-org Cross-organization sharing E2E Tests", () 
 
     const shared = await v1ProjectGet({
       client: clientB,
-      path: { id: sharedProject.id },
+      path: { projectId: sharedProject.id },
       throwOnError: true,
     });
     expect(shared.data.id).toBe(sharedProject.id);
 
     const orgAResult = await v1OrganizationGet({
       client: clientB,
-      path: { id: orgA.id },
+      path: { organizationRef: orgA.id },
     });
     expect(orgAResult.error).toBeTruthy();
     expect(orgAResult.response?.status).toBe(403);
 
     const siblingResult = await v1ProjectGet({
       client: clientB,
-      path: { id: siblingProject.id },
+      path: { projectId: siblingProject.id },
     });
     expect(siblingResult.error).toBeTruthy();
     expect(siblingResult.response?.status).toBe(403);
@@ -104,7 +105,7 @@ test.describe("@permissions.cross-org Cross-organization sharing E2E Tests", () 
 
     const listedNamespaces = await v1OrganizationsNamespacesGet({
       client: clientB,
-      path: { id: orgA.id },
+      path: { organizationRef: orgA.id },
       throwOnError: true,
     });
     expect(listedNamespaces.data.items.map((item) => item.id)).toEqual([
@@ -113,14 +114,14 @@ test.describe("@permissions.cross-org Cross-organization sharing E2E Tests", () 
 
     const namespaceGet = await v1NamespaceGet({
       client: clientB,
-      path: { id: namespaceId },
+      path: { organizationRef: orgA.id, namespaceRef: namespaceId },
+      throwOnError: true,
     });
-    expect(namespaceGet.error).toBeTruthy();
-    expect(namespaceGet.response?.status).toBe(403);
+    expect(namespaceGet.data.id).toBe(namespaceId);
 
     const projects = await v1NamespacesProjectsGet({
       client: clientB,
-      path: { id: namespaceId },
+      path: { organizationRef: orgA.id, namespaceRef: namespaceId },
       throwOnError: true,
     });
     expect(projects.data.items.map((item) => item.id)).toEqual([

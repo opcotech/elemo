@@ -1,6 +1,7 @@
-"/v1/namespaces/{id}/projects":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
   get:
     summary: Get namespace projects
     tags:
@@ -46,6 +47,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new project in the namespace.
@@ -58,9 +61,42 @@
       - Project
     requestBody:
       $ref: "#/components/requestBodies/ProjectCreate"
-"/v1/projects/{id}":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
+    - $ref: "#/components/parameters/projectKey"
+  get:
+    summary: Get project by key
+    tags:
+      - Namespace
+      - Project
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+    operationId: v1NamespacesProjectsKeyGet
+    security:
+      - oauth2:
+          - namespace.read
+          - project.read
+    description: Return the project identified by key within the given namespace.
+"/v1/projects/{projectId}":
+  parameters:
+    - $ref: "#/components/parameters/projectId"
   get:
     summary: Get project
     tags:
@@ -86,7 +122,7 @@
     security:
       - oauth2:
           - project.read
-    description: Return the requested project by its ID.
+    description: Return the requested project by its xid.
   patch:
     summary: Update project
     operationId: v1ProjectUpdate
@@ -107,7 +143,7 @@
         $ref: "#/components/responses/404"
       "500":
         $ref: "#/components/responses/500"
-    description: Update the project by its ID.
+    description: Update the project by its xid. Key cannot be patched.
     security:
       - oauth2:
           - project
@@ -131,7 +167,7 @@
         $ref: "#/components/responses/404"
       "500":
         $ref: "#/components/responses/500"
-    description: Delete the project by its ID.
+    description: Delete the project by its xid.
     security:
       - oauth2:
           - project

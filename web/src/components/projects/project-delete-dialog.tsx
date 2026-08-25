@@ -6,7 +6,9 @@ import type { PartialProject, Project } from "@/lib/api/types";
 interface ProjectDeleteDialogProps {
   project: Pick<Project | PartialProject, "id" | "name">;
   organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -16,7 +18,9 @@ interface ProjectDeleteDialogProps {
 export function ProjectDeleteDialog({
   project,
   organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
   open,
   onOpenChange,
   onSuccess,
@@ -25,7 +29,7 @@ export function ProjectDeleteDialog({
   return (
     <EntityDeleteDialog
       entity={project}
-      context={{ organizationId, namespaceId }}
+      context={{ organizationId, organizationSlug, namespaceId, namespaceSlug }}
       config={projectLifecycleConfig}
       mutationOptions={v1ProjectDeleteMutation()}
       open={open}

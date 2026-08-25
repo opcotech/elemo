@@ -69,6 +69,7 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
     // Try submitting empty form
     await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Slug")).toHaveText(/required/i);
     await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
 
     // Fill name but invalid email
@@ -90,6 +91,18 @@ test.describe("@settings.organization-create Organization Creation E2E Tests", (
     await orgCreatePage.organizationCreateForm.submit("Create Organization");
     await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
     await expect(fieldMessage("Email")).toHaveCount(0);
+
+    await orgCreatePage.organizationCreateForm.fillFields({
+      Name: "Valid Organization",
+      Slug: "AB",
+      Email: "test@example.com",
+    });
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
+    await expect(fieldMessage("Slug")).toHaveText(/3–50 characters/i);
+
+    await orgCreatePage.organizationCreateForm.fillField("Slug", "new");
+    await orgCreatePage.organizationCreateForm.submit("Create Organization");
+    await expect(fieldMessage("Slug")).toHaveText(/reserved/i);
   });
 
   test("should show error when creating duplicate organization", async ({

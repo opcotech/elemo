@@ -1,99 +1,119 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { notFound } from "@tanstack/react-router";
 
-import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
-import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
-  v1NamespacesProjectsGetOptions,
+  v1NamespaceGetOptions,
+  v1NamespacesProjectsKeyGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath, projectIdPath } from "@/lib/api/refs";
+import type { AccessibleNamespace, Project } from "@/lib/api/types";
 import { Action, ResourceType } from "@/lib/auth/permissions";
 import { requireResourcePermission } from "@/lib/entity-context";
 import { withRouteErrors } from "@/lib/route-errors";
+import {
+  requireNamespaceSlug,
+  requireOrganizationSlug,
+  requireProjectKey,
+} from "@/lib/route-identity";
+
+export async function loadAccessibleNamespace(
+  queryClient: QueryClient,
+  organizationSlug: string,
+  namespaceSlug: string
+): Promise<AccessibleNamespace> {
+  const namespace = await queryClient.fetchQuery(
+    v1NamespaceGetOptions({
+      path: namespaceRefPath(organizationSlug, namespaceSlug),
+    })
+  );
+  queryClient.setQueryData(
+    v1NamespaceGetOptions({
+      path: namespaceRefPath(namespace.organization.id, namespace.id),
+    }).queryKey,
+    namespace
+  );
+  return namespace;
+}
 
 export async function loadNamespaceOperationalContext(
   queryClient: QueryClient,
-  namespaceId: string
+  organizationSlug: string,
+  namespaceSlug: string
 ) {
-  return withRouteErrors(async () => {
-    const accessibleWorkspace = await queryClient.fetchQuery(
-      accessibleNamespacesOptions(queryClient)
-    );
-    const accessibleNamespace = accessibleWorkspace.namespaces.find(
-      (item) => item.id === namespaceId
-    );
+  requireOrganizationSlug(organizationSlug);
+  requireNamespaceSlug(namespaceSlug);
 
-    if (!accessibleNamespace) {
-      throw notFound();
-    }
+  return withRouteErrors(async () => {
+    const namespace = await loadAccessibleNamespace(
+      queryClient,
+      organizationSlug,
+      namespaceSlug
+    );
 
     return {
-      namespace: accessibleNamespace,
-      organization: accessibleNamespace.organization,
+      namespace,
+      organization: namespace.organization,
     };
   }, "redirect");
 }
 
+export async function loadProjectByKey(
+  queryClient: QueryClient,
+  organizationRef: string,
+  namespaceRef: string,
+  projectKey: string
+): Promise<Project> {
+  const project = await queryClient.fetchQuery(
+    v1NamespacesProjectsKeyGetOptions({
+      path: { ...namespaceRefPath(organizationRef, namespaceRef), projectKey },
+    })
+  );
+  queryClient.setQueryData(
+    v1ProjectGetOptions({ path: projectIdPath(project.id) }).queryKey,
+    project
+  );
+  return project;
+}
+
 export async function loadProjectOperationalContext(
   queryClient: QueryClient,
-  namespaceId: string,
-  projectId: string
+  organizationSlug: string,
+  namespaceSlug: string,
+  projectKey: string
 ) {
+  requireOrganizationSlug(organizationSlug);
+  requireNamespaceSlug(namespaceSlug);
+  requireProjectKey(projectKey);
+
   return withRouteErrors(async () => {
-    const accessibleWorkspace = await queryClient.fetchQuery(
-      accessibleNamespacesOptions(queryClient)
+    const namespacePromise = loadAccessibleNamespace(
+      queryClient,
+      organizationSlug,
+      namespaceSlug
     );
-    const accessibleNamespace = accessibleWorkspace.namespaces.find(
-      (item) => item.id === namespaceId
+    const projectPromise = loadProjectByKey(
+      queryClient,
+      organizationSlug,
+      namespaceSlug,
+      projectKey
     );
 
-    if (!accessibleNamespace) {
-      throw notFound();
-    }
+    const [namespace, project] = await Promise.all([
+      namespacePromise,
+      projectPromise,
+    ]);
 
-    const projectResultPromise = queryClient
-      .fetchQuery(v1ProjectGetOptions({ path: { id: projectId } }))
-      .then(
-        (project) => ({ project }) as const,
-        (error) => ({ error }) as const
-      );
-    const permissionResultPromise = requireResourcePermission(
+    await requireResourcePermission(
       queryClient,
       ResourceType.Project,
-      projectId,
+      project.id,
       Action.ProjectRead
-    ).then(
-      () => ({ ok: true }) as const,
-      (error) => ({ error }) as const
     );
-
-    const projectsPage = await collectListedPage(async (pageToken) =>
-      queryClient.fetchQuery(
-        v1NamespacesProjectsGetOptions({
-          path: { id: namespaceId },
-          query: cursorPageQuery(pageToken),
-        })
-      )
-    );
-
-    if (!projectsPage.items.some((item) => item.id === projectId)) {
-      throw notFound();
-    }
-
-    const projectResult = await projectResultPromise;
-    if ("error" in projectResult) {
-      throw projectResult.error;
-    }
-
-    const permissionResult = await permissionResultPromise;
-    if ("error" in permissionResult) {
-      throw permissionResult.error;
-    }
 
     return {
-      namespace: accessibleNamespace,
-      organization: accessibleNamespace.organization,
-      project: projectResult.project,
+      namespace,
+      organization: namespace.organization,
+      project,
     };
   }, "redirect");
 }

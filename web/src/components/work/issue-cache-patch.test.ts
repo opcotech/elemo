@@ -81,11 +81,11 @@ describe("project issues cache patching", () => {
   it("matches project issue list queries by generated key id and path", () => {
     const queryClient = new QueryClient();
     const matching = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const otherProject = v1ProjectsIssuesGetOptions({
-      path: { id: "project-2" },
+      path: { projectId: "project-2" },
       query: { page_size: 100 },
     });
 
@@ -104,7 +104,7 @@ describe("project issues cache patching", () => {
   it("updates the matching issue inside a paginated project issues page", () => {
     const queryClient = new QueryClient();
     const options = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const page = issuePage([
@@ -137,7 +137,7 @@ describe("project issues cache patching", () => {
   it("leaves a paginated page unchanged when the issue is not in the page", () => {
     const queryClient = new QueryClient();
     const options = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const page = issuePage([partialIssue({ id: "issue-2", status: "open" })]);
@@ -154,7 +154,7 @@ describe("project issues cache patching", () => {
   it("merges status without replacing list item fields or page shape", () => {
     const queryClient = new QueryClient();
     const options = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const existing = partialIssue({
@@ -195,12 +195,16 @@ describe("optimistic issue cache snapshot", () => {
   it("patches detail and list caches then restores them on rollback", () => {
     const queryClient = new QueryClient();
     const listOptions = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const byIdOptions = v1IssueGetOptions({ path: { id: "issue-1" } });
     const byKeyOptions = v1NamespacesIssuesKeyGetOptions({
-      path: { id: "ns-1", key: "PLAT-1" },
+      path: {
+        organizationRef: "org-1",
+        namespaceRef: "ns-1",
+        key: "PLAT-1",
+      },
     });
     const page = issuePage([partialIssue({ status: "open" })]);
     const original = detailIssue({ status: "open" });
@@ -214,6 +218,7 @@ describe("optimistic issue cache snapshot", () => {
       {
         issueId: "issue-1",
         projectId: "project-1",
+        organizationId: "org-1",
         namespaceId: "ns-1",
         issueKey: "PLAT-1",
       },
@@ -241,7 +246,7 @@ describe("optimistic issue cache snapshot", () => {
   it("commits the server issue into detail and list caches", () => {
     const queryClient = new QueryClient();
     const listOptions = v1ProjectsIssuesGetOptions({
-      path: { id: "project-1" },
+      path: { projectId: "project-1" },
       query: { page_size: 100 },
     });
     const byIdOptions = v1IssueGetOptions({ path: { id: "issue-1" } });

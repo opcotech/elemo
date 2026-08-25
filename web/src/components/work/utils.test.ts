@@ -172,10 +172,14 @@ describe("work projection utilities", () => {
     expect(selectedWorkId(undefined)).toBeUndefined();
   });
 
-  it("builds namespaced work item paths", () => {
+  it("builds hierarchical work item paths", () => {
     expect(
-      workItemPath({ namespaceId: "namespace-product", key: "LMO-101" })
-    ).toBe("/work/namespace-product/LMO-101");
+      workItemPath({
+        organizationSlug: "acme",
+        namespaceSlug: "product",
+        key: "LMO-101",
+      })
+    ).toBe("/work/acme/product/LMO-101");
   });
 
   it("builds an absolute work item URL from the current origin", () => {
@@ -184,8 +188,12 @@ describe("work projection utilities", () => {
     });
     try {
       expect(
-        workItemUrl({ namespaceId: "namespace-product", key: "LMO-101" })
-      ).toBe("https://elemo.test/work/namespace-product/LMO-101");
+        workItemUrl({
+          organizationSlug: "acme",
+          namespaceSlug: "product",
+          key: "LMO-101",
+        })
+      ).toBe("https://elemo.test/work/acme/product/LMO-101");
     } finally {
       vi.unstubAllGlobals();
     }

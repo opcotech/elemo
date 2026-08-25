@@ -569,6 +569,13 @@ components:
           type: string
           description: Unique identifier of the organization.
           example: 9bsv0s46s6s002p9ltq0
+        slug:
+          type: string
+          description: Globally unique canonical kebab-case slug. Immutable after create.
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          example: acme
         name:
           type: string
           description: Name of the organization.
@@ -633,6 +640,7 @@ components:
           nullable: true
       required:
         - id
+        - slug
         - name
         - email
         - logo
@@ -657,12 +665,17 @@ components:
           type: string
           description: Unique identifier of the organization.
           example: 9bsv0s46s6s002p9ltq0
+        slug:
+          type: string
+          description: Globally unique canonical kebab-case slug.
+          example: acme
         name:
           type: string
           description: Name of the organization.
           example: ACME Inc.
       required:
         - id
+        - slug
         - name
     OrganizationPage:
       title: OrganizationPage
@@ -708,6 +721,13 @@ components:
           type: string
           description: Unique identifier of the namespace.
           example: 9bsv0s46s6s002p9ltq0
+        slug:
+          type: string
+          description: Organization-scoped canonical kebab-case slug. Immutable after create.
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          example: platform
         name:
           type: string
           description: Name of the namespace.
@@ -744,6 +764,7 @@ components:
           nullable: true
       required:
         - id
+        - slug
         - name
         - created_at
         - updated_at
@@ -756,6 +777,13 @@ components:
           type: string
           description: Unique identifier of the namespace.
           example: 9bsv0s46s6s002p9ltq0
+        slug:
+          type: string
+          description: Organization-scoped canonical kebab-case slug.
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          example: platform
         name:
           type: string
           description: Name of the namespace.
@@ -794,6 +822,7 @@ components:
           $ref: "#/components/schemas/PartialOrganization"
       required:
         - id
+        - slug
         - name
         - created_at
         - updated_at
@@ -811,6 +840,10 @@ components:
           type: string
           description: Unique identifier of the namespace.
           example: 9bsv0s46s6s002p9ltq0
+        slug:
+          type: string
+          description: Organization-scoped canonical kebab-case slug.
+          example: platform
         name:
           type: string
           description: Name of the namespace.
@@ -819,6 +852,7 @@ components:
           example: Engineering
       required:
         - id
+        - slug
         - name
     NamespacePage:
       title: NamespacePage
@@ -2257,6 +2291,12 @@ components:
         project_id:
           type: string
           nullable: true
+        organization_slug:
+          type: string
+          description: Owning organization slug when the hit is in an organization.
+        namespace_slug:
+          type: string
+          description: Owning namespace slug when the hit is in a namespace.
         created_at:
           type: string
           format: date-time
@@ -2587,6 +2627,16 @@ components:
             example:
               value:
                 message: The requested resource not found
+    "409":
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HTTPError"
+          examples:
+            example:
+              value:
+                message: The requested resource already exists
     "500":
       description: Internal Server Error
       content:
@@ -2757,6 +2807,43 @@ components:
         type: string
         example: 9bsv0s46s6s002p9ltq0
       description: ID of the resource.
+    organizationRef:
+      name: organizationRef
+      in: path
+      required: true
+      schema:
+        type: string
+        example: acme
+      description: >
+        Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+
+    namespaceRef:
+      name: namespaceRef
+      in: path
+      required: true
+      schema:
+        type: string
+        example: platform
+      description: >
+        Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+
+    projectKey:
+      name: projectKey
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^[A-Z]{2,6}$"
+        example: PLAT
+      description: Namespace-scoped project key. Uppercased on write; `NEW` is reserved.
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 9bsv0s46s6s002p9ltq0
+      description: Project xid.
     documentId:
       name: documentId
       in: path
@@ -3098,6 +3185,13 @@ components:
           schema:
             type: object
             properties:
+              slug:
+                type: string
+                description: Globally unique canonical kebab-case slug. Reserved values are join and new. Must not parse as an xid.
+                minLength: 3
+                maxLength: 50
+                pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                example: acme
               name:
                 type: string
                 description: Name of the organization.
@@ -3124,6 +3218,7 @@ components:
                 example: "https://example.com"
                 maxLength: 2000
             required:
+              - slug
               - name
               - email
     OrganizationPatch:
@@ -3177,6 +3272,13 @@ components:
                 maxLength: 120
                 example: Engineering
                 minLength: 3
+              slug:
+                type: string
+                description: Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
+                minLength: 3
+                maxLength: 50
+                pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                example: platform
               description:
                 type: string
                 description: Description of the namespace.
@@ -3188,6 +3290,7 @@ components:
                 x-go-type-skip-optional-pointer: true
             required:
               - name
+              - slug
     NamespacePatch:
       content:
         application/json:
@@ -3217,9 +3320,10 @@ components:
             properties:
               key:
                 type: string
-                description: Key of the project.
+                description: Namespace-scoped project key. Uppercased on write. NEW is reserved.
                 minLength: 2
                 maxLength: 6
+                pattern: "^[A-Z]{2,6}$"
                 example: ENG
               name:
                 type: string
@@ -3254,12 +3358,6 @@ components:
           schema:
             type: object
             properties:
-              key:
-                type: string
-                description: Key of the project.
-                minLength: 2
-                maxLength: 6
-                example: ENG
               name:
                 type: string
                 description: Name of the project.
@@ -4302,6 +4400,8 @@ paths:
           $ref: "#/components/responses/401"
         "403":
           $ref: "#/components/responses/403"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new organization.
@@ -4312,9 +4412,9 @@ paths:
         - Organization
       requestBody:
         $ref: "#/components/requestBodies/OrganizationCreate"
-  "/v1/organizations/{id}":
+  "/v1/organizations/{organizationRef}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization
       tags:
@@ -4393,9 +4493,9 @@ paths:
         - Organization
       requestBody:
         $ref: "#/components/requestBodies/OrganizationPatch"
-  "/v1/organizations/{id}/members":
+  "/v1/organizations/{organizationRef}/members":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization members
       tags:
@@ -4462,9 +4562,9 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - user_id
-  "/v1/organizations/{id}/members/invite":
+  "/v1/organizations/{organizationRef}/members/invite":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     post:
       summary: Invite member to organization
       operationId: v1OrganizationMembersInvite
@@ -4505,9 +4605,9 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - email
-  "/v1/organizations/{id}/members/{user_id}":
+  "/v1/organizations/{organizationRef}/members/{user_id}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4538,9 +4638,9 @@ paths:
       tags:
         - Organization
         - User
-  "/v1/organizations/{id}/members/{user_id}/invite":
+  "/v1/organizations/{organizationRef}/members/{user_id}/invite":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4571,9 +4671,9 @@ paths:
       tags:
         - Organization
         - User
-  "/v1/organizations/{id}/members/accept":
+  "/v1/organizations/{organizationRef}/members/accept":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     post:
       summary: Accept organization invitation
       operationId: v1OrganizationMembersAccept
@@ -4597,9 +4697,9 @@ paths:
         - User
       requestBody:
         $ref: "#/components/requestBodies/OrganizationInvitationAccept"
-  "/v1/organizations/{id}/roles":
+  "/v1/organizations/{organizationRef}/roles":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization roles
       description: Return the roles that are assigned to the organization.
@@ -4657,9 +4757,9 @@ paths:
         - Role
       requestBody:
         $ref: "#/components/requestBodies/RoleCreate"
-  "/v1/organizations/{id}/roles/{role_id}":
+  "/v1/organizations/{organizationRef}/roles/{role_id}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4749,9 +4849,9 @@ paths:
         - oauth2:
             - organization
             - role
-  "/v1/organizations/{id}/teams":
+  "/v1/organizations/{organizationRef}/teams":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization teams
       description: Return the teams that belong to the organization.
@@ -4807,9 +4907,9 @@ paths:
         - Team
       requestBody:
         $ref: "#/components/requestBodies/TeamCreate"
-  "/v1/organizations/{id}/teams/{team_id}":
+  "/v1/organizations/{organizationRef}/teams/{team_id}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4896,9 +4996,9 @@ paths:
       security:
         - oauth2:
             - organization
-  "/v1/organizations/{id}/teams/{team_id}/members":
+  "/v1/organizations/{organizationRef}/teams/{team_id}/members":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -4974,9 +5074,9 @@ paths:
                   example: 9bsv0s46s6s002p9ltq0
               required:
                 - user_id
-  "/v1/organizations/{id}/teams/{team_id}/members/{user_id}":
+  "/v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
       - schema:
           type: string
           example: 9bsv0s46s6s002p9ltq0
@@ -5015,9 +5115,9 @@ paths:
         - Organization
         - Team
         - User
-  "/v1/organizations/{id}/namespaces":
+  "/v1/organizations/{organizationRef}/namespaces":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization namespaces
       tags:
@@ -5063,6 +5163,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new namespace in the organization.
@@ -5102,9 +5204,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/page_size"
         - $ref: "#/components/parameters/page_token"
-  "/v1/namespaces/{id}":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
     get:
       summary: Get namespace
       tags:
@@ -5115,7 +5218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Namespace"
+                $ref: "#/components/schemas/AccessibleNamespace"
         "400":
           $ref: "#/components/responses/400"
         "401":
@@ -5130,7 +5233,9 @@ paths:
       security:
         - oauth2:
             - namespace.read
-      description: Return the requested namespace by its ID.
+      description: >
+        Return the namespace identified by xid or slug under the organization. Lookup uses the same reachability as listing accessible namespaces so descendant-only users can open deep links. organization.read is not required.
+
     patch:
       summary: Update namespace
       operationId: v1NamespaceUpdate
@@ -5151,7 +5256,7 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Update the namespace by its ID.
+      description: Update the namespace by its organization-scoped ref. Slug cannot be patched.
       security:
         - oauth2:
             - namespace
@@ -5175,15 +5280,16 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Delete the namespace by its ID.
+      description: Delete the namespace by its organization-scoped ref.
       security:
         - oauth2:
             - namespace
       tags:
         - Namespace
-  "/v1/namespaces/{id}/projects":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
     get:
       summary: Get namespace projects
       tags:
@@ -5229,6 +5335,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new project in the namespace.
@@ -5241,9 +5349,42 @@ paths:
         - Project
       requestBody:
         $ref: "#/components/requestBodies/ProjectCreate"
-  "/v1/projects/{id}":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
+      - $ref: "#/components/parameters/projectKey"
+    get:
+      summary: Get project by key
+      tags:
+        - Namespace
+        - Project
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+      operationId: v1NamespacesProjectsKeyGet
+      security:
+        - oauth2:
+            - namespace.read
+            - project.read
+      description: Return the project identified by key within the given namespace.
+  "/v1/projects/{projectId}":
+    parameters:
+      - $ref: "#/components/parameters/projectId"
     get:
       summary: Get project
       tags:
@@ -5269,7 +5410,7 @@ paths:
       security:
         - oauth2:
             - project.read
-      description: Return the requested project by its ID.
+      description: Return the requested project by its xid.
     patch:
       summary: Update project
       operationId: v1ProjectUpdate
@@ -5290,7 +5431,7 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Update the project by its ID.
+      description: Update the project by its xid. Key cannot be patched.
       security:
         - oauth2:
             - project
@@ -5314,15 +5455,16 @@ paths:
           $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
-      description: Delete the project by its ID.
+      description: Delete the project by its xid.
       security:
         - oauth2:
             - project
       tags:
         - Project
-  "/v1/namespaces/{id}/issues":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
     get:
       summary: Get namespace issues
       tags:
@@ -5358,9 +5500,10 @@ paths:
         - $ref: "#/components/parameters/issue_list_status"
         - $ref: "#/components/parameters/issue_list_priority"
         - $ref: "#/components/parameters/issue_list_order"
-  "/v1/namespaces/{id}/issues/{key}":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
       - $ref: "#/components/parameters/issueKey"
     get:
       summary: Get issue by key
@@ -5390,9 +5533,9 @@ paths:
             - namespace.read
             - issue.read
       description: Return the issue identified by composite key within the given namespace.
-  "/v1/projects/{id}/issues":
+  "/v1/projects/{projectId}/issues":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/projectId"
     get:
       summary: Get project issues
       tags:
@@ -5651,9 +5794,9 @@ paths:
             - issue
       tags:
         - Issue
-  "/v1/organizations/{id}/documents":
+  "/v1/organizations/{organizationRef}/documents":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization documents
       tags:
@@ -5717,9 +5860,10 @@ paths:
         - Document
       requestBody:
         $ref: "#/components/requestBodies/DocumentCreate"
-  "/v1/namespaces/{id}/documents":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
     get:
       summary: Get namespace documents
       tags:
@@ -5783,9 +5927,9 @@ paths:
         - Document
       requestBody:
         $ref: "#/components/requestBodies/DocumentCreate"
-  "/v1/projects/{id}/documents":
+  "/v1/projects/{projectId}/documents":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/projectId"
     get:
       summary: Get project documents
       tags:
@@ -5847,9 +5991,9 @@ paths:
         - Document
       requestBody:
         $ref: "#/components/requestBodies/DocumentCreate"
-  "/v1/projects/{id}/documents/{documentId}":
+  "/v1/projects/{projectId}/documents/{documentId}":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/projectId"
       - $ref: "#/components/parameters/documentId"
     post:
       summary: Relate document to project
@@ -6094,9 +6238,9 @@ paths:
       tags:
         - Issue
         - Document
-  "/v1/organizations/{id}/folders":
+  "/v1/organizations/{organizationRef}/folders":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
     get:
       summary: Get organization folders
       tags:
@@ -6159,9 +6303,10 @@ paths:
         - Folder
       requestBody:
         $ref: "#/components/requestBodies/FolderCreate"
-  "/v1/namespaces/{id}/folders":
+  "/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders":
     parameters:
-      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/organizationRef"
+      - $ref: "#/components/parameters/namespaceRef"
     get:
       summary: Get namespace folders
       tags:

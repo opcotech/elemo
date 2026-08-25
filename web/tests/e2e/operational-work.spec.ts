@@ -25,7 +25,10 @@ test.describe("@operational Namespace and project Work surfaces", () => {
   test("opens namespace Work, owns projection URL state, and keeps empty fixtures scoped", async ({
     page,
   }) => {
-    await workPage.gotoNamespaceWork(workspace.namespaceId);
+    await workPage.gotoNamespaceWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await workPage.waitForLoad(`${workspace.namespaceName} / Work`);
     await expect(workPage.surface.getEmptyState()).toBeVisible();
     await expect(
@@ -46,14 +49,14 @@ test.describe("@operational Namespace and project Work surfaces", () => {
 
   test("opens project Work from contextual navigation", async ({ page }) => {
     await page.goto(
-      `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}`
+      `/organizations/${workspace.organizationSlug}/namespaces/${workspace.namespaceSlug}/projects/${workspace.projectKey}`
     );
     await expect(
       page.getByRole("heading", { name: workspace.projectName })
     ).toBeVisible();
 
     const projectWorkPath = new RegExp(
-      `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}/work`
+      `/organizations/${workspace.organizationSlug}/namespaces/${workspace.namespaceSlug}/projects/${workspace.projectKey}/work`
     );
     const workLink = page.getByRole("link", { name: "Work", exact: true });
     await expect(workLink).toHaveAttribute("href", projectWorkPath);

@@ -1,6 +1,6 @@
-"/v1/organizations/{id}/folders":
+"/v1/organizations/{organizationRef}/folders":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   get:
     summary: Get organization folders
     tags:
@@ -63,9 +63,10 @@
       - Folder
     requestBody:
       $ref: "#/components/requestBodies/FolderCreate"
-"/v1/namespaces/{id}/folders":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
   get:
     summary: Get namespace folders
     tags:

@@ -12,13 +12,15 @@ import (
 // SearchableRecord is the graph projection used to build a SearchDocument.
 // Ancestry is the resource plus IN_SCOPE_OF ancestors, nearest first.
 type SearchableRecord struct {
-	ID        model.ID
-	Title     string
-	Content   string
-	Key       string
-	CreatedAt int64
-	UpdatedAt int64
-	Ancestry  []model.ID
+	ID               model.ID
+	Title            string
+	Content          string
+	Key              string
+	OrganizationSlug string
+	NamespaceSlug    string
+	CreatedAt        int64
+	UpdatedAt        int64
+	Ancestry         []model.ID
 }
 
 func searchableRecordAncestryCypher() string {
@@ -99,6 +101,8 @@ func decodeSearchableRecord(resourceType model.ResourceType, node neo4j.Node, an
 
 	ancestry := make([]model.ID, 0, len(ancestryNodes))
 	projectKey := ""
+	organizationSlug := ""
+	namespaceSlug := ""
 	for _, ancestor := range ancestryNodes {
 		scope, decErr := Neo4jDecodeIDFromLabel(ancestor)
 		if decErr != nil {
@@ -107,6 +111,12 @@ func decodeSearchableRecord(resourceType model.ResourceType, node neo4j.Node, an
 		ancestry = append(ancestry, scope)
 		if scope.Type == model.ResourceTypeProject {
 			projectKey = optionalNodeString(ancestor, "key")
+		}
+		if scope.Type == model.ResourceTypeOrganization {
+			organizationSlug = optionalNodeString(ancestor, "slug")
+		}
+		if scope.Type == model.ResourceTypeNamespace {
+			namespaceSlug = optionalNodeString(ancestor, "slug")
 		}
 	}
 	if len(ancestry) == 0 {
@@ -123,18 +133,26 @@ func decodeSearchableRecord(resourceType model.ResourceType, node neo4j.Node, an
 	}
 
 	record := SearchableRecord{
-		ID:        id,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-		Ancestry:  ancestry,
+		ID:               id,
+		OrganizationSlug: organizationSlug,
+		NamespaceSlug:    namespaceSlug,
+		CreatedAt:        createdAt,
+		UpdatedAt:        updatedAt,
+		Ancestry:         ancestry,
 	}
 
 	switch resourceType {
 	case model.ResourceTypeOrganization:
 		record.Title = optionalNodeString(node, "name")
+		if record.OrganizationSlug == "" {
+			record.OrganizationSlug = optionalNodeString(node, "slug")
+		}
 	case model.ResourceTypeNamespace:
 		record.Title = optionalNodeString(node, "name")
 		record.Content = optionalNodeString(node, "description")
+		if record.NamespaceSlug == "" {
+			record.NamespaceSlug = optionalNodeString(node, "slug")
+		}
 	case model.ResourceTypeProject:
 		record.Title = optionalNodeString(node, "name")
 		record.Content = optionalNodeString(node, "description")

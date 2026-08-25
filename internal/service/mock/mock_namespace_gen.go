@@ -86,6 +86,21 @@ func (mr *MockNamespaceServiceMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNamespaceService)(nil).Get), ctx, id)
 }
 
+// GetByRef mocks base method.
+func (m *MockNamespaceService) GetByRef(ctx context.Context, orgID, id model.ID, slug string) (*service.AccessibleNamespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByRef", ctx, orgID, id, slug)
+	ret0, _ := ret[0].(*service.AccessibleNamespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByRef indicates an expected call of GetByRef.
+func (mr *MockNamespaceServiceMockRecorder) GetByRef(ctx, orgID, id, slug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByRef", reflect.TypeOf((*MockNamespaceService)(nil).GetByRef), ctx, orgID, id, slug)
+}
+
 // List mocks base method.
 func (m *MockNamespaceService) List(ctx context.Context, orgID model.ID, page service.CursorPage) (service.Page[*service.Namespace], error) {
 	m.ctrl.T.Helper()
@@ -114,6 +129,21 @@ func (m *MockNamespaceService) ListAccessible(ctx context.Context, page service.
 func (mr *MockNamespaceServiceMockRecorder) ListAccessible(ctx, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAccessible", reflect.TypeOf((*MockNamespaceService)(nil).ListAccessible), ctx, page)
+}
+
+// Resolve mocks base method.
+func (m *MockNamespaceService) Resolve(ctx context.Context, orgID, id model.ID, slug string) (*service.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Resolve", ctx, orgID, id, slug)
+	ret0, _ := ret[0].(*service.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Resolve indicates an expected call of Resolve.
+func (mr *MockNamespaceServiceMockRecorder) Resolve(ctx, orgID, id, slug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockNamespaceService)(nil).Resolve), ctx, orgID, id, slug)
 }
 
 // Update mocks base method.

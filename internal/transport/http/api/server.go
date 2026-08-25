@@ -1446,6 +1446,11 @@ type AccessibleNamespace struct {
 	// Example: 4
 	ProjectCount *int64 `json:"project_count,omitempty"`
 
+	// Slug Organization-scoped canonical kebab-case slug.
+	//
+	// Example: platform
+	Slug string `json:"slug"`
+
 	// UpdatedAt Date when the namespace was updated.
 	UpdatedAt *time.Time `json:"updated_at"`
 }
@@ -1905,6 +1910,11 @@ type Namespace struct {
 	// Example: 4
 	ProjectCount *int64 `json:"project_count,omitempty"`
 
+	// Slug Organization-scoped canonical kebab-case slug. Immutable after create.
+	//
+	// Example: platform
+	Slug string `json:"slug"`
+
 	// UpdatedAt Date when the namespace was updated.
 	UpdatedAt *time.Time `json:"updated_at"`
 }
@@ -1994,6 +2004,11 @@ type Organization struct {
 	//
 	// Example: 2
 	NamespaceCount *int64 `json:"namespace_count,omitempty"`
+
+	// Slug Globally unique canonical kebab-case slug. Immutable after create.
+	//
+	// Example: acme
+	Slug string `json:"slug"`
 
 	// Status Status of the organization.
 	//
@@ -2228,6 +2243,11 @@ type PartialNamespace struct {
 	//
 	// Example: Engineering
 	Name string `json:"name"`
+
+	// Slug Organization-scoped canonical kebab-case slug.
+	//
+	// Example: platform
+	Slug string `json:"slug"`
 }
 
 // PartialOrganization Owning organization stub returned with a reachable namespace.
@@ -2241,6 +2261,11 @@ type PartialOrganization struct {
 	//
 	// Example: ACME Inc.
 	Name string `json:"name"`
+
+	// Slug Globally unique canonical kebab-case slug.
+	//
+	// Example: acme
+	Slug string `json:"slug"`
 }
 
 // PartialProject A simplified project that can be used in lists.
@@ -2428,10 +2453,16 @@ type SearchResult struct {
 	Id string `json:"id"`
 
 	// Key Human-readable key when the resource has one.
-	Key            *string `json:"key,omitempty"`
-	NamespaceId    *string `json:"namespace_id,omitempty"`
+	Key         *string `json:"key,omitempty"`
+	NamespaceId *string `json:"namespace_id,omitempty"`
+
+	// NamespaceSlug Owning namespace slug when the hit is in a namespace.
+	NamespaceSlug  *string `json:"namespace_slug,omitempty"`
 	OrganizationId *string `json:"organization_id,omitempty"`
-	ProjectId      *string `json:"project_id,omitempty"`
+
+	// OrganizationSlug Owning organization slug when the hit is in an organization.
+	OrganizationSlug *string `json:"organization_slug,omitempty"`
+	ProjectId        *string `json:"project_id,omitempty"`
 
 	// Subtitle Display subtitle such as an issue key or document excerpt.
 	Subtitle  *string          `json:"subtitle,omitempty"`
@@ -2750,6 +2781,12 @@ type IssueListQ = string
 // IssueListStatus defines model for issue_list_status.
 type IssueListStatus = []IssueStatus
 
+// NamespaceRef Example: platform
+type NamespaceRef = string
+
+// OrganizationRef Example: acme
+type OrganizationRef = string
+
 // PageSize defines model for page_size.
 type PageSize = int
 
@@ -2758,6 +2795,12 @@ type PageToken = string
 
 // ParentId Example: 9bsv0s46s6s002p9ltq0
 type ParentId = string
+
+// ProjectId Example: 9bsv0s46s6s002p9ltq0
+type ProjectId = string
+
+// ProjectKey Example: PLAT
+type ProjectKey = string
 
 // RelationId Example: 9bsv0s46s6s002p9ltq0
 type RelationId = string
@@ -2803,6 +2846,9 @@ type N403 = HTTPError
 
 // N404 HTTP error description.
 type N404 = HTTPError
+
+// N409 HTTP error description.
+type N409 = HTTPError
 
 // N500 HTTP error description.
 type N500 = HTTPError
@@ -3045,6 +3091,11 @@ type NamespaceCreate struct {
 	//
 	// Example: Engineering
 	Name string `json:"name"`
+
+	// Slug Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
+	//
+	// Example: platform
+	Slug string `json:"slug"`
 }
 
 // NamespacePatch defines model for NamespacePatch.
@@ -3082,6 +3133,11 @@ type OrganizationCreate struct {
 	//
 	// Example: ACME Inc.
 	Name string `json:"name"`
+
+	// Slug Globally unique canonical kebab-case slug. Reserved values are join and new. Must not parse as an xid.
+	//
+	// Example: acme
+	Slug string `json:"slug"`
 
 	// Website Work title of the user.
 	//
@@ -3135,7 +3191,7 @@ type ProjectCreate struct {
 	// Example: Main engineering project
 	Description Optional[string] `json:"description,omitempty"`
 
-	// Key Key of the project.
+	// Key Namespace-scoped project key. Uppercased on write. NEW is reserved.
 	//
 	// Example: ENG
 	Key string `json:"key"`
@@ -3162,11 +3218,6 @@ type ProjectPatch struct {
 	//
 	// Example: Main engineering project
 	Description Optional[string] `json:"description,omitempty"`
-
-	// Key Key of the project.
-	//
-	// Example: ENG
-	Key *string `json:"key,omitempty"`
 
 	// Logo Logo of the project.
 	//
@@ -3615,140 +3666,6 @@ type V1NamespacesGetParams struct {
 	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
 }
 
-// V1NamespaceUpdateJSONBody defines parameters for V1NamespaceUpdate.
-type V1NamespaceUpdateJSONBody struct {
-	// Description Description of the namespace.
-	//
-	// Example: Engineering team namespace
-	Description Optional[string] `json:"description,omitempty"`
-
-	// Name Name of the namespace.
-	//
-	// Example: Engineering
-	Name *string `json:"name,omitempty"`
-}
-
-// V1NamespacesDocumentsGetParams defines parameters for V1NamespacesDocumentsGet.
-type V1NamespacesDocumentsGetParams struct {
-	// PageSize Maximum number of items to return.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// PageToken Opaque continuation token from a previous page_info.next_page_token.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-
-	// FolderId Browse documents located in this folder. Omit to list unfiled documents at the library root.
-	FolderId *FolderId `form:"folder_id,omitempty" json:"folder_id,omitempty"`
-
-	// All When true, return every document in the library regardless of folder.
-	All *All `form:"all,omitempty" json:"all,omitempty"`
-}
-
-// V1NamespacesDocumentsCreateJSONBody defines parameters for V1NamespacesDocumentsCreate.
-type V1NamespacesDocumentsCreateJSONBody struct {
-	// Content Body of the document.
-	//
-	// Example: # Project Plan
-	//
-	// Goals and timeline.
-	Content Optional[string] `json:"content,omitempty"`
-
-	// Excerpt Excerpt of the document.
-	//
-	// Example: Overview of the project plan
-	Excerpt Optional[string] `json:"excerpt,omitempty"`
-
-	// Title Title of the document.
-	//
-	// Example: Project Plan
-	Title string `json:"title"`
-}
-
-// V1NamespacesFoldersGetParams defines parameters for V1NamespacesFoldersGet.
-type V1NamespacesFoldersGetParams struct {
-	// PageSize Maximum number of items to return.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// PageToken Opaque continuation token from a previous page_info.next_page_token.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-
-	// ParentId List folders located in this parent folder. Omit to list folders at the library root.
-	ParentId *ParentId `form:"parent_id,omitempty" json:"parent_id,omitempty"`
-}
-
-// V1NamespacesFoldersCreateJSONBody defines parameters for V1NamespacesFoldersCreate.
-type V1NamespacesFoldersCreateJSONBody struct {
-	// Name Name of the folder.
-	//
-	// Example: Guides
-	Name string `json:"name"`
-
-	// ParentId Parent folder ID. Omit to create at the library root.
-	//
-	// Example: 9bsv0s46s6s002p9ltq0
-	ParentId *string `json:"parent_id,omitempty"`
-}
-
-// V1NamespacesIssuesGetParams defines parameters for V1NamespacesIssuesGet.
-type V1NamespacesIssuesGetParams struct {
-	// PageSize Maximum number of items to return.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// PageToken Opaque continuation token from a previous page_info.next_page_token.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-
-	// Q Case-insensitive substring search over issue key, title, and description.
-	Q *IssueListQ `form:"q,omitempty" json:"q,omitempty"`
-
-	// Status Match any of the provided statuses.
-	Status *IssueListStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// Priority Match any of the provided priorities.
-	Priority *IssueListPriority `form:"priority,omitempty" json:"priority,omitempty"`
-
-	// Order Sort order in `field:direction` format.
-	Order *V1NamespacesIssuesGetParamsOrder `form:"order,omitempty" json:"order,omitempty"`
-}
-
-// V1NamespacesIssuesGetParamsOrder defines parameters for V1NamespacesIssuesGet.
-type V1NamespacesIssuesGetParamsOrder string
-
-// V1NamespacesProjectsGetParams defines parameters for V1NamespacesProjectsGet.
-type V1NamespacesProjectsGetParams struct {
-	// PageSize Maximum number of items to return.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// PageToken Opaque continuation token from a previous page_info.next_page_token.
-	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
-}
-
-// V1NamespacesProjectsCreateJSONBody defines parameters for V1NamespacesProjectsCreate.
-type V1NamespacesProjectsCreateJSONBody struct {
-	// Description Description of the project.
-	//
-	// Example: Main engineering project
-	Description Optional[string] `json:"description,omitempty"`
-
-	// Key Key of the project.
-	//
-	// Example: ENG
-	Key string `json:"key"`
-
-	// Logo Logo of the project.
-	//
-	// Example: https://example.com/logo.png
-	Logo *string `json:"logo,omitempty"`
-
-	// Name Name of the project.
-	//
-	// Example: Engineering Project
-	Name string `json:"name"`
-
-	// Status Status of the project.
-	//
-	// Example: active
-	Status *ProjectStatus `json:"status,omitempty"`
-}
-
 // V1NotificationsGetParams defines parameters for V1NotificationsGet.
 type V1NotificationsGetParams struct {
 	// PageSize Maximum number of items to return.
@@ -3789,6 +3706,11 @@ type V1OrganizationsCreateJSONBody struct {
 	//
 	// Example: ACME Inc.
 	Name string `json:"name"`
+
+	// Slug Globally unique canonical kebab-case slug. Reserved values are join and new. Must not parse as an xid.
+	//
+	// Example: acme
+	Slug string `json:"slug"`
 
 	// Website Work title of the user.
 	//
@@ -3951,6 +3873,145 @@ type V1OrganizationsNamespacesCreateJSONBody struct {
 	//
 	// Example: Engineering
 	Name string `json:"name"`
+
+	// Slug Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
+	//
+	// Example: platform
+	Slug string `json:"slug"`
+}
+
+// V1NamespaceUpdateJSONBody defines parameters for V1NamespaceUpdate.
+type V1NamespaceUpdateJSONBody struct {
+	// Description Description of the namespace.
+	//
+	// Example: Engineering team namespace
+	Description Optional[string] `json:"description,omitempty"`
+
+	// Name Name of the namespace.
+	//
+	// Example: Engineering
+	Name *string `json:"name,omitempty"`
+}
+
+// V1NamespacesDocumentsGetParams defines parameters for V1NamespacesDocumentsGet.
+type V1NamespacesDocumentsGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// FolderId Browse documents located in this folder. Omit to list unfiled documents at the library root.
+	FolderId *FolderId `form:"folder_id,omitempty" json:"folder_id,omitempty"`
+
+	// All When true, return every document in the library regardless of folder.
+	All *All `form:"all,omitempty" json:"all,omitempty"`
+}
+
+// V1NamespacesDocumentsCreateJSONBody defines parameters for V1NamespacesDocumentsCreate.
+type V1NamespacesDocumentsCreateJSONBody struct {
+	// Content Body of the document.
+	//
+	// Example: # Project Plan
+	//
+	// Goals and timeline.
+	Content Optional[string] `json:"content,omitempty"`
+
+	// Excerpt Excerpt of the document.
+	//
+	// Example: Overview of the project plan
+	Excerpt Optional[string] `json:"excerpt,omitempty"`
+
+	// Title Title of the document.
+	//
+	// Example: Project Plan
+	Title string `json:"title"`
+}
+
+// V1NamespacesFoldersGetParams defines parameters for V1NamespacesFoldersGet.
+type V1NamespacesFoldersGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// ParentId List folders located in this parent folder. Omit to list folders at the library root.
+	ParentId *ParentId `form:"parent_id,omitempty" json:"parent_id,omitempty"`
+}
+
+// V1NamespacesFoldersCreateJSONBody defines parameters for V1NamespacesFoldersCreate.
+type V1NamespacesFoldersCreateJSONBody struct {
+	// Name Name of the folder.
+	//
+	// Example: Guides
+	Name string `json:"name"`
+
+	// ParentId Parent folder ID. Omit to create at the library root.
+	//
+	// Example: 9bsv0s46s6s002p9ltq0
+	ParentId *string `json:"parent_id,omitempty"`
+}
+
+// V1NamespacesIssuesGetParams defines parameters for V1NamespacesIssuesGet.
+type V1NamespacesIssuesGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// Q Case-insensitive substring search over issue key, title, and description.
+	Q *IssueListQ `form:"q,omitempty" json:"q,omitempty"`
+
+	// Status Match any of the provided statuses.
+	Status *IssueListStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Priority Match any of the provided priorities.
+	Priority *IssueListPriority `form:"priority,omitempty" json:"priority,omitempty"`
+
+	// Order Sort order in `field:direction` format.
+	Order *V1NamespacesIssuesGetParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+}
+
+// V1NamespacesIssuesGetParamsOrder defines parameters for V1NamespacesIssuesGet.
+type V1NamespacesIssuesGetParamsOrder string
+
+// V1NamespacesProjectsGetParams defines parameters for V1NamespacesProjectsGet.
+type V1NamespacesProjectsGetParams struct {
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// V1NamespacesProjectsCreateJSONBody defines parameters for V1NamespacesProjectsCreate.
+type V1NamespacesProjectsCreateJSONBody struct {
+	// Description Description of the project.
+	//
+	// Example: Main engineering project
+	Description Optional[string] `json:"description,omitempty"`
+
+	// Key Namespace-scoped project key. Uppercased on write. NEW is reserved.
+	//
+	// Example: ENG
+	Key string `json:"key"`
+
+	// Logo Logo of the project.
+	//
+	// Example: https://example.com/logo.png
+	Logo *string `json:"logo,omitempty"`
+
+	// Name Name of the project.
+	//
+	// Example: Engineering Project
+	Name string `json:"name"`
+
+	// Status Status of the project.
+	//
+	// Example: active
+	Status *ProjectStatus `json:"status,omitempty"`
 }
 
 // V1OrganizationRolesGetParams defines parameters for V1OrganizationRolesGet.
@@ -4084,11 +4145,6 @@ type V1ProjectUpdateJSONBody struct {
 	//
 	// Example: Main engineering project
 	Description Optional[string] `json:"description,omitempty"`
-
-	// Key Key of the project.
-	//
-	// Example: ENG
-	Key *string `json:"key,omitempty"`
 
 	// Logo Logo of the project.
 	//
@@ -4500,18 +4556,6 @@ type V1IssueRelationsCreateJSONRequestBody V1IssueRelationsCreateJSONBody
 // V1IssueRelationUpdateJSONRequestBody defines body for V1IssueRelationUpdate for application/json ContentType.
 type V1IssueRelationUpdateJSONRequestBody V1IssueRelationUpdateJSONBody
 
-// V1NamespaceUpdateJSONRequestBody defines body for V1NamespaceUpdate for application/json ContentType.
-type V1NamespaceUpdateJSONRequestBody V1NamespaceUpdateJSONBody
-
-// V1NamespacesDocumentsCreateJSONRequestBody defines body for V1NamespacesDocumentsCreate for application/json ContentType.
-type V1NamespacesDocumentsCreateJSONRequestBody V1NamespacesDocumentsCreateJSONBody
-
-// V1NamespacesFoldersCreateJSONRequestBody defines body for V1NamespacesFoldersCreate for application/json ContentType.
-type V1NamespacesFoldersCreateJSONRequestBody V1NamespacesFoldersCreateJSONBody
-
-// V1NamespacesProjectsCreateJSONRequestBody defines body for V1NamespacesProjectsCreate for application/json ContentType.
-type V1NamespacesProjectsCreateJSONRequestBody V1NamespacesProjectsCreateJSONBody
-
 // V1NotificationUpdateJSONRequestBody defines body for V1NotificationUpdate for application/json ContentType.
 type V1NotificationUpdateJSONRequestBody V1NotificationUpdateJSONBody
 
@@ -4538,6 +4582,18 @@ type V1OrganizationMembersInviteJSONRequestBody V1OrganizationMembersInviteJSONB
 
 // V1OrganizationsNamespacesCreateJSONRequestBody defines body for V1OrganizationsNamespacesCreate for application/json ContentType.
 type V1OrganizationsNamespacesCreateJSONRequestBody V1OrganizationsNamespacesCreateJSONBody
+
+// V1NamespaceUpdateJSONRequestBody defines body for V1NamespaceUpdate for application/json ContentType.
+type V1NamespaceUpdateJSONRequestBody V1NamespaceUpdateJSONBody
+
+// V1NamespacesDocumentsCreateJSONRequestBody defines body for V1NamespacesDocumentsCreate for application/json ContentType.
+type V1NamespacesDocumentsCreateJSONRequestBody V1NamespacesDocumentsCreateJSONBody
+
+// V1NamespacesFoldersCreateJSONRequestBody defines body for V1NamespacesFoldersCreate for application/json ContentType.
+type V1NamespacesFoldersCreateJSONRequestBody V1NamespacesFoldersCreateJSONBody
+
+// V1NamespacesProjectsCreateJSONRequestBody defines body for V1NamespacesProjectsCreate for application/json ContentType.
+type V1NamespacesProjectsCreateJSONRequestBody V1NamespacesProjectsCreateJSONBody
 
 // V1OrganizationRolesCreateJSONRequestBody defines body for V1OrganizationRolesCreate for application/json ContentType.
 type V1OrganizationRolesCreateJSONRequestBody V1OrganizationRolesCreateJSONBody
@@ -4640,39 +4696,6 @@ type ServerInterface interface {
 	// V1NamespacesGet List reachable namespaces
 	// (GET /v1/namespaces)
 	V1NamespacesGet(w http.ResponseWriter, r *http.Request, params V1NamespacesGetParams)
-	// V1NamespaceDelete Delete namespace
-	// (DELETE /v1/namespaces/{id})
-	V1NamespaceDelete(w http.ResponseWriter, r *http.Request, id Id)
-	// V1NamespaceGet Get namespace
-	// (GET /v1/namespaces/{id})
-	V1NamespaceGet(w http.ResponseWriter, r *http.Request, id Id)
-	// V1NamespaceUpdate Update namespace
-	// (PATCH /v1/namespaces/{id})
-	V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, id Id)
-	// V1NamespacesDocumentsGet Get namespace documents
-	// (GET /v1/namespaces/{id}/documents)
-	V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesDocumentsGetParams)
-	// V1NamespacesDocumentsCreate Create document in namespace
-	// (POST /v1/namespaces/{id}/documents)
-	V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
-	// V1NamespacesFoldersGet Get namespace folders
-	// (GET /v1/namespaces/{id}/folders)
-	V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams)
-	// V1NamespacesFoldersCreate Create folder in namespace
-	// (POST /v1/namespaces/{id}/folders)
-	V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id)
-	// V1NamespacesIssuesGet Get namespace issues
-	// (GET /v1/namespaces/{id}/issues)
-	V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesIssuesGetParams)
-	// V1NamespacesIssuesKeyGet Get issue by key
-	// (GET /v1/namespaces/{id}/issues/{key})
-	V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, id Id, key IssueKey)
-	// V1NamespacesProjectsGet Get namespace projects
-	// (GET /v1/namespaces/{id}/projects)
-	V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesProjectsGetParams)
-	// V1NamespacesProjectsCreate Create project in namespace
-	// (POST /v1/namespaces/{id}/projects)
-	V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, id Id)
 	// V1NotificationsGet Get all in-app notification of the requesting user.
 	// (GET /v1/notifications)
 	V1NotificationsGet(w http.ResponseWriter, r *http.Request, params V1NotificationsGetParams)
@@ -4692,89 +4715,125 @@ type ServerInterface interface {
 	// (POST /v1/organizations)
 	V1OrganizationsCreate(w http.ResponseWriter, r *http.Request)
 	// V1OrganizationDelete Delete organization
-	// (DELETE /v1/organizations/{id})
-	V1OrganizationDelete(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationDeleteParams)
+	// (DELETE /v1/organizations/{organizationRef})
+	V1OrganizationDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationDeleteParams)
 	// V1OrganizationGet Get organization
-	// (GET /v1/organizations/{id})
-	V1OrganizationGet(w http.ResponseWriter, r *http.Request, id Id)
+	// (GET /v1/organizations/{organizationRef})
+	V1OrganizationGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationUpdate Update organization
-	// (PATCH /v1/organizations/{id})
-	V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// (PATCH /v1/organizations/{organizationRef})
+	V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationsDocumentsGet Get organization documents
-	// (GET /v1/organizations/{id}/documents)
-	V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams)
+	// (GET /v1/organizations/{organizationRef}/documents)
+	V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsDocumentsGetParams)
 	// V1OrganizationsDocumentsCreate Create document in organization
-	// (POST /v1/organizations/{id}/documents)
-	V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/documents)
+	V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationsFoldersGet Get organization folders
-	// (GET /v1/organizations/{id}/folders)
-	V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams)
+	// (GET /v1/organizations/{organizationRef}/folders)
+	V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsFoldersGetParams)
 	// V1OrganizationsFoldersCreate Create folder in organization
-	// (POST /v1/organizations/{id}/folders)
-	V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/folders)
+	V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationMembersGet Get organization members
-	// (GET /v1/organizations/{id}/members)
-	V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationMembersGetParams)
+	// (GET /v1/organizations/{organizationRef}/members)
+	V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationMembersGetParams)
 	// V1OrganizationMembersAdd Add organization member
-	// (POST /v1/organizations/{id}/members)
-	V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/members)
+	V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationMembersAccept Accept organization invitation
-	// (POST /v1/organizations/{id}/members/accept)
-	V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/members/accept)
+	V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationMembersInvite Invite member to organization
-	// (POST /v1/organizations/{id}/members/invite)
-	V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/members/invite)
+	V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationMemberRemove Remove organization member
-	// (DELETE /v1/organizations/{id}/members/{user_id})
-	V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string)
+	// (DELETE /v1/organizations/{organizationRef}/members/{user_id})
+	V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string)
 	// V1OrganizationMemberInviteRevoke Revoke invitation
-	// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
-	V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string)
+	// (DELETE /v1/organizations/{organizationRef}/members/{user_id}/invite)
+	V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string)
 	// V1OrganizationsNamespacesGet Get organization namespaces
-	// (GET /v1/organizations/{id}/namespaces)
-	V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsNamespacesGetParams)
+	// (GET /v1/organizations/{organizationRef}/namespaces)
+	V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsNamespacesGetParams)
 	// V1OrganizationsNamespacesCreate Create namespace in organization
-	// (POST /v1/organizations/{id}/namespaces)
-	V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/namespaces)
+	V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
+	// V1NamespaceDelete Delete namespace
+	// (DELETE /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespaceGet Get namespace
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespaceUpdate Update namespace
+	// (PATCH /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespacesDocumentsGet Get namespace documents
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+	V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesDocumentsGetParams)
+	// V1NamespacesDocumentsCreate Create document in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+	V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespacesFoldersGet Get namespace folders
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+	V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesFoldersGetParams)
+	// V1NamespacesFoldersCreate Create folder in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+	V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespacesIssuesGet Get namespace issues
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues)
+	V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesIssuesGetParams)
+	// V1NamespacesIssuesKeyGet Get issue by key
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key})
+	V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, key IssueKey)
+	// V1NamespacesProjectsGet Get namespace projects
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+	V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesProjectsGetParams)
+	// V1NamespacesProjectsCreate Create project in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+	V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef)
+	// V1NamespacesProjectsKeyGet Get project by key
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey})
+	V1NamespacesProjectsKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, projectKey ProjectKey)
 	// V1OrganizationRolesGet Get organization roles
-	// (GET /v1/organizations/{id}/roles)
-	V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams)
+	// (GET /v1/organizations/{organizationRef}/roles)
+	V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationRolesGetParams)
 	// V1OrganizationRolesCreate Create a new role in the organization
-	// (POST /v1/organizations/{id}/roles)
-	V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/roles)
+	V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationRoleDelete Delete organization role
-	// (DELETE /v1/organizations/{id}/roles/{role_id})
-	V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// (DELETE /v1/organizations/{organizationRef}/roles/{role_id})
+	V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string)
 	// V1OrganizationRoleGet Get organization role
-	// (GET /v1/organizations/{id}/roles/{role_id})
-	V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// (GET /v1/organizations/{organizationRef}/roles/{role_id})
+	V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string)
 	// V1OrganizationRoleUpdate Update organization role
-	// (PATCH /v1/organizations/{id}/roles/{role_id})
-	V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string)
+	// (PATCH /v1/organizations/{organizationRef}/roles/{role_id})
+	V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string)
 	// V1OrganizationTeamsGet Get organization teams
-	// (GET /v1/organizations/{id}/teams)
-	V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationTeamsGetParams)
+	// (GET /v1/organizations/{organizationRef}/teams)
+	V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationTeamsGetParams)
 	// V1OrganizationTeamsCreate Create a new team in the organization
-	// (POST /v1/organizations/{id}/teams)
-	V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/organizations/{organizationRef}/teams)
+	V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef)
 	// V1OrganizationTeamDelete Delete organization team
-	// (DELETE /v1/organizations/{id}/teams/{team_id})
-	V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, id Id, teamId string)
+	// (DELETE /v1/organizations/{organizationRef}/teams/{team_id})
+	V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string)
 	// V1OrganizationTeamGet Get organization team
-	// (GET /v1/organizations/{id}/teams/{team_id})
-	V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, id Id, teamId string)
+	// (GET /v1/organizations/{organizationRef}/teams/{team_id})
+	V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string)
 	// V1OrganizationTeamUpdate Update organization team
-	// (PATCH /v1/organizations/{id}/teams/{team_id})
-	V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, id Id, teamId string)
+	// (PATCH /v1/organizations/{organizationRef}/teams/{team_id})
+	V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string)
 	// V1OrganizationTeamMembersGet Get organization team members
-	// (GET /v1/organizations/{id}/teams/{team_id}/members)
-	V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, id Id, teamId string, params V1OrganizationTeamMembersGetParams)
+	// (GET /v1/organizations/{organizationRef}/teams/{team_id}/members)
+	V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, params V1OrganizationTeamMembersGetParams)
 	// V1OrganizationTeamMembersAdd Add organization team member
-	// (POST /v1/organizations/{id}/teams/{team_id}/members)
-	V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, id Id, teamId string)
+	// (POST /v1/organizations/{organizationRef}/teams/{team_id}/members)
+	V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string)
 	// V1OrganizationTeamMemberRemove Remove organization team member
-	// (DELETE /v1/organizations/{id}/teams/{team_id}/members/{user_id})
-	V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, id Id, teamId string, userId string)
+	// (DELETE /v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id})
+	V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, userId string)
 	// V1PermissionsCreate Create grant
 	// (POST /v1/permissions)
 	V1PermissionsCreate(w http.ResponseWriter, r *http.Request)
@@ -4788,32 +4847,32 @@ type ServerInterface interface {
 	// (GET /v1/permissions/{id})
 	V1PermissionGet(w http.ResponseWriter, r *http.Request, id Id)
 	// V1ProjectDelete Delete project
-	// (DELETE /v1/projects/{id})
-	V1ProjectDelete(w http.ResponseWriter, r *http.Request, id Id)
+	// (DELETE /v1/projects/{projectId})
+	V1ProjectDelete(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// V1ProjectGet Get project
-	// (GET /v1/projects/{id})
-	V1ProjectGet(w http.ResponseWriter, r *http.Request, id Id)
+	// (GET /v1/projects/{projectId})
+	V1ProjectGet(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// V1ProjectUpdate Update project
-	// (PATCH /v1/projects/{id})
-	V1ProjectUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// (PATCH /v1/projects/{projectId})
+	V1ProjectUpdate(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// V1ProjectsDocumentsGet Get project documents
-	// (GET /v1/projects/{id}/documents)
-	V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsDocumentsGetParams)
+	// (GET /v1/projects/{projectId}/documents)
+	V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsDocumentsGetParams)
 	// V1ProjectsDocumentsCreate Create document in project
-	// (POST /v1/projects/{id}/documents)
-	V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/projects/{projectId}/documents)
+	V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// V1ProjectsDocumentsUnrelate Unrelate document from project
-	// (DELETE /v1/projects/{id}/documents/{documentId})
-	V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
+	// (DELETE /v1/projects/{projectId}/documents/{documentId})
+	V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId)
 	// V1ProjectsDocumentsRelate Relate document to project
-	// (POST /v1/projects/{id}/documents/{documentId})
-	V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId)
+	// (POST /v1/projects/{projectId}/documents/{documentId})
+	V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId)
 	// V1ProjectsIssuesGet Get project issues
-	// (GET /v1/projects/{id}/issues)
-	V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams)
+	// (GET /v1/projects/{projectId}/issues)
+	V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsIssuesGetParams)
 	// V1ProjectsIssuesCreate Create issue in project
-	// (POST /v1/projects/{id}/issues)
-	V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, id Id)
+	// (POST /v1/projects/{projectId}/issues)
+	V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId)
 	// V1SearchGet Search resources
 	// (GET /v1/search)
 	V1SearchGet(w http.ResponseWriter, r *http.Request, params V1SearchGetParams)
@@ -4988,72 +5047,6 @@ func (_ Unimplemented) V1NamespacesGet(w http.ResponseWriter, r *http.Request, p
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// V1NamespaceDelete Delete namespace
-// (DELETE /v1/namespaces/{id})
-func (_ Unimplemented) V1NamespaceDelete(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespaceGet Get namespace
-// (GET /v1/namespaces/{id})
-func (_ Unimplemented) V1NamespaceGet(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespaceUpdate Update namespace
-// (PATCH /v1/namespaces/{id})
-func (_ Unimplemented) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesDocumentsGet Get namespace documents
-// (GET /v1/namespaces/{id}/documents)
-func (_ Unimplemented) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesDocumentsGetParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesDocumentsCreate Create document in namespace
-// (POST /v1/namespaces/{id}/documents)
-func (_ Unimplemented) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesFoldersGet Get namespace folders
-// (GET /v1/namespaces/{id}/folders)
-func (_ Unimplemented) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesFoldersCreate Create folder in namespace
-// (POST /v1/namespaces/{id}/folders)
-func (_ Unimplemented) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesIssuesGet Get namespace issues
-// (GET /v1/namespaces/{id}/issues)
-func (_ Unimplemented) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesIssuesGetParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesIssuesKeyGet Get issue by key
-// (GET /v1/namespaces/{id}/issues/{key})
-func (_ Unimplemented) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, id Id, key IssueKey) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesProjectsGet Get namespace projects
-// (GET /v1/namespaces/{id}/projects)
-func (_ Unimplemented) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesProjectsGetParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// V1NamespacesProjectsCreate Create project in namespace
-// (POST /v1/namespaces/{id}/projects)
-func (_ Unimplemented) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // V1NotificationsGet Get all in-app notification of the requesting user.
 // (GET /v1/notifications)
 func (_ Unimplemented) V1NotificationsGet(w http.ResponseWriter, r *http.Request, params V1NotificationsGetParams) {
@@ -5091,170 +5084,242 @@ func (_ Unimplemented) V1OrganizationsCreate(w http.ResponseWriter, r *http.Requ
 }
 
 // V1OrganizationDelete Delete organization
-// (DELETE /v1/organizations/{id})
-func (_ Unimplemented) V1OrganizationDelete(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationDeleteParams) {
+// (DELETE /v1/organizations/{organizationRef})
+func (_ Unimplemented) V1OrganizationDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationDeleteParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationGet Get organization
-// (GET /v1/organizations/{id})
-func (_ Unimplemented) V1OrganizationGet(w http.ResponseWriter, r *http.Request, id Id) {
+// (GET /v1/organizations/{organizationRef})
+func (_ Unimplemented) V1OrganizationGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationUpdate Update organization
-// (PATCH /v1/organizations/{id})
-func (_ Unimplemented) V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+// (PATCH /v1/organizations/{organizationRef})
+func (_ Unimplemented) V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsDocumentsGet Get organization documents
-// (GET /v1/organizations/{id}/documents)
-func (_ Unimplemented) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams) {
+// (GET /v1/organizations/{organizationRef}/documents)
+func (_ Unimplemented) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsDocumentsGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsDocumentsCreate Create document in organization
-// (POST /v1/organizations/{id}/documents)
-func (_ Unimplemented) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/documents)
+func (_ Unimplemented) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsFoldersGet Get organization folders
-// (GET /v1/organizations/{id}/folders)
-func (_ Unimplemented) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams) {
+// (GET /v1/organizations/{organizationRef}/folders)
+func (_ Unimplemented) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsFoldersGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsFoldersCreate Create folder in organization
-// (POST /v1/organizations/{id}/folders)
-func (_ Unimplemented) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/folders)
+func (_ Unimplemented) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMembersGet Get organization members
-// (GET /v1/organizations/{id}/members)
-func (_ Unimplemented) V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationMembersGetParams) {
+// (GET /v1/organizations/{organizationRef}/members)
+func (_ Unimplemented) V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationMembersGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMembersAdd Add organization member
-// (POST /v1/organizations/{id}/members)
-func (_ Unimplemented) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/members)
+func (_ Unimplemented) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMembersAccept Accept organization invitation
-// (POST /v1/organizations/{id}/members/accept)
-func (_ Unimplemented) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/members/accept)
+func (_ Unimplemented) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMembersInvite Invite member to organization
-// (POST /v1/organizations/{id}/members/invite)
-func (_ Unimplemented) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/members/invite)
+func (_ Unimplemented) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMemberRemove Remove organization member
-// (DELETE /v1/organizations/{id}/members/{user_id})
-func (_ Unimplemented) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+// (DELETE /v1/organizations/{organizationRef}/members/{user_id})
+func (_ Unimplemented) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationMemberInviteRevoke Revoke invitation
-// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
-func (_ Unimplemented) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+// (DELETE /v1/organizations/{organizationRef}/members/{user_id}/invite)
+func (_ Unimplemented) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsNamespacesGet Get organization namespaces
-// (GET /v1/organizations/{id}/namespaces)
-func (_ Unimplemented) V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsNamespacesGetParams) {
+// (GET /v1/organizations/{organizationRef}/namespaces)
+func (_ Unimplemented) V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsNamespacesGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationsNamespacesCreate Create namespace in organization
-// (POST /v1/organizations/{id}/namespaces)
-func (_ Unimplemented) V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/namespaces)
+func (_ Unimplemented) V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespaceDelete Delete namespace
+// (DELETE /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+func (_ Unimplemented) V1NamespaceDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespaceGet Get namespace
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+func (_ Unimplemented) V1NamespaceGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespaceUpdate Update namespace
+// (PATCH /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+func (_ Unimplemented) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesDocumentsGet Get namespace documents
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+func (_ Unimplemented) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesDocumentsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesDocumentsCreate Create document in namespace
+// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+func (_ Unimplemented) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesFoldersGet Get namespace folders
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+func (_ Unimplemented) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesFoldersGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesFoldersCreate Create folder in namespace
+// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+func (_ Unimplemented) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesIssuesGet Get namespace issues
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues)
+func (_ Unimplemented) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesIssuesGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesIssuesKeyGet Get issue by key
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key})
+func (_ Unimplemented) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, key IssueKey) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesProjectsGet Get namespace projects
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+func (_ Unimplemented) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesProjectsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesProjectsCreate Create project in namespace
+// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+func (_ Unimplemented) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1NamespacesProjectsKeyGet Get project by key
+// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey})
+func (_ Unimplemented) V1NamespacesProjectsKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, projectKey ProjectKey) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationRolesGet Get organization roles
-// (GET /v1/organizations/{id}/roles)
-func (_ Unimplemented) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams) {
+// (GET /v1/organizations/{organizationRef}/roles)
+func (_ Unimplemented) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationRolesGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationRolesCreate Create a new role in the organization
-// (POST /v1/organizations/{id}/roles)
-func (_ Unimplemented) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/roles)
+func (_ Unimplemented) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationRoleDelete Delete organization role
-// (DELETE /v1/organizations/{id}/roles/{role_id})
-func (_ Unimplemented) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+// (DELETE /v1/organizations/{organizationRef}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationRoleGet Get organization role
-// (GET /v1/organizations/{id}/roles/{role_id})
-func (_ Unimplemented) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+// (GET /v1/organizations/{organizationRef}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationRoleUpdate Update organization role
-// (PATCH /v1/organizations/{id}/roles/{role_id})
-func (_ Unimplemented) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+// (PATCH /v1/organizations/{organizationRef}/roles/{role_id})
+func (_ Unimplemented) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamsGet Get organization teams
-// (GET /v1/organizations/{id}/teams)
-func (_ Unimplemented) V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationTeamsGetParams) {
+// (GET /v1/organizations/{organizationRef}/teams)
+func (_ Unimplemented) V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationTeamsGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamsCreate Create a new team in the organization
-// (POST /v1/organizations/{id}/teams)
-func (_ Unimplemented) V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/organizations/{organizationRef}/teams)
+func (_ Unimplemented) V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamDelete Delete organization team
-// (DELETE /v1/organizations/{id}/teams/{team_id})
-func (_ Unimplemented) V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+// (DELETE /v1/organizations/{organizationRef}/teams/{team_id})
+func (_ Unimplemented) V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamGet Get organization team
-// (GET /v1/organizations/{id}/teams/{team_id})
-func (_ Unimplemented) V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+// (GET /v1/organizations/{organizationRef}/teams/{team_id})
+func (_ Unimplemented) V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamUpdate Update organization team
-// (PATCH /v1/organizations/{id}/teams/{team_id})
-func (_ Unimplemented) V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+// (PATCH /v1/organizations/{organizationRef}/teams/{team_id})
+func (_ Unimplemented) V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamMembersGet Get organization team members
-// (GET /v1/organizations/{id}/teams/{team_id}/members)
-func (_ Unimplemented) V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, id Id, teamId string, params V1OrganizationTeamMembersGetParams) {
+// (GET /v1/organizations/{organizationRef}/teams/{team_id}/members)
+func (_ Unimplemented) V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, params V1OrganizationTeamMembersGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamMembersAdd Add organization team member
-// (POST /v1/organizations/{id}/teams/{team_id}/members)
-func (_ Unimplemented) V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+// (POST /v1/organizations/{organizationRef}/teams/{team_id}/members)
+func (_ Unimplemented) V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1OrganizationTeamMemberRemove Remove organization team member
-// (DELETE /v1/organizations/{id}/teams/{team_id}/members/{user_id})
-func (_ Unimplemented) V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, id Id, teamId string, userId string) {
+// (DELETE /v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id})
+func (_ Unimplemented) V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5283,56 +5348,56 @@ func (_ Unimplemented) V1PermissionGet(w http.ResponseWriter, r *http.Request, i
 }
 
 // V1ProjectDelete Delete project
-// (DELETE /v1/projects/{id})
-func (_ Unimplemented) V1ProjectDelete(w http.ResponseWriter, r *http.Request, id Id) {
+// (DELETE /v1/projects/{projectId})
+func (_ Unimplemented) V1ProjectDelete(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectGet Get project
-// (GET /v1/projects/{id})
-func (_ Unimplemented) V1ProjectGet(w http.ResponseWriter, r *http.Request, id Id) {
+// (GET /v1/projects/{projectId})
+func (_ Unimplemented) V1ProjectGet(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectUpdate Update project
-// (PATCH /v1/projects/{id})
-func (_ Unimplemented) V1ProjectUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+// (PATCH /v1/projects/{projectId})
+func (_ Unimplemented) V1ProjectUpdate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsDocumentsGet Get project documents
-// (GET /v1/projects/{id}/documents)
-func (_ Unimplemented) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsDocumentsGetParams) {
+// (GET /v1/projects/{projectId}/documents)
+func (_ Unimplemented) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsDocumentsGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsDocumentsCreate Create document in project
-// (POST /v1/projects/{id}/documents)
-func (_ Unimplemented) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/projects/{projectId}/documents)
+func (_ Unimplemented) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsDocumentsUnrelate Unrelate document from project
-// (DELETE /v1/projects/{id}/documents/{documentId})
-func (_ Unimplemented) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+// (DELETE /v1/projects/{projectId}/documents/{documentId})
+func (_ Unimplemented) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsDocumentsRelate Relate document to project
-// (POST /v1/projects/{id}/documents/{documentId})
-func (_ Unimplemented) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+// (POST /v1/projects/{projectId}/documents/{documentId})
+func (_ Unimplemented) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsIssuesGet Get project issues
-// (GET /v1/projects/{id}/issues)
-func (_ Unimplemented) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams) {
+// (GET /v1/projects/{projectId}/issues)
+func (_ Unimplemented) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsIssuesGetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // V1ProjectsIssuesCreate Create issue in project
-// (POST /v1/projects/{id}/issues)
-func (_ Unimplemented) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+// (POST /v1/projects/{projectId}/issues)
+func (_ Unimplemented) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6081,508 +6146,6 @@ func (siw *ServerInterfaceWrapper) V1NamespacesGet(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// V1NamespaceDelete operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespaceDelete(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespaceDelete(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespaceGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespaceGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespaceGet(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespaceUpdate operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespaceUpdate(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesDocumentsGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params V1NamespacesDocumentsGetParams
-
-	// ------------- Optional query parameter "page_size" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "folder_id" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "folder_id", r.URL.Query(), &params.FolderId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "folder_id"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "folder_id", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "all" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "all", r.URL.Query(), &params.All, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "all"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesDocumentsGet(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesDocumentsCreate operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesDocumentsCreate(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesFoldersGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params V1NamespacesFoldersGetParams
-
-	// ------------- Optional query parameter "page_size" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "parent_id" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "parent_id", r.URL.Query(), &params.ParentId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "parent_id"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesFoldersGet(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesFoldersCreate operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesFoldersCreate(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesIssuesGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params V1NamespacesIssuesGetParams
-
-	// ------------- Optional query parameter "page_size" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "q" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "status" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "priority" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "priority", r.URL.Query(), &params.Priority, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "priority"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "priority", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "order" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesIssuesGet(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesIssuesKeyGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "key" -------------
-	var key IssueKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesIssuesKeyGet(w, r, id, key)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesProjectsGet operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params V1NamespacesProjectsGetParams
-
-	// ------------- Optional query parameter "page_size" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "page_token" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesProjectsGet(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// V1NamespacesProjectsCreate operation middleware
-func (siw *ServerInterfaceWrapper) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1NamespacesProjectsCreate(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // V1NotificationsGet operation middleware
 func (siw *ServerInterfaceWrapper) V1NotificationsGet(w http.ResponseWriter, r *http.Request) {
 
@@ -6773,12 +6336,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationDelete(w http.ResponseWriter, r
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -6799,7 +6362,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationDelete(w http.ResponseWriter, r
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationDelete(w, r, id, params)
+		siw.Handler.V1OrganizationDelete(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6815,17 +6378,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationGet(w http.ResponseWriter, r *h
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationGet(w, r, id)
+		siw.Handler.V1OrganizationGet(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6841,17 +6404,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationUpdate(w http.ResponseWriter, r
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationUpdate(w, r, id)
+		siw.Handler.V1OrganizationUpdate(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6867,12 +6430,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsDocumentsGet(w http.ResponseWr
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -6932,7 +6495,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsDocumentsGet(w http.ResponseWr
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsDocumentsGet(w, r, id, params)
+		siw.Handler.V1OrganizationsDocumentsGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6948,17 +6511,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsDocumentsCreate(w http.Respons
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsDocumentsCreate(w, r, id)
+		siw.Handler.V1OrganizationsDocumentsCreate(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6974,12 +6537,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsFoldersGet(w http.ResponseWrit
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7026,7 +6589,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsFoldersGet(w http.ResponseWrit
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsFoldersGet(w, r, id, params)
+		siw.Handler.V1OrganizationsFoldersGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7042,17 +6605,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsFoldersCreate(w http.ResponseW
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsFoldersCreate(w, r, id)
+		siw.Handler.V1OrganizationsFoldersCreate(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7068,12 +6631,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersGet(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7107,7 +6670,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersGet(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersGet(w, r, id, params)
+		siw.Handler.V1OrganizationMembersGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7123,17 +6686,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersAdd(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersAdd(w, r, id)
+		siw.Handler.V1OrganizationMembersAdd(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7149,17 +6712,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersAccept(w http.ResponseWr
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersAccept(w, r, id)
+		siw.Handler.V1OrganizationMembersAccept(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7175,17 +6738,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMembersInvite(w http.ResponseWr
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMembersInvite(w, r, id)
+		siw.Handler.V1OrganizationMembersInvite(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7201,12 +6764,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMemberRemove(w http.ResponseWri
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7220,7 +6783,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMemberRemove(w http.ResponseWri
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMemberRemove(w, r, id, userId)
+		siw.Handler.V1OrganizationMemberRemove(w, r, organizationRef, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7236,12 +6799,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMemberInviteRevoke(w http.Respo
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7255,7 +6818,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationMemberInviteRevoke(w http.Respo
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationMemberInviteRevoke(w, r, id, userId)
+		siw.Handler.V1OrganizationMemberInviteRevoke(w, r, organizationRef, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7271,12 +6834,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsNamespacesGet(w http.ResponseW
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7310,7 +6873,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsNamespacesGet(w http.ResponseW
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsNamespacesGet(w, r, id, params)
+		siw.Handler.V1OrganizationsNamespacesGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7326,17 +6889,662 @@ func (siw *ServerInterfaceWrapper) V1OrganizationsNamespacesCreate(w http.Respon
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationsNamespacesCreate(w, r, id)
+		siw.Handler.V1OrganizationsNamespacesCreate(w, r, organizationRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespaceDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespaceDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespaceDelete(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespaceGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespaceGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespaceGet(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespaceUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespaceUpdate(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesDocumentsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1NamespacesDocumentsGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "folder_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "folder_id", r.URL.Query(), &params.FolderId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "folder_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "folder_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "all" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "all", r.URL.Query(), &params.All, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "all"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesDocumentsGet(w, r, organizationRef, namespaceRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesDocumentsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesDocumentsCreate(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesFoldersGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1NamespacesFoldersGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "parent_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "parent_id", r.URL.Query(), &params.ParentId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "parent_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesFoldersGet(w, r, organizationRef, namespaceRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesFoldersCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesFoldersCreate(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesIssuesGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1NamespacesIssuesGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "priority" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "priority", r.URL.Query(), &params.Priority, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "priority"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "priority", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesIssuesGet(w, r, organizationRef, namespaceRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesIssuesKeyGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "key" -------------
+	var key IssueKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesIssuesKeyGet(w, r, organizationRef, namespaceRef, key)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesProjectsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1NamespacesProjectsGetParams
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesProjectsGet(w, r, organizationRef, namespaceRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesProjectsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesProjectsCreate(w, r, organizationRef, namespaceRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1NamespacesProjectsKeyGet operation middleware
+func (siw *ServerInterfaceWrapper) V1NamespacesProjectsKeyGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "namespaceRef" -------------
+	var namespaceRef NamespaceRef
+
+	err = runtime.BindStyledParameterWithOptions("simple", "namespaceRef", chi.URLParam(r, "namespaceRef"), &namespaceRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespaceRef", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", chi.URLParam(r, "projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1NamespacesProjectsKeyGet(w, r, organizationRef, namespaceRef, projectKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7352,12 +7560,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRolesGet(w http.ResponseWriter,
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7391,7 +7599,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRolesGet(w http.ResponseWriter,
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationRolesGet(w, r, id, params)
+		siw.Handler.V1OrganizationRolesGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7407,17 +7615,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRolesCreate(w http.ResponseWrit
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationRolesCreate(w, r, id)
+		siw.Handler.V1OrganizationRolesCreate(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7433,12 +7641,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleDelete(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7452,7 +7660,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleDelete(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationRoleDelete(w, r, id, roleId)
+		siw.Handler.V1OrganizationRoleDelete(w, r, organizationRef, roleId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7468,12 +7676,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleGet(w http.ResponseWriter, 
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7487,7 +7695,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleGet(w http.ResponseWriter, 
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationRoleGet(w, r, id, roleId)
+		siw.Handler.V1OrganizationRoleGet(w, r, organizationRef, roleId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7503,12 +7711,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleUpdate(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7522,7 +7730,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationRoleUpdate(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationRoleUpdate(w, r, id, roleId)
+		siw.Handler.V1OrganizationRoleUpdate(w, r, organizationRef, roleId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7538,12 +7746,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamsGet(w http.ResponseWriter,
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7577,7 +7785,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamsGet(w http.ResponseWriter,
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamsGet(w, r, id, params)
+		siw.Handler.V1OrganizationTeamsGet(w, r, organizationRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7593,17 +7801,17 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamsCreate(w http.ResponseWrit
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamsCreate(w, r, id)
+		siw.Handler.V1OrganizationTeamsCreate(w, r, organizationRef)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7619,12 +7827,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamDelete(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7638,7 +7846,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamDelete(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamDelete(w, r, id, teamId)
+		siw.Handler.V1OrganizationTeamDelete(w, r, organizationRef, teamId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7654,12 +7862,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamGet(w http.ResponseWriter, 
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7673,7 +7881,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamGet(w http.ResponseWriter, 
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamGet(w, r, id, teamId)
+		siw.Handler.V1OrganizationTeamGet(w, r, organizationRef, teamId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7689,12 +7897,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamUpdate(w http.ResponseWrite
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7708,7 +7916,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamUpdate(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamUpdate(w, r, id, teamId)
+		siw.Handler.V1OrganizationTeamUpdate(w, r, organizationRef, teamId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7724,12 +7932,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMembersGet(w http.ResponseW
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7772,7 +7980,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMembersGet(w http.ResponseW
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamMembersGet(w, r, id, teamId, params)
+		siw.Handler.V1OrganizationTeamMembersGet(w, r, organizationRef, teamId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7788,12 +7996,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMembersAdd(w http.ResponseW
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7807,7 +8015,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMembersAdd(w http.ResponseW
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamMembersAdd(w, r, id, teamId)
+		siw.Handler.V1OrganizationTeamMembersAdd(w, r, organizationRef, teamId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7823,12 +8031,12 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMemberRemove(w http.Respons
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "organizationRef" -------------
+	var organizationRef OrganizationRef
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "organizationRef", chi.URLParam(r, "organizationRef"), &organizationRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "organizationRef", Err: err})
 		return
 	}
 
@@ -7851,7 +8059,7 @@ func (siw *ServerInterfaceWrapper) V1OrganizationTeamMemberRemove(w http.Respons
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1OrganizationTeamMemberRemove(w, r, id, teamId, userId)
+		siw.Handler.V1OrganizationTeamMemberRemove(w, r, organizationRef, teamId, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7959,17 +8167,17 @@ func (siw *ServerInterfaceWrapper) V1ProjectDelete(w http.ResponseWriter, r *htt
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectDelete(w, r, id)
+		siw.Handler.V1ProjectDelete(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7985,17 +8193,17 @@ func (siw *ServerInterfaceWrapper) V1ProjectGet(w http.ResponseWriter, r *http.R
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectGet(w, r, id)
+		siw.Handler.V1ProjectGet(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8011,17 +8219,17 @@ func (siw *ServerInterfaceWrapper) V1ProjectUpdate(w http.ResponseWriter, r *htt
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectUpdate(w, r, id)
+		siw.Handler.V1ProjectUpdate(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8037,12 +8245,12 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsGet(w http.ResponseWriter,
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
@@ -8076,7 +8284,7 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsGet(w http.ResponseWriter,
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsDocumentsGet(w, r, id, params)
+		siw.Handler.V1ProjectsDocumentsGet(w, r, projectId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8092,17 +8300,17 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsCreate(w http.ResponseWrit
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsDocumentsCreate(w, r, id)
+		siw.Handler.V1ProjectsDocumentsCreate(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8118,12 +8326,12 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsUnrelate(w http.ResponseWr
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
@@ -8137,7 +8345,7 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsUnrelate(w http.ResponseWr
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsDocumentsUnrelate(w, r, id, documentId)
+		siw.Handler.V1ProjectsDocumentsUnrelate(w, r, projectId, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8153,12 +8361,12 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsRelate(w http.ResponseWrit
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
@@ -8172,7 +8380,7 @@ func (siw *ServerInterfaceWrapper) V1ProjectsDocumentsRelate(w http.ResponseWrit
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsDocumentsRelate(w, r, id, documentId)
+		siw.Handler.V1ProjectsDocumentsRelate(w, r, projectId, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8188,12 +8396,12 @@ func (siw *ServerInterfaceWrapper) V1ProjectsIssuesGet(w http.ResponseWriter, r 
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
@@ -8279,7 +8487,7 @@ func (siw *ServerInterfaceWrapper) V1ProjectsIssuesGet(w http.ResponseWriter, r 
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsIssuesGet(w, r, id, params)
+		siw.Handler.V1ProjectsIssuesGet(w, r, projectId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8295,17 +8503,17 @@ func (siw *ServerInterfaceWrapper) V1ProjectsIssuesCreate(w http.ResponseWriter,
 	var err error
 	_ = err
 
-	// ------------- Path parameter "id" -------------
-	var id Id
+	// ------------- Path parameter "projectId" -------------
+	var projectId ProjectId
 
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "projectId", chi.URLParam(r, "projectId"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.V1ProjectsIssuesCreate(w, r, id)
+		siw.Handler.V1ProjectsIssuesCreate(w, r, projectId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9115,115 +9323,118 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/organizations", wrapper.V1OrganizationsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}", wrapper.V1OrganizationDelete)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}", wrapper.V1OrganizationDelete)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}", wrapper.V1OrganizationGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}", wrapper.V1OrganizationGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/v1/organizations/{id}", wrapper.V1OrganizationUpdate)
+		r.Patch(options.BaseURL+"/v1/organizations/{organizationRef}", wrapper.V1OrganizationUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/members", wrapper.V1OrganizationMembersGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/members", wrapper.V1OrganizationMembersAdd)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/members", wrapper.V1OrganizationMembersAdd)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/members/invite", wrapper.V1OrganizationMembersInvite)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/members/invite", wrapper.V1OrganizationMembersInvite)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}", wrapper.V1OrganizationMemberRemove)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/members/{user_id}", wrapper.V1OrganizationMemberRemove)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/members/{user_id}/invite", wrapper.V1OrganizationMemberInviteRevoke)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/members/{user_id}/invite", wrapper.V1OrganizationMemberInviteRevoke)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/members/accept", wrapper.V1OrganizationMembersAccept)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/members/accept", wrapper.V1OrganizationMembersAccept)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/roles", wrapper.V1OrganizationRolesGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/roles", wrapper.V1OrganizationRolesGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/roles", wrapper.V1OrganizationRolesCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/roles", wrapper.V1OrganizationRolesCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}", wrapper.V1OrganizationRoleDelete)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/roles/{role_id}", wrapper.V1OrganizationRoleDelete)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}", wrapper.V1OrganizationRoleGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/roles/{role_id}", wrapper.V1OrganizationRoleGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/v1/organizations/{id}/roles/{role_id}", wrapper.V1OrganizationRoleUpdate)
+		r.Patch(options.BaseURL+"/v1/organizations/{organizationRef}/roles/{role_id}", wrapper.V1OrganizationRoleUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/teams", wrapper.V1OrganizationTeamsGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/teams", wrapper.V1OrganizationTeamsGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/teams", wrapper.V1OrganizationTeamsCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/teams", wrapper.V1OrganizationTeamsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}", wrapper.V1OrganizationTeamDelete)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}", wrapper.V1OrganizationTeamDelete)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}", wrapper.V1OrganizationTeamGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}", wrapper.V1OrganizationTeamGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}", wrapper.V1OrganizationTeamUpdate)
+		r.Patch(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}", wrapper.V1OrganizationTeamUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}/members", wrapper.V1OrganizationTeamMembersGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}/members", wrapper.V1OrganizationTeamMembersGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}/members", wrapper.V1OrganizationTeamMembersAdd)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}/members", wrapper.V1OrganizationTeamMembersAdd)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/organizations/{id}/teams/{team_id}/members/{user_id}", wrapper.V1OrganizationTeamMemberRemove)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id}", wrapper.V1OrganizationTeamMemberRemove)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/namespaces", wrapper.V1OrganizationsNamespacesGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces", wrapper.V1OrganizationsNamespacesGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/namespaces", wrapper.V1OrganizationsNamespacesCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces", wrapper.V1OrganizationsNamespacesCreate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/namespaces", wrapper.V1NamespacesGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/namespaces/{id}", wrapper.V1NamespaceDelete)
+		r.Delete(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}", wrapper.V1NamespaceDelete)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}", wrapper.V1NamespaceGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}", wrapper.V1NamespaceGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/v1/namespaces/{id}", wrapper.V1NamespaceUpdate)
+		r.Patch(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}", wrapper.V1NamespaceUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}/projects", wrapper.V1NamespacesProjectsGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects", wrapper.V1NamespacesProjectsGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/namespaces/{id}/projects", wrapper.V1NamespacesProjectsCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects", wrapper.V1NamespacesProjectsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/projects/{id}", wrapper.V1ProjectDelete)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey}", wrapper.V1NamespacesProjectsKeyGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/projects/{id}", wrapper.V1ProjectGet)
+		r.Delete(options.BaseURL+"/v1/projects/{projectId}", wrapper.V1ProjectDelete)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/v1/projects/{id}", wrapper.V1ProjectUpdate)
+		r.Get(options.BaseURL+"/v1/projects/{projectId}", wrapper.V1ProjectGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}/issues", wrapper.V1NamespacesIssuesGet)
+		r.Patch(options.BaseURL+"/v1/projects/{projectId}", wrapper.V1ProjectUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}/issues/{key}", wrapper.V1NamespacesIssuesKeyGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues", wrapper.V1NamespacesIssuesGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/projects/{id}/issues", wrapper.V1ProjectsIssuesGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key}", wrapper.V1NamespacesIssuesKeyGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/projects/{id}/issues", wrapper.V1ProjectsIssuesCreate)
+		r.Get(options.BaseURL+"/v1/projects/{projectId}/issues", wrapper.V1ProjectsIssuesGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/projects/{projectId}/issues", wrapper.V1ProjectsIssuesCreate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/issues/{id}", wrapper.V1IssueDelete)
@@ -9247,28 +9458,28 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/v1/issues/{id}/relations/{relation_id}", wrapper.V1IssueRelationUpdate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/documents", wrapper.V1OrganizationsDocumentsGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/documents", wrapper.V1OrganizationsDocumentsGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/documents", wrapper.V1OrganizationsDocumentsCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/documents", wrapper.V1OrganizationsDocumentsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}/documents", wrapper.V1NamespacesDocumentsGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents", wrapper.V1NamespacesDocumentsGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/namespaces/{id}/documents", wrapper.V1NamespacesDocumentsCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents", wrapper.V1NamespacesDocumentsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/projects/{id}/documents", wrapper.V1ProjectsDocumentsGet)
+		r.Get(options.BaseURL+"/v1/projects/{projectId}/documents", wrapper.V1ProjectsDocumentsGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/projects/{id}/documents", wrapper.V1ProjectsDocumentsCreate)
+		r.Post(options.BaseURL+"/v1/projects/{projectId}/documents", wrapper.V1ProjectsDocumentsCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/v1/projects/{id}/documents/{documentId}", wrapper.V1ProjectsDocumentsUnrelate)
+		r.Delete(options.BaseURL+"/v1/projects/{projectId}/documents/{documentId}", wrapper.V1ProjectsDocumentsUnrelate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/projects/{id}/documents/{documentId}", wrapper.V1ProjectsDocumentsRelate)
+		r.Post(options.BaseURL+"/v1/projects/{projectId}/documents/{documentId}", wrapper.V1ProjectsDocumentsRelate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/documents/{id}", wrapper.V1DocumentDelete)
@@ -9292,16 +9503,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/v1/issues/{id}/documents/{documentId}", wrapper.V1IssuesDocumentsRelate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/organizations/{id}/folders", wrapper.V1OrganizationsFoldersGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/folders", wrapper.V1OrganizationsFoldersGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/organizations/{id}/folders", wrapper.V1OrganizationsFoldersCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/folders", wrapper.V1OrganizationsFoldersCreate)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/namespaces/{id}/folders", wrapper.V1NamespacesFoldersGet)
+		r.Get(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders", wrapper.V1NamespacesFoldersGet)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/namespaces/{id}/folders", wrapper.V1NamespacesFoldersCreate)
+		r.Post(options.BaseURL+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders", wrapper.V1NamespacesFoldersCreate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/v1/folders/{id}", wrapper.V1FolderDelete)
@@ -9355,6 +9566,8 @@ type N401JSONResponse HTTPError
 type N403JSONResponse HTTPError
 
 type N404JSONResponse HTTPError
+
+type N409JSONResponse HTTPError
 
 type N500JSONResponse HTTPError
 
@@ -11040,1021 +11253,6 @@ func (response V1NamespacesGet500JSONResponse) VisitV1NamespacesGetResponse(w ht
 	return err
 }
 
-type V1NamespaceDeleteRequestObject struct {
-	Id Id `json:"id"`
-}
-
-type V1NamespaceDeleteResponseObject interface {
-	VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error
-}
-
-type V1NamespaceDelete204Response struct {
-}
-
-func (response V1NamespaceDelete204Response) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type V1NamespaceDelete400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespaceDelete400JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceDelete401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespaceDelete401JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceDelete403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespaceDelete403JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceDelete404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespaceDelete404JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceDelete500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespaceDelete500JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGetRequestObject struct {
-	Id Id `json:"id"`
-}
-
-type V1NamespaceGetResponseObject interface {
-	VisitV1NamespaceGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespaceGet200JSONResponse Namespace
-
-func (response V1NamespaceGet200JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespaceGet400JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespaceGet401JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespaceGet403JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespaceGet404JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespaceGet500JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1NamespaceUpdateJSONRequestBody
-}
-
-type V1NamespaceUpdateResponseObject interface {
-	VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error
-}
-
-type V1NamespaceUpdate200JSONResponse Namespace
-
-func (response V1NamespaceUpdate200JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdate400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespaceUpdate400JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdate401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespaceUpdate401JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdate403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespaceUpdate403JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdate404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespaceUpdate404JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespaceUpdate500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespaceUpdate500JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1NamespacesDocumentsGetParams
-}
-
-type V1NamespacesDocumentsGetResponseObject interface {
-	VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesDocumentsGet200JSONResponse PartialDocumentPage
-
-func (response V1NamespacesDocumentsGet200JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesDocumentsGet400JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesDocumentsGet401JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesDocumentsGet403JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesDocumentsGet404JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesDocumentsGet500JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1NamespacesDocumentsCreateJSONRequestBody
-}
-
-type V1NamespacesDocumentsCreateResponseObject interface {
-	VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesDocumentsCreate201JSONResponse Document
-
-func (response V1NamespacesDocumentsCreate201JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreate400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesDocumentsCreate400JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreate401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesDocumentsCreate401JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreate403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesDocumentsCreate403JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreate404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesDocumentsCreate404JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesDocumentsCreate500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesDocumentsCreate500JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1NamespacesFoldersGetParams
-}
-
-type V1NamespacesFoldersGetResponseObject interface {
-	VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesFoldersGet200JSONResponse FolderPage
-
-func (response V1NamespacesFoldersGet200JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesFoldersGet400JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesFoldersGet401JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesFoldersGet403JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesFoldersGet404JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesFoldersGet500JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1NamespacesFoldersCreateJSONRequestBody
-}
-
-type V1NamespacesFoldersCreateResponseObject interface {
-	VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesFoldersCreate201JSONResponse Folder
-
-func (response V1NamespacesFoldersCreate201JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreate400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesFoldersCreate400JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreate401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesFoldersCreate401JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreate403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesFoldersCreate403JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreate404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesFoldersCreate404JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesFoldersCreate500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesFoldersCreate500JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1NamespacesIssuesGetParams
-}
-
-type V1NamespacesIssuesGetResponseObject interface {
-	VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesIssuesGet200JSONResponse PartialIssuePage
-
-func (response V1NamespacesIssuesGet200JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesIssuesGet400JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesIssuesGet401JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesIssuesGet403JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesIssuesGet404JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesIssuesGet500JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGetRequestObject struct {
-	Id  Id       `json:"id"`
-	Key IssueKey `json:"key"`
-}
-
-type V1NamespacesIssuesKeyGetResponseObject interface {
-	VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesIssuesKeyGet200JSONResponse Issue
-
-func (response V1NamespacesIssuesKeyGet200JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesIssuesKeyGet400JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesIssuesKeyGet401JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesIssuesKeyGet403JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesIssuesKeyGet404JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesIssuesKeyGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesIssuesKeyGet500JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1NamespacesProjectsGetParams
-}
-
-type V1NamespacesProjectsGetResponseObject interface {
-	VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesProjectsGet200JSONResponse ProjectPage
-
-func (response V1NamespacesProjectsGet200JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGet400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesProjectsGet400JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGet401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesProjectsGet401JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGet403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesProjectsGet403JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGet404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesProjectsGet404JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsGet500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesProjectsGet500JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1NamespacesProjectsCreateJSONRequestBody
-}
-
-type V1NamespacesProjectsCreateResponseObject interface {
-	VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error
-}
-
-type V1NamespacesProjectsCreate201JSONResponse struct{ N201JSONResponse }
-
-func (response V1NamespacesProjectsCreate201JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreate400JSONResponse struct{ N400JSONResponse }
-
-func (response V1NamespacesProjectsCreate400JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreate401JSONResponse struct{ N401JSONResponse }
-
-func (response V1NamespacesProjectsCreate401JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreate403JSONResponse struct{ N403JSONResponse }
-
-func (response V1NamespacesProjectsCreate403JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreate404JSONResponse struct{ N404JSONResponse }
-
-func (response V1NamespacesProjectsCreate404JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type V1NamespacesProjectsCreate500JSONResponse struct{ N500JSONResponse }
-
-func (response V1NamespacesProjectsCreate500JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type V1NotificationsGetRequestObject struct {
 	Params V1NotificationsGetParams
 }
@@ -12546,6 +11744,20 @@ func (response V1OrganizationsCreate403JSONResponse) VisitV1OrganizationsCreateR
 	return err
 }
 
+type V1OrganizationsCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1OrganizationsCreate409JSONResponse) VisitV1OrganizationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type V1OrganizationsCreate500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationsCreate500JSONResponse) VisitV1OrganizationsCreateResponse(w http.ResponseWriter) error {
@@ -12561,8 +11773,8 @@ func (response V1OrganizationsCreate500JSONResponse) VisitV1OrganizationsCreateR
 }
 
 type V1OrganizationDeleteRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationDeleteParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationDeleteParams
 }
 
 type V1OrganizationDeleteResponseObject interface {
@@ -12648,7 +11860,7 @@ func (response V1OrganizationDelete500JSONResponse) VisitV1OrganizationDeleteRes
 }
 
 type V1OrganizationGetRequestObject struct {
-	Id Id `json:"id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
 }
 
 type V1OrganizationGetResponseObject interface {
@@ -12740,8 +11952,8 @@ func (response V1OrganizationGet500JSONResponse) VisitV1OrganizationGetResponse(
 }
 
 type V1OrganizationUpdateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationUpdateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationUpdateJSONRequestBody
 }
 
 type V1OrganizationUpdateResponseObject interface {
@@ -12833,8 +12045,8 @@ func (response V1OrganizationUpdate500JSONResponse) VisitV1OrganizationUpdateRes
 }
 
 type V1OrganizationsDocumentsGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationsDocumentsGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationsDocumentsGetParams
 }
 
 type V1OrganizationsDocumentsGetResponseObject interface {
@@ -12926,8 +12138,8 @@ func (response V1OrganizationsDocumentsGet500JSONResponse) VisitV1OrganizationsD
 }
 
 type V1OrganizationsDocumentsCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationsDocumentsCreateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationsDocumentsCreateJSONRequestBody
 }
 
 type V1OrganizationsDocumentsCreateResponseObject interface {
@@ -13019,8 +12231,8 @@ func (response V1OrganizationsDocumentsCreate500JSONResponse) VisitV1Organizatio
 }
 
 type V1OrganizationsFoldersGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationsFoldersGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationsFoldersGetParams
 }
 
 type V1OrganizationsFoldersGetResponseObject interface {
@@ -13112,8 +12324,8 @@ func (response V1OrganizationsFoldersGet500JSONResponse) VisitV1OrganizationsFol
 }
 
 type V1OrganizationsFoldersCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationsFoldersCreateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationsFoldersCreateJSONRequestBody
 }
 
 type V1OrganizationsFoldersCreateResponseObject interface {
@@ -13205,8 +12417,8 @@ func (response V1OrganizationsFoldersCreate500JSONResponse) VisitV1Organizations
 }
 
 type V1OrganizationMembersGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationMembersGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationMembersGetParams
 }
 
 type V1OrganizationMembersGetResponseObject interface {
@@ -13298,8 +12510,8 @@ func (response V1OrganizationMembersGet500JSONResponse) VisitV1OrganizationMembe
 }
 
 type V1OrganizationMembersAddRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationMembersAddJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationMembersAddJSONRequestBody
 }
 
 type V1OrganizationMembersAddResponseObject interface {
@@ -13391,8 +12603,8 @@ func (response V1OrganizationMembersAdd500JSONResponse) VisitV1OrganizationMembe
 }
 
 type V1OrganizationMembersAcceptRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationMembersAcceptJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationMembersAcceptJSONRequestBody
 }
 
 type V1OrganizationMembersAcceptResponseObject interface {
@@ -13472,8 +12684,8 @@ func (response V1OrganizationMembersAccept500JSONResponse) VisitV1OrganizationMe
 }
 
 type V1OrganizationMembersInviteRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationMembersInviteJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationMembersInviteJSONRequestBody
 }
 
 type V1OrganizationMembersInviteResponseObject interface {
@@ -13565,8 +12777,8 @@ func (response V1OrganizationMembersInvite500JSONResponse) VisitV1OrganizationMe
 }
 
 type V1OrganizationMemberRemoveRequestObject struct {
-	Id     Id     `json:"id"`
-	UserId string `json:"user_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	UserId          string          `json:"user_id"`
 }
 
 type V1OrganizationMemberRemoveResponseObject interface {
@@ -13652,8 +12864,8 @@ func (response V1OrganizationMemberRemove500JSONResponse) VisitV1OrganizationMem
 }
 
 type V1OrganizationMemberInviteRevokeRequestObject struct {
-	Id     Id     `json:"id"`
-	UserId string `json:"user_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	UserId          string          `json:"user_id"`
 }
 
 type V1OrganizationMemberInviteRevokeResponseObject interface {
@@ -13739,8 +12951,8 @@ func (response V1OrganizationMemberInviteRevoke500JSONResponse) VisitV1Organizat
 }
 
 type V1OrganizationsNamespacesGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationsNamespacesGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationsNamespacesGetParams
 }
 
 type V1OrganizationsNamespacesGetResponseObject interface {
@@ -13832,8 +13044,8 @@ func (response V1OrganizationsNamespacesGet500JSONResponse) VisitV1Organizations
 }
 
 type V1OrganizationsNamespacesCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationsNamespacesCreateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationsNamespacesCreateJSONRequestBody
 }
 
 type V1OrganizationsNamespacesCreateResponseObject interface {
@@ -13910,6 +13122,20 @@ func (response V1OrganizationsNamespacesCreate404JSONResponse) VisitV1Organizati
 	return err
 }
 
+type V1OrganizationsNamespacesCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1OrganizationsNamespacesCreate409JSONResponse) VisitV1OrganizationsNamespacesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type V1OrganizationsNamespacesCreate500JSONResponse struct{ N500JSONResponse }
 
 func (response V1OrganizationsNamespacesCreate500JSONResponse) VisitV1OrganizationsNamespacesCreateResponse(w http.ResponseWriter) error {
@@ -13924,9 +13150,1143 @@ func (response V1OrganizationsNamespacesCreate500JSONResponse) VisitV1Organizati
 	return err
 }
 
+type V1NamespaceDeleteRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+}
+
+type V1NamespaceDeleteResponseObject interface {
+	VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1NamespaceDelete204Response struct {
+}
+
+func (response V1NamespaceDelete204Response) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1NamespaceDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespaceDelete400JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespaceDelete401JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespaceDelete403JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespaceDelete404JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespaceDelete500JSONResponse) VisitV1NamespaceDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+}
+
+type V1NamespaceGetResponseObject interface {
+	VisitV1NamespaceGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespaceGet200JSONResponse AccessibleNamespace
+
+func (response V1NamespaceGet200JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespaceGet400JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespaceGet401JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespaceGet403JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespaceGet404JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespaceGet500JSONResponse) VisitV1NamespaceGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdateRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Body            *V1NamespaceUpdateJSONRequestBody
+}
+
+type V1NamespaceUpdateResponseObject interface {
+	VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespaceUpdate200JSONResponse Namespace
+
+func (response V1NamespaceUpdate200JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespaceUpdate400JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespaceUpdate401JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespaceUpdate403JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespaceUpdate404JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespaceUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespaceUpdate500JSONResponse) VisitV1NamespaceUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Params          V1NamespacesDocumentsGetParams
+}
+
+type V1NamespacesDocumentsGetResponseObject interface {
+	VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesDocumentsGet200JSONResponse PartialDocumentPage
+
+func (response V1NamespacesDocumentsGet200JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesDocumentsGet400JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesDocumentsGet401JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesDocumentsGet403JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesDocumentsGet404JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesDocumentsGet500JSONResponse) VisitV1NamespacesDocumentsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreateRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Body            *V1NamespacesDocumentsCreateJSONRequestBody
+}
+
+type V1NamespacesDocumentsCreateResponseObject interface {
+	VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesDocumentsCreate201JSONResponse Document
+
+func (response V1NamespacesDocumentsCreate201JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesDocumentsCreate400JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesDocumentsCreate401JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesDocumentsCreate403JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesDocumentsCreate404JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesDocumentsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesDocumentsCreate500JSONResponse) VisitV1NamespacesDocumentsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Params          V1NamespacesFoldersGetParams
+}
+
+type V1NamespacesFoldersGetResponseObject interface {
+	VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesFoldersGet200JSONResponse FolderPage
+
+func (response V1NamespacesFoldersGet200JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesFoldersGet400JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesFoldersGet401JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesFoldersGet403JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesFoldersGet404JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesFoldersGet500JSONResponse) VisitV1NamespacesFoldersGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreateRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Body            *V1NamespacesFoldersCreateJSONRequestBody
+}
+
+type V1NamespacesFoldersCreateResponseObject interface {
+	VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesFoldersCreate201JSONResponse Folder
+
+func (response V1NamespacesFoldersCreate201JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesFoldersCreate400JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesFoldersCreate401JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesFoldersCreate403JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesFoldersCreate404JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesFoldersCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesFoldersCreate500JSONResponse) VisitV1NamespacesFoldersCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Params          V1NamespacesIssuesGetParams
+}
+
+type V1NamespacesIssuesGetResponseObject interface {
+	VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesIssuesGet200JSONResponse PartialIssuePage
+
+func (response V1NamespacesIssuesGet200JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesIssuesGet400JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesIssuesGet401JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesIssuesGet403JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesIssuesGet404JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesIssuesGet500JSONResponse) VisitV1NamespacesIssuesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Key             IssueKey        `json:"key"`
+}
+
+type V1NamespacesIssuesKeyGetResponseObject interface {
+	VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesIssuesKeyGet200JSONResponse Issue
+
+func (response V1NamespacesIssuesKeyGet200JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesIssuesKeyGet400JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesIssuesKeyGet401JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesIssuesKeyGet403JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesIssuesKeyGet404JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesIssuesKeyGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesIssuesKeyGet500JSONResponse) VisitV1NamespacesIssuesKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Params          V1NamespacesProjectsGetParams
+}
+
+type V1NamespacesProjectsGetResponseObject interface {
+	VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesProjectsGet200JSONResponse ProjectPage
+
+func (response V1NamespacesProjectsGet200JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesProjectsGet400JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesProjectsGet401JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesProjectsGet403JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesProjectsGet404JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesProjectsGet500JSONResponse) VisitV1NamespacesProjectsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreateRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	Body            *V1NamespacesProjectsCreateJSONRequestBody
+}
+
+type V1NamespacesProjectsCreateResponseObject interface {
+	VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesProjectsCreate201JSONResponse struct{ N201JSONResponse }
+
+func (response V1NamespacesProjectsCreate201JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesProjectsCreate400JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesProjectsCreate401JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesProjectsCreate403JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesProjectsCreate404JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1NamespacesProjectsCreate409JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesProjectsCreate500JSONResponse) VisitV1NamespacesProjectsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGetRequestObject struct {
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	NamespaceRef    NamespaceRef    `json:"namespaceRef"`
+	ProjectKey      ProjectKey      `json:"projectKey"`
+}
+
+type V1NamespacesProjectsKeyGetResponseObject interface {
+	VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error
+}
+
+type V1NamespacesProjectsKeyGet200JSONResponse Project
+
+func (response V1NamespacesProjectsKeyGet200JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1NamespacesProjectsKeyGet400JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1NamespacesProjectsKeyGet401JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1NamespacesProjectsKeyGet403JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1NamespacesProjectsKeyGet404JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1NamespacesProjectsKeyGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1NamespacesProjectsKeyGet500JSONResponse) VisitV1NamespacesProjectsKeyGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type V1OrganizationRolesGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationRolesGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationRolesGetParams
 }
 
 type V1OrganizationRolesGetResponseObject interface {
@@ -14018,8 +14378,8 @@ func (response V1OrganizationRolesGet500JSONResponse) VisitV1OrganizationRolesGe
 }
 
 type V1OrganizationRolesCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationRolesCreateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationRolesCreateJSONRequestBody
 }
 
 type V1OrganizationRolesCreateResponseObject interface {
@@ -14111,8 +14471,8 @@ func (response V1OrganizationRolesCreate500JSONResponse) VisitV1OrganizationRole
 }
 
 type V1OrganizationRoleDeleteRequestObject struct {
-	Id     Id     `json:"id"`
-	RoleId string `json:"role_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	RoleId          string          `json:"role_id"`
 }
 
 type V1OrganizationRoleDeleteResponseObject interface {
@@ -14198,8 +14558,8 @@ func (response V1OrganizationRoleDelete500JSONResponse) VisitV1OrganizationRoleD
 }
 
 type V1OrganizationRoleGetRequestObject struct {
-	Id     Id     `json:"id"`
-	RoleId string `json:"role_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	RoleId          string          `json:"role_id"`
 }
 
 type V1OrganizationRoleGetResponseObject interface {
@@ -14291,9 +14651,9 @@ func (response V1OrganizationRoleGet500JSONResponse) VisitV1OrganizationRoleGetR
 }
 
 type V1OrganizationRoleUpdateRequestObject struct {
-	Id     Id     `json:"id"`
-	RoleId string `json:"role_id"`
-	Body   *V1OrganizationRoleUpdateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	RoleId          string          `json:"role_id"`
+	Body            *V1OrganizationRoleUpdateJSONRequestBody
 }
 
 type V1OrganizationRoleUpdateResponseObject interface {
@@ -14385,8 +14745,8 @@ func (response V1OrganizationRoleUpdate500JSONResponse) VisitV1OrganizationRoleU
 }
 
 type V1OrganizationTeamsGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1OrganizationTeamsGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Params          V1OrganizationTeamsGetParams
 }
 
 type V1OrganizationTeamsGetResponseObject interface {
@@ -14478,8 +14838,8 @@ func (response V1OrganizationTeamsGet500JSONResponse) VisitV1OrganizationTeamsGe
 }
 
 type V1OrganizationTeamsCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1OrganizationTeamsCreateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	Body            *V1OrganizationTeamsCreateJSONRequestBody
 }
 
 type V1OrganizationTeamsCreateResponseObject interface {
@@ -14571,8 +14931,8 @@ func (response V1OrganizationTeamsCreate500JSONResponse) VisitV1OrganizationTeam
 }
 
 type V1OrganizationTeamDeleteRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
 }
 
 type V1OrganizationTeamDeleteResponseObject interface {
@@ -14658,8 +15018,8 @@ func (response V1OrganizationTeamDelete500JSONResponse) VisitV1OrganizationTeamD
 }
 
 type V1OrganizationTeamGetRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
 }
 
 type V1OrganizationTeamGetResponseObject interface {
@@ -14751,9 +15111,9 @@ func (response V1OrganizationTeamGet500JSONResponse) VisitV1OrganizationTeamGetR
 }
 
 type V1OrganizationTeamUpdateRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
-	Body   *V1OrganizationTeamUpdateJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
+	Body            *V1OrganizationTeamUpdateJSONRequestBody
 }
 
 type V1OrganizationTeamUpdateResponseObject interface {
@@ -14845,9 +15205,9 @@ func (response V1OrganizationTeamUpdate500JSONResponse) VisitV1OrganizationTeamU
 }
 
 type V1OrganizationTeamMembersGetRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
-	Params V1OrganizationTeamMembersGetParams
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
+	Params          V1OrganizationTeamMembersGetParams
 }
 
 type V1OrganizationTeamMembersGetResponseObject interface {
@@ -14939,9 +15299,9 @@ func (response V1OrganizationTeamMembersGet500JSONResponse) VisitV1OrganizationT
 }
 
 type V1OrganizationTeamMembersAddRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
-	Body   *V1OrganizationTeamMembersAddJSONRequestBody
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
+	Body            *V1OrganizationTeamMembersAddJSONRequestBody
 }
 
 type V1OrganizationTeamMembersAddResponseObject interface {
@@ -15033,9 +15393,9 @@ func (response V1OrganizationTeamMembersAdd500JSONResponse) VisitV1OrganizationT
 }
 
 type V1OrganizationTeamMemberRemoveRequestObject struct {
-	Id     Id     `json:"id"`
-	TeamId string `json:"team_id"`
-	UserId string `json:"user_id"`
+	OrganizationRef OrganizationRef `json:"organizationRef"`
+	TeamId          string          `json:"team_id"`
+	UserId          string          `json:"user_id"`
 }
 
 type V1OrganizationTeamMemberRemoveResponseObject interface {
@@ -15455,7 +15815,7 @@ func (response V1PermissionGet500JSONResponse) VisitV1PermissionGetResponse(w ht
 }
 
 type V1ProjectDeleteRequestObject struct {
-	Id Id `json:"id"`
+	ProjectId ProjectId `json:"projectId"`
 }
 
 type V1ProjectDeleteResponseObject interface {
@@ -15541,7 +15901,7 @@ func (response V1ProjectDelete500JSONResponse) VisitV1ProjectDeleteResponse(w ht
 }
 
 type V1ProjectGetRequestObject struct {
-	Id Id `json:"id"`
+	ProjectId ProjectId `json:"projectId"`
 }
 
 type V1ProjectGetResponseObject interface {
@@ -15633,8 +15993,8 @@ func (response V1ProjectGet500JSONResponse) VisitV1ProjectGetResponse(w http.Res
 }
 
 type V1ProjectUpdateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1ProjectUpdateJSONRequestBody
+	ProjectId ProjectId `json:"projectId"`
+	Body      *V1ProjectUpdateJSONRequestBody
 }
 
 type V1ProjectUpdateResponseObject interface {
@@ -15726,8 +16086,8 @@ func (response V1ProjectUpdate500JSONResponse) VisitV1ProjectUpdateResponse(w ht
 }
 
 type V1ProjectsDocumentsGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1ProjectsDocumentsGetParams
+	ProjectId ProjectId `json:"projectId"`
+	Params    V1ProjectsDocumentsGetParams
 }
 
 type V1ProjectsDocumentsGetResponseObject interface {
@@ -15819,8 +16179,8 @@ func (response V1ProjectsDocumentsGet500JSONResponse) VisitV1ProjectsDocumentsGe
 }
 
 type V1ProjectsDocumentsCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1ProjectsDocumentsCreateJSONRequestBody
+	ProjectId ProjectId `json:"projectId"`
+	Body      *V1ProjectsDocumentsCreateJSONRequestBody
 }
 
 type V1ProjectsDocumentsCreateResponseObject interface {
@@ -15912,7 +16272,7 @@ func (response V1ProjectsDocumentsCreate500JSONResponse) VisitV1ProjectsDocument
 }
 
 type V1ProjectsDocumentsUnrelateRequestObject struct {
-	Id         Id         `json:"id"`
+	ProjectId  ProjectId  `json:"projectId"`
 	DocumentId DocumentId `json:"documentId"`
 }
 
@@ -15999,7 +16359,7 @@ func (response V1ProjectsDocumentsUnrelate500JSONResponse) VisitV1ProjectsDocume
 }
 
 type V1ProjectsDocumentsRelateRequestObject struct {
-	Id         Id         `json:"id"`
+	ProjectId  ProjectId  `json:"projectId"`
 	DocumentId DocumentId `json:"documentId"`
 }
 
@@ -16086,8 +16446,8 @@ func (response V1ProjectsDocumentsRelate500JSONResponse) VisitV1ProjectsDocument
 }
 
 type V1ProjectsIssuesGetRequestObject struct {
-	Id     Id `json:"id"`
-	Params V1ProjectsIssuesGetParams
+	ProjectId ProjectId `json:"projectId"`
+	Params    V1ProjectsIssuesGetParams
 }
 
 type V1ProjectsIssuesGetResponseObject interface {
@@ -16179,8 +16539,8 @@ func (response V1ProjectsIssuesGet500JSONResponse) VisitV1ProjectsIssuesGetRespo
 }
 
 type V1ProjectsIssuesCreateRequestObject struct {
-	Id   Id `json:"id"`
-	Body *V1ProjectsIssuesCreateJSONRequestBody
+	ProjectId ProjectId `json:"projectId"`
+	Body      *V1ProjectsIssuesCreateJSONRequestBody
 }
 
 type V1ProjectsIssuesCreateResponseObject interface {
@@ -17631,39 +17991,6 @@ type StrictServerInterface interface {
 	// V1NamespacesGet List reachable namespaces
 	// (GET /v1/namespaces)
 	V1NamespacesGet(ctx context.Context, request V1NamespacesGetRequestObject) (V1NamespacesGetResponseObject, error)
-	// V1NamespaceDelete Delete namespace
-	// (DELETE /v1/namespaces/{id})
-	V1NamespaceDelete(ctx context.Context, request V1NamespaceDeleteRequestObject) (V1NamespaceDeleteResponseObject, error)
-	// V1NamespaceGet Get namespace
-	// (GET /v1/namespaces/{id})
-	V1NamespaceGet(ctx context.Context, request V1NamespaceGetRequestObject) (V1NamespaceGetResponseObject, error)
-	// V1NamespaceUpdate Update namespace
-	// (PATCH /v1/namespaces/{id})
-	V1NamespaceUpdate(ctx context.Context, request V1NamespaceUpdateRequestObject) (V1NamespaceUpdateResponseObject, error)
-	// V1NamespacesDocumentsGet Get namespace documents
-	// (GET /v1/namespaces/{id}/documents)
-	V1NamespacesDocumentsGet(ctx context.Context, request V1NamespacesDocumentsGetRequestObject) (V1NamespacesDocumentsGetResponseObject, error)
-	// V1NamespacesDocumentsCreate Create document in namespace
-	// (POST /v1/namespaces/{id}/documents)
-	V1NamespacesDocumentsCreate(ctx context.Context, request V1NamespacesDocumentsCreateRequestObject) (V1NamespacesDocumentsCreateResponseObject, error)
-	// V1NamespacesFoldersGet Get namespace folders
-	// (GET /v1/namespaces/{id}/folders)
-	V1NamespacesFoldersGet(ctx context.Context, request V1NamespacesFoldersGetRequestObject) (V1NamespacesFoldersGetResponseObject, error)
-	// V1NamespacesFoldersCreate Create folder in namespace
-	// (POST /v1/namespaces/{id}/folders)
-	V1NamespacesFoldersCreate(ctx context.Context, request V1NamespacesFoldersCreateRequestObject) (V1NamespacesFoldersCreateResponseObject, error)
-	// V1NamespacesIssuesGet Get namespace issues
-	// (GET /v1/namespaces/{id}/issues)
-	V1NamespacesIssuesGet(ctx context.Context, request V1NamespacesIssuesGetRequestObject) (V1NamespacesIssuesGetResponseObject, error)
-	// V1NamespacesIssuesKeyGet Get issue by key
-	// (GET /v1/namespaces/{id}/issues/{key})
-	V1NamespacesIssuesKeyGet(ctx context.Context, request V1NamespacesIssuesKeyGetRequestObject) (V1NamespacesIssuesKeyGetResponseObject, error)
-	// V1NamespacesProjectsGet Get namespace projects
-	// (GET /v1/namespaces/{id}/projects)
-	V1NamespacesProjectsGet(ctx context.Context, request V1NamespacesProjectsGetRequestObject) (V1NamespacesProjectsGetResponseObject, error)
-	// V1NamespacesProjectsCreate Create project in namespace
-	// (POST /v1/namespaces/{id}/projects)
-	V1NamespacesProjectsCreate(ctx context.Context, request V1NamespacesProjectsCreateRequestObject) (V1NamespacesProjectsCreateResponseObject, error)
 	// V1NotificationsGet Get all in-app notification of the requesting user.
 	// (GET /v1/notifications)
 	V1NotificationsGet(ctx context.Context, request V1NotificationsGetRequestObject) (V1NotificationsGetResponseObject, error)
@@ -17683,88 +18010,124 @@ type StrictServerInterface interface {
 	// (POST /v1/organizations)
 	V1OrganizationsCreate(ctx context.Context, request V1OrganizationsCreateRequestObject) (V1OrganizationsCreateResponseObject, error)
 	// V1OrganizationDelete Delete organization
-	// (DELETE /v1/organizations/{id})
+	// (DELETE /v1/organizations/{organizationRef})
 	V1OrganizationDelete(ctx context.Context, request V1OrganizationDeleteRequestObject) (V1OrganizationDeleteResponseObject, error)
 	// V1OrganizationGet Get organization
-	// (GET /v1/organizations/{id})
+	// (GET /v1/organizations/{organizationRef})
 	V1OrganizationGet(ctx context.Context, request V1OrganizationGetRequestObject) (V1OrganizationGetResponseObject, error)
 	// V1OrganizationUpdate Update organization
-	// (PATCH /v1/organizations/{id})
+	// (PATCH /v1/organizations/{organizationRef})
 	V1OrganizationUpdate(ctx context.Context, request V1OrganizationUpdateRequestObject) (V1OrganizationUpdateResponseObject, error)
 	// V1OrganizationsDocumentsGet Get organization documents
-	// (GET /v1/organizations/{id}/documents)
+	// (GET /v1/organizations/{organizationRef}/documents)
 	V1OrganizationsDocumentsGet(ctx context.Context, request V1OrganizationsDocumentsGetRequestObject) (V1OrganizationsDocumentsGetResponseObject, error)
 	// V1OrganizationsDocumentsCreate Create document in organization
-	// (POST /v1/organizations/{id}/documents)
+	// (POST /v1/organizations/{organizationRef}/documents)
 	V1OrganizationsDocumentsCreate(ctx context.Context, request V1OrganizationsDocumentsCreateRequestObject) (V1OrganizationsDocumentsCreateResponseObject, error)
 	// V1OrganizationsFoldersGet Get organization folders
-	// (GET /v1/organizations/{id}/folders)
+	// (GET /v1/organizations/{organizationRef}/folders)
 	V1OrganizationsFoldersGet(ctx context.Context, request V1OrganizationsFoldersGetRequestObject) (V1OrganizationsFoldersGetResponseObject, error)
 	// V1OrganizationsFoldersCreate Create folder in organization
-	// (POST /v1/organizations/{id}/folders)
+	// (POST /v1/organizations/{organizationRef}/folders)
 	V1OrganizationsFoldersCreate(ctx context.Context, request V1OrganizationsFoldersCreateRequestObject) (V1OrganizationsFoldersCreateResponseObject, error)
 	// V1OrganizationMembersGet Get organization members
-	// (GET /v1/organizations/{id}/members)
+	// (GET /v1/organizations/{organizationRef}/members)
 	V1OrganizationMembersGet(ctx context.Context, request V1OrganizationMembersGetRequestObject) (V1OrganizationMembersGetResponseObject, error)
 	// V1OrganizationMembersAdd Add organization member
-	// (POST /v1/organizations/{id}/members)
+	// (POST /v1/organizations/{organizationRef}/members)
 	V1OrganizationMembersAdd(ctx context.Context, request V1OrganizationMembersAddRequestObject) (V1OrganizationMembersAddResponseObject, error)
 	// V1OrganizationMembersAccept Accept organization invitation
-	// (POST /v1/organizations/{id}/members/accept)
+	// (POST /v1/organizations/{organizationRef}/members/accept)
 	V1OrganizationMembersAccept(ctx context.Context, request V1OrganizationMembersAcceptRequestObject) (V1OrganizationMembersAcceptResponseObject, error)
 	// V1OrganizationMembersInvite Invite member to organization
-	// (POST /v1/organizations/{id}/members/invite)
+	// (POST /v1/organizations/{organizationRef}/members/invite)
 	V1OrganizationMembersInvite(ctx context.Context, request V1OrganizationMembersInviteRequestObject) (V1OrganizationMembersInviteResponseObject, error)
 	// V1OrganizationMemberRemove Remove organization member
-	// (DELETE /v1/organizations/{id}/members/{user_id})
+	// (DELETE /v1/organizations/{organizationRef}/members/{user_id})
 	V1OrganizationMemberRemove(ctx context.Context, request V1OrganizationMemberRemoveRequestObject) (V1OrganizationMemberRemoveResponseObject, error)
 	// V1OrganizationMemberInviteRevoke Revoke invitation
-	// (DELETE /v1/organizations/{id}/members/{user_id}/invite)
+	// (DELETE /v1/organizations/{organizationRef}/members/{user_id}/invite)
 	V1OrganizationMemberInviteRevoke(ctx context.Context, request V1OrganizationMemberInviteRevokeRequestObject) (V1OrganizationMemberInviteRevokeResponseObject, error)
 	// V1OrganizationsNamespacesGet Get organization namespaces
-	// (GET /v1/organizations/{id}/namespaces)
+	// (GET /v1/organizations/{organizationRef}/namespaces)
 	V1OrganizationsNamespacesGet(ctx context.Context, request V1OrganizationsNamespacesGetRequestObject) (V1OrganizationsNamespacesGetResponseObject, error)
 	// V1OrganizationsNamespacesCreate Create namespace in organization
-	// (POST /v1/organizations/{id}/namespaces)
+	// (POST /v1/organizations/{organizationRef}/namespaces)
 	V1OrganizationsNamespacesCreate(ctx context.Context, request V1OrganizationsNamespacesCreateRequestObject) (V1OrganizationsNamespacesCreateResponseObject, error)
+	// V1NamespaceDelete Delete namespace
+	// (DELETE /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceDelete(ctx context.Context, request V1NamespaceDeleteRequestObject) (V1NamespaceDeleteResponseObject, error)
+	// V1NamespaceGet Get namespace
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceGet(ctx context.Context, request V1NamespaceGetRequestObject) (V1NamespaceGetResponseObject, error)
+	// V1NamespaceUpdate Update namespace
+	// (PATCH /v1/organizations/{organizationRef}/namespaces/{namespaceRef})
+	V1NamespaceUpdate(ctx context.Context, request V1NamespaceUpdateRequestObject) (V1NamespaceUpdateResponseObject, error)
+	// V1NamespacesDocumentsGet Get namespace documents
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+	V1NamespacesDocumentsGet(ctx context.Context, request V1NamespacesDocumentsGetRequestObject) (V1NamespacesDocumentsGetResponseObject, error)
+	// V1NamespacesDocumentsCreate Create document in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents)
+	V1NamespacesDocumentsCreate(ctx context.Context, request V1NamespacesDocumentsCreateRequestObject) (V1NamespacesDocumentsCreateResponseObject, error)
+	// V1NamespacesFoldersGet Get namespace folders
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+	V1NamespacesFoldersGet(ctx context.Context, request V1NamespacesFoldersGetRequestObject) (V1NamespacesFoldersGetResponseObject, error)
+	// V1NamespacesFoldersCreate Create folder in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders)
+	V1NamespacesFoldersCreate(ctx context.Context, request V1NamespacesFoldersCreateRequestObject) (V1NamespacesFoldersCreateResponseObject, error)
+	// V1NamespacesIssuesGet Get namespace issues
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues)
+	V1NamespacesIssuesGet(ctx context.Context, request V1NamespacesIssuesGetRequestObject) (V1NamespacesIssuesGetResponseObject, error)
+	// V1NamespacesIssuesKeyGet Get issue by key
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key})
+	V1NamespacesIssuesKeyGet(ctx context.Context, request V1NamespacesIssuesKeyGetRequestObject) (V1NamespacesIssuesKeyGetResponseObject, error)
+	// V1NamespacesProjectsGet Get namespace projects
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+	V1NamespacesProjectsGet(ctx context.Context, request V1NamespacesProjectsGetRequestObject) (V1NamespacesProjectsGetResponseObject, error)
+	// V1NamespacesProjectsCreate Create project in namespace
+	// (POST /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects)
+	V1NamespacesProjectsCreate(ctx context.Context, request V1NamespacesProjectsCreateRequestObject) (V1NamespacesProjectsCreateResponseObject, error)
+	// V1NamespacesProjectsKeyGet Get project by key
+	// (GET /v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey})
+	V1NamespacesProjectsKeyGet(ctx context.Context, request V1NamespacesProjectsKeyGetRequestObject) (V1NamespacesProjectsKeyGetResponseObject, error)
 	// V1OrganizationRolesGet Get organization roles
-	// (GET /v1/organizations/{id}/roles)
+	// (GET /v1/organizations/{organizationRef}/roles)
 	V1OrganizationRolesGet(ctx context.Context, request V1OrganizationRolesGetRequestObject) (V1OrganizationRolesGetResponseObject, error)
 	// V1OrganizationRolesCreate Create a new role in the organization
-	// (POST /v1/organizations/{id}/roles)
+	// (POST /v1/organizations/{organizationRef}/roles)
 	V1OrganizationRolesCreate(ctx context.Context, request V1OrganizationRolesCreateRequestObject) (V1OrganizationRolesCreateResponseObject, error)
 	// V1OrganizationRoleDelete Delete organization role
-	// (DELETE /v1/organizations/{id}/roles/{role_id})
+	// (DELETE /v1/organizations/{organizationRef}/roles/{role_id})
 	V1OrganizationRoleDelete(ctx context.Context, request V1OrganizationRoleDeleteRequestObject) (V1OrganizationRoleDeleteResponseObject, error)
 	// V1OrganizationRoleGet Get organization role
-	// (GET /v1/organizations/{id}/roles/{role_id})
+	// (GET /v1/organizations/{organizationRef}/roles/{role_id})
 	V1OrganizationRoleGet(ctx context.Context, request V1OrganizationRoleGetRequestObject) (V1OrganizationRoleGetResponseObject, error)
 	// V1OrganizationRoleUpdate Update organization role
-	// (PATCH /v1/organizations/{id}/roles/{role_id})
+	// (PATCH /v1/organizations/{organizationRef}/roles/{role_id})
 	V1OrganizationRoleUpdate(ctx context.Context, request V1OrganizationRoleUpdateRequestObject) (V1OrganizationRoleUpdateResponseObject, error)
 	// V1OrganizationTeamsGet Get organization teams
-	// (GET /v1/organizations/{id}/teams)
+	// (GET /v1/organizations/{organizationRef}/teams)
 	V1OrganizationTeamsGet(ctx context.Context, request V1OrganizationTeamsGetRequestObject) (V1OrganizationTeamsGetResponseObject, error)
 	// V1OrganizationTeamsCreate Create a new team in the organization
-	// (POST /v1/organizations/{id}/teams)
+	// (POST /v1/organizations/{organizationRef}/teams)
 	V1OrganizationTeamsCreate(ctx context.Context, request V1OrganizationTeamsCreateRequestObject) (V1OrganizationTeamsCreateResponseObject, error)
 	// V1OrganizationTeamDelete Delete organization team
-	// (DELETE /v1/organizations/{id}/teams/{team_id})
+	// (DELETE /v1/organizations/{organizationRef}/teams/{team_id})
 	V1OrganizationTeamDelete(ctx context.Context, request V1OrganizationTeamDeleteRequestObject) (V1OrganizationTeamDeleteResponseObject, error)
 	// V1OrganizationTeamGet Get organization team
-	// (GET /v1/organizations/{id}/teams/{team_id})
+	// (GET /v1/organizations/{organizationRef}/teams/{team_id})
 	V1OrganizationTeamGet(ctx context.Context, request V1OrganizationTeamGetRequestObject) (V1OrganizationTeamGetResponseObject, error)
 	// V1OrganizationTeamUpdate Update organization team
-	// (PATCH /v1/organizations/{id}/teams/{team_id})
+	// (PATCH /v1/organizations/{organizationRef}/teams/{team_id})
 	V1OrganizationTeamUpdate(ctx context.Context, request V1OrganizationTeamUpdateRequestObject) (V1OrganizationTeamUpdateResponseObject, error)
 	// V1OrganizationTeamMembersGet Get organization team members
-	// (GET /v1/organizations/{id}/teams/{team_id}/members)
+	// (GET /v1/organizations/{organizationRef}/teams/{team_id}/members)
 	V1OrganizationTeamMembersGet(ctx context.Context, request V1OrganizationTeamMembersGetRequestObject) (V1OrganizationTeamMembersGetResponseObject, error)
 	// V1OrganizationTeamMembersAdd Add organization team member
-	// (POST /v1/organizations/{id}/teams/{team_id}/members)
+	// (POST /v1/organizations/{organizationRef}/teams/{team_id}/members)
 	V1OrganizationTeamMembersAdd(ctx context.Context, request V1OrganizationTeamMembersAddRequestObject) (V1OrganizationTeamMembersAddResponseObject, error)
 	// V1OrganizationTeamMemberRemove Remove organization team member
-	// (DELETE /v1/organizations/{id}/teams/{team_id}/members/{user_id})
+	// (DELETE /v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id})
 	V1OrganizationTeamMemberRemove(ctx context.Context, request V1OrganizationTeamMemberRemoveRequestObject) (V1OrganizationTeamMemberRemoveResponseObject, error)
 	// V1PermissionsCreate Create grant
 	// (POST /v1/permissions)
@@ -17779,31 +18142,31 @@ type StrictServerInterface interface {
 	// (GET /v1/permissions/{id})
 	V1PermissionGet(ctx context.Context, request V1PermissionGetRequestObject) (V1PermissionGetResponseObject, error)
 	// V1ProjectDelete Delete project
-	// (DELETE /v1/projects/{id})
+	// (DELETE /v1/projects/{projectId})
 	V1ProjectDelete(ctx context.Context, request V1ProjectDeleteRequestObject) (V1ProjectDeleteResponseObject, error)
 	// V1ProjectGet Get project
-	// (GET /v1/projects/{id})
+	// (GET /v1/projects/{projectId})
 	V1ProjectGet(ctx context.Context, request V1ProjectGetRequestObject) (V1ProjectGetResponseObject, error)
 	// V1ProjectUpdate Update project
-	// (PATCH /v1/projects/{id})
+	// (PATCH /v1/projects/{projectId})
 	V1ProjectUpdate(ctx context.Context, request V1ProjectUpdateRequestObject) (V1ProjectUpdateResponseObject, error)
 	// V1ProjectsDocumentsGet Get project documents
-	// (GET /v1/projects/{id}/documents)
+	// (GET /v1/projects/{projectId}/documents)
 	V1ProjectsDocumentsGet(ctx context.Context, request V1ProjectsDocumentsGetRequestObject) (V1ProjectsDocumentsGetResponseObject, error)
 	// V1ProjectsDocumentsCreate Create document in project
-	// (POST /v1/projects/{id}/documents)
+	// (POST /v1/projects/{projectId}/documents)
 	V1ProjectsDocumentsCreate(ctx context.Context, request V1ProjectsDocumentsCreateRequestObject) (V1ProjectsDocumentsCreateResponseObject, error)
 	// V1ProjectsDocumentsUnrelate Unrelate document from project
-	// (DELETE /v1/projects/{id}/documents/{documentId})
+	// (DELETE /v1/projects/{projectId}/documents/{documentId})
 	V1ProjectsDocumentsUnrelate(ctx context.Context, request V1ProjectsDocumentsUnrelateRequestObject) (V1ProjectsDocumentsUnrelateResponseObject, error)
 	// V1ProjectsDocumentsRelate Relate document to project
-	// (POST /v1/projects/{id}/documents/{documentId})
+	// (POST /v1/projects/{projectId}/documents/{documentId})
 	V1ProjectsDocumentsRelate(ctx context.Context, request V1ProjectsDocumentsRelateRequestObject) (V1ProjectsDocumentsRelateResponseObject, error)
 	// V1ProjectsIssuesGet Get project issues
-	// (GET /v1/projects/{id}/issues)
+	// (GET /v1/projects/{projectId}/issues)
 	V1ProjectsIssuesGet(ctx context.Context, request V1ProjectsIssuesGetRequestObject) (V1ProjectsIssuesGetResponseObject, error)
 	// V1ProjectsIssuesCreate Create issue in project
-	// (POST /v1/projects/{id}/issues)
+	// (POST /v1/projects/{projectId}/issues)
 	V1ProjectsIssuesCreate(ctx context.Context, request V1ProjectsIssuesCreateRequestObject) (V1ProjectsIssuesCreateResponseObject, error)
 	// V1SearchGet Search resources
 	// (GET /v1/search)
@@ -18460,337 +18823,6 @@ func (sh *strictHandler) V1NamespacesGet(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// V1NamespaceDelete operation middleware
-func (sh *strictHandler) V1NamespaceDelete(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespaceDeleteRequestObject
-
-	request.Id = id
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespaceDelete(ctx, request.(V1NamespaceDeleteRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespaceDelete")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespaceDeleteResponseObject); ok {
-		if err := validResponse.VisitV1NamespaceDeleteResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespaceGet operation middleware
-func (sh *strictHandler) V1NamespaceGet(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespaceGetRequestObject
-
-	request.Id = id
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespaceGet(ctx, request.(V1NamespaceGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespaceGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespaceGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespaceGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespaceUpdate operation middleware
-func (sh *strictHandler) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespaceUpdateRequestObject
-
-	request.Id = id
-
-	var body V1NamespaceUpdateJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		if !errors.Is(err, io.EOF) {
-			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-			return
-		}
-	} else {
-		request.Body = &body
-	}
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespaceUpdate(ctx, request.(V1NamespaceUpdateRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespaceUpdate")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespaceUpdateResponseObject); ok {
-		if err := validResponse.VisitV1NamespaceUpdateResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesDocumentsGet operation middleware
-func (sh *strictHandler) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesDocumentsGetParams) {
-	var request V1NamespacesDocumentsGetRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesDocumentsGet(ctx, request.(V1NamespacesDocumentsGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesDocumentsGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesDocumentsGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesDocumentsGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesDocumentsCreate operation middleware
-func (sh *strictHandler) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespacesDocumentsCreateRequestObject
-
-	request.Id = id
-
-	var body V1NamespacesDocumentsCreateJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		if !errors.Is(err, io.EOF) {
-			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-			return
-		}
-	} else {
-		request.Body = &body
-	}
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesDocumentsCreate(ctx, request.(V1NamespacesDocumentsCreateRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesDocumentsCreate")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesDocumentsCreateResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesDocumentsCreateResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesFoldersGet operation middleware
-func (sh *strictHandler) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesFoldersGetParams) {
-	var request V1NamespacesFoldersGetRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesFoldersGet(ctx, request.(V1NamespacesFoldersGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesFoldersGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesFoldersGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesFoldersGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesFoldersCreate operation middleware
-func (sh *strictHandler) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespacesFoldersCreateRequestObject
-
-	request.Id = id
-
-	var body V1NamespacesFoldersCreateJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		if !errors.Is(err, io.EOF) {
-			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-			return
-		}
-	} else {
-		request.Body = &body
-	}
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesFoldersCreate(ctx, request.(V1NamespacesFoldersCreateRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesFoldersCreate")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesFoldersCreateResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesFoldersCreateResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesIssuesGet operation middleware
-func (sh *strictHandler) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesIssuesGetParams) {
-	var request V1NamespacesIssuesGetRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesIssuesGet(ctx, request.(V1NamespacesIssuesGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesIssuesGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesIssuesGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesIssuesGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesIssuesKeyGet operation middleware
-func (sh *strictHandler) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, id Id, key IssueKey) {
-	var request V1NamespacesIssuesKeyGetRequestObject
-
-	request.Id = id
-	request.Key = key
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesIssuesKeyGet(ctx, request.(V1NamespacesIssuesKeyGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesIssuesKeyGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesIssuesKeyGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesIssuesKeyGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesProjectsGet operation middleware
-func (sh *strictHandler) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, id Id, params V1NamespacesProjectsGetParams) {
-	var request V1NamespacesProjectsGetRequestObject
-
-	request.Id = id
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesProjectsGet(ctx, request.(V1NamespacesProjectsGetRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesProjectsGet")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesProjectsGetResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesProjectsGetResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// V1NamespacesProjectsCreate operation middleware
-func (sh *strictHandler) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, id Id) {
-	var request V1NamespacesProjectsCreateRequestObject
-
-	request.Id = id
-
-	var body V1NamespacesProjectsCreateJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		if !errors.Is(err, io.EOF) {
-			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-			return
-		}
-	} else {
-		request.Body = &body
-	}
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.V1NamespacesProjectsCreate(ctx, request.(V1NamespacesProjectsCreateRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "V1NamespacesProjectsCreate")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(V1NamespacesProjectsCreateResponseObject); ok {
-		if err := validResponse.VisitV1NamespacesProjectsCreateResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // V1NotificationsGet operation middleware
 func (sh *strictHandler) V1NotificationsGet(w http.ResponseWriter, r *http.Request, params V1NotificationsGetParams) {
 	var request V1NotificationsGetRequestObject
@@ -18966,10 +18998,10 @@ func (sh *strictHandler) V1OrganizationsCreate(w http.ResponseWriter, r *http.Re
 }
 
 // V1OrganizationDelete operation middleware
-func (sh *strictHandler) V1OrganizationDelete(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationDeleteParams) {
+func (sh *strictHandler) V1OrganizationDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationDeleteParams) {
 	var request V1OrganizationDeleteRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -18993,10 +19025,10 @@ func (sh *strictHandler) V1OrganizationDelete(w http.ResponseWriter, r *http.Req
 }
 
 // V1OrganizationGet operation middleware
-func (sh *strictHandler) V1OrganizationGet(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.V1OrganizationGet(ctx, request.(V1OrganizationGetRequestObject))
@@ -19019,10 +19051,10 @@ func (sh *strictHandler) V1OrganizationGet(w http.ResponseWriter, r *http.Reques
 }
 
 // V1OrganizationUpdate operation middleware
-func (sh *strictHandler) V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationUpdateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationUpdateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19055,10 +19087,10 @@ func (sh *strictHandler) V1OrganizationUpdate(w http.ResponseWriter, r *http.Req
 }
 
 // V1OrganizationsDocumentsGet operation middleware
-func (sh *strictHandler) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsDocumentsGetParams) {
+func (sh *strictHandler) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsDocumentsGetParams) {
 	var request V1OrganizationsDocumentsGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19082,10 +19114,10 @@ func (sh *strictHandler) V1OrganizationsDocumentsGet(w http.ResponseWriter, r *h
 }
 
 // V1OrganizationsDocumentsCreate operation middleware
-func (sh *strictHandler) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationsDocumentsCreateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationsDocumentsCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19118,10 +19150,10 @@ func (sh *strictHandler) V1OrganizationsDocumentsCreate(w http.ResponseWriter, r
 }
 
 // V1OrganizationsFoldersGet operation middleware
-func (sh *strictHandler) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsFoldersGetParams) {
+func (sh *strictHandler) V1OrganizationsFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsFoldersGetParams) {
 	var request V1OrganizationsFoldersGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19145,10 +19177,10 @@ func (sh *strictHandler) V1OrganizationsFoldersGet(w http.ResponseWriter, r *htt
 }
 
 // V1OrganizationsFoldersCreate operation middleware
-func (sh *strictHandler) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationsFoldersCreateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationsFoldersCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19181,10 +19213,10 @@ func (sh *strictHandler) V1OrganizationsFoldersCreate(w http.ResponseWriter, r *
 }
 
 // V1OrganizationMembersGet operation middleware
-func (sh *strictHandler) V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationMembersGetParams) {
+func (sh *strictHandler) V1OrganizationMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationMembersGetParams) {
 	var request V1OrganizationMembersGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19208,10 +19240,10 @@ func (sh *strictHandler) V1OrganizationMembersGet(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationMembersAdd operation middleware
-func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationMembersAddRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationMembersAddJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19244,10 +19276,10 @@ func (sh *strictHandler) V1OrganizationMembersAdd(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationMembersAccept operation middleware
-func (sh *strictHandler) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationMembersAccept(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationMembersAcceptRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationMembersAcceptJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19280,10 +19312,10 @@ func (sh *strictHandler) V1OrganizationMembersAccept(w http.ResponseWriter, r *h
 }
 
 // V1OrganizationMembersInvite operation middleware
-func (sh *strictHandler) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationMembersInvite(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationMembersInviteRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationMembersInviteJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19316,10 +19348,10 @@ func (sh *strictHandler) V1OrganizationMembersInvite(w http.ResponseWriter, r *h
 }
 
 // V1OrganizationMemberRemove operation middleware
-func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string) {
 	var request V1OrganizationMemberRemoveRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.UserId = userId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19343,10 +19375,10 @@ func (sh *strictHandler) V1OrganizationMemberRemove(w http.ResponseWriter, r *ht
 }
 
 // V1OrganizationMemberInviteRevoke operation middleware
-func (sh *strictHandler) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, id Id, userId string) {
+func (sh *strictHandler) V1OrganizationMemberInviteRevoke(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, userId string) {
 	var request V1OrganizationMemberInviteRevokeRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.UserId = userId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19370,10 +19402,10 @@ func (sh *strictHandler) V1OrganizationMemberInviteRevoke(w http.ResponseWriter,
 }
 
 // V1OrganizationsNamespacesGet operation middleware
-func (sh *strictHandler) V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationsNamespacesGetParams) {
+func (sh *strictHandler) V1OrganizationsNamespacesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationsNamespacesGetParams) {
 	var request V1OrganizationsNamespacesGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19397,10 +19429,10 @@ func (sh *strictHandler) V1OrganizationsNamespacesGet(w http.ResponseWriter, r *
 }
 
 // V1OrganizationsNamespacesCreate operation middleware
-func (sh *strictHandler) V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationsNamespacesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationsNamespacesCreateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationsNamespacesCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19432,11 +19464,381 @@ func (sh *strictHandler) V1OrganizationsNamespacesCreate(w http.ResponseWriter, 
 	}
 }
 
+// V1NamespaceDelete operation middleware
+func (sh *strictHandler) V1NamespaceDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespaceDeleteRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespaceDelete(ctx, request.(V1NamespaceDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespaceDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespaceDeleteResponseObject); ok {
+		if err := validResponse.VisitV1NamespaceDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespaceGet operation middleware
+func (sh *strictHandler) V1NamespaceGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespaceGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespaceGet(ctx, request.(V1NamespaceGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespaceGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespaceGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespaceGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespaceUpdate operation middleware
+func (sh *strictHandler) V1NamespaceUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespaceUpdateRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	var body V1NamespaceUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespaceUpdate(ctx, request.(V1NamespaceUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespaceUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespaceUpdateResponseObject); ok {
+		if err := validResponse.VisitV1NamespaceUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesDocumentsGet operation middleware
+func (sh *strictHandler) V1NamespacesDocumentsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesDocumentsGetParams) {
+	var request V1NamespacesDocumentsGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesDocumentsGet(ctx, request.(V1NamespacesDocumentsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesDocumentsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesDocumentsGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesDocumentsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesDocumentsCreate operation middleware
+func (sh *strictHandler) V1NamespacesDocumentsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespacesDocumentsCreateRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	var body V1NamespacesDocumentsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesDocumentsCreate(ctx, request.(V1NamespacesDocumentsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesDocumentsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesDocumentsCreateResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesDocumentsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesFoldersGet operation middleware
+func (sh *strictHandler) V1NamespacesFoldersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesFoldersGetParams) {
+	var request V1NamespacesFoldersGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesFoldersGet(ctx, request.(V1NamespacesFoldersGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesFoldersGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesFoldersGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesFoldersGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesFoldersCreate operation middleware
+func (sh *strictHandler) V1NamespacesFoldersCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespacesFoldersCreateRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	var body V1NamespacesFoldersCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesFoldersCreate(ctx, request.(V1NamespacesFoldersCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesFoldersCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesFoldersCreateResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesFoldersCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesIssuesGet operation middleware
+func (sh *strictHandler) V1NamespacesIssuesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesIssuesGetParams) {
+	var request V1NamespacesIssuesGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesIssuesGet(ctx, request.(V1NamespacesIssuesGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesIssuesGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesIssuesGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesIssuesGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesIssuesKeyGet operation middleware
+func (sh *strictHandler) V1NamespacesIssuesKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, key IssueKey) {
+	var request V1NamespacesIssuesKeyGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.Key = key
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesIssuesKeyGet(ctx, request.(V1NamespacesIssuesKeyGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesIssuesKeyGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesIssuesKeyGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesIssuesKeyGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesProjectsGet operation middleware
+func (sh *strictHandler) V1NamespacesProjectsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, params V1NamespacesProjectsGetParams) {
+	var request V1NamespacesProjectsGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesProjectsGet(ctx, request.(V1NamespacesProjectsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesProjectsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesProjectsGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesProjectsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesProjectsCreate operation middleware
+func (sh *strictHandler) V1NamespacesProjectsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef) {
+	var request V1NamespacesProjectsCreateRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+
+	var body V1NamespacesProjectsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesProjectsCreate(ctx, request.(V1NamespacesProjectsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesProjectsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesProjectsCreateResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesProjectsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1NamespacesProjectsKeyGet operation middleware
+func (sh *strictHandler) V1NamespacesProjectsKeyGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, namespaceRef NamespaceRef, projectKey ProjectKey) {
+	var request V1NamespacesProjectsKeyGetRequestObject
+
+	request.OrganizationRef = organizationRef
+	request.NamespaceRef = namespaceRef
+	request.ProjectKey = projectKey
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1NamespacesProjectsKeyGet(ctx, request.(V1NamespacesProjectsKeyGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1NamespacesProjectsKeyGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1NamespacesProjectsKeyGetResponseObject); ok {
+		if err := validResponse.VisitV1NamespacesProjectsKeyGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1OrganizationRolesGet operation middleware
-func (sh *strictHandler) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationRolesGetParams) {
+func (sh *strictHandler) V1OrganizationRolesGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationRolesGetParams) {
 	var request V1OrganizationRolesGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19460,10 +19862,10 @@ func (sh *strictHandler) V1OrganizationRolesGet(w http.ResponseWriter, r *http.R
 }
 
 // V1OrganizationRolesCreate operation middleware
-func (sh *strictHandler) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationRolesCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationRolesCreateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationRolesCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19496,10 +19898,10 @@ func (sh *strictHandler) V1OrganizationRolesCreate(w http.ResponseWriter, r *htt
 }
 
 // V1OrganizationRoleDelete operation middleware
-func (sh *strictHandler) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+func (sh *strictHandler) V1OrganizationRoleDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	var request V1OrganizationRoleDeleteRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.RoleId = roleId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19523,10 +19925,10 @@ func (sh *strictHandler) V1OrganizationRoleDelete(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationRoleGet operation middleware
-func (sh *strictHandler) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+func (sh *strictHandler) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	var request V1OrganizationRoleGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.RoleId = roleId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19550,10 +19952,10 @@ func (sh *strictHandler) V1OrganizationRoleGet(w http.ResponseWriter, r *http.Re
 }
 
 // V1OrganizationRoleUpdate operation middleware
-func (sh *strictHandler) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, id Id, roleId string) {
+func (sh *strictHandler) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, roleId string) {
 	var request V1OrganizationRoleUpdateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.RoleId = roleId
 
 	var body V1OrganizationRoleUpdateJSONRequestBody
@@ -19587,10 +19989,10 @@ func (sh *strictHandler) V1OrganizationRoleUpdate(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationTeamsGet operation middleware
-func (sh *strictHandler) V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, id Id, params V1OrganizationTeamsGetParams) {
+func (sh *strictHandler) V1OrganizationTeamsGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, params V1OrganizationTeamsGetParams) {
 	var request V1OrganizationTeamsGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19614,10 +20016,10 @@ func (sh *strictHandler) V1OrganizationTeamsGet(w http.ResponseWriter, r *http.R
 }
 
 // V1OrganizationTeamsCreate operation middleware
-func (sh *strictHandler) V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1OrganizationTeamsCreate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef) {
 	var request V1OrganizationTeamsCreateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 
 	var body V1OrganizationTeamsCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -19650,10 +20052,10 @@ func (sh *strictHandler) V1OrganizationTeamsCreate(w http.ResponseWriter, r *htt
 }
 
 // V1OrganizationTeamDelete operation middleware
-func (sh *strictHandler) V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+func (sh *strictHandler) V1OrganizationTeamDelete(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	var request V1OrganizationTeamDeleteRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19677,10 +20079,10 @@ func (sh *strictHandler) V1OrganizationTeamDelete(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationTeamGet operation middleware
-func (sh *strictHandler) V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+func (sh *strictHandler) V1OrganizationTeamGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	var request V1OrganizationTeamGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -19704,10 +20106,10 @@ func (sh *strictHandler) V1OrganizationTeamGet(w http.ResponseWriter, r *http.Re
 }
 
 // V1OrganizationTeamUpdate operation middleware
-func (sh *strictHandler) V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+func (sh *strictHandler) V1OrganizationTeamUpdate(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	var request V1OrganizationTeamUpdateRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 
 	var body V1OrganizationTeamUpdateJSONRequestBody
@@ -19741,10 +20143,10 @@ func (sh *strictHandler) V1OrganizationTeamUpdate(w http.ResponseWriter, r *http
 }
 
 // V1OrganizationTeamMembersGet operation middleware
-func (sh *strictHandler) V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, id Id, teamId string, params V1OrganizationTeamMembersGetParams) {
+func (sh *strictHandler) V1OrganizationTeamMembersGet(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, params V1OrganizationTeamMembersGetParams) {
 	var request V1OrganizationTeamMembersGetRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 	request.Params = params
 
@@ -19769,10 +20171,10 @@ func (sh *strictHandler) V1OrganizationTeamMembersGet(w http.ResponseWriter, r *
 }
 
 // V1OrganizationTeamMembersAdd operation middleware
-func (sh *strictHandler) V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, id Id, teamId string) {
+func (sh *strictHandler) V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string) {
 	var request V1OrganizationTeamMembersAddRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 
 	var body V1OrganizationTeamMembersAddJSONRequestBody
@@ -19806,10 +20208,10 @@ func (sh *strictHandler) V1OrganizationTeamMembersAdd(w http.ResponseWriter, r *
 }
 
 // V1OrganizationTeamMemberRemove operation middleware
-func (sh *strictHandler) V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, id Id, teamId string, userId string) {
+func (sh *strictHandler) V1OrganizationTeamMemberRemove(w http.ResponseWriter, r *http.Request, organizationRef OrganizationRef, teamId string, userId string) {
 	var request V1OrganizationTeamMemberRemoveRequestObject
 
-	request.Id = id
+	request.OrganizationRef = organizationRef
 	request.TeamId = teamId
 	request.UserId = userId
 
@@ -19946,10 +20348,10 @@ func (sh *strictHandler) V1PermissionGet(w http.ResponseWriter, r *http.Request,
 }
 
 // V1ProjectDelete operation middleware
-func (sh *strictHandler) V1ProjectDelete(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1ProjectDelete(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectDeleteRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.V1ProjectDelete(ctx, request.(V1ProjectDeleteRequestObject))
@@ -19972,10 +20374,10 @@ func (sh *strictHandler) V1ProjectDelete(w http.ResponseWriter, r *http.Request,
 }
 
 // V1ProjectGet operation middleware
-func (sh *strictHandler) V1ProjectGet(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1ProjectGet(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectGetRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.V1ProjectGet(ctx, request.(V1ProjectGetRequestObject))
@@ -19998,10 +20400,10 @@ func (sh *strictHandler) V1ProjectGet(w http.ResponseWriter, r *http.Request, id
 }
 
 // V1ProjectUpdate operation middleware
-func (sh *strictHandler) V1ProjectUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1ProjectUpdate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectUpdateRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 
 	var body V1ProjectUpdateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -20034,10 +20436,10 @@ func (sh *strictHandler) V1ProjectUpdate(w http.ResponseWriter, r *http.Request,
 }
 
 // V1ProjectsDocumentsGet operation middleware
-func (sh *strictHandler) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsDocumentsGetParams) {
+func (sh *strictHandler) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsDocumentsGetParams) {
 	var request V1ProjectsDocumentsGetRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -20061,10 +20463,10 @@ func (sh *strictHandler) V1ProjectsDocumentsGet(w http.ResponseWriter, r *http.R
 }
 
 // V1ProjectsDocumentsCreate operation middleware
-func (sh *strictHandler) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectsDocumentsCreateRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 
 	var body V1ProjectsDocumentsCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -20097,10 +20499,10 @@ func (sh *strictHandler) V1ProjectsDocumentsCreate(w http.ResponseWriter, r *htt
 }
 
 // V1ProjectsDocumentsUnrelate operation middleware
-func (sh *strictHandler) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+func (sh *strictHandler) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId) {
 	var request V1ProjectsDocumentsUnrelateRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 	request.DocumentId = documentId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -20124,10 +20526,10 @@ func (sh *strictHandler) V1ProjectsDocumentsUnrelate(w http.ResponseWriter, r *h
 }
 
 // V1ProjectsDocumentsRelate operation middleware
-func (sh *strictHandler) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, id Id, documentId DocumentId) {
+func (sh *strictHandler) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *http.Request, projectId ProjectId, documentId DocumentId) {
 	var request V1ProjectsDocumentsRelateRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 	request.DocumentId = documentId
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -20151,10 +20553,10 @@ func (sh *strictHandler) V1ProjectsDocumentsRelate(w http.ResponseWriter, r *htt
 }
 
 // V1ProjectsIssuesGet operation middleware
-func (sh *strictHandler) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, id Id, params V1ProjectsIssuesGetParams) {
+func (sh *strictHandler) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Request, projectId ProjectId, params V1ProjectsIssuesGetParams) {
 	var request V1ProjectsIssuesGetRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
@@ -20178,10 +20580,10 @@ func (sh *strictHandler) V1ProjectsIssuesGet(w http.ResponseWriter, r *http.Requ
 }
 
 // V1ProjectsIssuesCreate operation middleware
-func (sh *strictHandler) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, id Id) {
+func (sh *strictHandler) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectsIssuesCreateRequestObject
 
-	request.Id = id
+	request.ProjectId = projectId
 
 	var body V1ProjectsIssuesCreateJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -20724,275 +21126,286 @@ func (sh *strictHandler) V1UsersIssuesGet(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"/x8A",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

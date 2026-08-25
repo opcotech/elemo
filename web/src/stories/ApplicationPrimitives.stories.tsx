@@ -16,6 +16,7 @@ import { EntitySelect } from "@/components/ui/entity-select";
 import { PropertyList } from "@/components/ui/property-list";
 import { Section } from "@/components/ui/section";
 import { StatusIndicator } from "@/components/ui/status-indicator";
+import { workItemPath } from "@/components/work/utils";
 import {
   mockPeople,
   mockWorkItems,
@@ -81,7 +82,11 @@ export const Populated: Story = {
             {mockWorkItems.slice(0, 3).map((item) => (
               <EntityLink
                 key={item.id}
-                href={`/work/${item.namespaceId}/${item.key}`}
+                href={workItemPath({
+                  organizationSlug: "acme",
+                  namespaceSlug: item.namespaceId.replace(/^namespace-/, ""),
+                  key: item.key,
+                })}
                 type="work-item"
                 title={`${item.key} ${item.title}`}
                 subtitle={item.summary}

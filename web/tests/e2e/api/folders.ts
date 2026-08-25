@@ -7,25 +7,23 @@ import {
 } from "@/lib/api/sdk";
 import type { Folder, FolderCreate } from "@/lib/api/types";
 
-async function createFolder(
+export async function createNamespaceFolder(
   client: Client,
-  create:
-    typeof v1NamespacesFoldersCreate | typeof v1OrganizationsFoldersCreate,
-  ownerId: string,
-  endpoint: string,
+  organizationId: string,
+  namespaceId: string,
   body: FolderCreate
 ): Promise<Folder> {
   const response = await withErrorHandling(
     async () => {
-      return await create({
+      return await v1NamespacesFoldersCreate({
         client,
-        path: { id: ownerId },
+        path: { organizationRef: organizationId, namespaceRef: namespaceId },
         body,
         throwOnError: true,
       });
     },
     {
-      endpoint,
+      endpoint: `/v1/organizations/${organizationId}/namespaces/${namespaceId}/folders`,
       method: "POST",
     }
   );
@@ -33,30 +31,25 @@ async function createFolder(
   return response.data;
 }
 
-export async function createNamespaceFolder(
-  client: Client,
-  namespaceId: string,
-  body: FolderCreate
-): Promise<Folder> {
-  return createFolder(
-    client,
-    v1NamespacesFoldersCreate,
-    namespaceId,
-    `/v1/namespaces/${namespaceId}/folders`,
-    body
-  );
-}
-
 export async function createOrganizationFolder(
   client: Client,
   organizationId: string,
   body: FolderCreate
 ): Promise<Folder> {
-  return createFolder(
-    client,
-    v1OrganizationsFoldersCreate,
-    organizationId,
-    `/v1/organizations/${organizationId}/folders`,
-    body
+  const response = await withErrorHandling(
+    async () => {
+      return await v1OrganizationsFoldersCreate({
+        client,
+        path: { organizationRef: organizationId },
+        body,
+        throwOnError: true,
+      });
+    },
+    {
+      endpoint: `/v1/organizations/${organizationId}/folders`,
+      method: "POST",
+    }
   );
+
+  return response.data;
 }

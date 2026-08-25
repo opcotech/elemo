@@ -14,6 +14,7 @@ import {
   v1IssuesDocumentsGetOptions,
   v1NamespacesIssuesKeyGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import {
   v1IssuesDocumentsCreate,
   v1IssuesDocumentsRelate,
@@ -26,12 +27,14 @@ import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 export function IssueDocumentsSection({
   issueId,
+  organizationId,
   namespaceId,
   issueKey,
   documentCount,
   canCreate,
 }: {
   issueId: string;
+  organizationId: string;
   namespaceId: string;
   issueKey: string;
   documentCount?: number | null;
@@ -63,7 +66,10 @@ export function IssueDocumentsSection({
       });
       await queryClient.invalidateQueries({
         queryKey: v1NamespacesIssuesKeyGetOptions({
-          path: { id: namespaceId, key: issueKey },
+          path: {
+            ...namespaceRefPath(organizationId, namespaceId),
+            key: issueKey,
+          },
         }).queryKey,
       });
       showSuccessToast(
@@ -132,11 +138,15 @@ export function IssueDocumentsSection({
               documentListQueryKey("issue", issueId),
               v1IssueGetOptions({ path: { id: issueId } }).queryKey,
               v1NamespacesIssuesKeyGetOptions({
-                path: { id: namespaceId, key: issueKey },
+                path: {
+                  ...namespaceRefPath(organizationId, namespaceId),
+                  key: issueKey,
+                },
               }).queryKey,
             ]}
           />
           <DocumentLinkDialog
+            organizationId={organizationId}
             namespaceId={namespaceId}
             relatedIds={relatedIds}
             relatedLabel="this work"

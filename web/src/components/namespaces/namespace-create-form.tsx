@@ -10,22 +10,27 @@ import {
   ControlledField,
   Field,
   FieldControl,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
   FieldProvider,
 } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
+import { Input } from "@/components/ui/input";
 import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { ResourceType, withResourceType } from "@/hooks/use-permissions";
+import { useSuggestedSlug } from "@/hooks/use-suggested-slug";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
+import { isConflict, throwIfApiFailed } from "@/lib/api/errors";
 import {
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
   v1PermissionResourceGetOptions,
 } from "@/lib/api/query-options";
+import { organizationRefPath } from "@/lib/api/refs";
 import { zNamespaceCreate } from "@/lib/api/schemas";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type {
@@ -36,8 +41,13 @@ import type {
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
+import { namespaceSlugFormSchema } from "@/lib/slug";
 
-const namespaceFormSchema = createFormSchema(zNamespaceCreate);
+const namespaceFormSchema = createFormSchema(
+  zNamespaceCreate.omit({ slug: true })
+).extend({
+  slug: namespaceSlugFormSchema,
+});
 const namespaceCreateWithOrgSchema = namespaceFormSchema.extend({
   organizationId: z.string().min(1, "Organization is required"),
 });
@@ -48,10 +58,12 @@ type NamespaceCreateWithOrgFormValues = z.infer<
 
 interface NamespaceCreateFormProps {
   organizationId?: string;
+  organizationSlug?: string;
 }
 
 export function NamespaceCreateForm({
   organizationId,
+  organizationSlug,
 }: NamespaceCreateFormProps) {
   const navigate = useNavigate();
   const showOrganizationSelector = !organizationId;
@@ -84,13 +96,19 @@ export function NamespaceCreateForm({
     resolver: zodResolver(namespaceCreateWithOrgSchema),
     defaultValues: {
       name: "",
+      slug: "",
       description: "",
       organizationId: organizationId ?? "",
     },
   });
+  useSuggestedSlug(form);
 
   const selectedOrganizationId =
     organizationId ?? form.watch("organizationId") ?? undefined;
+  const selectedOrganizationSlug =
+    organizationSlug ??
+    writableOrganizations.find((org) => org.id === selectedOrganizationId)
+      ?.slug;
 
   const mutation = useFormMutation<
     { id: string },
@@ -98,11 +116,12 @@ export function NamespaceCreateForm({
     NamespaceCreateWithOrgFormValues
   >({
     mutationFn: async (variables) => {
-      const { data } = await v1OrganizationsNamespacesCreate({
-        ...variables,
-        throwOnError: true,
-      });
-      return data;
+      return throwIfApiFailed(
+        await v1OrganizationsNamespacesCreate({
+          ...variables,
+          throwOnError: false,
+        })
+      );
     },
     form,
     successMessage: "Namespace created",
@@ -110,21 +129,33 @@ export function NamespaceCreateForm({
     queryKeysToInvalidate: selectedOrganizationId
       ? [
           v1OrganizationsNamespacesGetOptions({
-            path: { id: selectedOrganizationId },
+            path: organizationRefPath(selectedOrganizationId),
           }).queryKey,
           v1OrganizationsGetOptions().queryKey,
           accessibleNamespacesQueryKey,
         ]
       : [v1OrganizationsGetOptions().queryKey, accessibleNamespacesQueryKey],
-    navigateOnSuccess: (navigateTo) =>
-      organizationId
-        ? navigateTo({
-            to: "/settings/organizations/$organizationId",
-            params: { organizationId },
-          })
-        : navigateTo({
-            to: "/settings/namespaces",
-          }),
+    onError: (error) => {
+      if (isConflict(error)) {
+        form.setError("slug", {
+          type: "conflict",
+          message: "This slug is already in use in this organization",
+        });
+      }
+    },
+    navigateOnSuccess: (navigateTo) => {
+      const slug = form.getValues("slug");
+      if (selectedOrganizationSlug) {
+        return navigateTo({
+          to: "/settings/organizations/$organizationSlug/namespaces/$namespaceSlug",
+          params: {
+            organizationSlug: selectedOrganizationSlug,
+            namespaceSlug: slug,
+          },
+        });
+      }
+      return navigateTo({ to: "/settings/namespaces" });
+    },
     transformValues: (values) => {
       const { organizationId: formOrganizationId, ...namespaceValues } = values;
       const normalizedBody = normalizeFormData(
@@ -132,25 +163,21 @@ export function NamespaceCreateForm({
         namespaceValues
       ) as NamespaceCreate;
       return {
-        path: {
-          id: organizationId ?? formOrganizationId,
-        },
+        path: organizationRefPath(organizationId ?? formOrganizationId),
         body: normalizedBody,
       };
     },
   });
 
   const handleCancel = () => {
-    if (organizationId) {
+    if (organizationSlug) {
       navigate({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
+        to: "/settings/organizations/$organizationSlug",
+        params: { organizationSlug },
       });
-    } else {
-      navigate({
-        to: "/settings/namespaces",
-      });
+      return;
     }
+    navigate({ to: "/settings/namespaces" });
   };
 
   const isLoadingPermissions = permissionQueries.some((q) => q.isLoading);
@@ -214,6 +241,23 @@ export function NamespaceCreateForm({
             isPending={mutation.isPending}
             namePlaceholder="Enter namespace name"
             descriptionPlaceholder="Enter namespace description"
+          />
+
+          <ControlledField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel>Slug</FieldLabel>
+                <FieldControl>
+                  <Input placeholder="platform" {...field} />
+                </FieldControl>
+                <FieldDescription>
+                  Unique within the organization. Cannot be changed later.
+                </FieldDescription>
+                <FieldError />
+              </Field>
+            )}
           />
         </FieldGroup>
       </FieldProvider>

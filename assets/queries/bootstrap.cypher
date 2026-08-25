@@ -90,17 +90,19 @@ CREATE TEXT INDEX organization_email_idx IF NOT EXISTS FOR (n:Organization) ON (
 CREATE CONSTRAINT organization_id_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.id IS UNIQUE;
 CREATE CONSTRAINT organization_name_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.name IS UNIQUE;
 CREATE CONSTRAINT organization_email_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.email IS UNIQUE;
+CREATE CONSTRAINT organization_slug_unique IF NOT EXISTS FOR (n:Organization) REQUIRE n.slug IS UNIQUE;
 
 // Namespace
 CREATE TEXT INDEX namespace_id_idx IF NOT EXISTS FOR (n:Namespace) ON (n.id);
 CREATE TEXT INDEX namespace_name_idx IF NOT EXISTS FOR (n:Namespace) ON (n.name);
 CREATE CONSTRAINT namespace_id_unique IF NOT EXISTS FOR (n:Namespace) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT namespace_organization_slug_unique IF NOT EXISTS FOR (n:Namespace) REQUIRE (n.organization_id, n.slug) IS UNIQUE;
 
 // Project
 CREATE TEXT INDEX project_id_idx IF NOT EXISTS FOR (n:Project) ON (n.id);
-CREATE TEXT INDEX project_key_idx IF NOT EXISTS FOR (n:Project) ON (n.key);
 CREATE TEXT INDEX project_name_idx IF NOT EXISTS FOR (n:Project) ON (n.name);
 CREATE CONSTRAINT project_id_unique IF NOT EXISTS FOR (n:Project) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT project_namespace_key_unique IF NOT EXISTS FOR (n:Project) REQUIRE (n.namespace_id, n.key) IS UNIQUE;
 
 // Issue
 CREATE TEXT INDEX issue_id_idx IF NOT EXISTS FOR (n:Issue) ON (n.id);

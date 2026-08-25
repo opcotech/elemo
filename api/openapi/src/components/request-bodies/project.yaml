@@ -6,9 +6,10 @@ ProjectCreate:
         properties:
           key:
             type: string
-            description: Key of the project.
+            description: Namespace-scoped project key. Uppercased on write. NEW is reserved.
             minLength: 2
             maxLength: 6
+            pattern: "^[A-Z]{2,6}$"
             example: ENG
           name:
             type: string
@@ -43,12 +44,6 @@ ProjectPatch:
       schema:
         type: object
         properties:
-          key:
-            type: string
-            description: Key of the project.
-            minLength: 2
-            maxLength: 6
-            example: ENG
           name:
             type: string
             description: Name of the project.

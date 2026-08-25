@@ -30,7 +30,7 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
     await loginUser(page, ownerPersona.credentials);
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organization.id);
+    await orgDetailsPage.goto(organization.slug);
     await orgDetailsPage.roles.waitForLoad();
 
     expect(await orgDetailsPage.roles.hasEmptyState()).toBeFalsy();
@@ -80,7 +80,7 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
     await loginUser(page, ownerPersona.credentials);
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organization.id);
+    await orgDetailsPage.goto(organization.slug);
     await orgDetailsPage.roles.waitForLoad();
 
     for (const role of createdRoles) {
@@ -145,7 +145,7 @@ test.describe("@settings.organization-roles Organization Roles List E2E Tests", 
     await loginUser(page, ownerPersona.credentials);
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organization.id);
+    await orgDetailsPage.goto(organization.slug);
     await orgDetailsPage.roles.waitForLoad();
 
     await orgDetailsPage.roles.search(createdRoles[0].name);

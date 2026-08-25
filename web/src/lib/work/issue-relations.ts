@@ -7,6 +7,7 @@ import {
   v1NamespacesIssuesGetOptions,
   v1NamespacesIssuesKeyGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import { v1NamespacesIssuesGet } from "@/lib/api/sdk";
 import type {
   IssueRelation,
@@ -14,6 +15,7 @@ import type {
   IssueRelationKind,
   PartialIssue,
 } from "@/lib/api/types";
+import { workItemPath } from "@/lib/paths";
 
 export const ISSUE_RELATIONS_PAGE_SIZE = 100;
 export const ISSUE_RELATIONS_PREVIEW_PAGE_SIZE = 4;
@@ -106,9 +108,12 @@ export function filterAvailableRelatedIssues<T extends { id: string }>(
   );
 }
 
-export function relatedIssueCatalogQueryOptions(namespaceId: string) {
+export function relatedIssueCatalogQueryOptions(
+  organizationId: string,
+  namespaceId: string
+) {
   const listOptions = v1NamespacesIssuesGetOptions({
-    path: { id: namespaceId },
+    path: namespaceRefPath(organizationId, namespaceId),
     query: { page_size: ISSUE_RELATIONS_PAGE_SIZE },
   });
   return {
@@ -118,7 +123,7 @@ export function relatedIssueCatalogQueryOptions(namespaceId: string) {
     queryFn: async ({ signal }: { signal: AbortSignal }) =>
       collectListedPage(async (pageToken) => {
         const { data } = await v1NamespacesIssuesGet({
-          path: { id: namespaceId },
+          path: namespaceRefPath(organizationId, namespaceId),
           query: {
             page_size: ISSUE_RELATIONS_PAGE_SIZE,
             ...(pageToken ? { page_token: pageToken } : {}),
@@ -133,19 +138,24 @@ export function relatedIssueCatalogQueryOptions(namespaceId: string) {
 
 export function relatedIssueWorkPath(
   related: Pick<PartialIssue, "key" | "namespace">,
-  fallbackNamespaceId: string
+  fallback: { organizationSlug: string; namespaceSlug: string }
 ): string {
-  const namespaceId = related.namespace?.id ?? fallbackNamespaceId;
-  return `/work/${namespaceId}/${related.key}`;
+  return workItemPath({
+    organizationSlug: fallback.organizationSlug,
+    namespaceSlug: related.namespace?.slug ?? fallback.namespaceSlug,
+    issueKey: related.key,
+  });
 }
 
 export function issueRelationInvalidationKeys({
   issueId,
+  organizationId,
   namespaceId,
   issueKey,
   related,
 }: {
   issueId: string;
+  organizationId?: string;
   namespaceId?: string;
   issueKey?: string;
   related?: Pick<PartialIssue, "id" | "key" | "namespace"> | null;
@@ -155,10 +165,13 @@ export function issueRelationInvalidationKeys({
     v1IssueGetOptions({ path: { id: issueId } }).queryKey,
   ];
 
-  if (namespaceId && issueKey) {
+  if (organizationId && namespaceId && issueKey) {
     keys.push(
       v1NamespacesIssuesKeyGetOptions({
-        path: { id: namespaceId, key: issueKey },
+        path: {
+          ...namespaceRefPath(organizationId, namespaceId),
+          key: issueKey,
+        },
       }).queryKey
     );
   }
@@ -169,10 +182,13 @@ export function issueRelationInvalidationKeys({
       v1IssueGetOptions({ path: { id: related.id } }).queryKey
     );
     const relatedNamespaceId = related.namespace?.id;
-    if (relatedNamespaceId && related.key) {
+    if (organizationId && relatedNamespaceId && related.key) {
       keys.push(
         v1NamespacesIssuesKeyGetOptions({
-          path: { id: relatedNamespaceId, key: related.key },
+          path: {
+            ...namespaceRefPath(organizationId, relatedNamespaceId),
+            key: related.key,
+          },
         }).queryKey
       );
     }

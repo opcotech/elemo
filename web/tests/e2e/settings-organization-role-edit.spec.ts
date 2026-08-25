@@ -26,6 +26,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
   let testUser: User;
   let readOnlyUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let roleId: string;
   const initialRoleName = `Test Role ${getRandomString(8)}`;
   const initialRoleDescription = `Test role description ${getRandomString(8)}`;
@@ -46,6 +47,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
       email: `test-role-edit-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     const role = await createRole(apiClient, organizationId, {
       name: initialRoleName,
@@ -78,7 +80,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should display current role details", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const nameField = roleEditPage.roleEditForm.getField("Name");
@@ -90,7 +92,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should allow editing role name", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const newName = `Updated Role ${getRandomString(8)}`;
@@ -100,7 +102,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await waitForSuccessToast(page, "updated");
 
     await expect(page).toHaveURL(
-      new RegExp(`/settings/organizations/${organizationId}`)
+      new RegExp(`/settings/organizations/${organizationSlug}`)
     );
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
@@ -110,7 +112,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should allow editing role description", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const currentNameField = roleEditPage.roleEditForm.getField("Name");
@@ -123,7 +125,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await waitForSuccessToast(page, "updated");
 
     await expect(page).toHaveURL(
-      new RegExp(`/settings/organizations/${organizationId}`)
+      new RegExp(`/settings/organizations/${organizationSlug}`)
     );
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
@@ -134,7 +136,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should allow editing both name and description", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const newName = `Both Updated ${getRandomString(8)}`;
@@ -155,7 +157,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should show validation errors for invalid inputs", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
     const nameError = getFormFieldMessage(page, "Name");
 
@@ -167,7 +169,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should persist role changes after page reload", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const newName = `Reload Role ${getRandomString(8)}`;
@@ -177,7 +179,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await waitForSuccessToast(page, "updated");
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await page.reload();
     await orgDetailsPage.roles.waitForLoad();
     await expect(orgDetailsPage.roles.getRowByRoleName(newName)).toBeVisible();
@@ -185,7 +187,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
 
   test("should preserve unchanged fields when updating", async ({ page }) => {
     const roleEditPage = new SettingsOrganizationRoleEditPage(page);
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const descriptionField = roleEditPage.roleEditForm.getField("Description");
@@ -197,7 +199,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await roleEditPage.roleEditForm.submit("Save Changes");
     await waitForSuccessToast(page, "updated");
 
-    await roleEditPage.goto(organizationId, roleId);
+    await roleEditPage.goto(organizationSlug, roleId);
     await roleEditPage.roleEditForm.waitForLoad();
 
     const nameField = roleEditPage.roleEditForm.getField("Name");
@@ -230,7 +232,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
       password: USER_DEFAULT_PASSWORD,
     });
     let orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
@@ -255,7 +257,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
       password: USER_DEFAULT_PASSWORD,
     });
     orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
@@ -269,7 +271,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
       password: USER_DEFAULT_PASSWORD,
     });
     orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()

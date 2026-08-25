@@ -37,6 +37,7 @@ import {
 } from "@/lib/api/accessible-namespaces";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NamespacesGetOptions } from "@/lib/api/query-options";
+import { namespacePath } from "@/lib/paths";
 import { withRouteErrors } from "@/lib/route-errors";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +150,7 @@ function NamespacesListPage() {
         ...namespace,
         organizationId: namespace.organization.id,
         organizationName: namespace.organization.name,
+        organizationSlug: namespace.organization.slug,
       })),
     [namespacesPage?.items]
   );
@@ -224,7 +226,10 @@ function NamespacesListPage() {
               <EntityLink
                 key={namespace.id}
                 type="namespace"
-                href={`/namespaces/${namespace.id}`}
+                href={namespacePath({
+                  organizationSlug: namespace.organizationSlug,
+                  namespaceSlug: namespace.slug,
+                })}
                 title={namespace.name}
                 subtitle={
                   <NamespaceEntitySubtitle

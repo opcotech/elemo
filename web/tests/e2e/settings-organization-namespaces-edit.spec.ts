@@ -13,7 +13,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -24,6 +24,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let ownerApiClient: Client;
 
   const getFullNamespaceName = () => `Namespace ${getRandomString(8)}`;
@@ -44,6 +45,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
       email: `namespaces-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -91,15 +93,22 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
   const createNamespaceViaApi = async (overrides?: {
     name?: string;
     description?: string;
-  }): Promise<{ id: string; name: string; description: string }> => {
+  }): Promise<{
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+  }> => {
     const name = overrides?.name ?? getFullNamespaceName();
     const description =
       overrides?.description ?? `Namespace description ${getRandomString(8)}`;
+    const slug = getRandomSlug("ns");
 
     const response = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug,
         name,
         description,
       },
@@ -107,6 +116,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     });
     return {
       id: response.data.id ?? "",
+      slug,
       name,
       description,
     };
@@ -134,7 +144,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespace.id);
+    await namespaceDetailsPage.goto(organizationSlug, namespace.slug);
     await namespaceDetailsPage.waitForLoad();
 
     expect(await namespaceDetailsPage.getTitleText()).toContain(namespace.name);
@@ -167,7 +177,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     });
 
     const namespaceEditPage = new SettingsOrganizationNamespaceEditPage(page);
-    await namespaceEditPage.goto(organizationId, namespace.id);
+    await namespaceEditPage.goto(organizationSlug, namespace.slug);
     await expect(namespaceEditPage.namespaceForm.getField("Name")).toHaveValue(
       namespace.name
     );
@@ -185,7 +195,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
     await waitForSuccessToast(page, "Namespace updated");
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     await expect(
       orgDetailsPage.namespaces.getRowByNamespaceName(updatedName)
@@ -226,7 +236,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     const namespaceRow = orgDetailsPage.namespaces.getRowByNamespaceName(
@@ -244,7 +254,7 @@ test.describe("@settings.organization-namespaces-edit Organization Namespaces Ed
       email: readerUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     const readerNamespaceRow = orgDetailsPage.namespaces.getRowByNamespaceName(

@@ -27,42 +27,42 @@ import { Route as OrganizationsJoinRouteImport } from './routes/organizations/jo
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated.documents.index'
 import { Route as AuthenticatedDocumentsDocumentIdRouteImport } from './routes/_authenticated.documents.$documentId'
 import { Route as AuthenticatedNamespacesIndexRouteImport } from './routes/_authenticated.namespaces.index'
-import { Route as AuthenticatedNamespacesNamespaceIdRouteImport } from './routes/_authenticated.namespaces.$namespaceId'
 import { Route as AuthenticatedOrganizationsIndexRouteImport } from './routes/_authenticated.organizations.index'
-import { Route as AuthenticatedOrganizationsOrganizationIdRouteImport } from './routes/_authenticated.organizations.$organizationId'
+import { Route as AuthenticatedOrganizationsOrganizationSlugRouteImport } from './routes/_authenticated.organizations.$organizationSlug'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated.settings/index'
 import { Route as AuthenticatedSettingsSecurityRouteImport } from './routes/_authenticated.settings/security'
-import { Route as AuthenticatedNamespacesNamespaceIdIndexRouteImport } from './routes/_authenticated.namespaces.$namespaceId.index'
-import { Route as AuthenticatedNamespacesNamespaceIdAdministrationRouteImport } from './routes/_authenticated.namespaces.$namespaceId.administration'
-import { Route as AuthenticatedNamespacesNamespaceIdDocumentsRouteImport } from './routes/_authenticated.namespaces.$namespaceId.documents'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects'
-import { Route as AuthenticatedNamespacesNamespaceIdWorkRouteImport } from './routes/_authenticated.namespaces.$namespaceId.work'
-import { Route as AuthenticatedOrganizationsOrganizationIdIndexRouteImport } from './routes/_authenticated.organizations.$organizationId.index'
-import { Route as AuthenticatedOrganizationsOrganizationIdDocumentsRouteImport } from './routes/_authenticated.organizations.$organizationId.documents'
+import { Route as AuthenticatedOrganizationsOrganizationSlugIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.index'
+import { Route as AuthenticatedOrganizationsOrganizationSlugDocumentsRouteImport } from './routes/_authenticated.organizations.$organizationSlug.documents'
 import { Route as AuthenticatedRelationsEntityTypeEntityIdRouteImport } from './routes/_authenticated.relations.$entityType.$entityId'
 import { Route as AuthenticatedSettingsNamespacesIndexRouteImport } from './routes/_authenticated.settings/namespaces/index'
 import { Route as AuthenticatedSettingsNamespacesNewRouteImport } from './routes/_authenticated.settings/namespaces/new'
 import { Route as AuthenticatedSettingsOrganizationsIndexRouteImport } from './routes/_authenticated.settings/organizations/index'
 import { Route as AuthenticatedSettingsOrganizationsNewRouteImport } from './routes/_authenticated.settings/organizations/new'
-import { Route as AuthenticatedWorkNamespaceIdIssueKeyRouteImport } from './routes/_authenticated.work.$namespaceId.$issueKey'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsIndexRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.index'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/index'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/edit'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId.index'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId.activity'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId.documents'
-import { Route as AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRouteImport } from './routes/_authenticated.namespaces.$namespaceId.projects.$projectId.work'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/new'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/roles/new'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/teams/new'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/$namespaceId/index'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/roles/$roleId/edit'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/teams/$teamId/edit'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/index'
-import { Route as AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/edit'
+import { Route as AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRouteImport } from './routes/_authenticated.work.$organizationSlug.$namespaceSlug.$issueKey'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.index'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.administration'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.documents'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.work'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/new'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/roles/new'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/teams/new'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.index'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/roles/$roleId/edit'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/teams/$teamId/edit'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey.index'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey.activity'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey.documents'
+import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey.work'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -158,22 +158,16 @@ const AuthenticatedNamespacesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedNamespacesRoute,
   } as any)
-const AuthenticatedNamespacesNamespaceIdRoute =
-  AuthenticatedNamespacesNamespaceIdRouteImport.update({
-    id: '/$namespaceId',
-    path: '/$namespaceId',
-    getParentRoute: () => AuthenticatedNamespacesRoute,
-  } as any)
 const AuthenticatedOrganizationsIndexRoute =
   AuthenticatedOrganizationsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedOrganizationsRoute,
   } as any)
-const AuthenticatedOrganizationsOrganizationIdRoute =
-  AuthenticatedOrganizationsOrganizationIdRouteImport.update({
-    id: '/$organizationId',
-    path: '/$organizationId',
+const AuthenticatedOrganizationsOrganizationSlugRoute =
+  AuthenticatedOrganizationsOrganizationSlugRouteImport.update({
+    id: '/$organizationSlug',
+    path: '/$organizationSlug',
     getParentRoute: () => AuthenticatedOrganizationsRoute,
   } as any)
 const AuthenticatedSettingsIndexRoute =
@@ -188,47 +182,17 @@ const AuthenticatedSettingsSecurityRoute =
     path: '/security',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
-const AuthenticatedNamespacesNamespaceIdIndexRoute =
-  AuthenticatedNamespacesNamespaceIdIndexRouteImport.update({
+const AuthenticatedOrganizationsOrganizationSlugIndexRoute =
+  AuthenticatedOrganizationsOrganizationSlugIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdRoute,
+    getParentRoute: () => AuthenticatedOrganizationsOrganizationSlugRoute,
   } as any)
-const AuthenticatedNamespacesNamespaceIdAdministrationRoute =
-  AuthenticatedNamespacesNamespaceIdAdministrationRouteImport.update({
-    id: '/administration',
-    path: '/administration',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdDocumentsRoute =
-  AuthenticatedNamespacesNamespaceIdDocumentsRouteImport.update({
+const AuthenticatedOrganizationsOrganizationSlugDocumentsRoute =
+  AuthenticatedOrganizationsOrganizationSlugDocumentsRouteImport.update({
     id: '/documents',
     path: '/documents',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdProjectsRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsRouteImport.update({
-    id: '/projects',
-    path: '/projects',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdWorkRoute =
-  AuthenticatedNamespacesNamespaceIdWorkRouteImport.update({
-    id: '/work',
-    path: '/work',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdRoute,
-  } as any)
-const AuthenticatedOrganizationsOrganizationIdIndexRoute =
-  AuthenticatedOrganizationsOrganizationIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedOrganizationsOrganizationIdRoute,
-  } as any)
-const AuthenticatedOrganizationsOrganizationIdDocumentsRoute =
-  AuthenticatedOrganizationsOrganizationIdDocumentsRouteImport.update({
-    id: '/documents',
-    path: '/documents',
-    getParentRoute: () => AuthenticatedOrganizationsOrganizationIdRoute,
+    getParentRoute: () => AuthenticatedOrganizationsOrganizationSlugRoute,
   } as any)
 const AuthenticatedRelationsEntityTypeEntityIdRoute =
   AuthenticatedRelationsEntityTypeEntityIdRouteImport.update({
@@ -260,141 +224,204 @@ const AuthenticatedSettingsOrganizationsNewRoute =
     path: '/organizations/new',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
-const AuthenticatedWorkNamespaceIdIssueKeyRoute =
-  AuthenticatedWorkNamespaceIdIssueKeyRouteImport.update({
-    id: '/work/$namespaceId/$issueKey',
-    path: '/work/$namespaceId/$issueKey',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdProjectsIndexRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdProjectsRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteImport.update({
-    id: '/$projectId',
-    path: '/$projectId',
-    getParentRoute: () => AuthenticatedNamespacesNamespaceIdProjectsRoute,
-  } as any)
-const AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdIndexRouteImport.update({
-    id: '/organizations/$organizationId/',
-    path: '/organizations/$organizationId/',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedSettingsOrganizationsOrganizationIdEditRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdEditRouteImport.update({
-    id: '/organizations/$organizationId/edit',
-    path: '/organizations/$organizationId/edit',
-    getParentRoute: () => AuthenticatedSettingsRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () =>
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute,
-  } as any)
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRouteImport.update(
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteImport.update(
     {
-      id: '/activity',
-      path: '/activity',
-      getParentRoute: () =>
-        AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute,
+      id: '/namespaces/$namespaceSlug',
+      path: '/namespaces/$namespaceSlug',
+      getParentRoute: () => AuthenticatedOrganizationsOrganizationSlugRoute,
     } as any,
   )
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugIndexRouteImport.update({
+    id: '/organizations/$organizationSlug/',
+    path: '/organizations/$organizationSlug/',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugEditRouteImport.update({
+    id: '/organizations/$organizationSlug/edit',
+    path: '/organizations/$organizationSlug/edit',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute =
+  AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRouteImport.update({
+    id: '/work/$organizationSlug/$namespaceSlug/$issueKey',
+    path: '/work/$organizationSlug/$namespaceSlug/$issueKey',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport.update(
+    {
+      id: '/',
+      path: '/',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRouteImport.update(
+    {
+      id: '/administration',
+      path: '/administration',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRouteImport.update(
     {
       id: '/documents',
       path: '/documents',
       getParentRoute: () =>
-        AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute,
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute,
     } as any,
   )
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRouteImport.update({
-    id: '/work',
-    path: '/work',
-    getParentRoute: () =>
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute,
-  } as any)
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRouteImport.update(
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/new',
-      path: '/organizations/$organizationId/namespaces/new',
+      id: '/projects',
+      path: '/projects',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRouteImport.update(
+    {
+      id: '/work',
+      path: '/work',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute,
+    } as any,
+  )
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/namespaces/new',
+      path: '/organizations/$organizationSlug/namespaces/new',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRouteImport.update({
-    id: '/organizations/$organizationId/roles/new',
-    path: '/organizations/$organizationId/roles/new',
+const AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRouteImport.update({
+    id: '/organizations/$organizationSlug/roles/new',
+    path: '/organizations/$organizationSlug/roles/new',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
-const AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRouteImport.update({
-    id: '/organizations/$organizationId/teams/new',
-    path: '/organizations/$organizationId/teams/new',
+const AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRouteImport.update({
+    id: '/organizations/$organizationSlug/teams/new',
+    path: '/organizations/$organizationSlug/teams/new',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRouteImport.update(
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/$namespaceId/',
-      path: '/organizations/$organizationId/namespaces/$namespaceId/',
+      id: '/',
+      path: '/',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteImport.update(
+    {
+      id: '/$projectKey',
+      path: '/$projectKey',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute,
+    } as any,
+  )
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/$namespaceId/edit',
-      path: '/organizations/$organizationId/namespaces/$namespaceId/edit',
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/edit',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/edit',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRouteImport.update(
     {
-      id: '/organizations/$organizationId/roles/$roleId/edit',
-      path: '/organizations/$organizationId/roles/$roleId/edit',
+      id: '/organizations/$organizationSlug/roles/$roleId/edit',
+      path: '/organizations/$organizationSlug/roles/$roleId/edit',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRouteImport.update(
     {
-      id: '/organizations/$organizationId/teams/$teamId/edit',
-      path: '/organizations/$organizationId/teams/$teamId/edit',
+      id: '/organizations/$organizationSlug/teams/$teamId/edit',
+      path: '/organizations/$organizationSlug/teams/$teamId/edit',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRouteImport.update(
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/$namespaceId/projects/new',
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/new',
+      id: '/',
+      path: '/',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRouteImport.update(
+    {
+      id: '/activity',
+      path: '/activity',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRouteImport.update(
+    {
+      id: '/documents',
+      path: '/documents',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute,
+    } as any,
+  )
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRouteImport.update(
+    {
+      id: '/work',
+      path: '/work',
+      getParentRoute: () =>
+        AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute,
+    } as any,
+  )
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/',
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/',
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
-const AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute =
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRouteImport.update(
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRouteImport.update(
     {
-      id: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit',
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit',
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit',
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
@@ -415,44 +442,44 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/organizations/join': typeof OrganizationsJoinRoute
   '/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
-  '/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdRouteWithChildren
-  '/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdRouteWithChildren
+  '/organizations/$organizationSlug': typeof AuthenticatedOrganizationsOrganizationSlugRouteWithChildren
   '/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/namespaces/': typeof AuthenticatedNamespacesIndexRoute
   '/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/namespaces/$namespaceId/administration': typeof AuthenticatedNamespacesNamespaceIdAdministrationRoute
-  '/namespaces/$namespaceId/documents': typeof AuthenticatedNamespacesNamespaceIdDocumentsRoute
-  '/namespaces/$namespaceId/projects': typeof AuthenticatedNamespacesNamespaceIdProjectsRouteWithChildren
-  '/namespaces/$namespaceId/work': typeof AuthenticatedNamespacesNamespaceIdWorkRoute
-  '/organizations/$organizationId/documents': typeof AuthenticatedOrganizationsOrganizationIdDocumentsRoute
+  '/organizations/$organizationSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugDocumentsRoute
   '/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
-  '/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
-  '/namespaces/$namespaceId/': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
-  '/organizations/$organizationId/': typeof AuthenticatedOrganizationsOrganizationIdIndexRoute
+  '/organizations/$organizationSlug/': typeof AuthenticatedOrganizationsOrganizationSlugIndexRoute
   '/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
-  '/namespaces/$namespaceId/projects/$projectId': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteWithChildren
-  '/settings/organizations/$organizationId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdEditRoute
-  '/namespaces/$namespaceId/projects/': typeof AuthenticatedNamespacesNamespaceIdProjectsIndexRoute
-  '/settings/organizations/$organizationId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute
-  '/namespaces/$namespaceId/projects/$projectId/activity': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute
-  '/namespaces/$namespaceId/projects/$projectId/documents': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute
-  '/namespaces/$namespaceId/projects/$projectId/work': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute
-  '/settings/organizations/$organizationId/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute
-  '/settings/organizations/$organizationId/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute
-  '/settings/organizations/$organizationId/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute
-  '/namespaces/$namespaceId/projects/$projectId/': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute
-  '/settings/organizations/$organizationId/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute
-  '/settings/organizations/$organizationId/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren
+  '/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
+  '/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
+  '/settings/organizations/$organizationSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/administration': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteWithChildren
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute
+  '/settings/organizations/$organizationSlug/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute
+  '/settings/organizations/$organizationSlug/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
+  '/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
+  '/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
+  '/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
@@ -471,35 +498,35 @@ export interface FileRoutesByTo {
   '/namespaces': typeof AuthenticatedNamespacesIndexRoute
   '/organizations': typeof AuthenticatedOrganizationsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
-  '/namespaces/$namespaceId/administration': typeof AuthenticatedNamespacesNamespaceIdAdministrationRoute
-  '/namespaces/$namespaceId/documents': typeof AuthenticatedNamespacesNamespaceIdDocumentsRoute
-  '/namespaces/$namespaceId/work': typeof AuthenticatedNamespacesNamespaceIdWorkRoute
-  '/organizations/$organizationId/documents': typeof AuthenticatedOrganizationsOrganizationIdDocumentsRoute
+  '/organizations/$organizationSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugDocumentsRoute
   '/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
-  '/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
-  '/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
-  '/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdIndexRoute
+  '/organizations/$organizationSlug': typeof AuthenticatedOrganizationsOrganizationSlugIndexRoute
   '/settings/namespaces': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations': typeof AuthenticatedSettingsOrganizationsIndexRoute
-  '/settings/organizations/$organizationId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdEditRoute
-  '/namespaces/$namespaceId/projects': typeof AuthenticatedNamespacesNamespaceIdProjectsIndexRoute
-  '/settings/organizations/$organizationId': typeof AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute
-  '/namespaces/$namespaceId/projects/$projectId/activity': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute
-  '/namespaces/$namespaceId/projects/$projectId/documents': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute
-  '/namespaces/$namespaceId/projects/$projectId/work': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute
-  '/settings/organizations/$organizationId/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute
-  '/settings/organizations/$organizationId/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute
-  '/settings/organizations/$organizationId/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute
-  '/namespaces/$namespaceId/projects/$projectId': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute
-  '/settings/organizations/$organizationId/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute
-  '/settings/organizations/$organizationId/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute
-  '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute
+  '/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
+  '/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
+  '/settings/organizations/$organizationSlug': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/administration': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute
+  '/settings/organizations/$organizationSlug/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute
+  '/settings/organizations/$organizationSlug/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
+  '/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
+  '/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
+  '/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
+  '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -519,44 +546,44 @@ export interface FileRoutesById {
   '/organizations/join': typeof OrganizationsJoinRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/documents/$documentId': typeof AuthenticatedDocumentsDocumentIdRoute
-  '/_authenticated/namespaces/$namespaceId': typeof AuthenticatedNamespacesNamespaceIdRouteWithChildren
-  '/_authenticated/organizations/$organizationId': typeof AuthenticatedOrganizationsOrganizationIdRouteWithChildren
+  '/_authenticated/organizations/$organizationSlug': typeof AuthenticatedOrganizationsOrganizationSlugRouteWithChildren
   '/_authenticated/settings/security': typeof AuthenticatedSettingsSecurityRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/namespaces/': typeof AuthenticatedNamespacesIndexRoute
   '/_authenticated/organizations/': typeof AuthenticatedOrganizationsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/_authenticated/namespaces/$namespaceId/administration': typeof AuthenticatedNamespacesNamespaceIdAdministrationRoute
-  '/_authenticated/namespaces/$namespaceId/documents': typeof AuthenticatedNamespacesNamespaceIdDocumentsRoute
-  '/_authenticated/namespaces/$namespaceId/projects': typeof AuthenticatedNamespacesNamespaceIdProjectsRouteWithChildren
-  '/_authenticated/namespaces/$namespaceId/work': typeof AuthenticatedNamespacesNamespaceIdWorkRoute
-  '/_authenticated/organizations/$organizationId/documents': typeof AuthenticatedOrganizationsOrganizationIdDocumentsRoute
+  '/_authenticated/organizations/$organizationSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugDocumentsRoute
   '/_authenticated/relations/$entityType/$entityId': typeof AuthenticatedRelationsEntityTypeEntityIdRoute
   '/_authenticated/settings/namespaces/new': typeof AuthenticatedSettingsNamespacesNewRoute
   '/_authenticated/settings/organizations/new': typeof AuthenticatedSettingsOrganizationsNewRoute
-  '/_authenticated/work/$namespaceId/$issueKey': typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
-  '/_authenticated/namespaces/$namespaceId/': typeof AuthenticatedNamespacesNamespaceIdIndexRoute
-  '/_authenticated/organizations/$organizationId/': typeof AuthenticatedOrganizationsOrganizationIdIndexRoute
+  '/_authenticated/organizations/$organizationSlug/': typeof AuthenticatedOrganizationsOrganizationSlugIndexRoute
   '/_authenticated/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/_authenticated/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
-  '/_authenticated/namespaces/$namespaceId/projects/$projectId': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteWithChildren
-  '/_authenticated/settings/organizations/$organizationId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdEditRoute
-  '/_authenticated/namespaces/$namespaceId/projects/': typeof AuthenticatedNamespacesNamespaceIdProjectsIndexRoute
-  '/_authenticated/settings/organizations/$organizationId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute
-  '/_authenticated/namespaces/$namespaceId/projects/$projectId/activity': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute
-  '/_authenticated/namespaces/$namespaceId/projects/$projectId/documents': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute
-  '/_authenticated/namespaces/$namespaceId/projects/$projectId/work': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute
-  '/_authenticated/settings/organizations/$organizationId/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute
-  '/_authenticated/settings/organizations/$organizationId/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute
-  '/_authenticated/namespaces/$namespaceId/projects/$projectId/': typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute
-  '/_authenticated/settings/organizations/$organizationId/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute
-  '/_authenticated/settings/organizations/$organizationId/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute
-  '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/': typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren
+  '/_authenticated/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
+  '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
+  '/_authenticated/settings/organizations/$organizationSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/administration': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteWithChildren
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute
+  '/_authenticated/settings/organizations/$organizationSlug/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
+  '/_authenticated/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
+  '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
+  '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
+  '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -576,44 +603,44 @@ export interface FileRouteTypes {
     | '/settings'
     | '/organizations/join'
     | '/documents/$documentId'
-    | '/namespaces/$namespaceId'
-    | '/organizations/$organizationId'
+    | '/organizations/$organizationSlug'
     | '/settings/security'
     | '/documents/'
     | '/namespaces/'
     | '/organizations/'
     | '/settings/'
-    | '/namespaces/$namespaceId/administration'
-    | '/namespaces/$namespaceId/documents'
-    | '/namespaces/$namespaceId/projects'
-    | '/namespaces/$namespaceId/work'
-    | '/organizations/$organizationId/documents'
+    | '/organizations/$organizationSlug/documents'
     | '/relations/$entityType/$entityId'
     | '/settings/namespaces/new'
     | '/settings/organizations/new'
-    | '/work/$namespaceId/$issueKey'
-    | '/namespaces/$namespaceId/'
-    | '/organizations/$organizationId/'
+    | '/organizations/$organizationSlug/'
     | '/settings/namespaces/'
     | '/settings/organizations/'
-    | '/namespaces/$namespaceId/projects/$projectId'
-    | '/settings/organizations/$organizationId/edit'
-    | '/namespaces/$namespaceId/projects/'
-    | '/settings/organizations/$organizationId/'
-    | '/namespaces/$namespaceId/projects/$projectId/activity'
-    | '/namespaces/$namespaceId/projects/$projectId/documents'
-    | '/namespaces/$namespaceId/projects/$projectId/work'
-    | '/settings/organizations/$organizationId/namespaces/new'
-    | '/settings/organizations/$organizationId/roles/new'
-    | '/settings/organizations/$organizationId/teams/new'
-    | '/namespaces/$namespaceId/projects/$projectId/'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-    | '/settings/organizations/$organizationId/roles/$roleId/edit'
-    | '/settings/organizations/$organizationId/teams/$teamId/edit'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/settings/organizations/$organizationSlug/edit'
+    | '/work/$organizationSlug/$namespaceSlug/$issueKey'
+    | '/settings/organizations/$organizationSlug/'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/administration'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/documents'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/work'
+    | '/settings/organizations/$organizationSlug/namespaces/new'
+    | '/settings/organizations/$organizationSlug/roles/new'
+    | '/settings/organizations/$organizationSlug/teams/new'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+    | '/settings/organizations/$organizationSlug/roles/$roleId/edit'
+    | '/settings/organizations/$organizationSlug/teams/$teamId/edit'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -632,35 +659,35 @@ export interface FileRouteTypes {
     | '/namespaces'
     | '/organizations'
     | '/settings'
-    | '/namespaces/$namespaceId/administration'
-    | '/namespaces/$namespaceId/documents'
-    | '/namespaces/$namespaceId/work'
-    | '/organizations/$organizationId/documents'
+    | '/organizations/$organizationSlug/documents'
     | '/relations/$entityType/$entityId'
     | '/settings/namespaces/new'
     | '/settings/organizations/new'
-    | '/work/$namespaceId/$issueKey'
-    | '/namespaces/$namespaceId'
-    | '/organizations/$organizationId'
+    | '/organizations/$organizationSlug'
     | '/settings/namespaces'
     | '/settings/organizations'
-    | '/settings/organizations/$organizationId/edit'
-    | '/namespaces/$namespaceId/projects'
-    | '/settings/organizations/$organizationId'
-    | '/namespaces/$namespaceId/projects/$projectId/activity'
-    | '/namespaces/$namespaceId/projects/$projectId/documents'
-    | '/namespaces/$namespaceId/projects/$projectId/work'
-    | '/settings/organizations/$organizationId/namespaces/new'
-    | '/settings/organizations/$organizationId/roles/new'
-    | '/settings/organizations/$organizationId/teams/new'
-    | '/namespaces/$namespaceId/projects/$projectId'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-    | '/settings/organizations/$organizationId/roles/$roleId/edit'
-    | '/settings/organizations/$organizationId/teams/$teamId/edit'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-    | '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId'
+    | '/settings/organizations/$organizationSlug/edit'
+    | '/work/$organizationSlug/$namespaceSlug/$issueKey'
+    | '/settings/organizations/$organizationSlug'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/administration'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/documents'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/work'
+    | '/settings/organizations/$organizationSlug/namespaces/new'
+    | '/settings/organizations/$organizationSlug/roles/new'
+    | '/settings/organizations/$organizationSlug/teams/new'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+    | '/settings/organizations/$organizationSlug/roles/$roleId/edit'
+    | '/settings/organizations/$organizationSlug/teams/$teamId/edit'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+    | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
   id:
     | '__root__'
     | '/_authenticated'
@@ -679,44 +706,44 @@ export interface FileRouteTypes {
     | '/organizations/join'
     | '/_authenticated/'
     | '/_authenticated/documents/$documentId'
-    | '/_authenticated/namespaces/$namespaceId'
-    | '/_authenticated/organizations/$organizationId'
+    | '/_authenticated/organizations/$organizationSlug'
     | '/_authenticated/settings/security'
     | '/_authenticated/documents/'
     | '/_authenticated/namespaces/'
     | '/_authenticated/organizations/'
     | '/_authenticated/settings/'
-    | '/_authenticated/namespaces/$namespaceId/administration'
-    | '/_authenticated/namespaces/$namespaceId/documents'
-    | '/_authenticated/namespaces/$namespaceId/projects'
-    | '/_authenticated/namespaces/$namespaceId/work'
-    | '/_authenticated/organizations/$organizationId/documents'
+    | '/_authenticated/organizations/$organizationSlug/documents'
     | '/_authenticated/relations/$entityType/$entityId'
     | '/_authenticated/settings/namespaces/new'
     | '/_authenticated/settings/organizations/new'
-    | '/_authenticated/work/$namespaceId/$issueKey'
-    | '/_authenticated/namespaces/$namespaceId/'
-    | '/_authenticated/organizations/$organizationId/'
+    | '/_authenticated/organizations/$organizationSlug/'
     | '/_authenticated/settings/namespaces/'
     | '/_authenticated/settings/organizations/'
-    | '/_authenticated/namespaces/$namespaceId/projects/$projectId'
-    | '/_authenticated/settings/organizations/$organizationId/edit'
-    | '/_authenticated/namespaces/$namespaceId/projects/'
-    | '/_authenticated/settings/organizations/$organizationId/'
-    | '/_authenticated/namespaces/$namespaceId/projects/$projectId/activity'
-    | '/_authenticated/namespaces/$namespaceId/projects/$projectId/documents'
-    | '/_authenticated/namespaces/$namespaceId/projects/$projectId/work'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/new'
-    | '/_authenticated/settings/organizations/$organizationId/roles/new'
-    | '/_authenticated/settings/organizations/$organizationId/teams/new'
-    | '/_authenticated/namespaces/$namespaceId/projects/$projectId/'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-    | '/_authenticated/settings/organizations/$organizationId/roles/$roleId/edit'
-    | '/_authenticated/settings/organizations/$organizationId/teams/$teamId/edit'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-    | '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/_authenticated/settings/organizations/$organizationSlug/edit'
+    | '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey'
+    | '/_authenticated/settings/organizations/$organizationSlug/'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/administration'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/documents'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/work'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/new'
+    | '/_authenticated/settings/organizations/$organizationSlug/roles/new'
+    | '/_authenticated/settings/organizations/$organizationSlug/teams/new'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+    | '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit'
+    | '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+    | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -855,13 +882,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNamespacesIndexRouteImport
       parentRoute: typeof AuthenticatedNamespacesRoute
     }
-    '/_authenticated/namespaces/$namespaceId': {
-      id: '/_authenticated/namespaces/$namespaceId'
-      path: '/$namespaceId'
-      fullPath: '/namespaces/$namespaceId'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdRouteImport
-      parentRoute: typeof AuthenticatedNamespacesRoute
-    }
     '/_authenticated/organizations/': {
       id: '/_authenticated/organizations/'
       path: '/'
@@ -869,11 +889,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganizationsIndexRouteImport
       parentRoute: typeof AuthenticatedOrganizationsRoute
     }
-    '/_authenticated/organizations/$organizationId': {
-      id: '/_authenticated/organizations/$organizationId'
-      path: '/$organizationId'
-      fullPath: '/organizations/$organizationId'
-      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationIdRouteImport
+    '/_authenticated/organizations/$organizationSlug': {
+      id: '/_authenticated/organizations/$organizationSlug'
+      path: '/$organizationSlug'
+      fullPath: '/organizations/$organizationSlug'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugRouteImport
       parentRoute: typeof AuthenticatedOrganizationsRoute
     }
     '/_authenticated/settings/': {
@@ -890,54 +910,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsSecurityRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/namespaces/$namespaceId/': {
-      id: '/_authenticated/namespaces/$namespaceId/'
+    '/_authenticated/organizations/$organizationSlug/': {
+      id: '/_authenticated/organizations/$organizationSlug/'
       path: '/'
-      fullPath: '/namespaces/$namespaceId/'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdIndexRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdRoute
+      fullPath: '/organizations/$organizationSlug/'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugRoute
     }
-    '/_authenticated/namespaces/$namespaceId/administration': {
-      id: '/_authenticated/namespaces/$namespaceId/administration'
-      path: '/administration'
-      fullPath: '/namespaces/$namespaceId/administration'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdAdministrationRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/documents': {
-      id: '/_authenticated/namespaces/$namespaceId/documents'
+    '/_authenticated/organizations/$organizationSlug/documents': {
+      id: '/_authenticated/organizations/$organizationSlug/documents'
       path: '/documents'
-      fullPath: '/namespaces/$namespaceId/documents'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdDocumentsRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/projects': {
-      id: '/_authenticated/namespaces/$namespaceId/projects'
-      path: '/projects'
-      fullPath: '/namespaces/$namespaceId/projects'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/work': {
-      id: '/_authenticated/namespaces/$namespaceId/work'
-      path: '/work'
-      fullPath: '/namespaces/$namespaceId/work'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdWorkRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdRoute
-    }
-    '/_authenticated/organizations/$organizationId/': {
-      id: '/_authenticated/organizations/$organizationId/'
-      path: '/'
-      fullPath: '/organizations/$organizationId/'
-      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationIdIndexRouteImport
-      parentRoute: typeof AuthenticatedOrganizationsOrganizationIdRoute
-    }
-    '/_authenticated/organizations/$organizationId/documents': {
-      id: '/_authenticated/organizations/$organizationId/documents'
-      path: '/documents'
-      fullPath: '/organizations/$organizationId/documents'
-      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationIdDocumentsRouteImport
-      parentRoute: typeof AuthenticatedOrganizationsOrganizationIdRoute
+      fullPath: '/organizations/$organizationSlug/documents'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugDocumentsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugRoute
     }
     '/_authenticated/relations/$entityType/$entityId': {
       id: '/_authenticated/relations/$entityType/$entityId'
@@ -974,137 +959,179 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsOrganizationsNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/work/$namespaceId/$issueKey': {
-      id: '/_authenticated/work/$namespaceId/$issueKey'
-      path: '/work/$namespaceId/$issueKey'
-      fullPath: '/work/$namespaceId/$issueKey'
-      preLoaderRoute: typeof AuthenticatedWorkNamespaceIdIssueKeyRouteImport
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug'
+      path: '/namespaces/$namespaceSlug'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugRoute
+    }
+    '/_authenticated/settings/organizations/$organizationSlug/': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/'
+      path: '/organizations/$organizationSlug'
+      fullPath: '/settings/organizations/$organizationSlug/'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/organizations/$organizationSlug/edit': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/edit'
+      path: '/organizations/$organizationSlug/edit'
+      fullPath: '/settings/organizations/$organizationSlug/edit'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey': {
+      id: '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey'
+      path: '/work/$organizationSlug/$namespaceSlug/$issueKey'
+      fullPath: '/work/$organizationSlug/$namespaceSlug/$issueKey'
+      preLoaderRoute: typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/namespaces/$namespaceId/projects/': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/'
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/'
       path: '/'
-      fullPath: '/namespaces/$namespaceId/projects/'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsIndexRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsRoute
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute
     }
-    '/_authenticated/namespaces/$namespaceId/projects/$projectId': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/$projectId'
-      path: '/$projectId'
-      fullPath: '/namespaces/$namespaceId/projects/$projectId'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsRoute
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/administration': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/administration'
+      path: '/administration'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/administration'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/': {
-      id: '/_authenticated/settings/organizations/$organizationId/'
-      path: '/organizations/$organizationId'
-      fullPath: '/settings/organizations/$organizationId/'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdIndexRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/settings/organizations/$organizationId/edit': {
-      id: '/_authenticated/settings/organizations/$organizationId/edit'
-      path: '/organizations/$organizationId/edit'
-      fullPath: '/settings/organizations/$organizationId/edit'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdEditRouteImport
-      parentRoute: typeof AuthenticatedSettingsRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/projects/$projectId/': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/$projectId/'
-      path: '/'
-      fullPath: '/namespaces/$namespaceId/projects/$projectId/'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/projects/$projectId/activity': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/$projectId/activity'
-      path: '/activity'
-      fullPath: '/namespaces/$namespaceId/projects/$projectId/activity'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute
-    }
-    '/_authenticated/namespaces/$namespaceId/projects/$projectId/documents': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/$projectId/documents'
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/documents': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/documents'
       path: '/documents'
-      fullPath: '/namespaces/$namespaceId/projects/$projectId/documents'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/documents'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute
     }
-    '/_authenticated/namespaces/$namespaceId/projects/$projectId/work': {
-      id: '/_authenticated/namespaces/$namespaceId/projects/$projectId/work'
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects'
+      path: '/projects'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute
+    }
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/work': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/work'
       path: '/work'
-      fullPath: '/namespaces/$namespaceId/projects/$projectId/work'
-      preLoaderRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRouteImport
-      parentRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/work'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/new': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/new'
-      path: '/organizations/$organizationId/namespaces/new'
-      fullPath: '/settings/organizations/$organizationId/namespaces/new'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/new': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/new'
+      path: '/organizations/$organizationSlug/namespaces/new'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/new'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/roles/new': {
-      id: '/_authenticated/settings/organizations/$organizationId/roles/new'
-      path: '/organizations/$organizationId/roles/new'
-      fullPath: '/settings/organizations/$organizationId/roles/new'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/roles/new': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/roles/new'
+      path: '/organizations/$organizationSlug/roles/new'
+      fullPath: '/settings/organizations/$organizationSlug/roles/new'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/teams/new': {
-      id: '/_authenticated/settings/organizations/$organizationId/teams/new'
-      path: '/organizations/$organizationId/teams/new'
-      fullPath: '/settings/organizations/$organizationId/teams/new'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/teams/new': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/teams/new'
+      path: '/organizations/$organizationSlug/teams/new'
+      fullPath: '/settings/organizations/$organizationSlug/teams/new'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/'
-      path: '/organizations/$organizationId/namespaces/$namespaceId'
-      fullPath: '/settings/organizations/$organizationId/namespaces/$namespaceId/'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRouteImport
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/'
+      path: '/'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute
+    }
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+      path: '/$projectKey'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute
+    }
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/edit': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-      path: '/organizations/$organizationId/namespaces/$namespaceId/edit'
-      fullPath: '/settings/organizations/$organizationId/namespaces/$namespaceId/edit'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/roles/$roleId/edit': {
-      id: '/_authenticated/settings/organizations/$organizationId/roles/$roleId/edit'
-      path: '/organizations/$organizationId/roles/$roleId/edit'
-      fullPath: '/settings/organizations/$organizationId/roles/$roleId/edit'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit'
+      path: '/organizations/$organizationSlug/roles/$roleId/edit'
+      fullPath: '/settings/organizations/$organizationSlug/roles/$roleId/edit'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/teams/$teamId/edit': {
-      id: '/_authenticated/settings/organizations/$organizationId/teams/$teamId/edit'
-      path: '/organizations/$organizationId/teams/$teamId/edit'
-      fullPath: '/settings/organizations/$organizationId/teams/$teamId/edit'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit'
+      path: '/organizations/$organizationSlug/teams/$teamId/edit'
+      fullPath: '/settings/organizations/$organizationSlug/teams/$teamId/edit'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-      fullPath: '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRouteImport
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+      path: '/'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute
+    }
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity'
+      path: '/activity'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/activity'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute
+    }
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents'
+      path: '/documents'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/documents'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute
+    }
+    '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': {
+      id: '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
+      path: '/work'
+      fullPath: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
+      preLoaderRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRouteImport
+      parentRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute
+    }
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/'
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId'
-      fullPath: '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
-    '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit': {
-      id: '/_authenticated/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-      path: '/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-      fullPath: '/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit'
-      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRouteImport
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
   }
@@ -1127,84 +1154,12 @@ const AuthenticatedDocumentsRouteWithChildren =
     AuthenticatedDocumentsRouteChildren,
   )
 
-interface AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteChildren {
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute
-}
-
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteChildren: AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteChildren =
-  {
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdActivityRoute,
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdDocumentsRoute,
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdWorkRoute,
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdIndexRoute,
-  }
-
-const AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteWithChildren =
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute._addFileChildren(
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteChildren,
-  )
-
-interface AuthenticatedNamespacesNamespaceIdProjectsRouteChildren {
-  AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteWithChildren
-  AuthenticatedNamespacesNamespaceIdProjectsIndexRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsIndexRoute
-}
-
-const AuthenticatedNamespacesNamespaceIdProjectsRouteChildren: AuthenticatedNamespacesNamespaceIdProjectsRouteChildren =
-  {
-    AuthenticatedNamespacesNamespaceIdProjectsProjectIdRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsProjectIdRouteWithChildren,
-    AuthenticatedNamespacesNamespaceIdProjectsIndexRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsIndexRoute,
-  }
-
-const AuthenticatedNamespacesNamespaceIdProjectsRouteWithChildren =
-  AuthenticatedNamespacesNamespaceIdProjectsRoute._addFileChildren(
-    AuthenticatedNamespacesNamespaceIdProjectsRouteChildren,
-  )
-
-interface AuthenticatedNamespacesNamespaceIdRouteChildren {
-  AuthenticatedNamespacesNamespaceIdAdministrationRoute: typeof AuthenticatedNamespacesNamespaceIdAdministrationRoute
-  AuthenticatedNamespacesNamespaceIdDocumentsRoute: typeof AuthenticatedNamespacesNamespaceIdDocumentsRoute
-  AuthenticatedNamespacesNamespaceIdProjectsRoute: typeof AuthenticatedNamespacesNamespaceIdProjectsRouteWithChildren
-  AuthenticatedNamespacesNamespaceIdWorkRoute: typeof AuthenticatedNamespacesNamespaceIdWorkRoute
-  AuthenticatedNamespacesNamespaceIdIndexRoute: typeof AuthenticatedNamespacesNamespaceIdIndexRoute
-}
-
-const AuthenticatedNamespacesNamespaceIdRouteChildren: AuthenticatedNamespacesNamespaceIdRouteChildren =
-  {
-    AuthenticatedNamespacesNamespaceIdAdministrationRoute:
-      AuthenticatedNamespacesNamespaceIdAdministrationRoute,
-    AuthenticatedNamespacesNamespaceIdDocumentsRoute:
-      AuthenticatedNamespacesNamespaceIdDocumentsRoute,
-    AuthenticatedNamespacesNamespaceIdProjectsRoute:
-      AuthenticatedNamespacesNamespaceIdProjectsRouteWithChildren,
-    AuthenticatedNamespacesNamespaceIdWorkRoute:
-      AuthenticatedNamespacesNamespaceIdWorkRoute,
-    AuthenticatedNamespacesNamespaceIdIndexRoute:
-      AuthenticatedNamespacesNamespaceIdIndexRoute,
-  }
-
-const AuthenticatedNamespacesNamespaceIdRouteWithChildren =
-  AuthenticatedNamespacesNamespaceIdRoute._addFileChildren(
-    AuthenticatedNamespacesNamespaceIdRouteChildren,
-  )
-
 interface AuthenticatedNamespacesRouteChildren {
-  AuthenticatedNamespacesNamespaceIdRoute: typeof AuthenticatedNamespacesNamespaceIdRouteWithChildren
   AuthenticatedNamespacesIndexRoute: typeof AuthenticatedNamespacesIndexRoute
 }
 
 const AuthenticatedNamespacesRouteChildren: AuthenticatedNamespacesRouteChildren =
   {
-    AuthenticatedNamespacesNamespaceIdRoute:
-      AuthenticatedNamespacesNamespaceIdRouteWithChildren,
     AuthenticatedNamespacesIndexRoute: AuthenticatedNamespacesIndexRoute,
   }
 
@@ -1213,33 +1168,105 @@ const AuthenticatedNamespacesRouteWithChildren =
     AuthenticatedNamespacesRouteChildren,
   )
 
-interface AuthenticatedOrganizationsOrganizationIdRouteChildren {
-  AuthenticatedOrganizationsOrganizationIdDocumentsRoute: typeof AuthenticatedOrganizationsOrganizationIdDocumentsRoute
-  AuthenticatedOrganizationsOrganizationIdIndexRoute: typeof AuthenticatedOrganizationsOrganizationIdIndexRoute
+interface AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteChildren {
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
 
-const AuthenticatedOrganizationsOrganizationIdRouteChildren: AuthenticatedOrganizationsOrganizationIdRouteChildren =
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteChildren: AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteChildren =
   {
-    AuthenticatedOrganizationsOrganizationIdDocumentsRoute:
-      AuthenticatedOrganizationsOrganizationIdDocumentsRoute,
-    AuthenticatedOrganizationsOrganizationIdIndexRoute:
-      AuthenticatedOrganizationsOrganizationIdIndexRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyActivityRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyDocumentsRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute,
   }
 
-const AuthenticatedOrganizationsOrganizationIdRouteWithChildren =
-  AuthenticatedOrganizationsOrganizationIdRoute._addFileChildren(
-    AuthenticatedOrganizationsOrganizationIdRouteChildren,
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute._addFileChildren(
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteChildren,
+  )
+
+interface AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteChildren {
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute
+}
+
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteChildren: AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteChildren =
+  {
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRoute,
+  }
+
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteWithChildren =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute._addFileChildren(
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteChildren,
+  )
+
+interface AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteChildren {
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteWithChildren
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+}
+
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteChildren: AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteChildren =
+  {
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugAdministrationRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugDocumentsRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsRouteWithChildren,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugWorkRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute,
+  }
+
+const AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren =
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute._addFileChildren(
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteChildren,
+  )
+
+interface AuthenticatedOrganizationsOrganizationSlugRouteChildren {
+  AuthenticatedOrganizationsOrganizationSlugDocumentsRoute: typeof AuthenticatedOrganizationsOrganizationSlugDocumentsRoute
+  AuthenticatedOrganizationsOrganizationSlugIndexRoute: typeof AuthenticatedOrganizationsOrganizationSlugIndexRoute
+  AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute: typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren
+}
+
+const AuthenticatedOrganizationsOrganizationSlugRouteChildren: AuthenticatedOrganizationsOrganizationSlugRouteChildren =
+  {
+    AuthenticatedOrganizationsOrganizationSlugDocumentsRoute:
+      AuthenticatedOrganizationsOrganizationSlugDocumentsRoute,
+    AuthenticatedOrganizationsOrganizationSlugIndexRoute:
+      AuthenticatedOrganizationsOrganizationSlugIndexRoute,
+    AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRoute:
+      AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren,
+  }
+
+const AuthenticatedOrganizationsOrganizationSlugRouteWithChildren =
+  AuthenticatedOrganizationsOrganizationSlugRoute._addFileChildren(
+    AuthenticatedOrganizationsOrganizationSlugRouteChildren,
   )
 
 interface AuthenticatedOrganizationsRouteChildren {
-  AuthenticatedOrganizationsOrganizationIdRoute: typeof AuthenticatedOrganizationsOrganizationIdRouteWithChildren
+  AuthenticatedOrganizationsOrganizationSlugRoute: typeof AuthenticatedOrganizationsOrganizationSlugRouteWithChildren
   AuthenticatedOrganizationsIndexRoute: typeof AuthenticatedOrganizationsIndexRoute
 }
 
 const AuthenticatedOrganizationsRouteChildren: AuthenticatedOrganizationsRouteChildren =
   {
-    AuthenticatedOrganizationsOrganizationIdRoute:
-      AuthenticatedOrganizationsOrganizationIdRouteWithChildren,
+    AuthenticatedOrganizationsOrganizationSlugRoute:
+      AuthenticatedOrganizationsOrganizationSlugRouteWithChildren,
     AuthenticatedOrganizationsIndexRoute: AuthenticatedOrganizationsIndexRoute,
   }
 
@@ -1255,18 +1282,18 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsOrganizationsNewRoute: typeof AuthenticatedSettingsOrganizationsNewRoute
   AuthenticatedSettingsNamespacesIndexRoute: typeof AuthenticatedSettingsNamespacesIndexRoute
   AuthenticatedSettingsOrganizationsIndexRoute: typeof AuthenticatedSettingsOrganizationsIndexRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdEditRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
@@ -1280,30 +1307,30 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsNamespacesIndexRoute,
   AuthenticatedSettingsOrganizationsIndexRoute:
     AuthenticatedSettingsOrganizationsIndexRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdEditRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdEditRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdIndexRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNewRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdRolesNewRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdTeamsNewRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdEditRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdRolesRoleIdEditRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdTeamsTeamIdEditRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdIndexRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsNewRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdEditRoute,
-  AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute:
-    AuthenticatedSettingsOrganizationsOrganizationIdNamespacesNamespaceIdProjectsProjectIdIndexRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute,
 }
 
 const AuthenticatedSettingsRouteWithChildren =
@@ -1323,7 +1350,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedRelationsEntityTypeEntityIdRoute: typeof AuthenticatedRelationsEntityTypeEntityIdRoute
-  AuthenticatedWorkNamespaceIdIssueKeyRoute: typeof AuthenticatedWorkNamespaceIdIssueKeyRoute
+  AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute: typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -1339,8 +1366,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedRelationsEntityTypeEntityIdRoute:
     AuthenticatedRelationsEntityTypeEntityIdRoute,
-  AuthenticatedWorkNamespaceIdIssueKeyRoute:
-    AuthenticatedWorkNamespaceIdIssueKeyRoute,
+  AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute:
+    AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -1359,10 +1386,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.ts'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

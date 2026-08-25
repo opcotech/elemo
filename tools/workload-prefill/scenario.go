@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 const (
 	profileFull  = "full"
 	profileSmoke = "smoke"
@@ -13,6 +15,7 @@ const (
 
 type orgSpec struct {
 	name       string
+	slug       string
 	email      string
 	domain     string
 	website    string
@@ -34,6 +37,7 @@ type teamSpec struct {
 
 type namespaceSpec struct {
 	name             string
+	slug             string
 	description      string
 	projects         []projectSpec
 	migratedProjects int
@@ -101,7 +105,7 @@ func fullScenario() scenarioSpec {
 	security := teamSpec{name: "Security", description: "Security engineering and compliance."}
 	support := teamSpec{name: "Support", description: "Technical support and incident communication."}
 
-	return scenarioSpec{
+	return applySlugs(scenarioSpec{
 		documentCount: 280,
 		main: orgSpec{
 			name:       mainOrgName,
@@ -310,11 +314,11 @@ func fullScenario() scenarioSpec {
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Harbor Logistics", dualMemberN: 1},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Nimbus Cloud", dualMemberN: 1},
 		},
-	}
+	})
 }
 
 func smokeScenario() scenarioSpec {
-	return scenarioSpec{
+	return applySlugs(scenarioSpec{
 		documentCount: 20,
 		main: orgSpec{
 			name:       mainOrgName,
@@ -469,7 +473,7 @@ func smokeScenario() scenarioSpec {
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Harbor Logistics", dualMemberN: 1},
 			{kind: collabDualMember, fromOrg: mainOrgName, toOrg: "Nimbus Cloud", dualMemberN: 1},
 		},
-	}
+	})
 }
 
 func partnerOrg(
@@ -528,4 +532,26 @@ func (s scenarioSpec) migratedProjectCount() int {
 		}
 	}
 	return 0
+}
+
+func applySlugs(spec scenarioSpec) scenarioSpec {
+	applyOrg := func(org *orgSpec) {
+		if org.slug == "" {
+			if org.name == mainOrgName {
+				org.slug = "elemo"
+			} else {
+				org.slug = strings.ToLower(strings.ReplaceAll(org.name, " ", "-"))
+			}
+		}
+		for i := range org.namespaces {
+			if org.namespaces[i].slug == "" {
+				org.namespaces[i].slug = strings.ToLower(org.namespaces[i].name)
+			}
+		}
+	}
+	applyOrg(&spec.main)
+	for i := range spec.partners {
+		applyOrg(&spec.partners[i])
+	}
+	return spec
 }

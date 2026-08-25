@@ -44,6 +44,7 @@ function documentToSelectOption(
 }
 
 export function DocumentLinkDialog({
+  organizationId,
   namespaceId,
   relatedIds,
   relatedLabel,
@@ -51,6 +52,7 @@ export function DocumentLinkDialog({
   onOpenChange,
   onLink,
 }: {
+  organizationId: string;
   namespaceId: string;
   relatedIds: ReadonlySet<string>;
   relatedLabel: string;
@@ -70,7 +72,7 @@ export function DocumentLinkDialog({
   });
 
   const { data: documentsPage, isLoading } = useQuery({
-    ...relatedDocumentCatalogQueryOptions(namespaceId),
+    ...relatedDocumentCatalogQueryOptions(organizationId, namespaceId),
     enabled: open && Boolean(namespaceId),
   });
 

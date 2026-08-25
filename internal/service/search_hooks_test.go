@@ -38,6 +38,7 @@ func TestNamespaceService_Create_IndexesSearch(t *testing.T) {
 	namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
 	namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
 		Name:        opts.Name,
+		Slug:        opts.Slug,
 		Description: opts.Description,
 		CreatorID:   userID,
 		OrgID:       orgID,

@@ -29,7 +29,11 @@ test.describe("@issues.detail Issue Detail E2E Tests", () => {
     });
 
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
     return { workItem, issue };
   };
@@ -41,7 +45,9 @@ test.describe("@issues.detail Issue Detail E2E Tests", () => {
     const { workItem, issue } = await openIssue(page, title);
 
     await expect(page).toHaveURL(
-      new RegExp(`/work/${workspace.namespaceId}/${issue.key}`)
+      new RegExp(
+        `/work/${workspace.organizationSlug}/${workspace.namespaceSlug}/${issue.key}`
+      )
     );
     await expect(
       page.getByText(issue.key, { exact: true }).first()

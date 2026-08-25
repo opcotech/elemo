@@ -36,6 +36,13 @@ import { formatDate } from "@/lib/format-date";
 import { internalPath } from "@/lib/internal-url";
 import { sortOrganizationMembers } from "@/lib/organization-members";
 import type { OrganizationWorkspaceData } from "@/lib/organization-workspace";
+import {
+  namespacePath,
+  organizationDocumentsPath,
+  settingsNamespaceNewPath,
+  settingsOrganizationEditPath,
+  settingsOrganizationPath,
+} from "@/lib/paths";
 import { pluralize } from "@/lib/utils";
 
 export function OrganizationOverviewPage({
@@ -65,7 +72,7 @@ export function OrganizationOverviewPage({
   const documentCount = organization.document_count ?? 0;
   const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery({
     ...v1OrganizationsDocumentsGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: { page_size: 5, all: true },
     }),
     enabled: hasReadAccess,
@@ -84,7 +91,9 @@ export function OrganizationOverviewPage({
     return [...roles].sort((a, b) => a.name.localeCompare(b.name));
   }, [roles]);
 
-  const settingsHref = `/settings/organizations/${organizationId}`;
+  const settingsHref = settingsOrganizationPath({
+    organizationSlug: organization.slug,
+  });
 
   return (
     <ContentWidth width="overview" className="space-y-7">
@@ -102,7 +111,9 @@ export function OrganizationOverviewPage({
                 ? [
                     {
                       label: "Edit organization",
-                      href: `${settingsHref}/edit`,
+                      href: settingsOrganizationEditPath({
+                        organizationSlug: organization.slug,
+                      }),
                     },
                   ]
                 : []),
@@ -138,7 +149,10 @@ export function OrganizationOverviewPage({
                       <EntityLink
                         key={namespace.id}
                         type="namespace"
-                        href={`/namespaces/${namespace.id}`}
+                        href={namespacePath({
+                          organizationSlug: organization.slug,
+                          namespaceSlug: namespace.slug,
+                        })}
                         title={namespace.name}
                         subtitle={
                           <NamespaceEntitySubtitle
@@ -163,7 +177,9 @@ export function OrganizationOverviewPage({
                           render={
                             <InternalLink
                               to={internalPath(
-                                `${settingsHref}/namespaces/new`
+                                settingsNamespaceNewPath({
+                                  organizationSlug: organization.slug,
+                                })
                               )}
                             />
                           }
@@ -198,7 +214,9 @@ export function OrganizationOverviewPage({
                       render={
                         <InternalLink
                           to={internalPath(
-                            `/organizations/${organizationId}/documents`
+                            organizationDocumentsPath({
+                              organizationSlug: organization.slug,
+                            })
                           )}
                         />
                       }
@@ -441,6 +459,8 @@ export function OrganizationDocumentsPage({
     <DocumentLibraryPage
       kind="organization"
       libraryId={organization.id}
+      organizationId={organization.id}
+      organizationSlug={organization.slug}
       libraryName={organization.name}
       search={search}
       mayWrite={hasDocumentWritePermission}

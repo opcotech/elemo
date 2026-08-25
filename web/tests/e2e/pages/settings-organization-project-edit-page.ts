@@ -4,6 +4,8 @@ import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { ProjectEditFormSection } from "../sections";
 
+import { settingsProjectEditPath } from "@/lib/paths";
+
 export class SettingsOrganizationProjectEditPage extends BaseComponent {
   public readonly projectEditForm: ProjectEditFormSection;
 
@@ -13,13 +15,13 @@ export class SettingsOrganizationProjectEditPage extends BaseComponent {
   }
 
   async goto(
-    organizationId: string,
-    namespaceId: string,
-    projectId: string
+    organizationSlug: string,
+    namespaceSlug: string,
+    projectKey: string
   ): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${projectId}/edit`
+      settingsProjectEditPath({ organizationSlug, namespaceSlug, projectKey })
     );
   }
 }

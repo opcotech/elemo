@@ -14,6 +14,7 @@ import {
   FieldProvider,
 } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
+import { ImmutableIdentifierField } from "@/components/ui/immutable-identifier-field";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
@@ -21,6 +22,7 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationsGetOptions,
 } from "@/lib/api/query-options";
+import { organizationRefPath } from "@/lib/api/refs";
 import { zOrganizationCreate, zOrganizationPatch } from "@/lib/api/schemas";
 import { v1OrganizationUpdate } from "@/lib/api/sdk";
 import type {
@@ -31,8 +33,6 @@ import type {
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
 
-// Create a schema without logo and status fields for the form
-// TODO: Add logo field when implementing image upload
 const organizationEditFormSchema = createFormSchema(
   zOrganizationPatch
     .omit({
@@ -57,6 +57,10 @@ export function OrganizationEditForm({
   organizationId,
 }: OrganizationEditFormProps) {
   const navigate = useNavigate();
+  const organizationRoute = {
+    to: "/settings/organizations/$organizationSlug",
+    params: { organizationSlug: organization.slug },
+  } as const;
 
   const form = useForm<OrganizationEditFormValues>({
     resolver: zodResolver(organizationEditFormSchema),
@@ -94,16 +98,15 @@ export function OrganizationEditForm({
     errorMessagePrefix: "Failed to update organization",
     queryKeysToInvalidate: [
       v1OrganizationGetOptions({
-        path: { id: organizationId },
+        path: organizationRefPath(organizationId),
+      }).queryKey,
+      v1OrganizationGetOptions({
+        path: organizationRefPath(organization.slug),
       }).queryKey,
       v1OrganizationsGetOptions().queryKey,
       accessibleNamespacesQueryKey,
     ],
-    navigateOnSuccess: (navigateTo) =>
-      navigateTo({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
-      }),
+    navigateOnSuccess: (navigateTo) => navigateTo(organizationRoute),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(
         organizationEditFormSchema,
@@ -115,9 +118,7 @@ export function OrganizationEditForm({
         }
       );
       return {
-        path: {
-          id: organizationId,
-        },
+        path: organizationRefPath(organizationId),
         body: normalizedBody,
       };
     },
@@ -129,18 +130,15 @@ export function OrganizationEditForm({
       title="Edit Organization"
       description="Update the organization details below."
       onSubmit={mutation.handleSubmit}
-      onCancel={() =>
-        navigate({
-          to: "/settings/organizations/$organizationId",
-          params: { organizationId },
-        })
-      }
+      onCancel={() => navigate(organizationRoute)}
       isPending={mutation.isPending}
       error={mutation.error || null}
       submitButtonText="Save Changes"
     >
       <FieldProvider {...form}>
         <FieldGroup>
+          <ImmutableIdentifierField label="Slug" value={organization.slug} />
+
           <ControlledField
             control={form.control}
             name="name"

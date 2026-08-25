@@ -1,6 +1,6 @@
-"/v1/organizations/{id}/documents":
+"/v1/organizations/{organizationRef}/documents":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   get:
     summary: Get organization documents
     tags:
@@ -64,9 +64,10 @@
       - Document
     requestBody:
       $ref: "#/components/requestBodies/DocumentCreate"
-"/v1/namespaces/{id}/documents":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
   get:
     summary: Get namespace documents
     tags:
@@ -130,9 +131,9 @@
       - Document
     requestBody:
       $ref: "#/components/requestBodies/DocumentCreate"
-"/v1/projects/{id}/documents":
+"/v1/projects/{projectId}/documents":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/projectId"
   get:
     summary: Get project documents
     tags:
@@ -194,9 +195,9 @@
       - Document
     requestBody:
       $ref: "#/components/requestBodies/DocumentCreate"
-"/v1/projects/{id}/documents/{documentId}":
+"/v1/projects/{projectId}/documents/{documentId}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/projectId"
     - $ref: "#/components/parameters/documentId"
   post:
     summary: Relate document to project

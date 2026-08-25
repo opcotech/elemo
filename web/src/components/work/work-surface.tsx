@@ -29,6 +29,8 @@ import {
   WorkInspectorSkeleton,
   WorkSurfaceLayoutSkeleton,
 } from "@/components/work/work-surface-skeletons";
+import { useNavigationContext } from "@/hooks/use-navigation-context";
+import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import {
   MAX_CURSOR_PAGES,
   cursorPageQueryWith,
@@ -40,6 +42,7 @@ import {
   v1ProjectsIssuesGetOptions,
   v1UsersIssuesGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath, projectIdPath } from "@/lib/api/refs";
 import {
   v1NamespacesIssuesGet,
   v1ProjectsIssuesGet,
@@ -47,7 +50,10 @@ import {
 } from "@/lib/api/sdk";
 import type { PartialIssue } from "@/lib/api/types";
 import { selectSavedViews, selectWorkItems } from "@/lib/mock-data";
-import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import {
+  issuesToWorkItems,
+  issuesToWorkItemsWithNamespaces,
+} from "@/lib/work/issue-adapter";
 import {
   buildIssueListApiQuery,
   issueListClientOnlyFilters,
@@ -544,13 +550,23 @@ function ProjectWorkSurface({
     () => buildIssueListApiQuery(search, activeView?.filters),
     [activeView?.filters, search]
   );
+  const navigation = useNavigationContext();
   const toWorkItems = useCallback(
     (issues: readonly PartialIssue[]) =>
       issuesToWorkItems(issues, {
         namespaceId: projectScope.namespaceId,
+        organizationId: projectScope.organizationId,
+        organizationSlug: navigation.organizationSlug,
+        namespaceSlug: navigation.namespaceSlug,
         projectId: projectScope.projectId,
       }),
-    [projectScope.namespaceId, projectScope.projectId]
+    [
+      navigation.namespaceSlug,
+      navigation.organizationSlug,
+      projectScope.namespaceId,
+      projectScope.organizationId,
+      projectScope.projectId,
+    ]
   );
   const {
     items: scopedItems,
@@ -560,12 +576,12 @@ function ProjectWorkSurface({
     isCollectionComplete: issuesCollectionComplete,
   } = useListedWorkItems({
     listOptions: v1ProjectsIssuesGetOptions({
-      path: { id: projectScope.projectId },
+      path: projectIdPath(projectScope.projectId),
       query: cursorPageQueryWith(issueListQuery),
     }),
     fetchPage: async (pageToken, signal) => {
       const { data } = await v1ProjectsIssuesGet({
-        path: { id: projectScope.projectId },
+        path: projectIdPath(projectScope.projectId),
         query: cursorPageQueryWith(issueListQuery, pageToken),
         signal,
         throwOnError: true,
@@ -624,10 +640,21 @@ function NamespaceWorkSurface({
     () => buildIssueListApiQuery(search, activeView?.filters),
     [activeView?.filters, search]
   );
+  const navigation = useNavigationContext();
   const toWorkItems = useCallback(
     (issues: readonly PartialIssue[]) =>
-      issuesToWorkItems(issues, { namespaceId: namespaceScope.namespaceId }),
-    [namespaceScope.namespaceId]
+      issuesToWorkItems(issues, {
+        namespaceId: namespaceScope.namespaceId,
+        organizationId: namespaceScope.organizationId,
+        organizationSlug: navigation.organizationSlug,
+        namespaceSlug: navigation.namespaceSlug,
+      }),
+    [
+      namespaceScope.namespaceId,
+      namespaceScope.organizationId,
+      navigation.namespaceSlug,
+      navigation.organizationSlug,
+    ]
   );
   const {
     items: scopedItems,
@@ -637,12 +664,18 @@ function NamespaceWorkSurface({
     isCollectionComplete: issuesCollectionComplete,
   } = useListedWorkItems({
     listOptions: v1NamespacesIssuesGetOptions({
-      path: { id: namespaceScope.namespaceId },
+      path: namespaceRefPath(
+        namespaceScope.organizationId ?? "",
+        namespaceScope.namespaceId
+      ),
       query: cursorPageQueryWith(issueListQuery),
     }),
     fetchPage: async (pageToken, signal) => {
       const { data } = await v1NamespacesIssuesGet({
-        path: { id: namespaceScope.namespaceId },
+        path: namespaceRefPath(
+          namespaceScope.organizationId ?? "",
+          namespaceScope.namespaceId
+        ),
         query: cursorPageQueryWith(issueListQuery, pageToken),
         signal,
         throwOnError: true,
@@ -700,9 +733,12 @@ function PersonWorkSurface({
     () => buildIssueListApiQuery(search, activeView?.filters),
     [activeView?.filters, search]
   );
+  const { data: accessibleWorkspace } = useAccessibleNamespaces();
+  const namespaces = accessibleWorkspace?.namespaces ?? [];
   const toWorkItems = useCallback(
-    (issues: readonly PartialIssue[]) => issuesToWorkItems(issues),
-    []
+    (issues: readonly PartialIssue[]) =>
+      issuesToWorkItemsWithNamespaces(issues, namespaces),
+    [namespaces]
   );
   const {
     items: scopedItems,

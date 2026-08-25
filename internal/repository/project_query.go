@@ -39,8 +39,9 @@ type ProjectGetQuery struct {
 
 // ProjectGetByKeyQuery compiles a single-project read by key.
 type ProjectGetByKeyQuery struct {
-	Key        string
-	Projection ProjectProjection
+	NamespaceID model.ID
+	Key         string
+	Projection  ProjectProjection
 }
 
 // ProjectListQuery compiles a cursor-paginated project list for a namespace.
@@ -67,13 +68,20 @@ func (q ProjectGetQuery) Compile() (QueryPlan, error) {
 }
 
 func (q ProjectGetByKeyQuery) Compile() (QueryPlan, error) {
+	if err := q.NamespaceID.Validate(); err != nil {
+		return QueryPlan{}, err
+	}
 	if strings.TrimSpace(q.Key) == "" {
 		return QueryPlan{}, ErrQueryCompile
 	}
 	return compileProjectRoot(projectRootQueryInput{
-		Name:       "project.get_by_key",
-		Match:      `MATCH (p:` + model.ResourceTypeProject.String() + ` {key: $key})`,
-		Params:     map[string]any{"key": q.Key},
+		Name: "project.get_by_key",
+		Match: `MATCH (ns:` + q.NamespaceID.Label() + ` {id: $namespace_id})-[:` + EdgeKindHasProject.String() + `]->(p:` + model.ResourceTypeProject.String() + ` {key: $key})
+	WHERE p.namespace_id = $namespace_id`,
+		Params: map[string]any{
+			"namespace_id": q.NamespaceID.String(),
+			"key":          q.Key,
+		},
 		Alias:      "p",
 		Projection: q.Projection,
 	})
