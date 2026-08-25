@@ -20,6 +20,14 @@ export function createMiddleware(_options?: unknown) {
   return createBuilder();
 }
 
+export function createCsrfMiddleware(_options?: unknown) {
+  return createBuilder();
+}
+
+export function createStart(_fn?: unknown) {
+  return {};
+}
+
 export function getCookie(_name: string) {
   return undefined;
 }

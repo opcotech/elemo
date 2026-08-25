@@ -102,7 +102,15 @@ export default defineConfig({
     linkedomViteCompat(),
     tailwindcss(),
     tanstackStart(),
-    nitro(),
+    nitro({
+      routeRules: {
+        "/assets/**": {
+          headers: {
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+        },
+      },
+    }),
     viteReact(),
   ],
 });
