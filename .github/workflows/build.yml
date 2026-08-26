@@ -55,33 +55,6 @@ jobs:
       - name: Typecheck
         run: make typecheck.frontend
 
-  build-e2e-image:
-    name: Build E2E Image
-    runs-on: "ubuntu-latest"
-    needs:
-      - backend-lint
-      - frontend-lint
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - name: Build E2E image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: .
-          file: build/package/Dockerfile
-          tags: elemo-server:latest
-          outputs: type=docker,dest=${{ runner.temp }}/elemo-server.tar
-          cache-from: type=gha,scope=elemo-server
-          cache-to: type=gha,mode=max,scope=elemo-server
-      - name: Upload E2E image
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: elemo-server-image
-          path: ${{ runner.temp }}/elemo-server.tar
-          if-no-files-found: error
-          retention-days: 1
-
   backend-unit-test:
     name: Backend Unit Tests
     runs-on: "ubuntu-latest"
@@ -190,6 +163,33 @@ jobs:
         run: pnpm --dir web exec playwright install --with-deps chromium
       - name: Storybook a11y verification
         run: pnpm --dir web test-storybook:ci
+
+  build-e2e-image:
+    name: Build E2E Image
+    runs-on: "ubuntu-latest"
+    needs:
+      - backend-integration-test
+      - frontend-lint
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build E2E image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: build/package/Dockerfile
+          tags: elemo-server:latest
+          outputs: type=docker,dest=${{ runner.temp }}/elemo-server.tar
+          cache-from: type=gha,scope=elemo-server
+          cache-to: type=gha,mode=max,scope=elemo-server
+      - name: Upload E2E image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: elemo-server-image
+          path: ${{ runner.temp }}/elemo-server.tar
+          if-no-files-found: error
+          retention-days: 1
 
   frontend-e2e-test:
     name: Frontend E2E Tests - ${{ matrix.project }} (shard ${{ matrix.shard }}/${{ matrix.total-shards }})

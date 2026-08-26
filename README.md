@@ -1,4 +1,4 @@
-[![Scanned with Feluda](https://img.shields.io/badge/Scanned%20with-Feluda-brightgreen)](https://github.com/anistark/feluda)
+[![ORT](https://img.shields.io/badge/compliance-ORT-blue)](https://oss-review-toolkit.org/ort/)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8801/badge)](https://www.bestpractices.dev/projects/8801)
 [![Build](https://github.com/opcotech/elemo/actions/workflows/build.yml/badge.svg)](https://github.com/opcotech/elemo/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/opcotech/elemo/graph/badge.svg?token=1E0JG98ESD)](https://codecov.io/gh/opcotech/elemo)
@@ -78,15 +78,12 @@ Configuration for codespaces/dev containers are available. For more information 
 
 ## License
 
-Elemo is licensed under a **dual-license model**:
+Elemo is **source-available** under [FSL-1.1-ALv2](LICENSE):
 
-- **AGPL v3.0** (open source):
-  You can use, modify, and redistribute Elemo freely under the terms of the GNU Affero General Public License v3.0.
-  However, you **must make your source code public**, including any changes, when hosting or deploying Elemo.
+- You may read, modify, and self-host Elemo for **internal** use.
+- You may not offer Elemo (or substantially similar functionality) to others as a **competing commercial product or hosted service** for two years after each version is published. After that, that version becomes Apache 2.0.
+- **Elemo Cloud** is Licensor’s hosted service and is governed by its own terms, not by FSL.
 
-- **Commercial License**:
-  If you wish to use Elemo **without releasing your source code**, or to **host it as a service** (e.g., SaaS), you must purchase a commercial license.
+A [commercial license](LICENSE-COMMERCIAL) is available if you need Competing Use rights (OEM, white-label, or third-party hosting). Contact **info@opcotech.com**.
 
-Unauthorized commercial or closed-source use of Elemo is not permitted.
-
-To inquire about commercial licensing: **info@opcotech.com**
+Git tags published before this FSL switch remain available under AGPL-3.0 as originally licensed.

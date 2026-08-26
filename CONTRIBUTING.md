@@ -20,7 +20,7 @@ _Pull requests, bug reports, and all other forms of contribution are welcomed an
 - [Coding Style](#coding-style)
 - [Repository Conventions](#repository-conventions)
 - [Web Component Design](#web-component-design)
-- [Developer's Certificate of Origin](#developers-certificate-of-origin)
+- [Contributor License Agreement](#contributor-license-agreement)
 
 > **This guide serves to set clear expectations for everyone involved with the project so that we can improve it
 > together, while also creating a welcoming space for everyone to participate. Following these guidelines will help
@@ -112,7 +112,7 @@ for non-trivial changes, it is usually best to
 first [start a discussion](https://github.com/opcotech/elemo/discussions/categories/ideas) to discuss your intended
 approach for solving the problem in the comments for an existing issue.
 
-_Note: All contributions will be licensed under the project's license._
+_Note: All contributions are subject to the [Contributor License Agreement](CLA.md)._
 
 - **Smaller is better.** Submit **one** pull request per bug fix or feature. A pull request should contain isolated
   changes pertaining to a single bug fix or feature implementation. **Do not** refactor or reformat code that is
@@ -130,6 +130,8 @@ _Note: All contributions will be licensed under the project's license._
 - **Add documentation.** Document your changes with code doc comments or in existing guides.
 - **Look up the existing [ADRs](https://adr.github.io/) before changing a questionable piece of code.** Code is
   opinionated and may not fit your preferred coding practices. However, almost everything have a good reason.
+- **Sign the CLA.** Pull requests cannot be merged until you agree to the
+  [Contributor License Agreement](CLA.md) (the bot will prompt you).
 - **Use conventional commits.** The changelog is generated automatically from conventional commit messages by
   [Release Please](https://github.com/googleapis/release-please). Prefer `feat` and `fix` for user-facing changes;
   include the issue number in the commit body or PR description when one exists.
@@ -199,13 +201,21 @@ typecheck.frontend             # Typecheck the front-end
 
 Releases are automated with [Release Please](https://github.com/googleapis/release-please). Conventional commits on
 `main` drive a release pull request that updates `CHANGELOG.md` and package versions. Merging that PR creates a draft
-GitHub Release and tag; publish the draft when ready.
+GitHub Release and tag. The release workflow then runs ORT on the tag and attaches a **legal bundle** (`LICENSE`,
+`LICENSE-COMMERCIAL`, generated `NOTICE`, SPDX and CycloneDX SBOMs). NOTICE and SBOMs are generated, not committed.
+Publish the draft when ready.
 
 ## Code Quality and Tests
 
 The project ensures code quality and code coverage in multiple ways. Besides third-party online tools, with the lack of
 completeness, `gofmt` `go-imports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `eslint` are used to keep up with
 industry standards.
+
+License and dependency policy is enforced with [ORT](https://oss-review-toolkit.org/ort/) (`make ort`). CI analyzes
+Go modules and pnpm packages, ScanCodes **Elemo source** (not every dependency), concludes Go licenses from
+`go-licenses`, and evaluates against Apache-2.0 (the future license of FSL-1.1-ALv2). It fails on copyleft in
+project source, strong copyleft inbound, and restrictive, unknown, or unlicensed dependencies. Reports land in
+`.ort/results/` (gitignored), including `.ort/results/legal/` for GitHub Release assets.
 
 Although front-end unit tests exist (`make test.frontend.unit`), linters and
 end-to-end tests are also available. In order to run end-to-end tests, you have
@@ -222,6 +232,15 @@ pnpm --dir web exec playwright install --with-deps
 make lint           # Run linters for the backend and front-end, or
 make lint.backend   # Run linters for the backend, or
 make lint.frontend  # Run linters for the front-end
+
+# License / dependency policy (requires Docker)
+make ort            # Analyze, scan Elemo source, evaluate, advise, and report
+make ort.prepare    # Fetch pinned ORT config (needed once, or after pin bumps)
+make ort.analyze    # Dependency analysis only
+make ort.scan       # ScanCode on Elemo projects (CI default)
+make ort.scan.packages  # ScanCode on every dependency (slow; not CI)
+make ort.evaluate   # Policy evaluation (fails on ERROR violations)
+make ort.report     # SPDX, CycloneDX, WebApp, NOTICE, and legal/ bundle
 
 # Run tests
 make test                     # Run all backend and front-end tests, or
@@ -390,23 +409,14 @@ Storybook locally, execute `pnpm storybook` in the `web` directory.
 
 Then, navigate to the local Storybook instance: http://127.0.0.1:6006.
 
-## Developer's Certificate of Origin
+## Contributor License Agreement
 
-Developer's Certificate of Origin 1.1
+Contributions are accepted under the [Contributor License Agreement](CLA.md). That agreement lets Open Code
+Technologies FZC license your contribution under FSL-1.1-ALv2 and under commercial terms. Signing also
+grants those licenses for your prior Elemo contributions.
 
-By making a contribution to this project, I certify that:
-
-(a) The contribution was created in whole or in part by me and I have the right to submit it under the open source
-license indicated in the file; or
-
-(b) The contribution is based upon previous work that, to the best of my knowledge, is covered under an appropriate open
-source license and I have the right under that license to submit that work with modifications, whether created in whole
-or in part by me, under the same open source license (unless I am permitted to submit under a different license), as
-indicated in the file; or
-
-(c) The contribution was provided directly to me by some other person who certified (a), (b) or (c) and I have not
-modified it.
-
-(d) I understand and agree that this project and the contribution are public and that a record of the contribution (
-including all personal information I submit with it, including my sign-off) is maintained indefinitely and may be
-redistributed consistent with this project or the open source license(s) involved.
+The CLA bot comments on pull requests with the exact reply needed to sign. Signatures are committed
+onto the PR branch as [`.github/cla.json`](.github/cla.json) (main cannot be pushed to directly). The
+bot only records PR committers; to import other matching comments, run
+`./scripts/cla-sync-signatures.py <pr> --push`. Corporate-owned work also requires the Corporate CLA
+section of that document.

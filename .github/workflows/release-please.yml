@@ -24,11 +24,57 @@ jobs:
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - name: Create release PR or GitHub Release
+        id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: main
+
+  attach-legal-bundle:
+    name: Attach legal bundle
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - name: Use HTTPS instead of SSH for Git cloning
+        run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
+
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "^1.26"
+
+      - name: Cache ORT ScanCode results
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .ort/scanner
+          key: ort-scancode-projects-92.4.0-${{ hashFiles('go.mod', 'web/package.json', 'website/package.json', 'build/email/package.json') }}
+          restore-keys: |
+            ort-scancode-projects-92.4.0-
+
+      - name: Run ORT
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+        run: make ort
+
+      - name: Upload legal bundle to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" \
+            .ort/results/legal/* \
+            --clobber

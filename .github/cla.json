@@ -1,0 +1,28 @@
+{
+  "signedContributors": [
+    {
+      "name": "aayushsingh12",
+      "id": 70710959,
+      "comment_id": 5425873260,
+      "created_at": "2026-08-26T13:16:57Z",
+      "repoId": 597339064,
+      "pullRequestNo": 425
+    },
+    {
+      "name": "apoorvdarshan",
+      "id": 90602809,
+      "comment_id": 5426711479,
+      "created_at": "2026-08-26T14:20:34Z",
+      "repoId": 597339064,
+      "pullRequestNo": 425
+    },
+    {
+      "name": "gabor-boros",
+      "id": 19173947,
+      "comment_id": 5426103662,
+      "created_at": "2026-08-26T13:34:55Z",
+      "repoId": 597339064,
+      "pullRequestNo": 425
+    }
+  ]
+}

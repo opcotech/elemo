@@ -15,22 +15,39 @@ concurrency:
 
 jobs:
   check-licenses:
+    name: ORT
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
+      - name: Use HTTPS instead of SSH for Git cloning
+        run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install Feluda
-        run: |
-          curl -LO https://github.com/anistark/feluda/releases/download/v1.15.0/feluda-v1.15.0-x86_64.deb
-          sudo dpkg -i feluda-v1.15.0-x86_64.deb
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "^1.26"
 
-      - name: Check licenses
-        run: |
-            feluda \
-                --language go \
-                --project-license AGPL-3.0 \
-                --ci-format github \
-                --fail-on-restrictive
-                # TODO: Enable `--fail-on-incompatible` once Feluda supports license
-                #   exclusion and fixes compatibility matrix issues.
+      - name: Cache ORT ScanCode results
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .ort/scanner
+          key: ort-scancode-projects-92.4.0-${{ hashFiles('go.mod', 'web/package.json', 'website/package.json', 'build/email/package.json') }}
+          restore-keys: |
+            ort-scancode-projects-92.4.0-
+
+      - name: Run ORT
+        env:
+          GOPROXY: https://proxy.golang.org,direct
+        run: make ort
+
+      - name: Upload ORT results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ort-results
+          path: .ort/results
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

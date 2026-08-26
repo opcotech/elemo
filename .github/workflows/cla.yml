@@ -1,0 +1,67 @@
+name: CLA
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, closed, synchronize]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+concurrency:
+  group: cla-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check CLA
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'pull_request_target' ||
+      github.event.comment.body == 'recheck' ||
+      github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR head branch
+        id: head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            number="${{ github.event.issue.number }}"
+          else
+            number="${{ github.event.pull_request.number }}"
+          fi
+          meta="$(gh api "repos/${{ github.repository }}/pulls/${number}")"
+          head_ref="$(echo "${meta}" | jq -r .head.ref)"
+          head_repo="$(echo "${meta}" | jq -r .head.repo.full_name)"
+          if [ "${head_repo}" != "${{ github.repository }}" ]; then
+            echo "CLA signatures are committed onto the PR branch. Open the PR from a branch in ${{ github.repository }} (forks cannot receive that commit)."
+            exit 1
+          fi
+          echo "branch=${head_ref}" >> "${GITHUB_OUTPUT}"
+
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: .github/cla.json
+          path-to-document: https://github.com/opcotech/elemo/blob/main/CLA.md
+          branch: ${{ steps.head.outputs.branch }}
+          signed-commit-message: "chore: $contributorName has signed the CLA"
+          allowlist: dependabot[bot],renovate[bot],github-actions[bot]
+          lock-pullrequest-aftermerge: false
+          custom-notsigned-prcomment: |
+            Thank you for your pull request. Elemo requires a Contributor License Agreement so contributions (including your prior Elemo work) can be licensed under FSL-1.1-ALv2 and commercially.
+
+            Please read the [CLA](https://github.com/opcotech/elemo/blob/main/CLA.md), then reply with:
+
+            I have read the CLA Document and I hereby sign the CLA

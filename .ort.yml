@@ -1,0 +1,106 @@
+# Repository configuration for OSS Review Toolkit.
+# Evaluator policy is in scripts/ort/evaluator.rules.kts (outbound Apache-2.0, FSL's future license).
+
+analyzer:
+  skip_excluded: true
+
+excludes:
+  scopes:
+    - pattern: "devDependencies"
+      reason: "DEV_DEPENDENCY_OF"
+      comment: "Frontend and email-tooling development dependencies are not distributed."
+  paths:
+    - pattern: ".ort/**"
+      reason: "BUILD_TOOL_OF"
+      comment: "ORT working copy (cloned ort-config, caches, reports)."
+    - pattern: "**/node_modules/**"
+      reason: "BUILD_TOOL_OF"
+      comment: "Package manager install trees are not source."
+    - pattern: "web/.output/**"
+      reason: "OTHER"
+      comment: "Vite/TanStack production build output; its package.json duplicates PNPM::web."
+    - pattern: "web/storybook-static/**"
+      reason: "OTHER"
+      comment: "Storybook build output."
+    - pattern: "website/dist/**"
+      reason: "OTHER"
+      comment: "Astro production build output."
+    # ScanCode matches license names in docs and ORT helpers. Repository package
+    # curations do not apply to projects, so these paths must be excluded or
+    # COPYLEFT_IN_SOURCE / UNHANDLED_LICENSE treat the mentions as project licenses.
+    - pattern: "README.md"
+      reason: "DOCUMENTATION_OF"
+      comment: "Mentions historical AGPL; not inbound project source."
+    - pattern: "CLA.md"
+      reason: "DOCUMENTATION_OF"
+      comment: "CLA text mentions AGPL/FSL; ScanCode also maps phrases to NOASSERTION."
+    - pattern: "CONTRIBUTING.md"
+      reason: "DOCUMENTATION_OF"
+      comment: "Contributor docs mention licenses; ScanCode maps some phrases to NOASSERTION."
+    - pattern: ".github/**"
+      reason: "BUILD_TOOL_OF"
+      comment: "GitHub templates and workflows mention licenses."
+    - pattern: ".ort.yml"
+      reason: "BUILD_TOOL_OF"
+      comment: "ORT policy comments name copyleft licenses; not project source."
+    - pattern: "scripts/ort/**"
+      reason: "BUILD_TOOL_OF"
+      comment: "ORT helpers contain license-name patterns for classification, not distributed source."
+
+resolutions:
+  rule_violations:
+    - message: ".*incompatible with inbound license MPL-2.0 of 'NPM::dompurify:.*"
+      reason: "NOT_MODIFIED_EXCEPTION"
+      comment: >
+        DOMPurify is an unmodified MPL-2.0 library. File-level copyleft applies to its own files;
+        Elemo does not relicense those files as Apache-2.0.
+    - message: ".*incompatible with inbound license MPL-2.0 of 'NPM::lightningcss.*"
+      reason: "NOT_MODIFIED_EXCEPTION"
+      comment: >
+        Lightning CSS is an unmodified MPL-2.0 toolchain library (including native binaries).
+        Elemo does not relicense those files as Apache-2.0.
+    - message: ".*incompatible with inbound license LGPL-3.0-or-later of 'NPM:@img:sharp-libvips.*"
+      reason: "DYNAMIC_LINKAGE_EXCEPTION"
+      comment: >
+        sharp-libvips is an LGPL native library loaded by sharp. Dynamic linkage of an unmodified
+        LGPL library does not make Elemo's Apache-2.0 future license a relicensing of libvips.
+    - message: ".*unknown whether Apache-2.0.*inbound license CC-BY-4.0 of '.*"
+      reason: "CANT_FIX_EXCEPTION"
+      comment: >
+        OSADL does not list CC-BY-4.0. That license is permissive (attribution only); Apache-2.0
+        can include CC-BY-4.0 data such as caniuse-lite if attribution is kept.
+    - message: ".*unknown whether Apache-2.0.*inbound license CC0-1.0 of '.*"
+      reason: "CANT_FIX_EXCEPTION"
+      comment: >
+        OSADL does not list CC0-1.0. CC0 is a public-domain dedication and is compatible with
+        Apache-2.0 (used here by mdn-data).
+
+curations:
+  packages:
+    # First-party concluded license for reporters and package-level views.
+    # ScanCode hits in docs/scripts are handled by path excludes above; repository
+    # package curations are not applied to projects.
+    - id: "GoMod::github.com/opcotech/elemo:"
+      curations:
+        comment: "Elemo is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"
+    - id: "GoMod::github.com/opcotech/elemo-openapi-assemble:"
+      curations:
+        comment: "In-repo tooling is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"
+    - id: "GoMod::github.com/opcotech/elemo-pre-mailer:"
+      curations:
+        comment: "In-repo tooling is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"
+    - id: "PNPM::web:"
+      curations:
+        comment: "Elemo web app is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"
+    - id: "PNPM::website:"
+      curations:
+        comment: "Elemo website is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"
+    - id: "PNPM::emails:"
+      curations:
+        comment: "Elemo email templates package is licensed under FSL-1.1-ALv2."
+        concluded_license: "FSL-1.1-ALv2"

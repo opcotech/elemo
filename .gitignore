@@ -20,6 +20,9 @@ bin/
 .gocache/
 .gomodcache/
 
+# OSS Review Toolkit working copy (cloned config, caches, reports)
+.ort/
+
 # Misc
 tmp/
 .pnpm-store/
