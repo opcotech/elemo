@@ -16,18 +16,21 @@ import (
 // PartialNamespace is a lean namespace used on issue reads.
 type PartialNamespace struct {
 	ID   model.ID
+	Slug string
 	Name string
 }
 
 // PartialOrganization is a lean organization used on accessible namespace lists.
 type PartialOrganization struct {
 	ID   model.ID
+	Slug string
 	Name string
 }
 
 // Namespace represents a namespace returned by the service.
 type Namespace struct {
 	ID            model.ID
+	Slug          string
 	Name          string
 	Description   string
 	ProjectCount  *int64
@@ -45,12 +48,16 @@ type AccessibleNamespace struct {
 // CreateNamespaceOpts holds the data required to create a namespace.
 type CreateNamespaceOpts struct {
 	Name        string `json:"name" validate:"required,min=3,max=120"`
+	Slug        string `json:"slug"`
 	Description string `json:"description" validate:"omitempty,min=5,max=500"`
 }
 
 // Validate validates the create options.
 func (o *CreateNamespaceOpts) Validate() error {
 	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidNamespaceDetails, err)
+	}
+	if err := validate.NamespaceSlug(o.Slug); err != nil {
 		return errors.Join(model.ErrInvalidNamespaceDetails, err)
 	}
 	return nil
@@ -73,6 +80,11 @@ type NamespaceService interface {
 	// Get returns a namespace by its ID. If the namespace does not exist, an
 	// error is returned.
 	Get(ctx context.Context, id model.ID) (*Namespace, error)
+	// GetByRef returns a reachable namespace by xid or organization-scoped slug.
+	GetByRef(ctx context.Context, orgID, id model.ID, slug string) (*AccessibleNamespace, error)
+	// Resolve looks up a namespace by xid or slug under an organization without
+	// applying reachability. Callers then check update/delete permission by xid.
+	Resolve(ctx context.Context, orgID, id model.ID, slug string) (*Namespace, error)
 	// List returns a cursor-paginated page of namespaces for an organization.
 	List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error)
 	// ListAccessible returns namespaces the actor can reach, each with an
@@ -101,6 +113,7 @@ func partialNamespaceFromRepository(n *repository.PartialNamespace) *PartialName
 	}
 	return &PartialNamespace{
 		ID:   n.ID,
+		Slug: n.Slug,
 		Name: n.Name,
 	}
 }
@@ -112,6 +125,7 @@ func namespaceFromRepository(n *repository.Namespace) *Namespace {
 
 	return &Namespace{
 		ID:            n.ID,
+		Slug:          n.Slug,
 		Name:          n.Name,
 		Description:   n.Description,
 		ProjectCount:  n.ProjectCount,
@@ -143,6 +157,7 @@ func accessibleNamespaceFromRepository(n *repository.AccessibleNamespace) *Acces
 		Namespace: *ns,
 		Organization: PartialOrganization{
 			ID:   n.Organization.ID,
+			Slug: n.Organization.Slug,
 			Name: n.Organization.Name,
 		},
 	}
@@ -175,6 +190,7 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 
 	namespace, err := s.namespaceRepo.Create(ctx, repository.CreateNamespaceOpts{
 		Name:        opts.Name,
+		Slug:        opts.Slug,
 		Description: opts.Description,
 		CreatorID:   userID,
 		OrgID:       orgID,
@@ -214,6 +230,49 @@ func (s *namespaceService) Get(ctx context.Context, id model.ID) (*Namespace, er
 	}
 
 	return namespaceFromRepository(namespace), nil
+}
+
+func (s *namespaceService) GetByRef(ctx context.Context, orgID, id model.ID, slug string) (*AccessibleNamespace, error) {
+	ctx, span := s.tracer.Start(ctx, "service.namespaceService/GetByRef")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
+	}
+	if id.IsNil() && slug == "" {
+		return nil, errors.Join(ErrNamespaceGet, model.ErrInvalidID)
+	}
+
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
+	}
+
+	namespace, err := s.namespaceRepo.GetByRef(ctx, orgID, id, slug, userID, repository.NamespaceDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
+	}
+
+	return accessibleNamespaceFromRepository(namespace), nil
+}
+
+func (s *namespaceService) Resolve(ctx context.Context, orgID, id model.ID, slug string) (*Namespace, error) {
+	ctx, span := s.tracer.Start(ctx, "service.namespaceService/Resolve")
+	defer span.End()
+
+	if err := orgID.Validate(); err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
+	}
+	if id.IsNil() && slug == "" {
+		return nil, errors.Join(ErrNamespaceGet, model.ErrInvalidID)
+	}
+
+	namespace, err := s.namespaceRepo.GetByRef(ctx, orgID, id, slug, model.ID{}, repository.NamespaceDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceGet, err)
+	}
+
+	return namespaceFromRepository(&namespace.Namespace), nil
 }
 
 func (s *namespaceService) List(ctx context.Context, orgID model.ID, page CursorPage) (Page[*Namespace], error) {

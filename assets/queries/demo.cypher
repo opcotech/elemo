@@ -214,6 +214,7 @@ MERGE (u:User:Principal {id: 'd9tcjmf92rs8isainm1g'})
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
 MERGE (o:Organization:Principal {id: '9bsv0s4vl6gg02sv7jrg'})
   ON CREATE SET o += {
+    slug:       'acme',
     name:       'ACME Inc.',
     email:      'info@example.com',
     logo:       'https://picsum.photos/id/211/200/200.jpg',
@@ -263,6 +264,7 @@ CREATE (u)-[:INVITED_TO {id: 'd9tcjmf92rs8isainj4g', created_at: datetime()}]->(
 MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
 MERGE (o:Organization:Principal {id: 'd9tcjmf92rs8isainj10'})
   ON CREATE SET o += {
+    slug:       'nova-labs',
     name:       'Nova Labs',
     email:      'hello@novalabs.dev',
     logo:       'https://picsum.photos/id/180/200/200.jpg',
@@ -294,6 +296,8 @@ MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
   ON CREATE SET ns += {
+    slug:        'product',
+    organization_id: '9bsv0s4vl6gg02sv7jrg',
     name:        'Product',
     description: 'Product engineering workspaces for ACME platforms and apps.',
     created_at:  datetime()
@@ -306,6 +310,8 @@ MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})
 MATCH (o:Organization {id: '9bsv0s4vl6gg02sv7jrg'})
 MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
   ON CREATE SET ns += {
+    slug:        'operations',
+    organization_id: '9bsv0s4vl6gg02sv7jrg',
     name:        'Operations',
     description: 'Infrastructure and internal operations for ACME.',
     created_at:  datetime()
@@ -318,6 +324,8 @@ MATCH (u:User {id: 'd9tcjmf92rs8isainivg'})
 MATCH (o:Organization {id: 'd9tcjmf92rs8isainj10'})
 MERGE (ns:Namespace {id: 'd9tcjmf92rs8isainj80'})
   ON CREATE SET ns += {
+    slug:        'delivery',
+    organization_id: 'd9tcjmf92rs8isainj10',
     name:        'Delivery',
     description: 'Client delivery and partner integration projects.',
     created_at:  datetime()
@@ -331,6 +339,7 @@ MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
 MERGE (p:Project {id: 'd9tcjmf92rs8isainj9g'})
   ON CREATE SET p += {
     key:           'PLAT',
+    namespace_id:  'd9tcjmf92rs8isainj50',
     name:          'Elemo Platform',
     description:   'Core product platform shared with partner teams.',
     logo:          'https://picsum.photos/id/201/200/200.jpg',
@@ -347,6 +356,7 @@ MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj50'})
 MERGE (p:Project {id: 'd9tcjmf92rs8isainjag'})
   ON CREATE SET p += {
     key:           'MOB',
+    namespace_id:  'd9tcjmf92rs8isainj50',
     name:          'Mobile App',
     description:   'Native mobile clients for ACME customers.',
     logo:          '',
@@ -363,6 +373,7 @@ MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj6g'})
 MERGE (p:Project {id: 'd9tcjmf92rs8isainjbg'})
   ON CREATE SET p += {
     key:           'INF',
+    namespace_id:  'd9tcjmf92rs8isainj6g',
     name:          'Infrastructure',
     description:   'Cloud infrastructure and reliability workstreams.',
     logo:          '',
@@ -379,6 +390,7 @@ MATCH (ns:Namespace {id: 'd9tcjmf92rs8isainj80'})
 MERGE (p:Project {id: 'd9tcjmf92rs8isainjcg'})
   ON CREATE SET p += {
     key:           'INTEG',
+    namespace_id:  'd9tcjmf92rs8isainj80',
     name:          'ACME Integration',
     description:   'Partner delivery project for ACME platform integrations.',
     logo:          'https://picsum.photos/id/250/200/200.jpg',

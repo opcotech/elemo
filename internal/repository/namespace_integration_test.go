@@ -149,6 +149,83 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestDelete() {
 	s.Assert().ErrorIs(err, repository.ErrNotFound)
 }
 
+func (s *NamespaceRepositoryIntegrationTestSuite) TestGetByRef() {
+	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	byID, err := s.NamespaceRepo.GetByRef(context.Background(), s.testOrg.ID, created.ID, "", s.testUser.ID, repository.NamespaceDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, byID.ID)
+	s.Assert().Equal(s.createOpts.Slug, byID.Slug)
+	s.Assert().Equal(s.testOrg.ID, byID.Organization.ID)
+	s.Assert().Equal(s.testOrg.Slug, byID.Organization.Slug)
+
+	bySlug, err := s.NamespaceRepo.GetByRef(context.Background(), s.testOrg.ID, model.ID{}, s.createOpts.Slug, s.testUser.ID, repository.NamespaceDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, bySlug.ID)
+
+	otherOrg, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.NamespaceRepo.GetByRef(context.Background(), otherOrg.ID, created.ID, "", s.testUser.ID, repository.NamespaceDetailProjection())
+	s.Assert().ErrorIs(err, repository.ErrNotFound)
+}
+
+func (s *NamespaceRepositoryIntegrationTestSuite) TestCreateDuplicateSlug() {
+	_, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	dup := testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID)
+	dup.Slug = s.createOpts.Slug
+	_, err = s.NamespaceRepo.Create(context.Background(), dup)
+	s.Assert().ErrorIs(err, repository.ErrSlugConflict)
+}
+
+func (s *NamespaceRepositoryIntegrationTestSuite) TestCreateSameSlugDifferentOrganizations() {
+	_, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	otherOrg, err := s.OrganizationRepo.Create(context.Background(), testModel.NewCreateOrganizationOpts(s.testUser.ID))
+	s.Require().NoError(err)
+	_, err = s.PermissionRepo.Create(context.Background(), testModel.NewCreateGrantOpts(
+		s.testUser.ID,
+		otherOrg.ID,
+		testModel.OrgAdminActions()...,
+	))
+	s.Require().NoError(err)
+
+	other := testModel.NewCreateNamespaceOpts(s.testUser.ID, otherOrg.ID)
+	other.Slug = s.createOpts.Slug
+	ns, err := s.NamespaceRepo.Create(context.Background(), other)
+	s.Require().NoError(err)
+	s.Assert().Equal(s.createOpts.Slug, ns.Slug)
+}
+
+func (s *NamespaceRepositoryIntegrationTestSuite) TestCreateConcurrentDuplicateSlug() {
+	slug := s.createOpts.Slug
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			opts := testModel.NewCreateNamespaceOpts(s.testUser.ID, s.testOrg.ID)
+			opts.Slug = slug
+			_, err := s.NamespaceRepo.Create(context.Background(), opts)
+			errs <- err
+		}()
+	}
+
+	var succeeded, conflicted int
+	for range 2 {
+		err := <-errs
+		if err == nil {
+			succeeded++
+			continue
+		}
+		s.Assert().ErrorIs(err, repository.ErrSlugConflict)
+		conflicted++
+	}
+	s.Assert().Equal(1, succeeded)
+	s.Assert().Equal(1, conflicted)
+}
+
 func TestNamespaceRepositoryIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(NamespaceRepositoryIntegrationTestSuite))
 }
@@ -211,6 +288,17 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGet() {
 	original, err := s.NamespaceRepo.Get(context.Background(), created.ID, repository.NamespaceDetailProjection())
 	s.Require().NoError(err)
 	usingCache, err := s.namespaceRepo.Get(context.Background(), created.ID, repository.NamespaceDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
+	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
+}
+
+func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestGetByRef() {
+	created, err := s.namespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.NamespaceRepo.GetByRef(context.Background(), s.testOrg.ID, model.ID{}, created.Slug, s.testUser.ID, repository.NamespaceDetailProjection())
+	s.Require().NoError(err)
+	usingCache, err := s.namespaceRepo.GetByRef(context.Background(), s.testOrg.ID, model.ID{}, created.Slug, s.testUser.ID, repository.NamespaceDetailProjection())
 	s.Require().NoError(err)
 	s.Assert().Equal(original, usingCache)
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)

@@ -43,12 +43,17 @@ import {
 } from "@/hooks/use-permissions";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1ProjectsDocumentsGetOptions } from "@/lib/api/query-options";
+import { projectIdPath } from "@/lib/api/refs";
 import {
   v1ProjectsDocumentsCreate,
   v1ProjectsDocumentsRelate,
   v1ProjectsDocumentsUnrelate,
 } from "@/lib/api/sdk";
-import type { Namespace, PartialDocument, Project } from "@/lib/api/types";
+import type {
+  AccessibleNamespace,
+  PartialDocument,
+  Project,
+} from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { documentListQueryKey } from "@/lib/documents/create";
 import {
@@ -64,13 +69,18 @@ import {
   selectRelations,
   selectWorkItems,
 } from "@/lib/mock-data";
+import {
+  namespacePath,
+  projectDocumentsPath,
+  projectWorkPath,
+} from "@/lib/paths";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
 export function ProjectOverviewPage({
   namespace,
   project,
 }: {
-  namespace: Namespace;
+  namespace: AccessibleNamespace;
   project: Project;
 }) {
   const { data: permissions } = usePermissions(
@@ -94,7 +104,7 @@ export function ProjectOverviewPage({
   const issueCount = project.issue_count ?? 0;
   const { data: documentsPage, isLoading: isDocumentsLoading } = useQuery(
     v1ProjectsDocumentsGetOptions({
-      path: { id: project.id },
+      path: projectIdPath(project.id),
       query: { page_size: 5 },
     })
   );
@@ -129,7 +139,11 @@ export function ProjectOverviewPage({
             secondary={[
               {
                 label: "Open project work",
-                href: `/namespaces/${namespace.id}/projects/${project.id}/work`,
+                href: projectWorkPath({
+                  organizationSlug: namespace.organization.slug,
+                  namespaceSlug: namespace.slug,
+                  projectKey: project.key,
+                }),
               },
               {
                 label: "View relationships",
@@ -175,7 +189,11 @@ export function ProjectOverviewPage({
                 render={
                   <InternalLink
                     to={internalPath(
-                      `/namespaces/${namespace.id}/projects/${project.id}/work`
+                      projectWorkPath({
+                        organizationSlug: namespace.organization.slug,
+                        namespaceSlug: namespace.slug,
+                        projectKey: project.key,
+                      })
                     )}
                   />
                 }
@@ -209,7 +227,11 @@ export function ProjectOverviewPage({
                   render={
                     <InternalLink
                       to={internalPath(
-                        `/namespaces/${namespace.id}/projects/${project.id}/documents`
+                        projectDocumentsPath({
+                          organizationSlug: namespace.organization.slug,
+                          namespaceSlug: namespace.slug,
+                          projectKey: project.key,
+                        })
                       )}
                     />
                   }
@@ -239,7 +261,7 @@ export function ProjectOverviewPage({
                 onOpenChange={setCreateOpen}
                 create={async (body) => {
                   const { data } = await v1ProjectsDocumentsCreate({
-                    path: { id: project.id },
+                    path: projectIdPath(project.id),
                     body,
                     throwOnError: true,
                   });
@@ -250,6 +272,7 @@ export function ProjectOverviewPage({
                 ]}
               />
               <DocumentLinkDialog
+                organizationId={namespace.organization.id}
                 namespaceId={namespace.id}
                 relatedIds={relatedIds}
                 relatedLabel="this project"
@@ -257,7 +280,7 @@ export function ProjectOverviewPage({
                 onOpenChange={setLinkOpen}
                 onLink={async (documentId) => {
                   await v1ProjectsDocumentsRelate({
-                    path: { id: project.id, documentId },
+                    path: { ...projectIdPath(project.id), documentId },
                     throwOnError: true,
                   });
                 }}
@@ -279,7 +302,12 @@ export function ProjectOverviewPage({
                   label: "Namespace",
                   value: (
                     <InternalLink
-                      to={internalPath(`/namespaces/${namespace.id}`)}
+                      to={internalPath(
+                        namespacePath({
+                          organizationSlug: namespace.organization.slug,
+                          namespaceSlug: namespace.slug,
+                        })
+                      )}
                       className="text-primary hover:underline"
                     >
                       {namespace.name}
@@ -320,7 +348,7 @@ export function ProjectDocumentsPage({
   namespace,
   project,
 }: {
-  namespace: Namespace;
+  namespace: AccessibleNamespace;
   project: Project;
 }) {
   const [query, setQuery] = useState("");
@@ -342,7 +370,7 @@ export function ProjectDocumentsPage({
   const unlinkMutation = useMutation({
     mutationFn: async (document: PartialDocument) => {
       await v1ProjectsDocumentsUnrelate({
-        path: { id: project.id, documentId: document.id },
+        path: { ...projectIdPath(project.id), documentId: document.id },
         throwOnError: true,
       });
       return document;
@@ -366,7 +394,7 @@ export function ProjectDocumentsPage({
   });
   const { data: documentsPage, isLoading } = useQuery(
     v1ProjectsDocumentsGetOptions({
-      path: { id: project.id },
+      path: projectIdPath(project.id),
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -488,6 +516,7 @@ export function ProjectDocumentsPage({
       ) : null}
       {mayWrite ? (
         <DocumentLinkDialog
+          organizationId={namespace.organization.id}
           namespaceId={namespace.id}
           relatedIds={relatedIds}
           relatedLabel="this project"
@@ -495,7 +524,7 @@ export function ProjectDocumentsPage({
           onOpenChange={setLinkOpen}
           onLink={async (documentId) => {
             await v1ProjectsDocumentsRelate({
-              path: { id: project.id, documentId },
+              path: { ...projectIdPath(project.id), documentId },
               throwOnError: true,
             });
           }}
@@ -509,7 +538,7 @@ export function ProjectActivityPage({
   namespace,
   project,
 }: {
-  namespace: Namespace;
+  namespace: AccessibleNamespace;
   project: Project;
 }) {
   const activity = selectActivity({ limit: 20 });

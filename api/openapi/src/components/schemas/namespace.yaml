@@ -16,6 +16,13 @@ Namespace:
       type: string
       description: Unique identifier of the namespace.
       example: 9bsv0s46s6s002p9ltq0
+    slug:
+      type: string
+      description: Organization-scoped canonical kebab-case slug. Immutable after create.
+      minLength: 3
+      maxLength: 50
+      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      example: platform
     name:
       type: string
       description: Name of the namespace.
@@ -52,6 +59,7 @@ Namespace:
       nullable: true
   required:
     - id
+    - slug
     - name
     - created_at
     - updated_at
@@ -64,6 +72,13 @@ AccessibleNamespace:
       type: string
       description: Unique identifier of the namespace.
       example: 9bsv0s46s6s002p9ltq0
+    slug:
+      type: string
+      description: Organization-scoped canonical kebab-case slug.
+      minLength: 3
+      maxLength: 50
+      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      example: platform
     name:
       type: string
       description: Name of the namespace.
@@ -102,6 +117,7 @@ AccessibleNamespace:
       $ref: "#/components/schemas/PartialOrganization"
   required:
     - id
+    - slug
     - name
     - created_at
     - updated_at
@@ -119,6 +135,10 @@ PartialNamespace:
       type: string
       description: Unique identifier of the namespace.
       example: 9bsv0s46s6s002p9ltq0
+    slug:
+      type: string
+      description: Organization-scoped canonical kebab-case slug.
+      example: platform
     name:
       type: string
       description: Name of the namespace.
@@ -127,6 +147,7 @@ PartialNamespace:
       example: Engineering
   required:
     - id
+    - slug
     - name
 NamespacePage:
   title: NamespacePage

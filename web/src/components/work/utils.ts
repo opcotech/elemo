@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 
 import type { TimelineEntry } from "@/lib/mock-data";
+import { workItemPath as canonicalWorkItemPath } from "@/lib/paths";
 import type { WorkItem } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
@@ -79,14 +80,29 @@ export function formatDateTime(value: string | null | undefined) {
 }
 
 export function workItemPath(item: {
-  readonly namespaceId: string;
+  readonly organizationSlug?: string | null;
+  readonly namespaceSlug?: string | null;
+  readonly namespace?: {
+    readonly slug?: string;
+    readonly organizationSlug?: string;
+  };
   readonly key: string;
 }): string {
-  return `/work/${item.namespaceId}/${item.key}`;
+  return canonicalWorkItemPath({
+    organizationSlug:
+      item.organizationSlug ?? item.namespace?.organizationSlug ?? "",
+    namespaceSlug: item.namespaceSlug ?? item.namespace?.slug ?? "",
+    issueKey: item.key,
+  });
 }
 
 export function workItemUrl(item: {
-  readonly namespaceId: string;
+  readonly organizationSlug?: string | null;
+  readonly namespaceSlug?: string | null;
+  readonly namespace?: {
+    readonly slug?: string;
+    readonly organizationSlug?: string;
+  };
   readonly key: string;
 }): string {
   const path = workItemPath(item);

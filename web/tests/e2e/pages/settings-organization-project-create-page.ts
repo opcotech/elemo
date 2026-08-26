@@ -4,6 +4,8 @@ import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { ProjectCreateFormSection } from "../sections";
 
+import { settingsProjectNewPath } from "@/lib/paths";
+
 export class SettingsOrganizationProjectCreatePage extends BaseComponent {
   public readonly projectForm: ProjectCreateFormSection;
 
@@ -12,10 +14,10 @@ export class SettingsOrganizationProjectCreatePage extends BaseComponent {
     this.projectForm = new ProjectCreateFormSection(page);
   }
 
-  async goto(organizationId: string, namespaceId: string): Promise<void> {
+  async goto(organizationSlug: string, namespaceSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/new`
+      settingsProjectNewPath({ organizationSlug, namespaceSlug })
     );
   }
 }

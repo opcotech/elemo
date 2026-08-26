@@ -44,7 +44,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(orgToDelete.id);
+    await orgDetailsPage.goto(orgToDelete.slug);
     await orgDetailsPage.dangerZone.waitForLoad();
 
     // Click delete button
@@ -113,7 +113,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(orgToDelete.id);
+    await orgDetailsPage.goto(orgToDelete.slug);
     await orgDetailsPage.dangerZone.waitForLoad();
 
     // Click delete button
@@ -176,7 +176,7 @@ test.describe("@settings.organization-delete Organization Delete E2E Tests", () 
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organization.id);
+    await orgDetailsPage.goto(organization.slug);
     await orgDetailsPage.organizationInfo.waitForLoad();
 
     // Verify danger zone is not visible

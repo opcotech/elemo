@@ -23,9 +23,9 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { MarkdownContent } from "@/components/work/markdown-content";
+import { workItemPath } from "@/components/work/utils";
 import { CompactWorkList } from "@/components/work/work-list";
 import { useAuth } from "@/hooks/use-auth";
-import type { AccessibleNamespace } from "@/lib/api/accessible-namespaces";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { collectedListQuery, cursorPageQuery } from "@/lib/api/cursor-pages";
 import {
@@ -34,10 +34,12 @@ import {
 } from "@/lib/api/query-options";
 import { v1UsersIssuesGet } from "@/lib/api/sdk";
 import type { Todo } from "@/lib/api/types";
+import { internalPath } from "@/lib/internal-url";
 import { resolveDemoPerson, selectAttentionSignals } from "@/lib/mock-data";
+import { namespacePath } from "@/lib/paths";
 import { recentEntityLinkType } from "@/lib/recent-entity";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
-import { issuesToWorkItems } from "@/lib/work/issue-adapter";
+import { issuesToWorkItemsWithNamespaces } from "@/lib/work/issue-adapter";
 import { queryWorkItems } from "@/lib/work/query";
 
 const HOME_TODO_PREVIEW_LIMIT = 5;
@@ -48,8 +50,7 @@ export function HomePage() {
   const demoPerson = resolveDemoPerson(user);
   const { data: accessibleWorkspace, isLoading: namespacesLoading } =
     useAccessibleNamespaces();
-  const namespaces: AccessibleNamespace[] =
-    accessibleWorkspace?.namespaces ?? [];
+  const namespaces = accessibleWorkspace?.namespaces ?? [];
   const { data: todosPage, isLoading: todosLoading } =
     useQuery(v1TodosGetOptions());
   const userIssuesOptions = v1UsersIssuesGetOptions({
@@ -74,8 +75,8 @@ export function HomePage() {
   });
   const todos: Todo[] = todosPage?.items ?? [];
   const userWorkItems = useMemo(
-    () => issuesToWorkItems(issuesPage?.items ?? []),
-    [issuesPage?.items]
+    () => issuesToWorkItemsWithNamespaces(issuesPage?.items ?? [], namespaces),
+    [issuesPage?.items, namespaces]
   );
   const userWorkItemById = useMemo(
     () =>
@@ -165,7 +166,7 @@ export function HomePage() {
                   return (
                     <InternalLink
                       key={signal.id}
-                      to={`/work/${item.namespaceId}/${item.key}` as const}
+                      to={internalPath(workItemPath(item))}
                       className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
                     >
                       <AttentionIcon severity={signal.severity} />
@@ -315,7 +316,10 @@ export function HomePage() {
                   <EntityLink
                     key={namespace.id}
                     type="namespace"
-                    href={`/namespaces/${namespace.id}`}
+                    href={namespacePath({
+                      organizationSlug: namespace.organizationSlug,
+                      namespaceSlug: namespace.slug,
+                    })}
                     title={namespace.name}
                     subtitle={namespace.organizationName}
                   />

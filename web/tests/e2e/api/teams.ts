@@ -22,7 +22,7 @@ export async function createTeam(
     async () => {
       return await v1OrganizationTeamsCreate({
         client,
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
         body: {
           name: teamData.name,
           description: teamData.description,
@@ -42,7 +42,7 @@ export async function createTeam(
     async () => {
       return await v1OrganizationTeamGet({
         client,
-        path: { id: organizationId, team_id: teamId },
+        path: { organizationRef: organizationId, team_id: teamId },
         throwOnError: true,
       });
     },
@@ -68,7 +68,7 @@ export async function addTeamMember(
     async () => {
       return await v1OrganizationTeamMembersAdd({
         client,
-        path: { id: organizationId, team_id: teamId },
+        path: { organizationRef: organizationId, team_id: teamId },
         body: { user_id: userId },
         throwOnError: true,
       });
@@ -93,7 +93,11 @@ export async function removeTeamMember(
     async () => {
       return await v1OrganizationTeamMemberRemove({
         client,
-        path: { id: organizationId, team_id: teamId, user_id: userId },
+        path: {
+          organizationRef: organizationId,
+          team_id: teamId,
+          user_id: userId,
+        },
         throwOnError: true,
       });
     },
@@ -116,7 +120,7 @@ export async function listTeamMembers(
     async () => {
       return await v1OrganizationTeamMembersGet({
         client,
-        path: { id: organizationId, team_id: teamId },
+        path: { organizationRef: organizationId, team_id: teamId },
         throwOnError: true,
       });
     },

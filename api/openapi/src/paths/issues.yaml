@@ -1,6 +1,7 @@
-"/v1/namespaces/{id}/issues":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
   get:
     summary: Get namespace issues
     tags:
@@ -36,9 +37,10 @@
       - $ref: "#/components/parameters/issue_list_status"
       - $ref: "#/components/parameters/issue_list_priority"
       - $ref: "#/components/parameters/issue_list_order"
-"/v1/namespaces/{id}/issues/{key}":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
     - $ref: "#/components/parameters/issueKey"
   get:
     summary: Get issue by key
@@ -68,9 +70,9 @@
           - namespace.read
           - issue.read
     description: Return the issue identified by composite key within the given namespace.
-"/v1/projects/{id}/issues":
+"/v1/projects/{projectId}/issues":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/projectId"
   get:
     summary: Get project issues
     tags:

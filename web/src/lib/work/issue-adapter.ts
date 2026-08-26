@@ -10,7 +10,33 @@ import type { WorkLabel } from "@/lib/work/resolve-work-labels";
 
 export interface IssueWorkContext {
   readonly namespaceId?: string;
+  readonly organizationId?: string;
+  readonly organizationSlug?: string;
+  readonly namespaceSlug?: string;
   readonly projectId?: string | null;
+}
+
+export interface AccessibleNamespaceWorkContext {
+  readonly id: string;
+  readonly slug: string;
+  readonly organizationId: string;
+  readonly organizationSlug: string;
+}
+
+function issueWorkContextForNamespace(
+  namespaces: ReadonlyMap<string, AccessibleNamespaceWorkContext>,
+  namespaceId: string | undefined
+): IssueWorkContext {
+  const namespace = namespaceId ? namespaces.get(namespaceId) : undefined;
+  if (!namespace) {
+    return {};
+  }
+  return {
+    namespaceId: namespace.id,
+    namespaceSlug: namespace.slug,
+    organizationId: namespace.organizationId,
+    organizationSlug: namespace.organizationSlug,
+  };
 }
 
 export const issueStatusLabels: Record<IssueStatus, string> = {
@@ -83,6 +109,9 @@ export function issueToWorkItem(
   const labels = issueLabels(issue.labels);
   const namespaceId = issue.namespace?.id ?? context.namespaceId ?? "";
   const projectId = issue.project?.id ?? context.projectId ?? null;
+  const namespaceSlug = issue.namespace?.slug ?? context.namespaceSlug;
+  const organizationSlug = context.organizationSlug;
+  const organizationId = context.organizationId;
 
   return {
     dataSource: "api",
@@ -91,9 +120,18 @@ export function issueToWorkItem(
     title: issue.title,
     summary: issue.description?.trim() ?? "",
     namespaceId,
+    organizationId,
+    organizationSlug,
+    namespaceSlug,
     projectId,
     namespace: issue.namespace
-      ? { id: issue.namespace.id, name: issue.namespace.name }
+      ? {
+          id: issue.namespace.id,
+          name: issue.namespace.name,
+          slug: issue.namespace.slug,
+          organizationId,
+          organizationSlug,
+        }
       : undefined,
     project: issue.project
       ? {
@@ -110,6 +148,8 @@ export function issueToWorkItem(
           key: issue.parent.key,
           title: issue.parent.title,
           namespaceId: issue.parent.namespace?.id,
+          namespaceSlug: issue.parent.namespace?.slug,
+          organizationSlug,
         }
       : issue.parent === null
         ? null
@@ -139,6 +179,22 @@ export function issuesToWorkItems(
   context: IssueWorkContext = {}
 ): WorkItem[] {
   return issues.map((issue) => issueToWorkItem(issue, context));
+}
+
+/** Adapt assigned/cross-namespace issue lists using reachable namespace slugs. */
+export function issuesToWorkItemsWithNamespaces(
+  issues: readonly IssueLike[],
+  namespaces: readonly AccessibleNamespaceWorkContext[]
+): WorkItem[] {
+  const byId = new Map(
+    namespaces.map((namespace) => [namespace.id, namespace] as const)
+  );
+  return issues.map((issue) =>
+    issueToWorkItem(
+      issue,
+      issueWorkContextForNamespace(byId, issue.namespace?.id)
+    )
+  );
 }
 
 export function partialIssuesToWorkItems(

@@ -71,6 +71,10 @@ func (c *organizationController) V1OrganizationsCreate(ctx context.Context, requ
 			return api.V1OrganizationsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		case http.StatusForbidden:
 			return api.V1OrganizationsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		default:
 			return api.V1OrganizationsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -87,12 +91,12 @@ func (c *organizationController) V1OrganizationGet(ctx context.Context, request 
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	id, slug, err := parseOrganizationRef(request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	organization, err := c.organizationService.Get(ctx, organizationID)
+	organization, err := c.organizationService.GetByRef(ctx, id, slug)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusForbidden:
@@ -147,7 +151,7 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationUpdate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -178,7 +182,7 @@ func (c *organizationController) V1OrganizationDelete(ctx context.Context, reque
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationDelete")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -203,7 +207,7 @@ func (c *organizationController) V1OrganizationMembersGet(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -244,12 +248,16 @@ func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersAdd")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	userID, err := model.NewIDFromString(request.Id, model.ResourceTypeUser.String())
+	if request.Body == nil || request.Body.UserId == "" {
+		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(fmt.Errorf("user_id is required"))}, nil
+	}
+
+	userID, err := model.NewIDFromString(request.Body.UserId, model.ResourceTypeUser.String())
 	if err != nil {
 		return api.V1OrganizationMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -276,7 +284,7 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersInvite")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMembersInvite400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -367,7 +375,7 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMemberRemove")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -397,7 +405,7 @@ func (c *organizationController) V1OrganizationMemberInviteRevoke(ctx context.Co
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMemberInviteRevoke")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMemberInviteRevoke400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -427,7 +435,7 @@ func (c *organizationController) V1OrganizationMembersAccept(ctx context.Context
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationMembersAccept")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -470,7 +478,7 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(model.ErrInvalidID)}, nil
 	}
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationRolesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -505,7 +513,7 @@ func (c *organizationController) V1OrganizationRolesGet(ctx context.Context, req
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRolesGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationRolesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -546,7 +554,7 @@ func (c *organizationController) V1OrganizationRoleGet(ctx context.Context, requ
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRoleGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationRoleGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -577,7 +585,7 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRoleUpdate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationRoleUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -613,7 +621,7 @@ func (c *organizationController) V1OrganizationRoleDelete(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationRoleDelete")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationRoleDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -643,7 +651,7 @@ func (c *organizationController) V1OrganizationTeamsCreate(ctx context.Context, 
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamsCreate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -675,7 +683,7 @@ func (c *organizationController) V1OrganizationTeamsGet(ctx context.Context, req
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamsGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -716,7 +724,7 @@ func (c *organizationController) V1OrganizationTeamGet(ctx context.Context, requ
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -747,7 +755,7 @@ func (c *organizationController) V1OrganizationTeamUpdate(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamUpdate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -782,7 +790,7 @@ func (c *organizationController) V1OrganizationTeamDelete(ctx context.Context, r
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamDelete")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -812,7 +820,7 @@ func (c *organizationController) V1OrganizationTeamMembersGet(ctx context.Contex
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamMembersGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamMembersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -858,7 +866,7 @@ func (c *organizationController) V1OrganizationTeamMembersAdd(ctx context.Contex
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamMembersAdd")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamMembersAdd400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -899,7 +907,7 @@ func (c *organizationController) V1OrganizationTeamMemberRemove(ctx context.Cont
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationTeamMemberRemove")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationTeamMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -970,6 +978,7 @@ func NewOrganizationController(
 
 func createOrganizationJSONRequestBodyToCreateOrganizationOpts(body *api.V1OrganizationsCreateJSONRequestBody) service.CreateOrganizationOpts {
 	opts := service.CreateOrganizationOpts{
+		Slug:  body.Slug,
 		Name:  body.Name,
 		Email: string(body.Email),
 	}
@@ -1014,6 +1023,7 @@ func updateOrganizationJSONRequestBodyToUpdateOrganizationOpts(body *api.V1Organ
 func organizationToDTO(organization *service.Organization) api.Organization {
 	o := api.Organization{
 		Id:             organization.ID.String(),
+		Slug:           organization.Slug,
 		Email:          oapiTypes.Email(organization.Email),
 		Name:           organization.Name,
 		Logo:           &organization.Logo,

@@ -13,7 +13,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -24,7 +24,9 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let namespaceId: string;
+  let namespaceSlug: string;
   let ownerApiClient: Client;
 
   const getFullProjectName = () => `Project ${getRandomString(8)}`;
@@ -45,11 +47,14 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
       email: `project-detail-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
+    namespaceSlug = getRandomSlug("ns");
     const namespaceResponse = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: namespaceSlug,
         name: `Project Detail Namespace ${getRandomString(8)}`,
         description: `Namespace for project detail tests ${getRandomString(8)}`,
       },
@@ -110,7 +115,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     const description =
       overrides?.description ?? `Project description ${getRandomString(8)}`;
 
-    return createProject(ownerApiClient, namespaceId, {
+    return createProject(ownerApiClient, organizationId, namespaceId, {
       key,
       name,
       description,
@@ -137,7 +142,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     });
 
     const projectDetailsPage = new SettingsOrganizationProjectDetailsPage(page);
-    await projectDetailsPage.goto(organizationId, namespaceId, project.id);
+    await projectDetailsPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectDetailsPage.waitForLoad();
     await projectDetailsPage.projectInfo.waitForLoad();
 
@@ -196,7 +201,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     });
 
     const projectDetailsPage = new SettingsOrganizationProjectDetailsPage(page);
-    await projectDetailsPage.goto(organizationId, namespaceId, project.id);
+    await projectDetailsPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectDetailsPage.projectInfo.waitForLoad();
 
     expect(await projectDetailsPage.projectInfo.hasEditProjectButton()).toBe(
@@ -208,7 +213,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     await projectEditPage.projectEditForm.waitForLoad();
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${project.id}/edit`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${project.key}/edit`
       )
     );
 
@@ -216,7 +221,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
       email: readerUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await projectDetailsPage.goto(organizationId, namespaceId, project.id);
+    await projectDetailsPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectDetailsPage.projectInfo.waitForLoad();
 
     expect(await projectDetailsPage.projectInfo.hasEditProjectButton()).toBe(
@@ -246,7 +251,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
 
     const projectRow = namespaceDetailsPage.projects.getRowByProjectName(
@@ -261,7 +266,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${project.id}`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${project.key}`
       )
     );
 
@@ -283,7 +288,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
 
     await expect(
@@ -302,7 +307,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     });
 
     const projectDetailsPage = new SettingsOrganizationProjectDetailsPage(page);
-    await projectDetailsPage.goto(organizationId, namespaceId, project.id);
+    await projectDetailsPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectDetailsPage.waitForLoad();
 
     await expect(
@@ -365,7 +370,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
 
     const writerProjectRow = namespaceDetailsPage.projects.getRowByProjectName(
@@ -385,7 +390,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
       email: readerUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
 
     const readerProjectRow = namespaceDetailsPage.projects.getRowByProjectName(
@@ -427,7 +432,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
     });
 
     const projectDetailsPage = new SettingsOrganizationProjectDetailsPage(page);
-    await projectDetailsPage.goto(organizationId, namespaceId, project.id);
+    await projectDetailsPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectDetailsPage.projectInfo.waitForLoad();
     await projectDetailsPage.dangerZone.waitForLoad();
 
@@ -437,7 +442,7 @@ test.describe("@settings.organization-projects-detail Organization Projects Deta
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}$`
       )
     );
 

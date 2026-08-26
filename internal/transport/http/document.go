@@ -33,14 +33,16 @@ type DocumentController interface {
 
 type documentController struct {
 	*baseController
-	documentService service.DocumentService
+	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
+	documentService     service.DocumentService
 }
 
 func (c *documentController) V1ProjectsDocumentsGet(ctx context.Context, request api.V1ProjectsDocumentsGetRequestObject) (api.V1ProjectsDocumentsGetResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsDocumentsGet")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsDocumentsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -73,7 +75,7 @@ func (c *documentController) V1ProjectsDocumentsCreate(ctx context.Context, requ
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsDocumentsCreate")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsDocumentsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -104,7 +106,7 @@ func (c *documentController) V1ProjectsDocumentsRelate(ctx context.Context, requ
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsDocumentsRelate")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsDocumentsRelate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -135,7 +137,7 @@ func (c *documentController) V1ProjectsDocumentsUnrelate(ctx context.Context, re
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectsDocumentsUnrelate")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectsDocumentsUnrelate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -166,7 +168,7 @@ func (c *documentController) V1NamespacesDocumentsGet(ctx context.Context, reque
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesDocumentsGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesDocumentsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -204,7 +206,7 @@ func (c *documentController) V1NamespacesDocumentsCreate(ctx context.Context, re
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesDocumentsCreate")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesDocumentsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -235,7 +237,7 @@ func (c *documentController) V1OrganizationsDocumentsGet(ctx context.Context, re
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsDocumentsGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsDocumentsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -273,7 +275,7 @@ func (c *documentController) V1OrganizationsDocumentsCreate(ctx context.Context,
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsDocumentsCreate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsDocumentsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -688,18 +690,31 @@ func partialDocumentPageToDTO(page service.Page[*service.PartialDocument]) api.P
 }
 
 // NewDocumentController creates a new DocumentController.
-func NewDocumentController(documentService service.DocumentService, opts ...ControllerOption) (DocumentController, error) {
+func NewDocumentController(
+	organizationService service.OrganizationService,
+	namespaceService service.NamespaceService,
+	documentService service.DocumentService,
+	opts ...ControllerOption,
+) (DocumentController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	if organizationService == nil {
+		return nil, ErrNoOrganizationService
+	}
+	if namespaceService == nil {
+		return nil, ErrNoNamespaceService
+	}
 	if documentService == nil {
 		return nil, ErrNoDocumentService
 	}
 
 	return &documentController{
-		baseController:  c,
-		documentService: documentService,
+		baseController:      c,
+		organizationService: organizationService,
+		namespaceService:    namespaceService,
+		documentService:     documentService,
 	}, nil
 }

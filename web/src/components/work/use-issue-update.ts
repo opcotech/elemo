@@ -16,6 +16,7 @@ import {
   v1LabelsGetOptions,
   v1NamespacesIssuesKeyGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import type {
   Issue,
   IssuePatch,
@@ -33,6 +34,7 @@ import { labelsFromIds } from "@/lib/work/resolve-work-labels";
 import { partialUsersFromIds } from "@/lib/work/resolve-work-people";
 
 interface UseIssueUpdateOptions {
+  organizationId: string;
   namespaceId: string;
   issueKey: string;
   issueId: string;
@@ -226,13 +228,20 @@ function hasPartialLabels(
 }
 
 export function useIssueUpdate({
+  organizationId,
   namespaceId,
   issueKey,
   issueId,
   projectId,
 }: UseIssueUpdateOptions) {
   const queryClient = useQueryClient();
-  const cacheTarget = { issueId, projectId, namespaceId, issueKey };
+  const cacheTarget = {
+    issueId,
+    projectId,
+    organizationId,
+    namespaceId,
+    issueKey,
+  };
 
   const mutation = useMutation({
     ...v1IssueUpdateMutation(),
@@ -243,7 +252,10 @@ export function useIssueUpdate({
 
       const previousByKey = queryClient.getQueryData<Issue>(
         v1NamespacesIssuesKeyGetOptions({
-          path: { id: namespaceId, key: issueKey },
+          path: {
+            ...namespaceRefPath(organizationId, namespaceId),
+            key: issueKey,
+          },
         }).queryKey
       );
       const previousById = queryClient.getQueryData<Issue>(

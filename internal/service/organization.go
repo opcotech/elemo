@@ -25,6 +25,7 @@ import (
 // Organization represents an organization returned by the service.
 type Organization struct {
 	ID             model.ID
+	Slug           string
 	Name           string
 	Email          string
 	Logo           string
@@ -52,6 +53,7 @@ type OrganizationMember struct {
 
 // CreateOrganizationOpts holds the data required to create an organization.
 type CreateOrganizationOpts struct {
+	Slug    string                   `json:"slug"`
 	Name    string                   `json:"name" validate:"required,min=1,max=120"`
 	Email   string                   `json:"email" validate:"required,email"`
 	Logo    string                   `json:"logo" validate:"omitempty,url"`
@@ -65,6 +67,9 @@ func (o *CreateOrganizationOpts) Validate() error {
 		o.Status = model.OrganizationStatusActive
 	}
 	if err := validate.Struct(o); err != nil {
+		return errors.Join(model.ErrInvalidOrganizationDetails, err)
+	}
+	if err := validate.OrganizationSlug(o.Slug); err != nil {
 		return errors.Join(model.ErrInvalidOrganizationDetails, err)
 	}
 	return nil
@@ -128,6 +133,13 @@ type OrganizationService interface {
 	// Get returns an organization by its ID. If the organization does not
 	// exist, an error is returned.
 	Get(ctx context.Context, id model.ID) (*Organization, error)
+	// GetByRef returns an organization by xid or global slug after checking
+	// organization.read on the resolved id.
+	GetByRef(ctx context.Context, id model.ID, slug string) (*Organization, error)
+	// Resolve looks up an organization by xid or global slug without requiring
+	// organization.read. Nested routes use this so descendant-only users can
+	// still address resources under the organization.
+	Resolve(ctx context.Context, id model.ID, slug string) (*Organization, error)
 	// List returns a cursor-paginated page of organizations for the current user.
 	List(ctx context.Context, page CursorPage) (Page[*Organization], error)
 	// Update updates an organization. If the organization does not exist, an
@@ -178,6 +190,7 @@ func organizationFromRepository(o *repository.Organization) *Organization {
 	}
 	return &Organization{
 		ID:             o.ID,
+		Slug:           o.Slug,
 		Name:           o.Name,
 		Email:          o.Email,
 		Logo:           o.Logo,
@@ -219,6 +232,7 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 
 	organization, err := s.organizationRepo.Create(ctx, repository.CreateOrganizationOpts{
 		Owner:   owner,
+		Slug:    opts.Slug,
 		Name:    opts.Name,
 		Email:   opts.Email,
 		Logo:    opts.Logo,
@@ -285,6 +299,38 @@ func (s *organizationService) Get(ctx context.Context, id model.ID) (*Organizati
 	}
 
 	return organizationFromRepository(organization), nil
+}
+
+func (s *organizationService) Resolve(ctx context.Context, id model.ID, slug string) (*Organization, error) {
+	ctx, span := s.tracer.Start(ctx, "service.organizationService/Resolve")
+	defer span.End()
+
+	if id.IsNil() && slug == "" {
+		return nil, errors.Join(ErrOrganizationGet, model.ErrInvalidID)
+	}
+
+	organization, err := s.organizationRepo.GetByRef(ctx, id, slug, repository.OrganizationDetailProjection())
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationGet, err)
+	}
+
+	return organizationFromRepository(organization), nil
+}
+
+func (s *organizationService) GetByRef(ctx context.Context, id model.ID, slug string) (*Organization, error) {
+	ctx, span := s.tracer.Start(ctx, "service.organizationService/GetByRef")
+	defer span.End()
+
+	organization, err := s.Resolve(ctx, id, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := requireAction(ctx, s.permissionService, organization.ID, model.ActionOrganizationRead); err != nil {
+		return nil, errors.Join(ErrOrganizationGet, err)
+	}
+
+	return organization, nil
 }
 
 func (s *organizationService) List(ctx context.Context, page CursorPage) (Page[*Organization], error) {

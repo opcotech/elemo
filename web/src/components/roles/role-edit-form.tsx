@@ -35,12 +35,14 @@ type RoleEditFormValues = z.infer<typeof roleEditFormSchema>;
 interface RoleEditFormProps {
   role: Role;
   organizationId: string;
+  organizationSlug: string;
   roleId: string;
 }
 
 export function RoleEditForm({
   role,
   organizationId,
+  organizationSlug,
   roleId,
 }: RoleEditFormProps) {
   const navigate = useNavigate();
@@ -83,19 +85,19 @@ export function RoleEditForm({
     errorMessagePrefix: "Failed to update role",
     queryKeysToInvalidate: [
       v1OrganizationRolesGetOptions({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
       }).queryKey,
       v1OrganizationRoleGetOptions({
         path: {
-          id: organizationId,
+          organizationRef: organizationId,
           role_id: roleId,
         },
       }).queryKey,
     ],
     navigateOnSuccess: (navigateTo) =>
       navigateTo({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
+        to: "/settings/organizations/$organizationSlug",
+        params: { organizationSlug },
       }),
     transformValues: (values) => {
       const { key: _key, ...patchValues } = values; // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -110,7 +112,7 @@ export function RoleEditForm({
       );
       return {
         path: {
-          id: organizationId,
+          organizationRef: organizationId,
           role_id: roleId,
         },
         body: normalizedBody,
@@ -124,8 +126,8 @@ export function RoleEditForm({
       onSubmit={mutation.handleSubmit}
       onCancel={() =>
         navigate({
-          to: "/settings/organizations/$organizationId",
-          params: { organizationId },
+          to: "/settings/organizations/$organizationSlug",
+          params: { organizationSlug },
         })
       }
       isPending={mutation.isPending}

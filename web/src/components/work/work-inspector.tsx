@@ -67,8 +67,12 @@ export function WorkInspector({ item }: { item: WorkItem }) {
       <Section data-section="issue-details">
         <WorkItemDetailsReadonly item={item} compact />
       </Section>
-      {isApi && namespaceId ? (
-        <IssueRelationsPreview issueId={item.id} namespaceId={namespaceId} />
+      {isApi && item.organizationSlug && item.namespaceSlug ? (
+        <IssueRelationsPreview
+          issueId={item.id}
+          organizationSlug={item.organizationSlug}
+          namespaceSlug={item.namespaceSlug}
+        />
       ) : (
         <Section title="Relations" data-section="issue-relations">
           {relations.length > 0 ? (
@@ -89,12 +93,17 @@ export function WorkInspector({ item }: { item: WorkItem }) {
       <Section title="Metadata" data-section="issue-metadata">
         <IssueMetadataProperties
           compact
-          namespaceId={namespaceId}
+          organizationSlug={item.organizationSlug}
+          namespaceSlug={item.namespaceSlug}
           namespaceLabel={namespaceLabel}
-          projectId={projectId}
+          projectKey={item.project?.key}
           projectLabel={projectLabel}
           parent={
-            <IssueParentLink parent={item.parent} namespaceId={namespaceId} />
+            <IssueParentLink
+              parent={item.parent}
+              organizationSlug={item.organizationSlug}
+              namespaceSlug={item.namespaceSlug}
+            />
           }
           reportedById={item.creatorId}
           createdAt={item.createdAt}

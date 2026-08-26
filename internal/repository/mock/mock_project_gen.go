@@ -87,18 +87,18 @@ func (mr *MockProjectRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Call
 }
 
 // GetByKey mocks base method.
-func (m *MockProjectRepository) GetByKey(ctx context.Context, key string, proj repository.ProjectProjection) (*repository.Project, error) {
+func (m *MockProjectRepository) GetByKey(ctx context.Context, namespaceID model.ID, key string, proj repository.ProjectProjection) (*repository.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByKey", ctx, key, proj)
+	ret := m.ctrl.Call(m, "GetByKey", ctx, namespaceID, key, proj)
 	ret0, _ := ret[0].(*repository.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByKey indicates an expected call of GetByKey.
-func (mr *MockProjectRepositoryMockRecorder) GetByKey(ctx, key, proj any) *gomock.Call {
+func (mr *MockProjectRepositoryMockRecorder) GetByKey(ctx, namespaceID, key, proj any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectRepository)(nil).GetByKey), ctx, key, proj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectRepository)(nil).GetByKey), ctx, namespaceID, key, proj)
 }
 
 // ListForNamespace mocks base method.

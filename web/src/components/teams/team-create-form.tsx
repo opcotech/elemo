@@ -20,9 +20,13 @@ import { showSuccessToast } from "@/lib/toast";
 
 interface TeamCreateFormProps {
   organizationId: string;
+  organizationSlug: string;
 }
 
-export function TeamCreateForm({ organizationId }: TeamCreateFormProps) {
+export function TeamCreateForm({
+  organizationId,
+  organizationSlug,
+}: TeamCreateFormProps) {
   const navigate = useNavigate();
 
   const form = useForm<TeamFormValues>({
@@ -50,7 +54,7 @@ export function TeamCreateForm({ organizationId }: TeamCreateFormProps) {
     errorMessagePrefix: "Failed to create team",
     queryKeysToInvalidate: [
       v1OrganizationTeamsGetOptions({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
       }).queryKey,
     ],
     transformValues: (values) => {
@@ -59,17 +63,15 @@ export function TeamCreateForm({ organizationId }: TeamCreateFormProps) {
         values
       ) as TeamCreate;
       return {
-        path: {
-          id: organizationId,
-        },
+        path: { organizationRef: organizationId },
         body: normalizedBody,
       };
     },
     onSuccess: (data) => {
       showSuccessToast("Team created", "The team was created successfully");
       navigate({
-        to: "/settings/organizations/$organizationId/teams/$teamId/edit",
-        params: { organizationId, teamId: data.id },
+        to: "/settings/organizations/$organizationSlug/teams/$teamId/edit",
+        params: { organizationSlug, teamId: data.id },
       });
     },
   });
@@ -81,8 +83,8 @@ export function TeamCreateForm({ organizationId }: TeamCreateFormProps) {
       onSubmit={mutation.handleSubmit}
       onCancel={() =>
         navigate({
-          to: "/settings/organizations/$organizationId",
-          params: { organizationId },
+          to: "/settings/organizations/$organizationSlug",
+          params: { organizationSlug },
         })
       }
       isPending={mutation.isPending}

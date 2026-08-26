@@ -34,7 +34,9 @@ test.describe("@search Search E2E Tests", () => {
     const workItem = new WorkItemPage(page);
     await workItem.waitForLoad();
     await expect(page).toHaveURL(
-      new RegExp(`/work/${workspace.namespaceId}/${issue.key}`)
+      new RegExp(
+        `/work/${workspace.organizationSlug}/${workspace.namespaceSlug}/${issue.key}`
+      )
     );
     await expect(workItem.getTitleButton()).toContainText(title);
   });
@@ -67,7 +69,9 @@ test.describe("@search Search E2E Tests", () => {
     const workItem = new WorkItemPage(page);
     await workItem.waitForLoad();
     await expect(page).toHaveURL(
-      new RegExp(`/work/${workspace.namespaceId}/${issue.key}`)
+      new RegExp(
+        `/work/${workspace.organizationSlug}/${workspace.namespaceSlug}/${issue.key}`
+      )
     );
   });
 });

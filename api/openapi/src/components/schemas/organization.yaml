@@ -61,6 +61,13 @@ Organization:
       type: string
       description: Unique identifier of the organization.
       example: 9bsv0s46s6s002p9ltq0
+    slug:
+      type: string
+      description: Globally unique canonical kebab-case slug. Immutable after create.
+      minLength: 3
+      maxLength: 50
+      pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      example: acme
     name:
       type: string
       description: Name of the organization.
@@ -125,6 +132,7 @@ Organization:
       nullable: true
   required:
     - id
+    - slug
     - name
     - email
     - logo
@@ -149,12 +157,17 @@ PartialOrganization:
       type: string
       description: Unique identifier of the organization.
       example: 9bsv0s46s6s002p9ltq0
+    slug:
+      type: string
+      description: Globally unique canonical kebab-case slug.
+      example: acme
     name:
       type: string
       description: Name of the organization.
       example: ACME Inc.
   required:
     - id
+    - slug
     - name
 OrganizationPage:
   title: OrganizationPage

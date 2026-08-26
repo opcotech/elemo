@@ -9,6 +9,7 @@ import (
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 )
@@ -105,7 +106,18 @@ func isClientValidationError(err error) bool {
 		errors.Is(err, model.ErrInvalidUserDetails) ||
 		errors.Is(err, model.ErrInvalidGrant) ||
 		errors.Is(err, model.ErrInvalidAction) ||
-		errors.Is(err, model.ErrNotAPrincipal)
+		errors.Is(err, model.ErrNotAPrincipal) ||
+		errors.Is(err, validate.ErrInvalidSlug) ||
+		errors.Is(err, validate.ErrReservedSlug) ||
+		errors.Is(err, validate.ErrXIDShapedSlug) ||
+		errors.Is(err, validate.ErrInvalidProjectKey) ||
+		errors.Is(err, validate.ErrReservedProjectKey) ||
+		errors.Is(err, validate.ErrInvalidRef)
+}
+
+func isConflictError(err error) bool {
+	return errors.Is(err, repository.ErrSlugConflict) ||
+		errors.Is(err, repository.ErrProjectKeyConflict)
 }
 
 func isForbiddenError(err error) bool {
@@ -119,6 +131,8 @@ func isForbiddenError(err error) bool {
 // Handlers wrap the result in generated OpenAPI response types.
 func classifyServiceError(err error) int {
 	switch {
+	case isConflictError(err):
+		return http.StatusConflict
 	case isClientValidationError(err):
 		return http.StatusBadRequest
 	case isForbiddenError(err):

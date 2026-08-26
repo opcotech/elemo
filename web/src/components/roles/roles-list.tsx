@@ -49,7 +49,7 @@ interface RoleRowProps {
   role: Role;
   permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
-  organizationId: string;
+  organizationSlug: string;
   canManageRoles: boolean;
   onDeleteClick: (role: Role) => void;
 }
@@ -58,7 +58,7 @@ function RoleRow({
   role,
   permissions,
   isPermissionsLoading,
-  organizationId,
+  organizationSlug,
   canManageRoles,
   onDeleteClick,
 }: RoleRowProps) {
@@ -98,9 +98,9 @@ function RoleRow({
                   size="sm"
                   render={
                     <Link
-                      to="/settings/organizations/$organizationId/roles/$roleId/edit"
+                      to="/settings/organizations/$organizationSlug/roles/$roleId/edit"
                       params={{
-                        organizationId,
+                        organizationSlug,
                         roleId: role.id,
                       }}
                     />
@@ -128,11 +128,13 @@ function RoleRow({
 
 interface RolesListProps {
   organizationId: string;
+  organizationSlug: string;
   organizationPermissions: EffectiveActions;
 }
 
 export function RolesList({
   organizationId,
+  organizationSlug,
   organizationPermissions,
 }: RolesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,7 +147,7 @@ export function RolesList({
     error,
   } = useQuery(
     v1OrganizationRolesGetOptions({
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -185,8 +187,8 @@ export function RolesList({
       size="sm"
       render={
         <Link
-          to="/settings/organizations/$organizationId/roles/new"
-          params={{ organizationId }}
+          to="/settings/organizations/$organizationSlug/roles/new"
+          params={{ organizationSlug }}
         />
       }
     >
@@ -249,7 +251,7 @@ export function RolesList({
                   role={role}
                   permissions={permissionQuery?.data}
                   isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                  organizationId={organizationId}
+                  organizationSlug={organizationSlug}
                   canManageRoles={canManageRoles}
                   onDeleteClick={handleDeleteClick}
                 />

@@ -114,6 +114,21 @@ func (mr *MockOrganizationRepositoryMockRecorder) Get(ctx, id, proj any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockOrganizationRepository)(nil).Get), ctx, id, proj)
 }
 
+// GetByRef mocks base method.
+func (m *MockOrganizationRepository) GetByRef(ctx context.Context, id model.ID, slug string, proj repository.OrganizationProjection) (*repository.Organization, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByRef", ctx, id, slug, proj)
+	ret0, _ := ret[0].(*repository.Organization)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByRef indicates an expected call of GetByRef.
+func (mr *MockOrganizationRepositoryMockRecorder) GetByRef(ctx, id, slug, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByRef", reflect.TypeOf((*MockOrganizationRepository)(nil).GetByRef), ctx, id, slug, proj)
+}
+
 // GetInvitations mocks base method.
 func (m *MockOrganizationRepository) GetInvitations(ctx context.Context, orgID model.ID) ([]*repository.OrganizationMember, error) {
 	m.ctrl.T.Helper()

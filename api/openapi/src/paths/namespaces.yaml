@@ -1,6 +1,6 @@
-"/v1/organizations/{id}/namespaces":
+"/v1/organizations/{organizationRef}/namespaces":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   get:
     summary: Get organization namespaces
     tags:
@@ -46,6 +46,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new namespace in the organization.
@@ -85,9 +87,10 @@
     parameters:
       - $ref: "#/components/parameters/page_size"
       - $ref: "#/components/parameters/page_token"
-"/v1/namespaces/{id}":
+"/v1/organizations/{organizationRef}/namespaces/{namespaceRef}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
+    - $ref: "#/components/parameters/namespaceRef"
   get:
     summary: Get namespace
     tags:
@@ -98,7 +101,7 @@
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Namespace"
+              $ref: "#/components/schemas/AccessibleNamespace"
       "400":
         $ref: "#/components/responses/400"
       "401":
@@ -113,7 +116,10 @@
     security:
       - oauth2:
           - namespace.read
-    description: Return the requested namespace by its ID.
+    description: >
+      Return the namespace identified by xid or slug under the organization.
+      Lookup uses the same reachability as listing accessible namespaces so
+      descendant-only users can open deep links. organization.read is not required.
   patch:
     summary: Update namespace
     operationId: v1NamespaceUpdate
@@ -134,7 +140,7 @@
         $ref: "#/components/responses/404"
       "500":
         $ref: "#/components/responses/500"
-    description: Update the namespace by its ID.
+    description: Update the namespace by its organization-scoped ref. Slug cannot be patched.
     security:
       - oauth2:
           - namespace
@@ -158,7 +164,7 @@
         $ref: "#/components/responses/404"
       "500":
         $ref: "#/components/responses/500"
-    description: Delete the namespace by its ID.
+    description: Delete the namespace by its organization-scoped ref.
     security:
       - oauth2:
           - namespace

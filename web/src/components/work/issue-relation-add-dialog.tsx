@@ -48,6 +48,7 @@ const kindOptions = editableIssueRelationKinds.map((kind) => ({
 interface IssueRelationAddDialogProps {
   issueId: string;
   issueKey: string;
+  organizationId: string;
   namespaceId: string;
   relatedIds: ReadonlySet<string>;
   open: boolean;
@@ -57,6 +58,7 @@ interface IssueRelationAddDialogProps {
 export function IssueRelationAddDialog({
   issueId,
   issueKey,
+  organizationId,
   namespaceId,
   relatedIds,
   open,
@@ -75,8 +77,8 @@ export function IssueRelationAddDialog({
   });
 
   const { data: issuesPage, isLoading } = useQuery({
-    ...relatedIssueCatalogQueryOptions(namespaceId),
-    enabled: open && Boolean(namespaceId),
+    ...relatedIssueCatalogQueryOptions(organizationId, namespaceId),
+    enabled: open && Boolean(organizationId) && Boolean(namespaceId),
   });
 
   const availableIssues = filterAvailableRelatedIssues<PartialIssue>(
@@ -93,6 +95,7 @@ export function IssueRelationAddDialog({
       runMutationSuccessWorkflow({
         invalidateQueries: issueRelationInvalidationKeys({
           issueId,
+          organizationId,
           namespaceId,
           issueKey,
           related: created.related,

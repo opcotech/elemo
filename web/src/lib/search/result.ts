@@ -1,5 +1,12 @@
 import type { SearchResult } from "@/lib/api/types";
 import type { AppEntityType } from "@/lib/entity-types";
+import {
+  documentPath,
+  namespacePath,
+  organizationPath,
+  projectPath,
+  workItemPath,
+} from "@/lib/paths";
 
 export const SEARCH_RESOURCE_TYPES = [
   "Organization",
@@ -35,21 +42,38 @@ export function searchResultEntityType(result: SearchResult): AppEntityType {
 export function searchResultHref(result: SearchResult): string | undefined {
   switch (result.type) {
     case "Organization":
-      return `/organizations/${result.id}`;
+      if (!result.organization_slug) {
+        return undefined;
+      }
+      return organizationPath({ organizationSlug: result.organization_slug });
     case "Namespace":
-      return `/namespaces/${result.id}`;
+      if (!result.organization_slug || !result.namespace_slug) {
+        return undefined;
+      }
+      return namespacePath({
+        organizationSlug: result.organization_slug,
+        namespaceSlug: result.namespace_slug,
+      });
     case "Project":
-      if (!result.namespace_id) {
+      if (!result.organization_slug || !result.namespace_slug || !result.key) {
         return undefined;
       }
-      return `/namespaces/${result.namespace_id}/projects/${result.id}`;
+      return projectPath({
+        organizationSlug: result.organization_slug,
+        namespaceSlug: result.namespace_slug,
+        projectKey: result.key,
+      });
     case "Issue":
-      if (!result.namespace_id || !result.key) {
+      if (!result.organization_slug || !result.namespace_slug || !result.key) {
         return undefined;
       }
-      return `/work/${result.namespace_id}/${result.key}`;
+      return workItemPath({
+        organizationSlug: result.organization_slug,
+        namespaceSlug: result.namespace_slug,
+        issueKey: result.key,
+      });
     case "Document":
-      return `/documents/${result.id}`;
+      return documentPath(result.id);
   }
 }
 

@@ -12,7 +12,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import { v1OrganizationsCreate, v1PermissionResourceGet } from "@/lib/api/sdk";
 
@@ -136,6 +136,7 @@ test.describe("@permissions.grants Scoped ReBAC Grant E2E Tests", () => {
     const result = await v1OrganizationsCreate({
       client,
       body: {
+        slug: getRandomSlug("org"),
         name: `Denied Org ${uniqueId}`,
         email: `denied-${uniqueId}@example.com`,
       },

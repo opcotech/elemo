@@ -25,14 +25,16 @@ type FolderController interface {
 
 type folderController struct {
 	*baseController
-	folderService service.FolderService
+	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
+	folderService       service.FolderService
 }
 
 func (c *folderController) V1OrganizationsFoldersGet(ctx context.Context, request api.V1OrganizationsFoldersGetRequestObject) (api.V1OrganizationsFoldersGetResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsFoldersGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsFoldersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -70,7 +72,7 @@ func (c *folderController) V1OrganizationsFoldersCreate(ctx context.Context, req
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsFoldersCreate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsFoldersCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -106,7 +108,7 @@ func (c *folderController) V1NamespacesFoldersGet(ctx context.Context, request a
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesFoldersGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesFoldersGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -144,7 +146,7 @@ func (c *folderController) V1NamespacesFoldersCreate(ctx context.Context, reques
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesFoldersCreate")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesFoldersCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -339,18 +341,31 @@ func folderPageToDTO(page service.Page[*service.Folder]) api.FolderPage {
 }
 
 // NewFolderController creates a new FolderController.
-func NewFolderController(folderService service.FolderService, opts ...ControllerOption) (FolderController, error) {
+func NewFolderController(
+	organizationService service.OrganizationService,
+	namespaceService service.NamespaceService,
+	folderService service.FolderService,
+	opts ...ControllerOption,
+) (FolderController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	if organizationService == nil {
+		return nil, ErrNoOrganizationService
+	}
+	if namespaceService == nil {
+		return nil, ErrNoNamespaceService
+	}
 	if folderService == nil {
 		return nil, ErrNoFolderService
 	}
 
 	return &folderController{
-		baseController: c,
-		folderService:  folderService,
+		baseController:      c,
+		organizationService: organizationService,
+		namespaceService:    namespaceService,
+		folderService:       folderService,
 	}, nil
 }

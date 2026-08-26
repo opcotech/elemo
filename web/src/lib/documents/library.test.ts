@@ -53,12 +53,19 @@ describe("document library search", () => {
 
 describe("document library helpers", () => {
   it("builds library document hrefs", () => {
-    expect(documentLibraryHref("namespace", "ns-1")).toBe(
-      "/namespaces/ns-1/documents"
-    );
-    expect(documentLibraryHref("organization", "org-1")).toBe(
-      "/organizations/org-1/documents"
-    );
+    expect(
+      documentLibraryHref({
+        kind: "namespace",
+        organizationSlug: "acme",
+        namespaceSlug: "platform",
+      })
+    ).toBe("/organizations/acme/namespaces/platform/documents");
+    expect(
+      documentLibraryHref({
+        kind: "organization",
+        organizationSlug: "acme",
+      })
+    ).toBe("/organizations/acme/documents");
     expect(documentLibraryKindFromType("Namespace")).toBe("namespace");
     expect(documentLibraryKindFromType("Organization")).toBe("organization");
     expect(documentLibraryTypeLabel("organization")).toBe("Organization");
@@ -69,12 +76,28 @@ describe("document library helpers", () => {
     expect(
       documentLibraryListItems(
         [
-          { id: "org-b", name: "Zebra Org", document_count: 2 },
-          { id: "org-a", name: "Alpha Org" },
+          {
+            id: "org-b",
+            slug: "zebra-org",
+            name: "Zebra Org",
+            document_count: 2,
+          },
+          { id: "org-a", slug: "alpha-org", name: "Alpha Org" },
         ],
         [
-          { id: "ns-b", name: "Ops", document_count: 4 },
-          { id: "ns-a", name: "Docs" },
+          {
+            id: "ns-b",
+            slug: "ops",
+            organizationSlug: "acme",
+            name: "Ops",
+            document_count: 4,
+          },
+          {
+            id: "ns-a",
+            slug: "docs",
+            organizationSlug: "acme",
+            name: "Docs",
+          },
         ]
       )
     ).toEqual([
@@ -83,7 +106,7 @@ describe("document library helpers", () => {
         kind: "organization",
         name: "Alpha Org",
         typeLabel: "Organization",
-        href: "/organizations/org-a/documents",
+        href: "/organizations/alpha-org/documents",
         documentCount: 0,
       },
       {
@@ -91,7 +114,7 @@ describe("document library helpers", () => {
         kind: "organization",
         name: "Zebra Org",
         typeLabel: "Organization",
-        href: "/organizations/org-b/documents",
+        href: "/organizations/zebra-org/documents",
         documentCount: 2,
       },
       {
@@ -99,7 +122,7 @@ describe("document library helpers", () => {
         kind: "namespace",
         name: "Docs",
         typeLabel: "Namespace",
-        href: "/namespaces/ns-a/documents",
+        href: "/organizations/acme/namespaces/docs/documents",
         documentCount: 0,
       },
       {
@@ -107,7 +130,7 @@ describe("document library helpers", () => {
         kind: "namespace",
         name: "Ops",
         typeLabel: "Namespace",
-        href: "/namespaces/ns-b/documents",
+        href: "/organizations/acme/namespaces/ops/documents",
         documentCount: 4,
       },
     ]);
@@ -115,8 +138,15 @@ describe("document library helpers", () => {
 
   it("filters library entries by name or type", () => {
     const items = documentLibraryListItems(
-      [{ id: "org-1", name: "Acme" }],
-      [{ id: "ns-1", name: "Platform" }]
+      [{ id: "org-1", slug: "acme", name: "Acme" }],
+      [
+        {
+          id: "ns-1",
+          slug: "platform",
+          organizationSlug: "acme",
+          name: "Platform",
+        },
+      ]
     );
 
     expect(filterDocumentLibraryListItems(items, "platform")).toEqual([

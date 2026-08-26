@@ -13,7 +13,7 @@ import { IssueLinksSection } from "../sections/issue-links-section";
 import { IssueRelationsSection } from "../sections/issue-relations-section";
 
 /**
- * Page Object Model for a work item at /work/:namespaceId/:issueKey.
+ * Page Object Model for a work item at /work/:organizationSlug/:namespaceSlug/:issueKey.
  */
 export class WorkItemPage extends BaseComponent {
   public readonly details: IssueDetailsSection;
@@ -29,8 +29,15 @@ export class WorkItemPage extends BaseComponent {
     this.documents = new IssueDocumentsSection(page);
   }
 
-  async goto(namespaceId: string, issueKey: string): Promise<void> {
-    await navigateAndWait(this.page, `/work/${namespaceId}/${issueKey}`);
+  async goto(
+    organizationSlug: string,
+    namespaceSlug: string,
+    issueKey: string
+  ): Promise<void> {
+    await navigateAndWait(
+      this.page,
+      `/work/${organizationSlug}/${namespaceSlug}/${issueKey}`
+    );
   }
 
   async waitForLoad(options?: { timeout?: number }): Promise<void> {

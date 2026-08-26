@@ -8,33 +8,37 @@ import {
   v1OrganizationTeamsGetOptions,
   v1OrganizationsNamespacesGetOptions,
 } from "@/lib/api/query-options";
+import { organizationRefPath } from "@/lib/api/refs";
+import type { Organization } from "@/lib/api/types";
 import { Action, ResourceType, can } from "@/lib/auth/permissions";
 import { loadResourcePermissions } from "@/lib/entity-context";
 
 export async function loadOrganization(
   queryClient: QueryClient,
-  organizationId: string
-) {
-  // Prefer fetchQuery over ensureQueryData so invalidated (stale) loader
-  // queries actually refetch after mutations. ensureQueryData returns any
-  // cached value and never waits for a refresh.
-  return queryClient.fetchQuery(
-    v1OrganizationGetOptions({ path: { id: organizationId } })
+  organizationRef: string
+): Promise<Organization> {
+  const organization = await queryClient.fetchQuery(
+    v1OrganizationGetOptions({ path: organizationRefPath(organizationRef) })
   );
+  queryClient.setQueryData(
+    v1OrganizationGetOptions({
+      path: organizationRefPath(organization.id),
+    }).queryKey,
+    organization
+  );
+  return organization;
 }
 
 export async function loadOrganizationWorkspace(
   queryClient: QueryClient,
-  organizationId: string
+  organizationRef: string
 ) {
-  const [organization, permissions] = await Promise.all([
-    loadOrganization(queryClient, organizationId),
-    loadResourcePermissions(
-      queryClient,
-      ResourceType.Organization,
-      organizationId
-    ),
-  ]);
+  const organization = await loadOrganization(queryClient, organizationRef);
+  const permissions = await loadResourcePermissions(
+    queryClient,
+    ResourceType.Organization,
+    organization.id
+  );
 
   if (!can(permissions, Action.OrganizationRead)) {
     return {
@@ -48,29 +52,30 @@ export async function loadOrganizationWorkspace(
     };
   }
 
+  const orgPath = organizationRefPath(organization.id);
   const [membersPage, namespacesPage, rolesPage, teamsPage] = await Promise.all(
     [
       queryClient.fetchQuery(
         v1OrganizationMembersGetOptions({
-          path: { id: organizationId },
+          path: orgPath,
           query: cursorPageQuery(),
         })
       ),
       queryClient.fetchQuery(
         v1OrganizationsNamespacesGetOptions({
-          path: { id: organizationId },
+          path: orgPath,
           query: cursorPageQuery(),
         })
       ),
       queryClient.fetchQuery(
         v1OrganizationRolesGetOptions({
-          path: { id: organizationId },
+          path: orgPath,
           query: cursorPageQuery(),
         })
       ),
       queryClient.fetchQuery(
         v1OrganizationTeamsGetOptions({
-          path: { id: organizationId },
+          path: orgPath,
           query: cursorPageQuery(),
         })
       ),

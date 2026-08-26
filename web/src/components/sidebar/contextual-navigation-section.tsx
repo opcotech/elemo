@@ -32,8 +32,22 @@ import {
   v1OrganizationGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
+import { organizationRefPath, projectIdPath } from "@/lib/api/refs";
 import { Action, can } from "@/lib/auth/permissions";
 import { internalPath } from "@/lib/internal-url";
+import {
+  namespaceAdministrationPath,
+  namespaceDocumentsPath,
+  namespacePath,
+  namespaceProjectsPath,
+  namespaceWorkPath,
+  organizationDocumentsPath,
+  organizationPath,
+  projectActivityPath,
+  projectDocumentsPath,
+  projectPath,
+  projectWorkPath,
+} from "@/lib/paths";
 import { uiActions } from "@/lib/ui-store";
 
 const browseNavigation = [
@@ -63,12 +77,12 @@ export function ContextualNavigationSection() {
     context.type !== "namespace" || !context.namespaceId
   );
   const { data: project } = useQuery({
-    ...v1ProjectGetOptions({ path: { id: context.projectId ?? "" } }),
+    ...v1ProjectGetOptions({ path: projectIdPath(context.projectId ?? "") }),
     enabled: Boolean(context.projectId),
   });
   const { data: organization } = useQuery({
     ...v1OrganizationGetOptions({
-      path: { id: context.organizationId ?? "" },
+      path: organizationRefPath(context.organizationId ?? ""),
     }),
     enabled: context.type === "organization" && Boolean(context.organizationId),
   });
@@ -76,33 +90,49 @@ export function ContextualNavigationSection() {
   const navigation = useMemo(() => {
     if (
       context.type === "project" &&
-      context.projectId &&
-      context.namespaceId
+      context.organizationSlug &&
+      context.namespaceSlug &&
+      context.projectKey
     ) {
-      const projectBase = `/namespaces/${context.namespaceId}/projects/${context.projectId}`;
+      const projectInput = {
+        organizationSlug: context.organizationSlug,
+        namespaceSlug: context.namespaceSlug,
+        projectKey: context.projectKey,
+      };
 
       return [
         {
           label: "Overview",
-          href: projectBase,
+          href: projectPath(projectInput),
           icon: LayoutDashboardIcon,
         },
-        { label: "Work", href: `${projectBase}/work`, icon: ListTodoIcon },
+        {
+          label: "Work",
+          href: projectWorkPath(projectInput),
+          icon: ListTodoIcon,
+        },
         {
           label: "Documents",
-          href: `${projectBase}/documents`,
+          href: projectDocumentsPath(projectInput),
           icon: FileTextIcon,
         },
         {
           label: "Activity",
-          href: `${projectBase}/activity`,
+          href: projectActivityPath(projectInput),
           icon: ActivityIcon,
         },
       ];
     }
 
-    if (context.type === "namespace" && context.namespaceId) {
-      const namespaceBase = `/namespaces/${context.namespaceId}`;
+    if (
+      context.type === "namespace" &&
+      context.organizationSlug &&
+      context.namespaceSlug
+    ) {
+      const namespaceInput = {
+        organizationSlug: context.organizationSlug,
+        namespaceSlug: context.namespaceSlug,
+      };
       const items: {
         label: string;
         href: string;
@@ -111,31 +141,31 @@ export function ContextualNavigationSection() {
       }[] = [
         {
           label: "Overview",
-          href: namespaceBase,
+          href: namespacePath(namespaceInput),
           icon: LayoutDashboardIcon,
         },
         {
           label: "Projects",
-          href: `${namespaceBase}/projects`,
+          href: namespaceProjectsPath(namespaceInput),
           icon: FolderKanbanIcon,
         },
         {
           label: "Work",
-          href: `${namespaceBase}/work`,
+          href: namespaceWorkPath(namespaceInput),
           icon: ListTodoIcon,
         },
       ];
       if (can(namespacePermissions, Action.DocumentRead)) {
         items.push({
           label: "Documents",
-          href: `${namespaceBase}/documents`,
+          href: namespaceDocumentsPath(namespaceInput),
           icon: FileTextIcon,
         });
       }
       if (can(namespacePermissions, Action.NamespaceRead)) {
         items.push({
           label: "Administration",
-          href: `${namespaceBase}/administration`,
+          href: namespaceAdministrationPath(namespaceInput),
           icon: SettingsIcon,
           separated: true,
         });
@@ -143,18 +173,20 @@ export function ContextualNavigationSection() {
       return items;
     }
 
-    if (context.type === "organization" && context.organizationId) {
-      const organizationBase = `/organizations/${context.organizationId}`;
+    if (context.type === "organization" && context.organizationSlug) {
+      const organizationInput = {
+        organizationSlug: context.organizationSlug,
+      };
 
       return [
         {
           label: "Overview",
-          href: organizationBase,
+          href: organizationPath(organizationInput),
           icon: LayoutDashboardIcon,
         },
         {
           label: "Documents",
-          href: `${organizationBase}/documents`,
+          href: organizationDocumentsPath(organizationInput),
           icon: FileTextIcon,
         },
       ];
@@ -162,9 +194,9 @@ export function ContextualNavigationSection() {
 
     return browseNavigation;
   }, [
-    context.namespaceId,
-    context.organizationId,
-    context.projectId,
+    context.namespaceSlug,
+    context.organizationSlug,
+    context.projectKey,
     context.type,
     namespacePermissions,
   ]);
@@ -174,9 +206,18 @@ export function ContextualNavigationSection() {
       return;
     }
 
-    if (context.type === "project" && project && context.namespaceId) {
+    if (
+      context.type === "project" &&
+      project &&
+      context.organizationSlug &&
+      context.namespaceSlug
+    ) {
       const href = internalPath(
-        `/namespaces/${context.namespaceId}/projects/${project.id}`
+        projectPath({
+          organizationSlug: context.organizationSlug,
+          namespaceSlug: context.namespaceSlug,
+          projectKey: project.key,
+        })
       );
       uiActions.rememberRecentEntity({
         id: project.id,
@@ -189,7 +230,12 @@ export function ContextualNavigationSection() {
     }
 
     if (context.type === "namespace" && namespace) {
-      const href = internalPath(`/namespaces/${namespace.id}`);
+      const href = internalPath(
+        namespacePath({
+          organizationSlug: namespace.organizationSlug,
+          namespaceSlug: namespace.slug,
+        })
+      );
       uiActions.rememberRecentEntity({
         id: namespace.id,
         type: "namespace",
@@ -200,6 +246,8 @@ export function ContextualNavigationSection() {
     }
   }, [
     context.namespaceId,
+    context.namespaceSlug,
+    context.organizationSlug,
     context.projectId,
     context.type,
     currentPath,

@@ -30,7 +30,11 @@ test.describe("@issues.work-surface Issue Work Surface E2E Tests", () => {
   const openProjectWork = async (page: Parameters<typeof loginUser>[0]) => {
     await loginOwner(page);
     const workPage = new WorkPage(page);
-    await workPage.gotoProjectWork(workspace.namespaceId, workspace.projectId);
+    await workPage.gotoProjectWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await workPage.waitForLoad(`${workspace.projectName} / Work`);
     return workPage;
   };
@@ -78,7 +82,10 @@ test.describe("@issues.work-surface Issue Work Surface E2E Tests", () => {
     await loginOwner(page);
 
     const workPage = new WorkPage(page);
-    await workPage.gotoNamespaceWork(workspace.namespaceId);
+    await workPage.gotoNamespaceWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await workPage.waitForLoad(`${workspace.namespaceName} / Work`);
     await expect(workPage.surface.getWorkKeyLink(issue.key)).toBeVisible();
 

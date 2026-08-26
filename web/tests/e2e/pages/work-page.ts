@@ -6,6 +6,8 @@ import { QuickCreateSection } from "../sections/quick-create-section";
 import { WorkInspectorSection } from "../sections/work-inspector-section";
 import { WorkSurfaceSection } from "../sections/work-surface-section";
 
+import { namespaceWorkPath, projectWorkPath } from "@/lib/paths";
+
 /**
  * Page Object Model for Work surfaces: My Work, namespace Work, and project Work.
  */
@@ -25,14 +27,24 @@ export class WorkPage extends BaseComponent {
     await navigateAndWait(this.page, "/my-work");
   }
 
-  async gotoNamespaceWork(namespaceId: string): Promise<void> {
-    await navigateAndWait(this.page, `/namespaces/${namespaceId}/work`);
-  }
-
-  async gotoProjectWork(namespaceId: string, projectId: string): Promise<void> {
+  async gotoNamespaceWork(
+    organizationSlug: string,
+    namespaceSlug: string
+  ): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/namespaces/${namespaceId}/projects/${projectId}/work`
+      namespaceWorkPath({ organizationSlug, namespaceSlug })
+    );
+  }
+
+  async gotoProjectWork(
+    organizationSlug: string,
+    namespaceSlug: string,
+    projectKey: string
+  ): Promise<void> {
+    await navigateAndWait(
+      this.page,
+      projectWorkPath({ organizationSlug, namespaceSlug, projectKey })
     );
   }
 

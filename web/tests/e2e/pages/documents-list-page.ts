@@ -30,15 +30,16 @@ export class DocumentsListPage extends BaseComponent {
       .getByRole("link", { name });
   }
 
-  async gotoOrganization(organizationId: string): Promise<void> {
+  async gotoOrganization(organizationSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/organizations/${organizationId}/documents`
+      `/organizations/${organizationSlug}/documents`
     );
   }
 
   async gotoNamespace(
-    namespaceId: string,
+    organizationSlug: string,
+    namespaceSlug: string,
     search?: { folder?: string; all?: boolean }
   ): Promise<void> {
     const params = new URLSearchParams();
@@ -50,14 +51,18 @@ export class DocumentsListPage extends BaseComponent {
     const query = params.toString();
     await navigateAndWait(
       this.page,
-      `/namespaces/${namespaceId}/documents${query ? `?${query}` : ""}`
+      `/organizations/${organizationSlug}/namespaces/${namespaceSlug}/documents${query ? `?${query}` : ""}`
     );
   }
 
-  async gotoProject(namespaceId: string, projectId: string): Promise<void> {
+  async gotoProject(
+    organizationSlug: string,
+    namespaceSlug: string,
+    projectKey: string
+  ): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/namespaces/${namespaceId}/projects/${projectId}/documents`
+      `/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${projectKey}/documents`
     );
   }
 

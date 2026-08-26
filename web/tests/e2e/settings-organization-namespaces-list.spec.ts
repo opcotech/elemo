@@ -8,7 +8,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -19,6 +19,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let ownerApiClient: Client;
 
   const getFullNamespaceName = () => `Namespace ${getRandomString(8)}`;
@@ -39,6 +40,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       email: `namespaces-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -93,8 +95,9 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
 
     const response = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: getRandomSlug("ns"),
         name,
         description,
       },
@@ -127,7 +130,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     await expect(
@@ -144,7 +147,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     expect(
       await orgDetailsPage.namespaces.hasCreateNamespaceButton()
@@ -155,7 +158,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       email: readerUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     expect(
       await orgDetailsPage.namespaces.hasCreateNamespaceButton()
@@ -170,7 +173,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     // If no namespaces exist, empty state should be visible
@@ -201,7 +204,7 @@ test.describe("@settings.organization-namespaces-list Organization Namespaces Li
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     const namespaceRow = orgDetailsPage.namespaces.getRowByNamespaceName(

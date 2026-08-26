@@ -13,7 +13,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -24,7 +24,9 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let namespaceId: string;
+  let namespaceSlug: string;
   let ownerApiClient: Client;
 
   const getFullProjectName = () => `Project ${getRandomString(8)}`;
@@ -45,11 +47,14 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       email: `project-edit-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
+    namespaceSlug = getRandomSlug("ns");
     const namespaceResponse = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: namespaceSlug,
         name: `Project Edit Namespace ${getRandomString(8)}`,
         description: `Namespace for project edit tests ${getRandomString(8)}`,
       },
@@ -103,11 +108,16 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
   const seedProjectWithWriteAccess = async (
     testConfig: Parameters<typeof grantActionsToUser>[0]
   ) => {
-    const project = await createProject(ownerApiClient, namespaceId, {
-      key: getRandomProjectKey(),
-      name: getFullProjectName(),
-      description: `Project description ${getRandomString(8)}`,
-    });
+    const project = await createProject(
+      ownerApiClient,
+      organizationId,
+      namespaceId,
+      {
+        key: getRandomProjectKey(),
+        name: getFullProjectName(),
+        description: `Project description ${getRandomString(8)}`,
+      }
+    );
 
     await grantActionsToUser(
       testConfig,
@@ -148,7 +158,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     });
 
     const projectEditPage = new SettingsOrganizationProjectEditPage(page);
-    await projectEditPage.goto(organizationId, namespaceId, project.id);
+    await projectEditPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectEditPage.projectEditForm.waitForLoad();
 
     const updatedName = `Updated ${getRandomString(6)}`;
@@ -159,13 +169,16 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       Name: updatedName,
       Description: updatedDescription,
     });
+    await expect(projectEditPage.projectEditForm.getField("Name")).toHaveValue(
+      updatedName
+    );
     await projectEditPage.projectEditForm.selectStatus("Pending");
     await projectEditPage.projectEditForm.submit("Save Changes");
     await waitForSuccessToast(page, "Project updated");
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${project.id}$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${project.key}$`
       )
     );
 
@@ -189,7 +202,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
 
     const projectRow =
@@ -211,7 +224,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     });
 
     const projectEditPage = new SettingsOrganizationProjectEditPage(page);
-    await projectEditPage.goto(organizationId, namespaceId, project.id);
+    await projectEditPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectEditPage.projectEditForm.waitForLoad();
 
     await projectEditPage.projectEditForm.clearField("Name");
@@ -220,11 +233,12 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
       /too small|invalid input|required/i
     );
 
-    await projectEditPage.projectEditForm.fillField("Name", "Valid Name");
-    await projectEditPage.projectEditForm.clearField("Key");
-    await projectEditPage.projectEditForm.fillField("Key", "AB1");
-    await projectEditPage.projectEditForm.submit("Save Changes");
-    await expect(fieldMessage("Key")).toHaveText(/ascii letters/i);
+    await expect(
+      projectEditPage.projectEditForm.getField("Key")
+    ).toBeDisabled();
+    await expect(projectEditPage.projectEditForm.getField("Key")).toHaveValue(
+      project.key
+    );
   });
 
   test("should cancel edit and return to project detail", async ({
@@ -239,7 +253,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     });
 
     const projectEditPage = new SettingsOrganizationProjectEditPage(page);
-    await projectEditPage.goto(organizationId, namespaceId, project.id);
+    await projectEditPage.goto(organizationSlug, namespaceSlug, project.key);
     await projectEditPage.projectEditForm.waitForLoad();
 
     await projectEditPage.projectEditForm.clearField("Name");
@@ -251,7 +265,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${project.id}$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${project.key}$`
       )
     );
 
@@ -264,11 +278,16 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     page,
     testConfig,
   }) => {
-    const project = await createProject(ownerApiClient, namespaceId, {
-      key: getRandomProjectKey(),
-      name: getFullProjectName(),
-      description: `Project description ${getRandomString(8)}`,
-    });
+    const project = await createProject(
+      ownerApiClient,
+      organizationId,
+      namespaceId,
+      {
+        key: getRandomProjectKey(),
+        name: getFullProjectName(),
+        description: `Project description ${getRandomString(8)}`,
+      }
+    );
 
     await grantActionsToUser(
       testConfig,
@@ -284,7 +303,7 @@ test.describe("@settings.organization-projects-edit Organization Projects Edit E
     });
 
     const projectEditPage = new SettingsOrganizationProjectEditPage(page);
-    await projectEditPage.goto(organizationId, namespaceId, project.id);
+    await projectEditPage.goto(organizationSlug, namespaceSlug, project.key);
 
     await expect(page).toHaveURL(/\/permission-denied(?:\?|$)/);
   });

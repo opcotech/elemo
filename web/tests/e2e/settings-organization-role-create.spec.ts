@@ -20,6 +20,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
   let testUser: User;
   let readOnlyUser: User;
   let organizationId: string;
+  let organizationSlug: string;
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
     testUser = await createUser(testConfig);
@@ -37,6 +38,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
       email: `test-role-create-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -62,7 +64,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
 
   test("should display list of organization roles", async ({ page }) => {
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     await expect(orgDetailsPage.roles.getSectionContainer()).toBeVisible();
@@ -70,7 +72,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
 
   test("should allow creating a new role", async ({ page }) => {
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
     await orgDetailsPage.roles.clickCreateRoleButton();
 
@@ -115,7 +117,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
       password: USER_DEFAULT_PASSWORD,
     });
     let orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
@@ -141,7 +143,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
       password: USER_DEFAULT_PASSWORD,
     });
     orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
     expect(
       await orgDetailsPage.organizationInfo.hasEditOrganizationButton()
@@ -150,7 +152,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
 
   test("should show validation errors for invalid inputs", async ({ page }) => {
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
     const nameError = getFormFieldMessage(page, "Name");
 
@@ -163,7 +165,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
 
   test("should save role and show success message", async ({ page }) => {
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
 
     const roleName = `Success Test Role ${getRandomString(8)}`;
@@ -180,7 +182,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
 
   test("should persist role after page reload", async ({ page }) => {
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
 
     const roleName = `Persist Test Role ${getRandomString(8)}`;
@@ -206,7 +208,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     expect(await orgDetailsPage.roles.hasCreateRoleButton()).toBeFalsy();
@@ -231,7 +233,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
@@ -260,7 +262,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(role.name);
@@ -274,7 +276,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     page,
   }) => {
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
 
     const roleName = `Name Only Role ${getRandomString(8)}`;
@@ -291,7 +293,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     page,
   }) => {
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
 
     await roleCreatePage.roleCreateForm.fillField(
@@ -309,7 +311,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     const roleDescription = `This is a detailed description ${getRandomString(8)}`;
 
     const roleCreatePage = new SettingsOrganizationRoleCreatePage(page);
-    await roleCreatePage.goto(organizationId);
+    await roleCreatePage.goto(organizationSlug);
     await roleCreatePage.roleCreateForm.waitForLoad();
 
     await roleCreatePage.roleCreateForm.fillFields({
@@ -320,7 +322,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
     await waitForSuccessToast(page, "created");
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.roles.waitForLoad();
 
     const roleRow = orgDetailsPage.roles.getRowByRoleName(roleName);

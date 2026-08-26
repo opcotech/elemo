@@ -33,6 +33,7 @@ test.describe("@documents.list Document List E2E Tests", () => {
   }) => {
     const project = await createProject(
       workspace.client,
+      workspace.organizationId,
       workspace.namespaceId,
       {
         key: getRandomProjectKey(),
@@ -42,7 +43,11 @@ test.describe("@documents.list Document List E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoProject(workspace.namespaceId, project.id);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      project.key
+    );
     await listPage.waitForLoad();
     await expect(page.getByText("No related documents")).toBeVisible();
   });
@@ -62,7 +67,11 @@ test.describe("@documents.list Document List E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoProject(workspace.namespaceId, workspace.projectId);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await listPage.waitForLoad();
     await listPage.list.search(token);
 
@@ -82,7 +91,11 @@ test.describe("@documents.list Document List E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoProject(workspace.namespaceId, workspace.projectId);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getCreatorButton()).toBeVisible();
     await listPage.list.selectSort("Title");
@@ -107,7 +120,11 @@ test.describe("@documents.list Document List E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoProject(workspace.namespaceId, workspace.projectId);
+    await listPage.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await listPage.waitForLoad();
     await listPage.list.clickDocument(title);
 
@@ -127,20 +144,28 @@ test.describe("@documents.list Document List E2E Tests", () => {
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoOrganization(workspace.organizationId);
+    await listPage.gotoOrganization(workspace.organizationSlug);
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toBeVisible();
   });
 
   test("should list a namespace document", async ({ page }) => {
     const title = `Namespace list ${getRandomString(8)}`;
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title,
+      }
+    );
 
     await loginOwner(page);
     const listPage = new DocumentsListPage(page);
-    await listPage.gotoNamespace(workspace.namespaceId);
+    await listPage.gotoNamespace(
+      workspace.organizationSlug,
+      workspace.namespaceSlug
+    );
     await listPage.waitForLoad();
     await expect(listPage.list.getDocumentLink(title)).toBeVisible();
   });

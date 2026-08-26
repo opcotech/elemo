@@ -24,6 +24,7 @@ var (
 // Organization represents an organization persisted by the repository.
 type Organization struct {
 	ID             model.ID                 `json:"id"`
+	Slug           string                   `json:"slug"`
 	Name           string                   `json:"name"`
 	Email          string                   `json:"email"`
 	Logo           string                   `json:"logo"`
@@ -52,6 +53,7 @@ type OrganizationMember struct {
 // CreateOrganizationOpts holds the data required to create an organization.
 type CreateOrganizationOpts struct {
 	Owner   model.ID
+	Slug    string
 	Name    string
 	Email   string
 	Logo    string
@@ -104,6 +106,7 @@ func (o UpdateOrganizationOpts) patch() map[string]any {
 type OrganizationRepository interface {
 	Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error)
 	Get(ctx context.Context, id model.ID, proj OrganizationProjection) (*Organization, error)
+	GetByRef(ctx context.Context, id model.ID, slug string, proj OrganizationProjection) (*Organization, error)
 	ListForUser(ctx context.Context, query OrganizationListQuery) (Page[*Organization], error)
 	Update(ctx context.Context, id model.ID, opts UpdateOrganizationOpts) (*Organization, error)
 	ListMembers(ctx context.Context, orgID model.ID, page CursorPage) (Page[*OrganizationMember], error)
@@ -258,13 +261,14 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrg
 	cypher := `
 	MATCH (u:` + opts.Owner.Label() + ` {id: $owner_id})
 	SET u:` + model.LabelPrincipal + `
-	CREATE (o:` + id.Label() + `:` + model.LabelPrincipal + ` { id: $id, name: $name, email: $email, logo: $logo, website: $website,
+	CREATE (o:` + id.Label() + `:` + model.LabelPrincipal + ` { id: $id, slug: $slug, name: $name, email: $email, logo: $logo, website: $website,
 		status: $status, created_at: datetime($created_at)
 	}),
 	(u)-[:` + EdgeKindMemberOf.String() + ` {id: $membership_id, created_at: datetime($created_at)}]->(o)`
 
 	params := map[string]any{
 		"id":            id.String(),
+		"slug":          opts.Slug,
 		"name":          opts.Name,
 		"email":         opts.Email,
 		"logo":          opts.Logo,
@@ -276,7 +280,7 @@ func (r *Neo4jOrganizationRepository) Create(ctx context.Context, opts CreateOrg
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(ErrOrganizationCreate, err)
+		return nil, errors.Join(ErrOrganizationCreate, mapUniquenessError(err))
 	}
 
 	return r.Get(ctx, id, OrganizationDetailProjection())
@@ -287,6 +291,35 @@ func (r *Neo4jOrganizationRepository) Get(ctx context.Context, id model.ID, proj
 	defer span.End()
 
 	plan, err := CompileQuery(OrganizationGetQuery{ID: id, Projection: proj})
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationRead, err)
+	}
+
+	var organization *Organization
+	err = Neo4jExecuteReadPlan(ctx, r.db, plan, func(tx neo4j.ManagedTransaction) error {
+		var readErr error
+		organization, _, readErr = Neo4jRunQuerySingle(ctx, tx, plan.Root, r.scan(proj))
+		if readErr != nil {
+			return readErr
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationRead, err)
+	}
+
+	return organization, nil
+}
+
+func (r *Neo4jOrganizationRepository) GetByRef(ctx context.Context, id model.ID, slug string, proj OrganizationProjection) (*Organization, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.OrganizationRepository/GetByRef")
+	defer span.End()
+
+	if !id.IsNil() {
+		return r.Get(ctx, id, proj)
+	}
+
+	plan, err := CompileQuery(OrganizationGetByRefQuery{Slug: slug, Projection: proj})
 	if err != nil {
 		return nil, errors.Join(ErrOrganizationRead, err)
 	}
@@ -643,6 +676,10 @@ func clearOrganizationsKey(ctx context.Context, r *redisBaseRepository, id model
 	return clearOrganizationsPattern(ctx, r, "Get", id.String(), "*")
 }
 
+func clearOrganizationAllRefs(ctx context.Context, r *redisBaseRepository) error {
+	return clearOrganizationsPattern(ctx, r, "GetByRef", "*")
+}
+
 func clearOrganizationAllLists(ctx context.Context, r *redisBaseRepository) error {
 	// QueryPlan.CacheKey inserts a fingerprint after the resource type.
 	return clearOrganizationsPattern(ctx, r, "*", "ListForUser", "*")
@@ -657,6 +694,9 @@ type RedisCachedOrganizationRepository struct {
 
 func (r *RedisCachedOrganizationRepository) Create(ctx context.Context, opts CreateOrganizationOpts) (*Organization, error) {
 	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
+		return nil, err
+	}
+	if err := clearOrganizationAllRefs(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
 
@@ -677,6 +717,34 @@ func (r *RedisCachedOrganizationRepository) Get(ctx context.Context, id model.ID
 	}
 
 	if organization, err = r.organizationRepo.Get(ctx, id, proj); err != nil {
+		return nil, err
+	}
+
+	if err = r.cacheRepo.Set(ctx, key, organization); err != nil {
+		return nil, err
+	}
+
+	return organization, nil
+}
+
+func (r *RedisCachedOrganizationRepository) GetByRef(ctx context.Context, id model.ID, slug string, proj OrganizationProjection) (*Organization, error) {
+	if !id.IsNil() {
+		return r.Get(ctx, id, proj)
+	}
+
+	var organization *Organization
+	var err error
+
+	key := composeCacheKey(model.ResourceTypeOrganization.String(), "GetByRef", slug, projectionCacheValue(proj))
+	if err = r.cacheRepo.Get(ctx, key, &organization); err != nil {
+		return nil, err
+	}
+
+	if organization != nil {
+		return organization, nil
+	}
+
+	if organization, err = r.organizationRepo.GetByRef(ctx, id, slug, proj); err != nil {
 		return nil, err
 	}
 
@@ -732,6 +800,11 @@ func (r *RedisCachedOrganizationRepository) Update(ctx context.Context, id model
 		return nil, err
 	}
 
+	refKey := composeCacheKey(model.ResourceTypeOrganization.String(), "GetByRef", organization.Slug, projectionCacheValue(OrganizationDetailProjection()))
+	if err = r.cacheRepo.Set(ctx, refKey, organization); err != nil {
+		return nil, err
+	}
+
 	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
 		return nil, err
 	}
@@ -769,6 +842,10 @@ func (r *RedisCachedOrganizationRepository) Delete(ctx context.Context, id model
 	}
 
 	if err := clearOrganizationAllLists(ctx, r.cacheRepo); err != nil {
+		return err
+	}
+
+	if err := clearOrganizationAllRefs(ctx, r.cacheRepo); err != nil {
 		return err
 	}
 

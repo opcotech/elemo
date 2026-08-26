@@ -13,6 +13,7 @@ import (
 func NewCreateNamespaceOpts(creatorID, orgID model.ID) repository.CreateNamespaceOpts {
 	return repository.CreateNamespaceOpts{
 		Name:        pkg.GenerateRandomString(10),
+		Slug:        UniqueSlug(),
 		Description: pkg.GenerateRandomString(10),
 		CreatorID:   creatorID,
 		OrgID:       orgID,
@@ -23,6 +24,7 @@ func NewCreateNamespaceOpts(creatorID, orgID model.ID) repository.CreateNamespac
 func NewRepositoryNamespace() *repository.Namespace {
 	return &repository.Namespace{
 		ID:            model.MustNewID(model.ResourceTypeNamespace),
+		Slug:          UniqueSlug(),
 		Name:          pkg.GenerateRandomString(10),
 		Description:   pkg.GenerateRandomString(10),
 		ProjectCount:  convert.ToPointer(int64(0)),

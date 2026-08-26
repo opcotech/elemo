@@ -51,6 +51,16 @@
         example:
           value:
             message: The requested resource not found
+"409":
+  description: Conflict
+  content:
+    application/json:
+      schema:
+        $ref: "#/components/schemas/HTTPError"
+      examples:
+        example:
+          value:
+            message: The requested resource already exists
 "500":
   description: Internal Server Error
   content:

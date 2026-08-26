@@ -1,25 +1,34 @@
 import { useParams, useRouterState } from "@tanstack/react-router";
 import { useMemo } from "react";
 
+import { identityFromMatches } from "@/lib/route-identity";
+
 export type NavigationContextType =
   "organization" | "namespace" | "project" | "global";
 
 export interface NavigationContext {
   type: NavigationContextType;
+  organizationSlug?: string;
+  namespaceSlug?: string;
+  projectKey?: string;
+  organizationId?: string;
   namespaceId?: string;
   projectId?: string;
-  organizationId?: string;
 }
 
 export interface NavigationContextParams {
+  organizationSlug?: string;
+  namespaceSlug?: string;
+  projectKey?: string;
   organizationId?: string;
   namespaceId?: string;
   projectId?: string;
 }
 
 /**
- * Derives operational sidebar context from a pathname and merged route params.
- * Settings admin routes share param names but must not replace operational context.
+ * Derives operational sidebar context from a pathname, URL identity, and
+ * resolved xids from loader data. Settings admin routes share param names
+ * but must not replace operational context.
  */
 export function resolveNavigationContext(
   pathname: string,
@@ -29,26 +38,32 @@ export function resolveNavigationContext(
     return { type: "global" };
   }
 
-  if (params.projectId) {
+  if (params.projectKey) {
     return {
       type: "project",
+      organizationSlug: params.organizationSlug,
+      namespaceSlug: params.namespaceSlug,
+      projectKey: params.projectKey,
       organizationId: params.organizationId,
       namespaceId: params.namespaceId,
       projectId: params.projectId,
     };
   }
 
-  if (params.namespaceId) {
+  if (params.namespaceSlug) {
     return {
       type: "namespace",
+      organizationSlug: params.organizationSlug,
+      namespaceSlug: params.namespaceSlug,
       organizationId: params.organizationId,
       namespaceId: params.namespaceId,
     };
   }
 
-  if (params.organizationId) {
+  if (params.organizationSlug) {
     return {
       type: "organization",
+      organizationSlug: params.organizationSlug,
       organizationId: params.organizationId,
     };
   }
@@ -59,22 +74,38 @@ export function resolveNavigationContext(
 }
 
 /**
- * Derives the sidebar context from the router's typed, merged parameters.
- * Settings admin routes share param names but must not replace operational context.
+ * Derives the sidebar context from the router's typed parameters and loader
+ * data. URL identity comes from params; xids come from loaders only.
  */
 export function useNavigationContext(): NavigationContext {
   const params = useParams({ strict: false });
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const matches = useRouterState({
+    select: (state) => state.matches,
+  });
+
+  const resolved = useMemo(() => identityFromMatches(matches), [matches]);
 
   return useMemo(
     () =>
       resolveNavigationContext(pathname, {
-        organizationId: params.organizationId,
-        namespaceId: params.namespaceId,
-        projectId: params.projectId,
+        organizationSlug: params.organizationSlug,
+        namespaceSlug: params.namespaceSlug,
+        projectKey: params.projectKey,
+        organizationId: resolved.organizationId,
+        namespaceId: resolved.namespaceId,
+        projectId: resolved.projectId,
       }),
-    [pathname, params.organizationId, params.namespaceId, params.projectId]
+    [
+      pathname,
+      params.organizationSlug,
+      params.namespaceSlug,
+      params.projectKey,
+      resolved.organizationId,
+      resolved.namespaceId,
+      resolved.projectId,
+    ]
   );
 }

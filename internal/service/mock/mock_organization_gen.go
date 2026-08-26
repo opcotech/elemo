@@ -114,6 +114,21 @@ func (mr *MockOrganizationServiceMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockOrganizationService)(nil).Get), ctx, id)
 }
 
+// GetByRef mocks base method.
+func (m *MockOrganizationService) GetByRef(ctx context.Context, id model.ID, slug string) (*service.Organization, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByRef", ctx, id, slug)
+	ret0, _ := ret[0].(*service.Organization)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByRef indicates an expected call of GetByRef.
+func (mr *MockOrganizationServiceMockRecorder) GetByRef(ctx, id, slug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByRef", reflect.TypeOf((*MockOrganizationService)(nil).GetByRef), ctx, id, slug)
+}
+
 // InviteMember mocks base method.
 func (m *MockOrganizationService) InviteMember(ctx context.Context, orgID model.ID, opts service.InviteOrganizationMemberOpts) error {
 	m.ctrl.T.Helper()
@@ -170,6 +185,21 @@ func (m *MockOrganizationService) RemoveMember(ctx context.Context, orgID, membe
 func (mr *MockOrganizationServiceMockRecorder) RemoveMember(ctx, orgID, memberID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveMember", reflect.TypeOf((*MockOrganizationService)(nil).RemoveMember), ctx, orgID, memberID)
+}
+
+// Resolve mocks base method.
+func (m *MockOrganizationService) Resolve(ctx context.Context, id model.ID, slug string) (*service.Organization, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Resolve", ctx, id, slug)
+	ret0, _ := ret[0].(*service.Organization)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Resolve indicates an expected call of Resolve.
+func (mr *MockOrganizationServiceMockRecorder) Resolve(ctx, id, slug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockOrganizationService)(nil).Resolve), ctx, id, slug)
 }
 
 // RevokeInvitation mocks base method.

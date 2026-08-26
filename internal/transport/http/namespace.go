@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/service"
 	"github.com/opcotech/elemo/internal/transport/http/api"
@@ -23,7 +22,8 @@ type NamespaceController interface {
 // namespaceController is the concrete implementation of NamespaceController.
 type namespaceController struct {
 	*baseController
-	namespaceService service.NamespaceService
+	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
 }
 
 func (c *namespaceController) V1NamespacesGet(ctx context.Context, request api.V1NamespacesGetRequestObject) (api.V1NamespacesGetResponseObject, error) {
@@ -62,7 +62,7 @@ func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Contex
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsNamespacesCreate")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsNamespacesCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -76,6 +76,10 @@ func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Contex
 			return api.V1OrganizationsNamespacesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationsNamespacesCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationsNamespacesCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		default:
 			return api.V1OrganizationsNamespacesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -92,7 +96,7 @@ func (c *namespaceController) V1OrganizationsNamespacesGet(ctx context.Context, 
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1OrganizationsNamespacesGet")
 	defer span.End()
 
-	organizationID, err := model.NewIDFromString(request.Id, model.ResourceTypeOrganization.String())
+	organizationID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
 	if err != nil {
 		return api.V1OrganizationsNamespacesGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -133,12 +137,26 @@ func (c *namespaceController) V1NamespaceGet(ctx context.Context, request api.V1
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespaceGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	orgID, err := resolveOrganizationID(ctx, c.organizationService, request.OrganizationRef)
+	if err != nil {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
+			return api.V1NamespaceGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		case http.StatusNotFound:
+			return api.V1NamespaceGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespaceGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
+		}
+	}
+
+	id, slug, err := parseNamespaceRef(request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespaceGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
 
-	namespace, err := c.namespaceService.Get(ctx, namespaceID)
+	namespace, err := c.namespaceService.GetByRef(ctx, orgID, id, slug)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusForbidden:
@@ -152,14 +170,14 @@ func (c *namespaceController) V1NamespaceGet(ctx context.Context, request api.V1
 		}
 	}
 
-	return api.V1NamespaceGet200JSONResponse(namespaceToDTO(namespace)), nil
+	return api.V1NamespaceGet200JSONResponse(accessibleNamespaceToDTO(namespace)), nil
 }
 
 func (c *namespaceController) V1NamespaceUpdate(ctx context.Context, request api.V1NamespaceUpdateRequestObject) (api.V1NamespaceUpdateResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespaceUpdate")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespaceUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -187,7 +205,7 @@ func (c *namespaceController) V1NamespaceDelete(ctx context.Context, request api
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespaceDelete")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespaceDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -209,25 +227,30 @@ func (c *namespaceController) V1NamespaceDelete(ctx context.Context, request api
 }
 
 // NewNamespaceController creates a new NamespaceController.
-func NewNamespaceController(namespaceService service.NamespaceService, opts ...ControllerOption) (NamespaceController, error) {
+func NewNamespaceController(organizationService service.OrganizationService, namespaceService service.NamespaceService, opts ...ControllerOption) (NamespaceController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	if organizationService == nil {
+		return nil, ErrNoOrganizationService
+	}
 	if namespaceService == nil {
 		return nil, ErrNoNamespaceService
 	}
 
 	return &namespaceController{
-		baseController:   c,
-		namespaceService: namespaceService,
+		baseController:      c,
+		organizationService: organizationService,
+		namespaceService:    namespaceService,
 	}, nil
 }
 
 func createNamespaceJSONRequestBodyToCreateNamespaceOpts(body *api.V1OrganizationsNamespacesCreateJSONRequestBody) service.CreateNamespaceOpts {
 	opts := service.CreateNamespaceOpts{
 		Name: body.Name,
+		Slug: body.Slug,
 	}
 
 	if body.Description.Defined && body.Description.Value != nil {
@@ -253,6 +276,7 @@ func updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(body *api.V1NamespaceUp
 func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 	n := api.Namespace{
 		Id:            namespace.ID.String(),
+		Slug:          namespace.Slug,
 		Name:          namespace.Name,
 		ProjectCount:  namespace.ProjectCount,
 		DocumentCount: namespace.DocumentCount,
@@ -270,6 +294,7 @@ func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 func accessibleNamespaceToDTO(namespace *service.AccessibleNamespace) api.AccessibleNamespace {
 	n := api.AccessibleNamespace{
 		Id:            namespace.ID.String(),
+		Slug:          namespace.Slug,
 		Name:          namespace.Name,
 		ProjectCount:  namespace.ProjectCount,
 		DocumentCount: namespace.DocumentCount,
@@ -277,6 +302,7 @@ func accessibleNamespaceToDTO(namespace *service.AccessibleNamespace) api.Access
 		UpdatedAt:     namespace.UpdatedAt,
 		Organization: api.PartialOrganization{
 			Id:   namespace.Organization.ID.String(),
+			Slug: namespace.Organization.Slug,
 			Name: namespace.Organization.Name,
 		},
 	}

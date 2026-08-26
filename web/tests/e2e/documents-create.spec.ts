@@ -66,7 +66,11 @@ test.describe("@documents.create Document Create E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const documents = new DocumentsListPage(page);
-    await documents.gotoProject(workspace.namespaceId, workspace.projectId);
+    await documents.gotoProject(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await documents.waitForLoad();
     return documents;
   };
@@ -130,7 +134,11 @@ test.describe("@documents.create Document Create E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const projectPage = new ProjectPage(page);
-    await projectPage.goto(workspace.namespaceId, workspace.projectId);
+    await projectPage.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await projectPage.waitForLoad();
     const name = `Overview ${getRandomString(8)}`;
 
@@ -149,15 +157,24 @@ test.describe("@documents.create Document Create E2E Tests", () => {
     page,
   }) => {
     const name = `Overview link ${getRandomString(8)}`;
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: name,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: name,
+      }
+    );
     await loginUser(page, {
       email: workspace.owner.email,
       password: USER_DEFAULT_PASSWORD,
     });
     const projectPage = new ProjectPage(page);
-    await projectPage.goto(workspace.namespaceId, workspace.projectId);
+    await projectPage.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await projectPage.waitForLoad();
 
     await projectPage.documents.linkDocument(name);

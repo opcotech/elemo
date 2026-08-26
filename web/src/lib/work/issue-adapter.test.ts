@@ -4,6 +4,7 @@ import type { Issue } from "@/lib/api/types";
 import {
   issueStatusLabels,
   issueToWorkItem,
+  issuesToWorkItemsWithNamespaces,
   mapIssueStatus,
   mapWorkStatusToIssueStatus,
 } from "@/lib/work/issue-adapter";
@@ -52,6 +53,7 @@ const baseIssue: Issue = {
     updated_at: "2026-08-10T00:00:00Z",
     namespace: {
       id: "ns-1",
+      slug: "engineering",
       name: "Engineering",
     },
   },
@@ -64,6 +66,7 @@ const baseIssue: Issue = {
   },
   namespace: {
     id: "ns-1",
+    slug: "engineering",
     name: "Engineering",
   },
   comment_count: 0,
@@ -132,6 +135,7 @@ describe("issue-adapter", () => {
         key: "PLAT-1",
         title: "Parent epic",
         namespaceId: "ns-1",
+        namespaceSlug: "engineering",
       },
       links: [{ url: "https://example.com/spec", label: "Design spec" }],
     });
@@ -209,5 +213,48 @@ describe("issue-adapter", () => {
     expect(item.parent).toBeNull();
     expect(item.resolution).toBe("fixed");
     expect(item.links).toEqual([]);
+  });
+
+  it("fills hierarchical slugs from reachable namespaces for cross-namespace lists", () => {
+    const items = issuesToWorkItemsWithNamespaces(
+      [
+        baseIssue,
+        {
+          ...baseIssue,
+          id: "issue-2",
+          key: "OPS-3",
+          namespace: {
+            id: "ns-2",
+            slug: "ops",
+            name: "Operations",
+          },
+        },
+      ],
+      [
+        {
+          id: "ns-1",
+          slug: "engineering",
+          organizationId: "org-1",
+          organizationSlug: "acme",
+        },
+        {
+          id: "ns-2",
+          slug: "ops",
+          organizationId: "org-2",
+          organizationSlug: "globex",
+        },
+      ]
+    );
+
+    expect(items[0]).toMatchObject({
+      organizationSlug: "acme",
+      namespaceSlug: "engineering",
+      organizationId: "org-1",
+    });
+    expect(items[1]).toMatchObject({
+      organizationSlug: "globex",
+      namespaceSlug: "ops",
+      organizationId: "org-2",
+    });
   });
 });

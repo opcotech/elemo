@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { V1DocumentDeleteData, V1DocumentDeleteErrors, V1DocumentDeleteResponses, V1DocumentGetData, V1DocumentGetErrors, V1DocumentGetResponses, V1DocumentUpdateData, V1DocumentUpdateErrors, V1DocumentUpdateResponses, V1FolderDeleteData, V1FolderDeleteErrors, V1FolderDeleteResponses, V1FolderGetData, V1FolderGetErrors, V1FolderGetResponses, V1FolderUpdateData, V1FolderUpdateErrors, V1FolderUpdateResponses, V1IssueDeleteData, V1IssueDeleteErrors, V1IssueDeleteResponses, V1IssueGetData, V1IssueGetErrors, V1IssueGetResponses, V1IssueRelationDeleteData, V1IssueRelationDeleteErrors, V1IssueRelationDeleteResponses, V1IssueRelationsCreateData, V1IssueRelationsCreateErrors, V1IssueRelationsCreateResponses, V1IssueRelationsGetData, V1IssueRelationsGetErrors, V1IssueRelationsGetResponses, V1IssueRelationUpdateData, V1IssueRelationUpdateErrors, V1IssueRelationUpdateResponses, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateErrors, V1IssuesDocumentsCreateResponses, V1IssuesDocumentsGetData, V1IssuesDocumentsGetErrors, V1IssuesDocumentsGetResponses, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateErrors, V1IssuesDocumentsRelateResponses, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateErrors, V1IssuesDocumentsUnrelateResponses, V1IssueUpdateData, V1IssueUpdateErrors, V1IssueUpdateResponses, V1LabelsGetData, V1LabelsGetErrors, V1LabelsGetResponses, V1NamespaceDeleteData, V1NamespaceDeleteErrors, V1NamespaceDeleteResponses, V1NamespaceGetData, V1NamespaceGetErrors, V1NamespaceGetResponses, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateErrors, V1NamespacesDocumentsCreateResponses, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetErrors, V1NamespacesDocumentsGetResponses, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateErrors, V1NamespacesFoldersCreateResponses, V1NamespacesFoldersGetData, V1NamespacesFoldersGetErrors, V1NamespacesFoldersGetResponses, V1NamespacesGetData, V1NamespacesGetErrors, V1NamespacesGetResponses, V1NamespacesIssuesGetData, V1NamespacesIssuesGetErrors, V1NamespacesIssuesGetResponses, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetErrors, V1NamespacesIssuesKeyGetResponses, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateErrors, V1NamespacesProjectsCreateResponses, V1NamespacesProjectsGetData, V1NamespacesProjectsGetErrors, V1NamespacesProjectsGetResponses, V1NamespaceUpdateData, V1NamespaceUpdateErrors, V1NamespaceUpdateResponses, V1NotificationDeleteData, V1NotificationDeleteErrors, V1NotificationDeleteResponses, V1NotificationGetData, V1NotificationGetErrors, V1NotificationGetResponses, V1NotificationsGetData, V1NotificationsGetErrors, V1NotificationsGetResponses, V1NotificationUpdateData, V1NotificationUpdateErrors, V1NotificationUpdateResponses, V1OrganizationDeleteData, V1OrganizationDeleteErrors, V1OrganizationDeleteResponses, V1OrganizationGetData, V1OrganizationGetErrors, V1OrganizationGetResponses, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeErrors, V1OrganizationMemberInviteRevokeResponses, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveErrors, V1OrganizationMemberRemoveResponses, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptErrors, V1OrganizationMembersAcceptResponses, V1OrganizationMembersAddData, V1OrganizationMembersAddErrors, V1OrganizationMembersAddResponses, V1OrganizationMembersGetData, V1OrganizationMembersGetErrors, V1OrganizationMembersGetResponses, V1OrganizationMembersInviteData, V1OrganizationMembersInviteErrors, V1OrganizationMembersInviteResponses, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteErrors, V1OrganizationRoleDeleteResponses, V1OrganizationRoleGetData, V1OrganizationRoleGetErrors, V1OrganizationRoleGetResponses, V1OrganizationRolesCreateData, V1OrganizationRolesCreateErrors, V1OrganizationRolesCreateResponses, V1OrganizationRolesGetData, V1OrganizationRolesGetErrors, V1OrganizationRolesGetResponses, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateErrors, V1OrganizationRoleUpdateResponses, V1OrganizationsCreateData, V1OrganizationsCreateErrors, V1OrganizationsCreateResponses, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateErrors, V1OrganizationsDocumentsCreateResponses, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetErrors, V1OrganizationsDocumentsGetResponses, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateErrors, V1OrganizationsFoldersCreateResponses, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetErrors, V1OrganizationsFoldersGetResponses, V1OrganizationsGetData, V1OrganizationsGetErrors, V1OrganizationsGetResponses, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateErrors, V1OrganizationsNamespacesCreateResponses, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetErrors, V1OrganizationsNamespacesGetResponses, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteErrors, V1OrganizationTeamDeleteResponses, V1OrganizationTeamGetData, V1OrganizationTeamGetErrors, V1OrganizationTeamGetResponses, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveErrors, V1OrganizationTeamMemberRemoveResponses, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddErrors, V1OrganizationTeamMembersAddResponses, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetErrors, V1OrganizationTeamMembersGetResponses, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateErrors, V1OrganizationTeamsCreateResponses, V1OrganizationTeamsGetData, V1OrganizationTeamsGetErrors, V1OrganizationTeamsGetResponses, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateErrors, V1OrganizationTeamUpdateResponses, V1OrganizationUpdateData, V1OrganizationUpdateErrors, V1OrganizationUpdateResponses, V1PermissionDeleteData, V1PermissionDeleteErrors, V1PermissionDeleteResponses, V1PermissionGetData, V1PermissionGetErrors, V1PermissionGetResponses, V1PermissionResourceGetData, V1PermissionResourceGetErrors, V1PermissionResourceGetResponses, V1PermissionsCreateData, V1PermissionsCreateErrors, V1PermissionsCreateResponses, V1ProjectDeleteData, V1ProjectDeleteErrors, V1ProjectDeleteResponses, V1ProjectGetData, V1ProjectGetErrors, V1ProjectGetResponses, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateErrors, V1ProjectsDocumentsCreateResponses, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetErrors, V1ProjectsDocumentsGetResponses, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateErrors, V1ProjectsDocumentsRelateResponses, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateErrors, V1ProjectsDocumentsUnrelateResponses, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateErrors, V1ProjectsIssuesCreateResponses, V1ProjectsIssuesGetData, V1ProjectsIssuesGetErrors, V1ProjectsIssuesGetResponses, V1ProjectUpdateData, V1ProjectUpdateErrors, V1ProjectUpdateResponses, V1SearchGetData, V1SearchGetErrors, V1SearchGetResponses, V1SystemHealthData, V1SystemHealthErrors, V1SystemHealthResponses, V1SystemHeartbeatData, V1SystemHeartbeatErrors, V1SystemHeartbeatResponses, V1SystemLicenseData, V1SystemLicenseErrors, V1SystemLicenseResponses, V1SystemVersionData, V1SystemVersionErrors, V1SystemVersionResponses, V1TodoDeleteData, V1TodoDeleteErrors, V1TodoDeleteResponses, V1TodoGetData, V1TodoGetErrors, V1TodoGetResponses, V1TodosCreateData, V1TodosCreateErrors, V1TodosCreateResponses, V1TodosGetData, V1TodosGetErrors, V1TodosGetResponses, V1TodoUpdateData, V1TodoUpdateErrors, V1TodoUpdateResponses, V1UserDeleteData, V1UserDeleteErrors, V1UserDeleteResponses, V1UserGetData, V1UserGetErrors, V1UserGetResponses, V1UserRequestPasswordResetData, V1UserRequestPasswordResetErrors, V1UserRequestPasswordResetResponses, V1UserResetPasswordData, V1UserResetPasswordErrors, V1UserResetPasswordResponses, V1UsersCreateData, V1UsersCreateErrors, V1UsersCreateResponses, V1UsersGetData, V1UsersGetErrors, V1UsersGetResponses, V1UsersIssuesGetData, V1UsersIssuesGetErrors, V1UsersIssuesGetResponses, V1UserUpdateData, V1UserUpdateErrors, V1UserUpdateResponses } from './types.gen';
+import type { V1DocumentDeleteData, V1DocumentDeleteErrors, V1DocumentDeleteResponses, V1DocumentGetData, V1DocumentGetErrors, V1DocumentGetResponses, V1DocumentUpdateData, V1DocumentUpdateErrors, V1DocumentUpdateResponses, V1FolderDeleteData, V1FolderDeleteErrors, V1FolderDeleteResponses, V1FolderGetData, V1FolderGetErrors, V1FolderGetResponses, V1FolderUpdateData, V1FolderUpdateErrors, V1FolderUpdateResponses, V1IssueDeleteData, V1IssueDeleteErrors, V1IssueDeleteResponses, V1IssueGetData, V1IssueGetErrors, V1IssueGetResponses, V1IssueRelationDeleteData, V1IssueRelationDeleteErrors, V1IssueRelationDeleteResponses, V1IssueRelationsCreateData, V1IssueRelationsCreateErrors, V1IssueRelationsCreateResponses, V1IssueRelationsGetData, V1IssueRelationsGetErrors, V1IssueRelationsGetResponses, V1IssueRelationUpdateData, V1IssueRelationUpdateErrors, V1IssueRelationUpdateResponses, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateErrors, V1IssuesDocumentsCreateResponses, V1IssuesDocumentsGetData, V1IssuesDocumentsGetErrors, V1IssuesDocumentsGetResponses, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateErrors, V1IssuesDocumentsRelateResponses, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateErrors, V1IssuesDocumentsUnrelateResponses, V1IssueUpdateData, V1IssueUpdateErrors, V1IssueUpdateResponses, V1LabelsGetData, V1LabelsGetErrors, V1LabelsGetResponses, V1NamespaceDeleteData, V1NamespaceDeleteErrors, V1NamespaceDeleteResponses, V1NamespaceGetData, V1NamespaceGetErrors, V1NamespaceGetResponses, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateErrors, V1NamespacesDocumentsCreateResponses, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetErrors, V1NamespacesDocumentsGetResponses, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateErrors, V1NamespacesFoldersCreateResponses, V1NamespacesFoldersGetData, V1NamespacesFoldersGetErrors, V1NamespacesFoldersGetResponses, V1NamespacesGetData, V1NamespacesGetErrors, V1NamespacesGetResponses, V1NamespacesIssuesGetData, V1NamespacesIssuesGetErrors, V1NamespacesIssuesGetResponses, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetErrors, V1NamespacesIssuesKeyGetResponses, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateErrors, V1NamespacesProjectsCreateResponses, V1NamespacesProjectsGetData, V1NamespacesProjectsGetErrors, V1NamespacesProjectsGetResponses, V1NamespacesProjectsKeyGetData, V1NamespacesProjectsKeyGetErrors, V1NamespacesProjectsKeyGetResponses, V1NamespaceUpdateData, V1NamespaceUpdateErrors, V1NamespaceUpdateResponses, V1NotificationDeleteData, V1NotificationDeleteErrors, V1NotificationDeleteResponses, V1NotificationGetData, V1NotificationGetErrors, V1NotificationGetResponses, V1NotificationsGetData, V1NotificationsGetErrors, V1NotificationsGetResponses, V1NotificationUpdateData, V1NotificationUpdateErrors, V1NotificationUpdateResponses, V1OrganizationDeleteData, V1OrganizationDeleteErrors, V1OrganizationDeleteResponses, V1OrganizationGetData, V1OrganizationGetErrors, V1OrganizationGetResponses, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeErrors, V1OrganizationMemberInviteRevokeResponses, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveErrors, V1OrganizationMemberRemoveResponses, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptErrors, V1OrganizationMembersAcceptResponses, V1OrganizationMembersAddData, V1OrganizationMembersAddErrors, V1OrganizationMembersAddResponses, V1OrganizationMembersGetData, V1OrganizationMembersGetErrors, V1OrganizationMembersGetResponses, V1OrganizationMembersInviteData, V1OrganizationMembersInviteErrors, V1OrganizationMembersInviteResponses, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteErrors, V1OrganizationRoleDeleteResponses, V1OrganizationRoleGetData, V1OrganizationRoleGetErrors, V1OrganizationRoleGetResponses, V1OrganizationRolesCreateData, V1OrganizationRolesCreateErrors, V1OrganizationRolesCreateResponses, V1OrganizationRolesGetData, V1OrganizationRolesGetErrors, V1OrganizationRolesGetResponses, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateErrors, V1OrganizationRoleUpdateResponses, V1OrganizationsCreateData, V1OrganizationsCreateErrors, V1OrganizationsCreateResponses, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateErrors, V1OrganizationsDocumentsCreateResponses, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetErrors, V1OrganizationsDocumentsGetResponses, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateErrors, V1OrganizationsFoldersCreateResponses, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetErrors, V1OrganizationsFoldersGetResponses, V1OrganizationsGetData, V1OrganizationsGetErrors, V1OrganizationsGetResponses, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateErrors, V1OrganizationsNamespacesCreateResponses, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetErrors, V1OrganizationsNamespacesGetResponses, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteErrors, V1OrganizationTeamDeleteResponses, V1OrganizationTeamGetData, V1OrganizationTeamGetErrors, V1OrganizationTeamGetResponses, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveErrors, V1OrganizationTeamMemberRemoveResponses, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddErrors, V1OrganizationTeamMembersAddResponses, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetErrors, V1OrganizationTeamMembersGetResponses, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateErrors, V1OrganizationTeamsCreateResponses, V1OrganizationTeamsGetData, V1OrganizationTeamsGetErrors, V1OrganizationTeamsGetResponses, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateErrors, V1OrganizationTeamUpdateResponses, V1OrganizationUpdateData, V1OrganizationUpdateErrors, V1OrganizationUpdateResponses, V1PermissionDeleteData, V1PermissionDeleteErrors, V1PermissionDeleteResponses, V1PermissionGetData, V1PermissionGetErrors, V1PermissionGetResponses, V1PermissionResourceGetData, V1PermissionResourceGetErrors, V1PermissionResourceGetResponses, V1PermissionsCreateData, V1PermissionsCreateErrors, V1PermissionsCreateResponses, V1ProjectDeleteData, V1ProjectDeleteErrors, V1ProjectDeleteResponses, V1ProjectGetData, V1ProjectGetErrors, V1ProjectGetResponses, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateErrors, V1ProjectsDocumentsCreateResponses, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetErrors, V1ProjectsDocumentsGetResponses, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateErrors, V1ProjectsDocumentsRelateResponses, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateErrors, V1ProjectsDocumentsUnrelateResponses, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateErrors, V1ProjectsIssuesCreateResponses, V1ProjectsIssuesGetData, V1ProjectsIssuesGetErrors, V1ProjectsIssuesGetResponses, V1ProjectUpdateData, V1ProjectUpdateErrors, V1ProjectUpdateResponses, V1SearchGetData, V1SearchGetErrors, V1SearchGetResponses, V1SystemHealthData, V1SystemHealthErrors, V1SystemHealthResponses, V1SystemHeartbeatData, V1SystemHeartbeatErrors, V1SystemHeartbeatResponses, V1SystemLicenseData, V1SystemLicenseErrors, V1SystemLicenseResponses, V1SystemVersionData, V1SystemVersionErrors, V1SystemVersionResponses, V1TodoDeleteData, V1TodoDeleteErrors, V1TodoDeleteResponses, V1TodoGetData, V1TodoGetErrors, V1TodoGetResponses, V1TodosCreateData, V1TodosCreateErrors, V1TodosCreateResponses, V1TodosGetData, V1TodosGetErrors, V1TodosGetResponses, V1TodoUpdateData, V1TodoUpdateErrors, V1TodoUpdateResponses, V1UserDeleteData, V1UserDeleteErrors, V1UserDeleteResponses, V1UserGetData, V1UserGetErrors, V1UserGetResponses, V1UserRequestPasswordResetData, V1UserRequestPasswordResetErrors, V1UserRequestPasswordResetResponses, V1UserResetPasswordData, V1UserResetPasswordErrors, V1UserResetPasswordResponses, V1UsersCreateData, V1UsersCreateErrors, V1UsersCreateResponses, V1UsersGetData, V1UsersGetErrors, V1UsersGetResponses, V1UsersIssuesGetData, V1UsersIssuesGetErrors, V1UsersIssuesGetResponses, V1UserUpdateData, V1UserUpdateErrors, V1UserUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -268,7 +268,7 @@ export const v1OrganizationsCreate = <ThrowOnError extends boolean = false>(opti
  */
 export const v1OrganizationDelete = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationDeleteData, ThrowOnError>): RequestResult<V1OrganizationDeleteResponses, V1OrganizationDeleteErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationDeleteResponses, V1OrganizationDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}',
+    url: '/v1/organizations/{organizationRef}',
     ...options
 });
 
@@ -279,7 +279,7 @@ export const v1OrganizationDelete = <ThrowOnError extends boolean = false>(optio
  */
 export const v1OrganizationGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationGetData, ThrowOnError>): RequestResult<V1OrganizationGetResponses, V1OrganizationGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationGetResponses, V1OrganizationGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}',
+    url: '/v1/organizations/{organizationRef}',
     ...options
 });
 
@@ -290,7 +290,7 @@ export const v1OrganizationGet = <ThrowOnError extends boolean = false>(options:
  */
 export const v1OrganizationUpdate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationUpdateData, ThrowOnError>): RequestResult<V1OrganizationUpdateResponses, V1OrganizationUpdateErrors, ThrowOnError> => (options.client ?? client).patch<V1OrganizationUpdateResponses, V1OrganizationUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}',
+    url: '/v1/organizations/{organizationRef}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -305,7 +305,7 @@ export const v1OrganizationUpdate = <ThrowOnError extends boolean = false>(optio
  */
 export const v1OrganizationMembersGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMembersGetData, ThrowOnError>): RequestResult<V1OrganizationMembersGetResponses, V1OrganizationMembersGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationMembersGetResponses, V1OrganizationMembersGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/members',
+    url: '/v1/organizations/{organizationRef}/members',
     ...options
 });
 
@@ -316,7 +316,7 @@ export const v1OrganizationMembersGet = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationMembersAdd = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMembersAddData, ThrowOnError>): RequestResult<V1OrganizationMembersAddResponses, V1OrganizationMembersAddErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationMembersAddResponses, V1OrganizationMembersAddErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/members',
+    url: '/v1/organizations/{organizationRef}/members',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -331,7 +331,7 @@ export const v1OrganizationMembersAdd = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationMembersInvite = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMembersInviteData, ThrowOnError>): RequestResult<V1OrganizationMembersInviteResponses, V1OrganizationMembersInviteErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationMembersInviteResponses, V1OrganizationMembersInviteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/members/invite',
+    url: '/v1/organizations/{organizationRef}/members/invite',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -346,7 +346,7 @@ export const v1OrganizationMembersInvite = <ThrowOnError extends boolean = false
  */
 export const v1OrganizationMemberRemove = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMemberRemoveData, ThrowOnError>): RequestResult<V1OrganizationMemberRemoveResponses, V1OrganizationMemberRemoveErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationMemberRemoveResponses, V1OrganizationMemberRemoveErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/members/{user_id}',
+    url: '/v1/organizations/{organizationRef}/members/{user_id}',
     ...options
 });
 
@@ -357,7 +357,7 @@ export const v1OrganizationMemberRemove = <ThrowOnError extends boolean = false>
  */
 export const v1OrganizationMemberInviteRevoke = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMemberInviteRevokeData, ThrowOnError>): RequestResult<V1OrganizationMemberInviteRevokeResponses, V1OrganizationMemberInviteRevokeErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationMemberInviteRevokeResponses, V1OrganizationMemberInviteRevokeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/members/{user_id}/invite',
+    url: '/v1/organizations/{organizationRef}/members/{user_id}/invite',
     ...options
 });
 
@@ -367,7 +367,7 @@ export const v1OrganizationMemberInviteRevoke = <ThrowOnError extends boolean = 
  * Accept an invitation to join an organization using an invitation token. If the user is pending, they will be activated.
  */
 export const v1OrganizationMembersAccept = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationMembersAcceptData, ThrowOnError>): RequestResult<V1OrganizationMembersAcceptResponses, V1OrganizationMembersAcceptErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationMembersAcceptResponses, V1OrganizationMembersAcceptErrors, ThrowOnError>({
-    url: '/v1/organizations/{id}/members/accept',
+    url: '/v1/organizations/{organizationRef}/members/accept',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -382,7 +382,7 @@ export const v1OrganizationMembersAccept = <ThrowOnError extends boolean = false
  */
 export const v1OrganizationRolesGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationRolesGetData, ThrowOnError>): RequestResult<V1OrganizationRolesGetResponses, V1OrganizationRolesGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationRolesGetResponses, V1OrganizationRolesGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/roles',
+    url: '/v1/organizations/{organizationRef}/roles',
     ...options
 });
 
@@ -393,7 +393,7 @@ export const v1OrganizationRolesGet = <ThrowOnError extends boolean = false>(opt
  */
 export const v1OrganizationRolesCreate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationRolesCreateData, ThrowOnError>): RequestResult<V1OrganizationRolesCreateResponses, V1OrganizationRolesCreateErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationRolesCreateResponses, V1OrganizationRolesCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/roles',
+    url: '/v1/organizations/{organizationRef}/roles',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ export const v1OrganizationRolesCreate = <ThrowOnError extends boolean = false>(
  */
 export const v1OrganizationRoleDelete = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationRoleDeleteData, ThrowOnError>): RequestResult<V1OrganizationRoleDeleteResponses, V1OrganizationRoleDeleteErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationRoleDeleteResponses, V1OrganizationRoleDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/roles/{role_id}',
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}',
     ...options
 });
 
@@ -419,7 +419,7 @@ export const v1OrganizationRoleDelete = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationRoleGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationRoleGetData, ThrowOnError>): RequestResult<V1OrganizationRoleGetResponses, V1OrganizationRoleGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationRoleGetResponses, V1OrganizationRoleGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/roles/{role_id}',
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}',
     ...options
 });
 
@@ -430,7 +430,7 @@ export const v1OrganizationRoleGet = <ThrowOnError extends boolean = false>(opti
  */
 export const v1OrganizationRoleUpdate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationRoleUpdateData, ThrowOnError>): RequestResult<V1OrganizationRoleUpdateResponses, V1OrganizationRoleUpdateErrors, ThrowOnError> => (options.client ?? client).patch<V1OrganizationRoleUpdateResponses, V1OrganizationRoleUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/roles/{role_id}',
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -445,7 +445,7 @@ export const v1OrganizationRoleUpdate = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationTeamsGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamsGetData, ThrowOnError>): RequestResult<V1OrganizationTeamsGetResponses, V1OrganizationTeamsGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationTeamsGetResponses, V1OrganizationTeamsGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams',
+    url: '/v1/organizations/{organizationRef}/teams',
     ...options
 });
 
@@ -456,7 +456,7 @@ export const v1OrganizationTeamsGet = <ThrowOnError extends boolean = false>(opt
  */
 export const v1OrganizationTeamsCreate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamsCreateData, ThrowOnError>): RequestResult<V1OrganizationTeamsCreateResponses, V1OrganizationTeamsCreateErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationTeamsCreateResponses, V1OrganizationTeamsCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams',
+    url: '/v1/organizations/{organizationRef}/teams',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -471,7 +471,7 @@ export const v1OrganizationTeamsCreate = <ThrowOnError extends boolean = false>(
  */
 export const v1OrganizationTeamDelete = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamDeleteData, ThrowOnError>): RequestResult<V1OrganizationTeamDeleteResponses, V1OrganizationTeamDeleteErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationTeamDeleteResponses, V1OrganizationTeamDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}',
     ...options
 });
 
@@ -482,7 +482,7 @@ export const v1OrganizationTeamDelete = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationTeamGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamGetData, ThrowOnError>): RequestResult<V1OrganizationTeamGetResponses, V1OrganizationTeamGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationTeamGetResponses, V1OrganizationTeamGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}',
     ...options
 });
 
@@ -493,7 +493,7 @@ export const v1OrganizationTeamGet = <ThrowOnError extends boolean = false>(opti
  */
 export const v1OrganizationTeamUpdate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamUpdateData, ThrowOnError>): RequestResult<V1OrganizationTeamUpdateResponses, V1OrganizationTeamUpdateErrors, ThrowOnError> => (options.client ?? client).patch<V1OrganizationTeamUpdateResponses, V1OrganizationTeamUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -508,7 +508,7 @@ export const v1OrganizationTeamUpdate = <ThrowOnError extends boolean = false>(o
  */
 export const v1OrganizationTeamMembersGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamMembersGetData, ThrowOnError>): RequestResult<V1OrganizationTeamMembersGetResponses, V1OrganizationTeamMembersGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationTeamMembersGetResponses, V1OrganizationTeamMembersGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}/members',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members',
     ...options
 });
 
@@ -519,7 +519,7 @@ export const v1OrganizationTeamMembersGet = <ThrowOnError extends boolean = fals
  */
 export const v1OrganizationTeamMembersAdd = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamMembersAddData, ThrowOnError>): RequestResult<V1OrganizationTeamMembersAddResponses, V1OrganizationTeamMembersAddErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationTeamMembersAddResponses, V1OrganizationTeamMembersAddErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}/members',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -534,7 +534,7 @@ export const v1OrganizationTeamMembersAdd = <ThrowOnError extends boolean = fals
  */
 export const v1OrganizationTeamMemberRemove = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationTeamMemberRemoveData, ThrowOnError>): RequestResult<V1OrganizationTeamMemberRemoveResponses, V1OrganizationTeamMemberRemoveErrors, ThrowOnError> => (options.client ?? client).delete<V1OrganizationTeamMemberRemoveResponses, V1OrganizationTeamMemberRemoveErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/teams/{team_id}/members/{user_id}',
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id}',
     ...options
 });
 
@@ -545,7 +545,7 @@ export const v1OrganizationTeamMemberRemove = <ThrowOnError extends boolean = fa
  */
 export const v1OrganizationsNamespacesGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsNamespacesGetData, ThrowOnError>): RequestResult<V1OrganizationsNamespacesGetResponses, V1OrganizationsNamespacesGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationsNamespacesGetResponses, V1OrganizationsNamespacesGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/namespaces',
+    url: '/v1/organizations/{organizationRef}/namespaces',
     ...options
 });
 
@@ -556,7 +556,7 @@ export const v1OrganizationsNamespacesGet = <ThrowOnError extends boolean = fals
  */
 export const v1OrganizationsNamespacesCreate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsNamespacesCreateData, ThrowOnError>): RequestResult<V1OrganizationsNamespacesCreateResponses, V1OrganizationsNamespacesCreateErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationsNamespacesCreateResponses, V1OrganizationsNamespacesCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/namespaces',
+    url: '/v1/organizations/{organizationRef}/namespaces',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -579,33 +579,34 @@ export const v1NamespacesGet = <ThrowOnError extends boolean = false>(options?: 
 /**
  * Delete namespace
  *
- * Delete the namespace by its ID.
+ * Delete the namespace by its organization-scoped ref.
  */
 export const v1NamespaceDelete = <ThrowOnError extends boolean = false>(options: Options<V1NamespaceDeleteData, ThrowOnError>): RequestResult<V1NamespaceDeleteResponses, V1NamespaceDeleteErrors, ThrowOnError> => (options.client ?? client).delete<V1NamespaceDeleteResponses, V1NamespaceDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}',
     ...options
 });
 
 /**
  * Get namespace
  *
- * Return the requested namespace by its ID.
+ * Return the namespace identified by xid or slug under the organization. Lookup uses the same reachability as listing accessible namespaces so descendant-only users can open deep links. organization.read is not required.
+ *
  */
 export const v1NamespaceGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespaceGetData, ThrowOnError>): RequestResult<V1NamespaceGetResponses, V1NamespaceGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespaceGetResponses, V1NamespaceGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}',
     ...options
 });
 
 /**
  * Update namespace
  *
- * Update the namespace by its ID.
+ * Update the namespace by its organization-scoped ref. Slug cannot be patched.
  */
 export const v1NamespaceUpdate = <ThrowOnError extends boolean = false>(options: Options<V1NamespaceUpdateData, ThrowOnError>): RequestResult<V1NamespaceUpdateResponses, V1NamespaceUpdateErrors, ThrowOnError> => (options.client ?? client).patch<V1NamespaceUpdateResponses, V1NamespaceUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -620,7 +621,7 @@ export const v1NamespaceUpdate = <ThrowOnError extends boolean = false>(options:
  */
 export const v1NamespacesProjectsGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesProjectsGetData, ThrowOnError>): RequestResult<V1NamespacesProjectsGetResponses, V1NamespacesProjectsGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesProjectsGetResponses, V1NamespacesProjectsGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/projects',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects',
     ...options
 });
 
@@ -631,7 +632,7 @@ export const v1NamespacesProjectsGet = <ThrowOnError extends boolean = false>(op
  */
 export const v1NamespacesProjectsCreate = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesProjectsCreateData, ThrowOnError>): RequestResult<V1NamespacesProjectsCreateResponses, V1NamespacesProjectsCreateErrors, ThrowOnError> => (options.client ?? client).post<V1NamespacesProjectsCreateResponses, V1NamespacesProjectsCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/projects',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -640,35 +641,46 @@ export const v1NamespacesProjectsCreate = <ThrowOnError extends boolean = false>
 });
 
 /**
+ * Get project by key
+ *
+ * Return the project identified by key within the given namespace.
+ */
+export const v1NamespacesProjectsKeyGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesProjectsKeyGetData, ThrowOnError>): RequestResult<V1NamespacesProjectsKeyGetResponses, V1NamespacesProjectsKeyGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesProjectsKeyGetResponses, V1NamespacesProjectsKeyGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey}',
+    ...options
+});
+
+/**
  * Delete project
  *
- * Delete the project by its ID.
+ * Delete the project by its xid.
  */
 export const v1ProjectDelete = <ThrowOnError extends boolean = false>(options: Options<V1ProjectDeleteData, ThrowOnError>): RequestResult<V1ProjectDeleteResponses, V1ProjectDeleteErrors, ThrowOnError> => (options.client ?? client).delete<V1ProjectDeleteResponses, V1ProjectDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}',
+    url: '/v1/projects/{projectId}',
     ...options
 });
 
 /**
  * Get project
  *
- * Return the requested project by its ID.
+ * Return the requested project by its xid.
  */
 export const v1ProjectGet = <ThrowOnError extends boolean = false>(options: Options<V1ProjectGetData, ThrowOnError>): RequestResult<V1ProjectGetResponses, V1ProjectGetErrors, ThrowOnError> => (options.client ?? client).get<V1ProjectGetResponses, V1ProjectGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}',
+    url: '/v1/projects/{projectId}',
     ...options
 });
 
 /**
  * Update project
  *
- * Update the project by its ID.
+ * Update the project by its xid. Key cannot be patched.
  */
 export const v1ProjectUpdate = <ThrowOnError extends boolean = false>(options: Options<V1ProjectUpdateData, ThrowOnError>): RequestResult<V1ProjectUpdateResponses, V1ProjectUpdateErrors, ThrowOnError> => (options.client ?? client).patch<V1ProjectUpdateResponses, V1ProjectUpdateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}',
+    url: '/v1/projects/{projectId}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -683,7 +695,7 @@ export const v1ProjectUpdate = <ThrowOnError extends boolean = false>(options: O
  */
 export const v1NamespacesIssuesGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesIssuesGetData, ThrowOnError>): RequestResult<V1NamespacesIssuesGetResponses, V1NamespacesIssuesGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesIssuesGetResponses, V1NamespacesIssuesGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/issues',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues',
     ...options
 });
 
@@ -694,7 +706,7 @@ export const v1NamespacesIssuesGet = <ThrowOnError extends boolean = false>(opti
  */
 export const v1NamespacesIssuesKeyGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesIssuesKeyGetData, ThrowOnError>): RequestResult<V1NamespacesIssuesKeyGetResponses, V1NamespacesIssuesKeyGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesIssuesKeyGetResponses, V1NamespacesIssuesKeyGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/issues/{key}',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key}',
     ...options
 });
 
@@ -705,7 +717,7 @@ export const v1NamespacesIssuesKeyGet = <ThrowOnError extends boolean = false>(o
  */
 export const v1ProjectsIssuesGet = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsIssuesGetData, ThrowOnError>): RequestResult<V1ProjectsIssuesGetResponses, V1ProjectsIssuesGetErrors, ThrowOnError> => (options.client ?? client).get<V1ProjectsIssuesGetResponses, V1ProjectsIssuesGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/issues',
+    url: '/v1/projects/{projectId}/issues',
     ...options
 });
 
@@ -716,7 +728,7 @@ export const v1ProjectsIssuesGet = <ThrowOnError extends boolean = false>(option
  */
 export const v1ProjectsIssuesCreate = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsIssuesCreateData, ThrowOnError>): RequestResult<V1ProjectsIssuesCreateResponses, V1ProjectsIssuesCreateErrors, ThrowOnError> => (options.client ?? client).post<V1ProjectsIssuesCreateResponses, V1ProjectsIssuesCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/issues',
+    url: '/v1/projects/{projectId}/issues',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -820,7 +832,7 @@ export const v1IssueRelationUpdate = <ThrowOnError extends boolean = false>(opti
  */
 export const v1OrganizationsDocumentsGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsDocumentsGetData, ThrowOnError>): RequestResult<V1OrganizationsDocumentsGetResponses, V1OrganizationsDocumentsGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationsDocumentsGetResponses, V1OrganizationsDocumentsGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/documents',
+    url: '/v1/organizations/{organizationRef}/documents',
     ...options
 });
 
@@ -831,7 +843,7 @@ export const v1OrganizationsDocumentsGet = <ThrowOnError extends boolean = false
  */
 export const v1OrganizationsDocumentsCreate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsDocumentsCreateData, ThrowOnError>): RequestResult<V1OrganizationsDocumentsCreateResponses, V1OrganizationsDocumentsCreateErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationsDocumentsCreateResponses, V1OrganizationsDocumentsCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/documents',
+    url: '/v1/organizations/{organizationRef}/documents',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -846,7 +858,7 @@ export const v1OrganizationsDocumentsCreate = <ThrowOnError extends boolean = fa
  */
 export const v1NamespacesDocumentsGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesDocumentsGetData, ThrowOnError>): RequestResult<V1NamespacesDocumentsGetResponses, V1NamespacesDocumentsGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesDocumentsGetResponses, V1NamespacesDocumentsGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/documents',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents',
     ...options
 });
 
@@ -857,7 +869,7 @@ export const v1NamespacesDocumentsGet = <ThrowOnError extends boolean = false>(o
  */
 export const v1NamespacesDocumentsCreate = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesDocumentsCreateData, ThrowOnError>): RequestResult<V1NamespacesDocumentsCreateResponses, V1NamespacesDocumentsCreateErrors, ThrowOnError> => (options.client ?? client).post<V1NamespacesDocumentsCreateResponses, V1NamespacesDocumentsCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/documents',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -872,7 +884,7 @@ export const v1NamespacesDocumentsCreate = <ThrowOnError extends boolean = false
  */
 export const v1ProjectsDocumentsGet = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsDocumentsGetData, ThrowOnError>): RequestResult<V1ProjectsDocumentsGetResponses, V1ProjectsDocumentsGetErrors, ThrowOnError> => (options.client ?? client).get<V1ProjectsDocumentsGetResponses, V1ProjectsDocumentsGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/documents',
+    url: '/v1/projects/{projectId}/documents',
     ...options
 });
 
@@ -883,7 +895,7 @@ export const v1ProjectsDocumentsGet = <ThrowOnError extends boolean = false>(opt
  */
 export const v1ProjectsDocumentsCreate = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsDocumentsCreateData, ThrowOnError>): RequestResult<V1ProjectsDocumentsCreateResponses, V1ProjectsDocumentsCreateErrors, ThrowOnError> => (options.client ?? client).post<V1ProjectsDocumentsCreateResponses, V1ProjectsDocumentsCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/documents',
+    url: '/v1/projects/{projectId}/documents',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -898,7 +910,7 @@ export const v1ProjectsDocumentsCreate = <ThrowOnError extends boolean = false>(
  */
 export const v1ProjectsDocumentsUnrelate = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsDocumentsUnrelateData, ThrowOnError>): RequestResult<V1ProjectsDocumentsUnrelateResponses, V1ProjectsDocumentsUnrelateErrors, ThrowOnError> => (options.client ?? client).delete<V1ProjectsDocumentsUnrelateResponses, V1ProjectsDocumentsUnrelateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/documents/{documentId}',
+    url: '/v1/projects/{projectId}/documents/{documentId}',
     ...options
 });
 
@@ -909,7 +921,7 @@ export const v1ProjectsDocumentsUnrelate = <ThrowOnError extends boolean = false
  */
 export const v1ProjectsDocumentsRelate = <ThrowOnError extends boolean = false>(options: Options<V1ProjectsDocumentsRelateData, ThrowOnError>): RequestResult<V1ProjectsDocumentsRelateResponses, V1ProjectsDocumentsRelateErrors, ThrowOnError> => (options.client ?? client).post<V1ProjectsDocumentsRelateResponses, V1ProjectsDocumentsRelateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/projects/{id}/documents/{documentId}',
+    url: '/v1/projects/{projectId}/documents/{documentId}',
     ...options
 });
 
@@ -1005,7 +1017,7 @@ export const v1IssuesDocumentsRelate = <ThrowOnError extends boolean = false>(op
  */
 export const v1OrganizationsFoldersGet = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsFoldersGetData, ThrowOnError>): RequestResult<V1OrganizationsFoldersGetResponses, V1OrganizationsFoldersGetErrors, ThrowOnError> => (options.client ?? client).get<V1OrganizationsFoldersGetResponses, V1OrganizationsFoldersGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/folders',
+    url: '/v1/organizations/{organizationRef}/folders',
     ...options
 });
 
@@ -1016,7 +1028,7 @@ export const v1OrganizationsFoldersGet = <ThrowOnError extends boolean = false>(
  */
 export const v1OrganizationsFoldersCreate = <ThrowOnError extends boolean = false>(options: Options<V1OrganizationsFoldersCreateData, ThrowOnError>): RequestResult<V1OrganizationsFoldersCreateResponses, V1OrganizationsFoldersCreateErrors, ThrowOnError> => (options.client ?? client).post<V1OrganizationsFoldersCreateResponses, V1OrganizationsFoldersCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organizations/{id}/folders',
+    url: '/v1/organizations/{organizationRef}/folders',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -1031,7 +1043,7 @@ export const v1OrganizationsFoldersCreate = <ThrowOnError extends boolean = fals
  */
 export const v1NamespacesFoldersGet = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesFoldersGetData, ThrowOnError>): RequestResult<V1NamespacesFoldersGetResponses, V1NamespacesFoldersGetErrors, ThrowOnError> => (options.client ?? client).get<V1NamespacesFoldersGetResponses, V1NamespacesFoldersGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/folders',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders',
     ...options
 });
 
@@ -1042,7 +1054,7 @@ export const v1NamespacesFoldersGet = <ThrowOnError extends boolean = false>(opt
  */
 export const v1NamespacesFoldersCreate = <ThrowOnError extends boolean = false>(options: Options<V1NamespacesFoldersCreateData, ThrowOnError>): RequestResult<V1NamespacesFoldersCreateResponses, V1NamespacesFoldersCreateErrors, ThrowOnError> => (options.client ?? client).post<V1NamespacesFoldersCreateResponses, V1NamespacesFoldersCreateErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/namespaces/{id}/folders',
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders',
     ...options,
     headers: {
         'Content-Type': 'application/json',

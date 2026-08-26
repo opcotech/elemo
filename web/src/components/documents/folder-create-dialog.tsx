@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { namespaceRefPath, organizationRefPath } from "@/lib/api/refs";
 import { zFolderCreate } from "@/lib/api/schemas";
 import {
   v1NamespacesFoldersCreate,
@@ -35,13 +36,15 @@ const folderCreateFormDefaults: FolderCreateFormValues = {
 
 export function FolderCreateDialog({
   kind,
-  libraryId,
+  organizationId,
+  namespaceId,
   parentId,
   open,
   onOpenChange,
 }: {
   kind: DocumentLibraryKind;
-  libraryId: string;
+  organizationId: string;
+  namespaceId?: string;
   parentId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,16 +57,21 @@ export function FolderCreateDialog({
 
   const mutation = useFormMutation<
     Folder,
-    { path: { id: string }; body: FolderCreate },
+    { body: FolderCreate },
     FolderCreateFormValues
   >({
     mutationFn: async (variables) => {
-      const create =
-        kind === "organization"
-          ? v1OrganizationsFoldersCreate
-          : v1NamespacesFoldersCreate;
-      const { data } = await create({
-        ...variables,
+      if (kind === "organization") {
+        const { data } = await v1OrganizationsFoldersCreate({
+          path: organizationRefPath(organizationId),
+          body: variables.body,
+          throwOnError: true,
+        });
+        return data;
+      }
+      const { data } = await v1NamespacesFoldersCreate({
+        path: namespaceRefPath(organizationId, namespaceId ?? ""),
+        body: variables.body,
         throwOnError: true,
       });
       return data;
@@ -73,7 +81,6 @@ export function FolderCreateDialog({
     errorMessagePrefix: "Failed to create folder",
     resetFormOnSuccess: true,
     transformValues: (values) => ({
-      path: { id: libraryId },
       body: {
         name: values.name.trim(),
         ...(parentId ? { parent_id: parentId } : {}),

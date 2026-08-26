@@ -71,7 +71,7 @@ class ProjectDocumentsSection extends DialogMixin(SectionContainerMixin(Form)) {
 }
 
 /**
- * Project overview at /namespaces/:namespaceId/projects/:projectId.
+ * Project overview at /organizations/:organizationSlug/namespaces/:namespaceSlug/projects/:projectKey.
  */
 export class ProjectPage extends BaseComponent {
   public readonly documents: ProjectDocumentsSection;
@@ -81,10 +81,14 @@ export class ProjectPage extends BaseComponent {
     this.documents = new ProjectDocumentsSection(page);
   }
 
-  async goto(namespaceId: string, projectId: string): Promise<void> {
+  async goto(
+    organizationSlug: string,
+    namespaceSlug: string,
+    projectKey: string
+  ): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/namespaces/${namespaceId}/projects/${projectId}`
+      `/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/${projectKey}`
     );
   }
 

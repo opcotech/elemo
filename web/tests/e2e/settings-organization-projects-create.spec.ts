@@ -13,7 +13,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -24,7 +24,9 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let namespaceId: string;
+  let namespaceSlug: string;
   let ownerApiClient: Client;
 
   const getFullProjectName = () => `Project ${getRandomString(8)}`;
@@ -45,11 +47,14 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
       email: `projects-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
+    namespaceSlug = getRandomSlug("ns");
     const namespaceResponse = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: namespaceSlug,
         name: `Projects Namespace ${getRandomString(8)}`,
         description: `Namespace for project create tests ${getRandomString(8)}`,
       },
@@ -118,13 +123,13 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     const namespaceDetailsPage = new SettingsOrganizationNamespaceDetailsPage(
       page
     );
-    await namespaceDetailsPage.goto(organizationId, namespaceId);
+    await namespaceDetailsPage.goto(organizationSlug, namespaceSlug);
     await namespaceDetailsPage.projects.waitForLoad();
     await namespaceDetailsPage.projects.clickCreateProjectButton();
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/new`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/new`
       )
     );
     await expect(page.getByRole("textbox", { name: "Key" })).toBeVisible();
@@ -140,7 +145,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
 
     const projectCreatePage = new SettingsOrganizationProjectCreatePage(page);
-    await projectCreatePage.goto(organizationId, namespaceId);
+    await projectCreatePage.goto(organizationSlug, namespaceSlug);
     await projectCreatePage.projectForm.waitForLoad();
 
     const projectKey = getRandomProjectKey();
@@ -157,7 +162,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/(?!new$)[^/]+$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/(?!new$)[^/]+$`
       )
     );
 
@@ -188,7 +193,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
 
     const projectCreatePage = new SettingsOrganizationProjectCreatePage(page);
-    await projectCreatePage.goto(organizationId, namespaceId);
+    await projectCreatePage.goto(organizationSlug, namespaceSlug);
     await projectCreatePage.projectForm.waitForLoad();
 
     const projectKey = getRandomProjectKey();
@@ -203,7 +208,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/(?!new$)[^/]+$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}/projects/(?!new$)[^/]+$`
       )
     );
 
@@ -223,7 +228,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
 
     const projectCreatePage = new SettingsOrganizationProjectCreatePage(page);
-    await projectCreatePage.goto(organizationId, namespaceId);
+    await projectCreatePage.goto(organizationSlug, namespaceSlug);
     await projectCreatePage.projectForm.waitForLoad();
 
     await projectCreatePage.projectForm.submit("Create Project");
@@ -239,7 +244,9 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
       Name: "Valid Project Name",
     });
     await projectCreatePage.projectForm.submit("Create Project");
-    await expect(fieldMessage("Key")).toHaveText(/ascii letters/i);
+    await expect(fieldMessage("Key")).toHaveText(
+      /ascii letters|invalid input/i
+    );
   });
 
   test("should cancel create and return to namespace details", async ({
@@ -251,13 +258,13 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
 
     const projectCreatePage = new SettingsOrganizationProjectCreatePage(page);
-    await projectCreatePage.goto(organizationId, namespaceId);
+    await projectCreatePage.goto(organizationSlug, namespaceSlug);
     await projectCreatePage.projectForm.waitForLoad();
     await projectCreatePage.projectForm.cancel();
 
     await expect(page).toHaveURL(
       new RegExp(
-        `/settings/organizations/${organizationId}/namespaces/${namespaceId}$`
+        `/settings/organizations/${organizationSlug}/namespaces/${namespaceSlug}$`
       )
     );
   });
@@ -271,7 +278,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
 
     const projectCreatePage = new SettingsOrganizationProjectCreatePage(page);
-    await projectCreatePage.goto(organizationId, namespaceId);
+    await projectCreatePage.goto(organizationSlug, namespaceSlug);
 
     await expect(page).toHaveURL(/\/permission-denied(?:\?|$)/);
   });

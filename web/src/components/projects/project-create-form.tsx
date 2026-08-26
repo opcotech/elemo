@@ -11,6 +11,7 @@ import {
   ControlledField,
   Field,
   FieldControl,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -21,10 +22,12 @@ import { Input } from "@/components/ui/input";
 import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
+import { isConflict, throwIfApiFailed } from "@/lib/api/errors";
 import {
   v1NamespaceGetOptions,
   v1NamespacesProjectsGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import { v1NamespacesProjectsCreate } from "@/lib/api/sdk";
 import type {
   Options,
@@ -41,17 +44,21 @@ const defaultValues: ProjectCreateFormValues = {
 
 interface ProjectCreateFormProps {
   organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
 }
 
 export function ProjectCreateForm({
   organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
 }: ProjectCreateFormProps) {
   const navigate = useNavigate();
   const namespaceRoute = {
-    to: "/settings/organizations/$organizationId/namespaces/$namespaceId",
-    params: { organizationId, namespaceId },
+    to: "/settings/organizations/$organizationSlug/namespaces/$namespaceSlug",
+    params: { organizationSlug, namespaceSlug },
   } as const;
 
   const form = useForm<ProjectCreateFormValues>({
@@ -65,43 +72,50 @@ export function ProjectCreateForm({
     ProjectCreateFormValues
   >({
     mutationFn: async (variables) => {
-      const { data } = await v1NamespacesProjectsCreate({
-        ...variables,
-        throwOnError: true,
-      });
-      return data;
+      return throwIfApiFailed(
+        await v1NamespacesProjectsCreate({
+          ...variables,
+          throwOnError: false,
+        })
+      );
     },
     form,
     successMessage: "Project created",
     errorMessagePrefix: "Failed to create project",
     queryKeysToInvalidate: [
       v1NamespaceGetOptions({
-        path: { id: namespaceId },
+        path: namespaceRefPath(organizationId, namespaceId),
       }).queryKey,
       v1NamespacesProjectsGetOptions({
-        path: { id: namespaceId },
+        path: namespaceRefPath(organizationId, namespaceId),
       }).queryKey,
       accessibleNamespacesQueryKey,
     ],
+    onError: (error) => {
+      if (isConflict(error)) {
+        form.setError("key", {
+          type: "conflict",
+          message: "This project key is already in use in this namespace",
+        });
+      }
+    },
     transformValues: (values) => {
       const normalized = normalizeFormData(projectCreateFormSchema, {
         ...values,
         key: normalizeProjectKey(values.key),
       }) as ProjectCreate;
       return {
-        path: {
-          id: namespaceId,
-        },
+        path: namespaceRefPath(organizationId, namespaceId),
         body: normalized,
       };
     },
-    navigateOnSuccess: (navigateTo, data) =>
+    navigateOnSuccess: (navigateTo) =>
       navigateTo({
-        to: "/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId",
+        to: "/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey",
         params: {
-          organizationId,
-          namespaceId,
-          projectId: data.id,
+          organizationSlug,
+          namespaceSlug,
+          projectKey: normalizeProjectKey(form.getValues("key")),
         },
       }),
   });
@@ -126,7 +140,7 @@ export function ProjectCreateForm({
                 <FieldLabel>Key</FieldLabel>
                 <FieldControl>
                   <Input
-                    placeholder="Enter project key"
+                    placeholder="PLAT"
                     {...field}
                     onChange={(event) =>
                       field.onChange(normalizeProjectKey(event.target.value))
@@ -134,6 +148,10 @@ export function ProjectCreateForm({
                     disabled={mutation.isPending}
                   />
                 </FieldControl>
+                <FieldDescription>
+                  2–6 letters, unique in this namespace. Cannot be changed
+                  later.
+                </FieldDescription>
                 <FieldError />
               </Field>
             )}

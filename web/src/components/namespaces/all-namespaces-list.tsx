@@ -40,6 +40,7 @@ import { Action, can } from "@/lib/auth/permissions";
 
 interface NamespaceWithOrganization extends Namespace {
   organizationId: string;
+  organizationSlug: string;
   organizationName: string;
 }
 
@@ -82,10 +83,10 @@ function AllNamespaceRow({
     <TableRow>
       <TableCell className="font-medium">
         <ConditionalLink
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId"
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug"
           params={{
-            organizationId: namespace.organizationId,
-            namespaceId: namespace.id,
+            organizationSlug: namespace.organizationSlug,
+            namespaceSlug: namespace.slug,
           }}
           condition={hasNamespaceReadPermission}
         >
@@ -94,8 +95,8 @@ function AllNamespaceRow({
       </TableCell>
       <TableCell>
         <Link
-          to="/settings/organizations/$organizationId"
-          params={{ organizationId: namespace.organizationId }}
+          to="/settings/organizations/$organizationSlug"
+          params={{ organizationSlug: namespace.organizationSlug }}
           className="text-primary hover:underline"
         >
           {namespace.organizationName}
@@ -130,10 +131,10 @@ function AllNamespaceRow({
                 size="sm"
                 render={
                   <Link
-                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/edit"
+                    to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit"
                     params={{
-                      organizationId: namespace.organizationId,
-                      namespaceId: namespace.id,
+                      organizationSlug: namespace.organizationSlug,
+                      namespaceSlug: namespace.slug,
                     }}
                   />
                 }
@@ -183,6 +184,7 @@ export function AllNamespacesList({ organizations }: AllNamespacesListProps) {
       (namespacesPage?.items ?? []).map((namespace) => ({
         ...namespace,
         organizationId: namespace.organization.id,
+        organizationSlug: namespace.organization.slug,
         organizationName: namespace.organization.name,
       })),
     [namespacesPage?.items]
@@ -310,6 +312,7 @@ export function AllNamespacesList({ organizations }: AllNamespacesListProps) {
         <NamespaceDeleteDialog
           namespace={selectedNamespace}
           organizationId={selectedNamespace.organizationId}
+          organizationSlug={selectedNamespace.organizationSlug}
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           onSuccess={handleDeleteSuccess}

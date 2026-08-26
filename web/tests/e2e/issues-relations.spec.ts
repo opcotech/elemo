@@ -36,7 +36,11 @@ test.describe("@issues.relations Issue Relations E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
     await workItem.relations.waitForLoad();
     return workItem;
@@ -116,7 +120,9 @@ test.describe("@issues.relations Issue Relations E2E Tests", () => {
 
     await workItem.relations.getRelation(related.key).getByRole("link").click();
     await expect(page).toHaveURL(
-      new RegExp(`/work/${workspace.namespaceId}/${related.key}`)
+      new RegExp(
+        `/work/${workspace.organizationSlug}/${workspace.namespaceSlug}/${related.key}`
+      )
     );
     const relatedPage = new WorkItemPage(page);
     await relatedPage.waitForLoad();

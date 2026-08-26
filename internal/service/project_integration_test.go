@@ -157,7 +157,7 @@ func (s *ProjectServiceIntegrationTestSuite) TestGetByKey() {
 	created, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
 	s.Require().NoError(err)
 
-	project, err := s.projectService.GetByKey(s.ctx, created.Key)
+	project, err := s.projectService.GetByKey(s.ctx, s.namespace.ID, created.Key)
 	s.Require().NoError(err)
 	s.Assert().Equal(created.ID, project.ID)
 	s.Assert().Equal(created.Key, project.Key)
@@ -214,18 +214,6 @@ func (s *ProjectServiceIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	s.Assert().Equal("updated-project", project.Name)
 	s.Assert().NotNil(project.UpdatedAt)
-}
-
-func (s *ProjectServiceIntegrationTestSuite) TestUpdateNormalizesKeyToUppercase() {
-	created, err := s.projectService.Create(s.ctx, s.namespace.ID, s.newCreateOpts())
-	s.Require().NoError(err)
-
-	newKey := strings.ToLower(pkg.GenerateRandomStringAlpha(4))
-	project, err := s.projectService.Update(s.ctx, created.ID, service.UpdateProjectOpts{
-		Key: optional.Some(newKey),
-	})
-	s.Require().NoError(err)
-	s.Assert().Equal(strings.ToUpper(newKey), project.Key)
 }
 
 func (s *ProjectServiceIntegrationTestSuite) TestDelete() {

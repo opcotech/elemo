@@ -7,6 +7,11 @@ import {
   v1OrganizationsDocumentsGetOptions,
   v1ProjectsDocumentsGetOptions,
 } from "@/lib/api/query-options";
+import {
+  namespaceRefPath,
+  organizationRefPath,
+  projectIdPath,
+} from "@/lib/api/refs";
 import { zDocumentCreate } from "@/lib/api/schemas";
 import type { DocumentCreate } from "@/lib/api/types";
 
@@ -26,6 +31,7 @@ export type DocumentListParentType =
 export interface DocumentCreateParent {
   type: Exclude<DocumentListParentType, "issue">;
   id: string;
+  organizationId?: string;
 }
 
 export function documentCreateBody(values: { title: string }): DocumentCreate {
@@ -43,8 +49,16 @@ export function documentCreateParentFromNavigation(navigation: {
   if (navigation.type === "project" && navigation.projectId) {
     return { type: "project", id: navigation.projectId };
   }
-  if (navigation.type === "namespace" && navigation.namespaceId) {
-    return { type: "namespace", id: navigation.namespaceId };
+  if (
+    navigation.type === "namespace" &&
+    navigation.namespaceId &&
+    navigation.organizationId
+  ) {
+    return {
+      type: "namespace",
+      id: navigation.namespaceId,
+      organizationId: navigation.organizationId,
+    };
   }
   if (navigation.type === "organization" && navigation.organizationId) {
     return { type: "organization", id: navigation.organizationId };
@@ -74,17 +88,23 @@ export function documentCreateContextCopy(input: {
 
 export function documentListQueryKey(
   type: DocumentListParentType,
-  id: string
+  id: string,
+  organizationId?: string
 ): QueryKey {
-  const path = { id };
   switch (type) {
     case "organization":
-      return v1OrganizationsDocumentsGetOptions({ path }).queryKey;
+      return v1OrganizationsDocumentsGetOptions({
+        path: organizationRefPath(id),
+      }).queryKey;
     case "namespace":
-      return v1NamespacesDocumentsGetOptions({ path }).queryKey;
+      return v1NamespacesDocumentsGetOptions({
+        path: namespaceRefPath(organizationId ?? id, id),
+      }).queryKey;
     case "project":
-      return v1ProjectsDocumentsGetOptions({ path }).queryKey;
+      return v1ProjectsDocumentsGetOptions({
+        path: projectIdPath(id),
+      }).queryKey;
     case "issue":
-      return v1IssuesDocumentsGetOptions({ path }).queryKey;
+      return v1IssuesDocumentsGetOptions({ path: { id } }).queryKey;
   }
 }

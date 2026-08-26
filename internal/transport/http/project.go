@@ -15,6 +15,7 @@ import (
 type ProjectController interface {
 	V1NamespacesProjectsCreate(ctx context.Context, request api.V1NamespacesProjectsCreateRequestObject) (api.V1NamespacesProjectsCreateResponseObject, error)
 	V1NamespacesProjectsGet(ctx context.Context, request api.V1NamespacesProjectsGetRequestObject) (api.V1NamespacesProjectsGetResponseObject, error)
+	V1NamespacesProjectsKeyGet(ctx context.Context, request api.V1NamespacesProjectsKeyGetRequestObject) (api.V1NamespacesProjectsKeyGetResponseObject, error)
 	V1ProjectGet(ctx context.Context, request api.V1ProjectGetRequestObject) (api.V1ProjectGetResponseObject, error)
 	V1ProjectUpdate(ctx context.Context, request api.V1ProjectUpdateRequestObject) (api.V1ProjectUpdateResponseObject, error)
 	V1ProjectDelete(ctx context.Context, request api.V1ProjectDeleteRequestObject) (api.V1ProjectDeleteResponseObject, error)
@@ -23,14 +24,16 @@ type ProjectController interface {
 // projectController is the concrete implementation of ProjectController.
 type projectController struct {
 	*baseController
-	projectService service.ProjectService
+	organizationService service.OrganizationService
+	namespaceService    service.NamespaceService
+	projectService      service.ProjectService
 }
 
 func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, request api.V1NamespacesProjectsCreateRequestObject) (api.V1NamespacesProjectsCreateResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesProjectsCreate")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesProjectsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -47,6 +50,10 @@ func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, requ
 			return api.V1NamespacesProjectsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NamespacesProjectsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NamespacesProjectsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
+				Message: err.Error(),
+			}}, nil
 		default:
 			return api.V1NamespacesProjectsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -63,7 +70,7 @@ func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesProjectsGet")
 	defer span.End()
 
-	namespaceID, err := model.NewIDFromString(request.Id, model.ResourceTypeNamespace.String())
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
 	if err != nil {
 		return api.V1NamespacesProjectsGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -100,11 +107,48 @@ func (c *projectController) V1NamespacesProjectsGet(ctx context.Context, request
 	}, nil
 }
 
+func (c *projectController) V1NamespacesProjectsKeyGet(ctx context.Context, request api.V1NamespacesProjectsKeyGetRequestObject) (api.V1NamespacesProjectsKeyGetResponseObject, error) {
+	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1NamespacesProjectsKeyGet")
+	defer span.End()
+
+	namespaceID, err := resolveNamespaceID(ctx, c.organizationService, c.namespaceService, request.OrganizationRef, request.NamespaceRef)
+	if err != nil {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
+			return api.V1NamespacesProjectsKeyGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		case http.StatusNotFound:
+			return api.V1NamespacesProjectsKeyGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespacesProjectsKeyGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
+		}
+	}
+
+	project, err := c.projectService.GetByKey(ctx, namespaceID, request.ProjectKey)
+	if err != nil {
+		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
+			return api.V1NamespacesProjectsKeyGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
+		case http.StatusForbidden:
+			return api.V1NamespacesProjectsKeyGet403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusNotFound:
+			return api.V1NamespacesProjectsKeyGet404JSONResponse{N404JSONResponse: notFound}, nil
+		default:
+			return api.V1NamespacesProjectsKeyGet500JSONResponse{N500JSONResponse: api.N500JSONResponse{
+				Message: err.Error(),
+			}}, nil
+		}
+	}
+
+	return api.V1NamespacesProjectsKeyGet200JSONResponse(projectToDTO(project)), nil
+}
+
 func (c *projectController) V1ProjectGet(ctx context.Context, request api.V1ProjectGetRequestObject) (api.V1ProjectGetResponseObject, error) {
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectGet")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectGet400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -130,7 +174,7 @@ func (c *projectController) V1ProjectUpdate(ctx context.Context, request api.V1P
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectUpdate")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectUpdate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -161,7 +205,7 @@ func (c *projectController) V1ProjectDelete(ctx context.Context, request api.V1P
 	ctx, span := c.tracer.Start(ctx, "transport.http.handler/V1ProjectDelete")
 	defer span.End()
 
-	projectID, err := model.NewIDFromString(request.Id, model.ResourceTypeProject.String())
+	projectID, err := model.NewIDFromString(request.ProjectId, model.ResourceTypeProject.String())
 	if err != nil {
 		return api.V1ProjectDelete400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -183,19 +227,32 @@ func (c *projectController) V1ProjectDelete(ctx context.Context, request api.V1P
 }
 
 // NewProjectController creates a new ProjectController.
-func NewProjectController(projectService service.ProjectService, opts ...ControllerOption) (ProjectController, error) {
+func NewProjectController(
+	organizationService service.OrganizationService,
+	namespaceService service.NamespaceService,
+	projectService service.ProjectService,
+	opts ...ControllerOption,
+) (ProjectController, error) {
 	c, err := newController(opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	if organizationService == nil {
+		return nil, ErrNoOrganizationService
+	}
+	if namespaceService == nil {
+		return nil, ErrNoNamespaceService
+	}
 	if projectService == nil {
 		return nil, ErrNoProjectService
 	}
 
 	return &projectController{
-		baseController: c,
-		projectService: projectService,
+		baseController:      c,
+		organizationService: organizationService,
+		namespaceService:    namespaceService,
+		projectService:      projectService,
 	}, nil
 }
 
@@ -227,9 +284,6 @@ func createProjectJSONRequestBodyToCreateProjectOpts(body *api.V1NamespacesProje
 func updateProjectJSONRequestBodyToUpdateProjectOpts(body *api.V1ProjectUpdateJSONRequestBody) (service.UpdateProjectOpts, error) {
 	opts := service.UpdateProjectOpts{}
 
-	if body.Key != nil {
-		opts.Key = optional.Some(*body.Key)
-	}
 	if body.Name != nil {
 		opts.Name = optional.Some(*body.Name)
 	}
@@ -330,6 +384,7 @@ func partialNamespaceToDTO(namespace *service.PartialNamespace) *api.PartialName
 	}
 	return &api.PartialNamespace{
 		Id:   namespace.ID.String(),
+		Slug: namespace.Slug,
 		Name: namespace.Name,
 	}
 }

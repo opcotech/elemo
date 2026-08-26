@@ -13,6 +13,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { InternalLink } from "@/components/ui/internal-link";
+import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
+import { v1ProjectGetOptions } from "@/lib/api/query-options";
+import { projectIdPath } from "@/lib/api/refs";
 import type { Document, DocumentRelation } from "@/lib/api/types";
 import {
   documentLibraryPageHref,
@@ -21,18 +24,58 @@ import {
 } from "@/lib/documents/library";
 import type { InternalPath } from "@/lib/internal-url";
 import { internalPath } from "@/lib/internal-url";
+import { projectPath, workItemPath } from "@/lib/paths";
 
-function documentRelationHref(
-  library: Document["library"],
-  relation: DocumentRelation
-): InternalPath | null {
-  if (library.type !== "Namespace") {
-    return null;
+function DocumentRelationLink({
+  organizationSlug,
+  namespaceSlug,
+  relation,
+}: {
+  organizationSlug?: string;
+  namespaceSlug?: string;
+  relation: DocumentRelation;
+}) {
+  const { data: project } = useQuery({
+    ...v1ProjectGetOptions({ path: projectIdPath(relation.id) }),
+    enabled:
+      relation.type === "Project" && Boolean(organizationSlug && namespaceSlug),
+  });
+
+  let href: InternalPath | null = null;
+  if (organizationSlug && namespaceSlug) {
+    if (relation.type === "Issue") {
+      href = internalPath(
+        workItemPath({
+          organizationSlug,
+          namespaceSlug,
+          issueKey: relation.name,
+        })
+      );
+    } else if (project?.key) {
+      href = internalPath(
+        projectPath({
+          organizationSlug,
+          namespaceSlug,
+          projectKey: project.key,
+        })
+      );
+    }
   }
-  if (relation.type === "Project") {
-    return internalPath(`/namespaces/${library.id}/projects/${relation.id}`);
-  }
-  return internalPath(`/work/${library.id}/${relation.name}`);
+
+  return (
+    <Badge
+      variant="secondary"
+      className="max-w-44 gap-1 pl-1.5"
+      title={relation.type}
+      render={href ? <InternalLink to={href} /> : undefined}
+    >
+      <EntityIcon
+        type={relation.type === "Project" ? "project" : "work-item"}
+        className="size-3"
+      />
+      <span className="truncate">{relation.name}</span>
+    </Badge>
+  );
 }
 
 function MetaRow({
@@ -61,8 +104,12 @@ export function DocumentLocation({ document }: { document: Document }) {
     ...folderPathQuery(folderId ?? ""),
     enabled: Boolean(folderId),
   });
-  const documentsHref = documentLibraryPageHref(document.library);
+  const { data: workspace } = useAccessibleNamespaces();
+  const documentsHref = documentLibraryPageHref(document.library, workspace);
   const crumbs = folderPath ?? [];
+  const namespace = workspace?.namespaces.find(
+    (item) => item.id === document.library.id
+  );
 
   return (
     <div
@@ -77,11 +124,15 @@ export function DocumentLocation({ document }: { document: Document }) {
           <Breadcrumb>
             <BreadcrumbList className="gap-1 text-xs leading-5">
               <BreadcrumbItem>
-                <BreadcrumbLink
-                  render={<InternalLink to={documentsHref} search={{}} />}
-                >
-                  {document.library.name}
-                </BreadcrumbLink>
+                {documentsHref ? (
+                  <BreadcrumbLink
+                    render={<InternalLink to={documentsHref} search={{}} />}
+                  >
+                    {document.library.name}
+                  </BreadcrumbLink>
+                ) : (
+                  <span>{document.library.name}</span>
+                )}
               </BreadcrumbItem>
               {crumbs.map((folder) => (
                 <Fragment key={folder.id}>
@@ -89,12 +140,14 @@ export function DocumentLocation({ document }: { document: Document }) {
                   <BreadcrumbItem>
                     <BreadcrumbLink
                       render={
-                        <InternalLink
-                          to={documentsHref}
-                          search={documentLibrarySearchParams({
-                            folderId: folder.id,
-                          })}
-                        />
+                        documentsHref ? (
+                          <InternalLink
+                            to={documentsHref}
+                            search={documentLibrarySearchParams({
+                              folderId: folder.id,
+                            })}
+                          />
+                        ) : undefined
                       }
                     >
                       {folder.name}
@@ -111,26 +164,14 @@ export function DocumentLocation({ document }: { document: Document }) {
             icon={<Link2Icon className="size-3.5" aria-hidden />}
           >
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              {document.relations.map((relation) => {
-                const href = documentRelationHref(document.library, relation);
-                return (
-                  <Badge
-                    key={`${relation.type}-${relation.id}`}
-                    variant="secondary"
-                    className="max-w-44 gap-1 pl-1.5"
-                    title={relation.type}
-                    render={href ? <InternalLink to={href} /> : undefined}
-                  >
-                    <EntityIcon
-                      type={
-                        relation.type === "Project" ? "project" : "work-item"
-                      }
-                      className="size-3"
-                    />
-                    <span className="truncate">{relation.name}</span>
-                  </Badge>
-                );
-              })}
+              {document.relations.map((relation) => (
+                <DocumentRelationLink
+                  key={`${relation.type}-${relation.id}`}
+                  organizationSlug={namespace?.organizationSlug}
+                  namespaceSlug={namespace?.slug}
+                  relation={relation}
+                />
+              ))}
             </div>
           </MetaRow>
         ) : null}

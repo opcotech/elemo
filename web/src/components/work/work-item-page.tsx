@@ -38,6 +38,7 @@ import {
   v1NamespacesIssuesKeyGetOptions,
   v1ProjectsIssuesGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath, projectIdPath } from "@/lib/api/refs";
 import type { Issue, Options, V1IssueDeleteData } from "@/lib/api/types";
 import { internalPath } from "@/lib/internal-url";
 import { selectActivity, selectRelations } from "@/lib/mock-data";
@@ -208,9 +209,11 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
           </Section>
           <Section title="Metadata" data-section="issue-metadata">
             <IssueMetadataProperties
+              organizationSlug={item.organizationSlug}
+              namespaceSlug={item.namespaceSlug}
               namespaceId={item.namespaceId}
               namespaceLabel={item.namespace?.name ?? item.namespaceId}
-              projectId={item.projectId}
+              projectKey={item.project?.key}
               projectLabel={
                 item.project?.name ||
                 item.project?.key ||
@@ -220,7 +223,8 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
               parent={
                 <IssueParentLink
                   parent={item.parent}
-                  namespaceId={item.namespaceId}
+                  organizationSlug={item.organizationSlug}
+                  namespaceSlug={item.namespaceSlug}
                 />
               }
               reportedById={item.creatorId}
@@ -240,26 +244,42 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
 }
 
 function LiveWorkItemPage({
+  organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
   issueKey,
   initialIssue,
 }: {
+  organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
   issueKey: string;
   initialIssue: Issue;
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const issueKeyPath = {
+    ...namespaceRefPath(organizationId, namespaceId),
+    key: issueKey,
+  };
   const { data: issue } = useSuspenseQuery({
     ...v1NamespacesIssuesKeyGetOptions({
-      path: { id: namespaceId, key: issueKey },
+      path: issueKeyPath,
     }),
     initialData: initialIssue,
   });
 
   const project = issue.project;
-  const item = issueToWorkItem(issue, { namespaceId });
+  const item = issueToWorkItem(issue, {
+    namespaceId,
+    organizationId,
+    organizationSlug,
+    namespaceSlug,
+  });
 
   const { updateIssue, isPending } = useIssueUpdate({
+    organizationId,
     namespaceId,
     issueKey,
     issueId: issue.id,
@@ -268,7 +288,7 @@ function LiveWorkItemPage({
 
   const queryKeysToInvalidate = [
     v1NamespacesIssuesKeyGetOptions({
-      path: { id: namespaceId, key: issueKey },
+      path: issueKeyPath,
     }).queryKey,
     v1IssueGetOptions({
       path: { id: issue.id },
@@ -276,7 +296,7 @@ function LiveWorkItemPage({
     ...(project
       ? [
           v1ProjectsIssuesGetOptions({
-            path: { id: project.id },
+            path: projectIdPath(project.id),
             query: { page_size: 100 },
           }).queryKey,
         ]
@@ -292,8 +312,12 @@ function LiveWorkItemPage({
     navigateOnSuccess: (navigate) => {
       if (project) {
         return navigate({
-          to: "/namespaces/$namespaceId/projects/$projectId/work",
-          params: { namespaceId, projectId: project.id },
+          to: "/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work",
+          params: {
+            organizationSlug,
+            namespaceSlug,
+            projectKey: project.key,
+          },
           search: {
             group: "status",
             sort: "rank:asc",
@@ -303,14 +327,18 @@ function LiveWorkItemPage({
         });
       }
       return navigate({
-        to: "/namespaces/$namespaceId",
-        params: { namespaceId },
+        to: "/organizations/$organizationSlug/namespaces/$namespaceSlug",
+        params: { organizationSlug, namespaceSlug },
       });
     },
   });
 
   const recentHref = internalPath(
-    workItemPath({ namespaceId, key: issue.key })
+    workItemPath({
+      organizationSlug,
+      namespaceSlug,
+      key: issue.key,
+    })
   );
 
   useEffect(() => {
@@ -401,11 +429,15 @@ function LiveWorkItemPage({
           <IssueRelations
             issueId={issue.id}
             issueKey={issue.key}
+            organizationId={organizationId}
+            organizationSlug={organizationSlug}
             namespaceId={namespaceId}
+            namespaceSlug={namespaceSlug}
             disabled={isPending || deleteMutation.isPending}
           />
           <IssueDocumentsSection
             issueId={issue.id}
+            organizationId={organizationId}
             namespaceId={namespaceId}
             issueKey={issueKey}
             documentCount={issue.document_count}
@@ -444,9 +476,11 @@ function LiveWorkItemPage({
           </Section>
           <Section title="Metadata" data-section="issue-metadata">
             <IssueMetadataProperties
+              organizationSlug={organizationSlug}
+              namespaceSlug={namespaceSlug}
               namespaceId={namespaceId}
               namespaceLabel={issue.namespace?.name ?? namespaceId}
-              projectId={project?.id}
+              projectKey={project?.key}
               projectLabel={project?.name || project?.key || "Unknown"}
               parent={
                 <IssueParentSelect
@@ -473,18 +507,34 @@ function LiveWorkItemPage({
 export function WorkItemPage({
   item,
   issue,
+  organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
   issueKey,
 }: {
   item: WorkItem;
   issue?: Issue;
+  organizationId?: string;
+  organizationSlug?: string;
   namespaceId?: string;
+  namespaceSlug?: string;
   issueKey?: string;
 }) {
-  if (issue && namespaceId && issueKey) {
+  if (
+    issue &&
+    organizationId &&
+    organizationSlug &&
+    namespaceId &&
+    namespaceSlug &&
+    issueKey
+  ) {
     return (
       <LiveWorkItemPage
+        organizationId={organizationId}
+        organizationSlug={organizationSlug}
         namespaceId={namespaceId}
+        namespaceSlug={namespaceSlug}
         issueKey={issueKey}
         initialIssue={issue}
       />

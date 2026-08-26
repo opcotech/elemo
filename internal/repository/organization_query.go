@@ -37,6 +37,12 @@ type OrganizationGetQuery struct {
 	Projection OrganizationProjection
 }
 
+// OrganizationGetByRefQuery compiles an organization read by global slug.
+type OrganizationGetByRefQuery struct {
+	Slug       string
+	Projection OrganizationProjection
+}
+
 type OrganizationListQuery struct {
 	UserID     model.ID
 	Action     model.Action
@@ -60,6 +66,20 @@ func (q OrganizationGetQuery) Compile() (QueryPlan, error) {
 		Name:       "organization.get",
 		Match:      `MATCH (o:` + q.ID.Label() + ` {id: $id})`,
 		Params:     map[string]any{"id": q.ID.String()},
+		Alias:      "o",
+		Projection: q.Projection,
+	})
+}
+
+func (q OrganizationGetByRefQuery) Compile() (QueryPlan, error) {
+	if strings.TrimSpace(q.Slug) == "" {
+		return QueryPlan{}, ErrQueryCompile
+	}
+
+	return compileOrganizationRoot(organizationRootQueryInput{
+		Name:       "organization.get_by_ref",
+		Match:      `MATCH (o:` + model.ResourceTypeOrganization.String() + ` {slug: $slug})`,
+		Params:     map[string]any{"slug": q.Slug},
 		Alias:      "o",
 		Projection: q.Projection,
 	})

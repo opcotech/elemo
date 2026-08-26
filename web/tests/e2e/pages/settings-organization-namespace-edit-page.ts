@@ -4,6 +4,8 @@ import { Form } from "../components";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 
+import { settingsNamespaceEditPath } from "@/lib/paths";
+
 export class SettingsOrganizationNamespaceEditPage extends BaseComponent {
   public readonly namespaceForm: Form;
 
@@ -12,10 +14,10 @@ export class SettingsOrganizationNamespaceEditPage extends BaseComponent {
     this.namespaceForm = new Form(page);
   }
 
-  async goto(organizationId: string, namespaceId: string): Promise<void> {
+  async goto(organizationSlug: string, namespaceSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/${namespaceId}/edit`
+      settingsNamespaceEditPath({ organizationSlug, namespaceSlug })
     );
   }
 }

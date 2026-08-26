@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { v1ProjectsIssuesGetOptions } from "@/lib/api/query-options";
+import { projectIdPath } from "@/lib/api/refs";
 import { zIssueCreate } from "@/lib/api/schemas";
 import { v1ProjectsIssuesCreate } from "@/lib/api/sdk";
 import type {
@@ -89,7 +90,7 @@ export function WorkQuickCreate({
     queryKeysToInvalidate: canCreateInProject
       ? [
           v1ProjectsIssuesGetOptions({
-            path: { id: navigation.projectId! },
+            path: projectIdPath(navigation.projectId!),
             query: { page_size: 100 },
           }).queryKey,
         ]
@@ -100,7 +101,7 @@ export function WorkQuickCreate({
         values
       ) as Pick<IssueCreate, "title" | "description" | "kind">;
       return {
-        path: { id: navigation.projectId! },
+        path: projectIdPath(navigation.projectId!),
         body: {
           kind: normalizedBody.kind,
           title: normalizedBody.title,

@@ -28,6 +28,7 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
   let member1: User;
   let member2: User;
   let organizationId: string;
+  let organizationSlug: string;
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
     owner = await createUser(testConfig);
@@ -43,6 +44,7 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
       email: `test-teams-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -104,7 +106,7 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
 
     const result = await v1OrganizationTeamsCreate({
       client: memberClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: { name: `Denied ${getRandomString(8)}` },
     });
 
@@ -122,13 +124,13 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
 
     const teams = page.locator("[data-section='teams']");
     await expect(teams).toBeVisible();
     await clickUntilURL(
       teams.getByRole("link", { name: /create team/i }).first(),
-      new RegExp(`/settings/organizations/${organizationId}/teams/new`)
+      new RegExp(`/settings/organizations/${organizationSlug}/teams/new`)
     );
 
     const teamName = `UI Team ${getRandomString(8)}`;
@@ -137,7 +139,7 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
     await form.getByRole("button", { name: "Create Team" }).click();
     await waitForSuccessToast(page, "created");
     await expect(page).toHaveURL(
-      new RegExp(`/settings/organizations/${organizationId}/teams/[^/]+/edit`)
+      new RegExp(`/settings/organizations/${organizationSlug}/teams/[^/]+/edit`)
     );
 
     const members = page.locator("[data-section='team-members']");
@@ -171,7 +173,7 @@ test.describe("@settings.organization-teams Organization Team Members E2E Tests"
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     const teams = page.locator("[data-section='teams']");
     await expect(teams).toBeVisible();
     await expect(

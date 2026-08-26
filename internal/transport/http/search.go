@@ -126,6 +126,12 @@ func searchResultToDTO(result *service.SearchResult) api.SearchResult {
 		id := result.ProjectID.String()
 		dto.ProjectId = &id
 	}
+	if result.OrganizationSlug != "" {
+		dto.OrganizationSlug = &result.OrganizationSlug
+	}
+	if result.NamespaceSlug != "" {
+		dto.NamespaceSlug = &result.NamespaceSlug
+	}
 	if dto.CreatedAt.IsZero() {
 		dto.CreatedAt = time.Unix(0, 0).UTC()
 	}

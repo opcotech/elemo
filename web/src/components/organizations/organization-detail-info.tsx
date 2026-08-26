@@ -32,8 +32,8 @@ export function OrganizationDetailInfo({
             size="sm"
             render={
               <Link
-                to="/settings/organizations/$organizationId/edit"
-                params={{ organizationId: organization.id }}
+                to="/settings/organizations/$organizationSlug/edit"
+                params={{ organizationSlug: organization.slug }}
               />
             }
           >
@@ -44,6 +44,8 @@ export function OrganizationDetailInfo({
       }
     >
       <DetailField label="Name" value={organization.name} />
+
+      <DetailField label="Slug" value={organization.slug} />
 
       <DetailField label="Email" value={organization.email} />
 

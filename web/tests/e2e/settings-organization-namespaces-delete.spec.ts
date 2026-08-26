@@ -8,7 +8,7 @@ import {
   grantMembershipToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -19,6 +19,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
   let writerUser: User;
   let readerUser: User;
   let organizationId: string;
+  let organizationSlug: string;
   let ownerApiClient: Client;
 
   const getFullNamespaceName = () => `Namespace ${getRandomString(8)}`;
@@ -39,6 +40,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       email: `namespaces-${getRandomString(8)}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     await grantMembershipToUser(
       testConfig,
@@ -93,8 +95,9 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
 
     const response = await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: getRandomSlug("ns"),
         name,
         description,
       },
@@ -133,7 +136,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     expect(
       await orgDetailsPage.namespaces.hasDeleteNamespaceButton(namespace.name)
@@ -143,7 +146,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       email: readerUser.email,
       password: USER_DEFAULT_PASSWORD,
     });
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
     expect(
       await orgDetailsPage.namespaces.hasDeleteNamespaceButton(namespace.name)
@@ -176,7 +179,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     await orgDetailsPage.namespaces.deleteNamespace(namespace.name);
@@ -212,7 +215,7 @@ test.describe("@settings.organization-namespaces-delete Organization Namespaces 
       password: USER_DEFAULT_PASSWORD,
     });
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.namespaces.waitForLoad();
 
     await orgDetailsPage.namespaces.openDeleteNamespaceDialog(namespace.name);

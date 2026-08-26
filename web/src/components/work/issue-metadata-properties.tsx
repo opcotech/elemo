@@ -7,25 +7,30 @@ import { InternalLink } from "@/components/ui/internal-link";
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
 import { PropertyList } from "@/components/ui/property-list";
 import { internalPath } from "@/lib/internal-url";
+import { namespacePath, projectWorkPath, workItemPath } from "@/lib/paths";
 import type { DataSource } from "@/lib/work/model";
 
 export function IssueParentLink({
   parent,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
 }: {
   parent?: {
     key: string;
     title: string;
-    namespaceId?: string;
+    namespaceSlug?: string;
+    organizationSlug?: string;
   } | null;
-  namespaceId?: string | null;
+  organizationSlug?: string | null;
+  namespaceSlug?: string | null;
 }) {
   if (!parent) {
     return <span className="px-2">None</span>;
   }
 
-  const parentNamespaceId = parent.namespaceId ?? namespaceId;
-  if (!parentNamespaceId) {
+  const parentOrganizationSlug = parent.organizationSlug ?? organizationSlug;
+  const parentNamespaceSlug = parent.namespaceSlug ?? namespaceSlug;
+  if (!parentOrganizationSlug || !parentNamespaceSlug) {
     return (
       <span className="px-2">
         {parent.key} {parent.title}
@@ -36,7 +41,13 @@ export function IssueParentLink({
   return (
     <InternalLink
       className="text-primary px-2 underline-offset-4 hover:underline"
-      to={internalPath(`/work/${parentNamespaceId}/${parent.key}`)}
+      to={internalPath(
+        workItemPath({
+          organizationSlug: parentOrganizationSlug,
+          namespaceSlug: parentNamespaceSlug,
+          issueKey: parent.key,
+        })
+      )}
     >
       {parent.key} {parent.title}
     </InternalLink>
@@ -44,9 +55,10 @@ export function IssueParentLink({
 }
 
 export function IssueMetadataProperties({
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
   namespaceLabel,
-  projectId,
+  projectKey,
   projectLabel,
   parent,
   reportedById,
@@ -55,10 +67,12 @@ export function IssueMetadataProperties({
   compact = false,
   reporterPeople,
   reporterDataSource = "api",
+  namespaceId,
 }: {
-  namespaceId?: string | null;
+  organizationSlug?: string | null;
+  namespaceSlug?: string | null;
   namespaceLabel: string;
-  projectId?: string | null;
+  projectKey?: string | null;
   projectLabel: string;
   parent?: ReactNode;
   reportedById: string;
@@ -67,6 +81,7 @@ export function IssueMetadataProperties({
   compact?: boolean;
   reporterPeople?: readonly PersonAvatarStackPerson[];
   reporterDataSource?: DataSource;
+  namespaceId?: string | null;
 }) {
   return (
     <PropertyList
@@ -74,25 +89,32 @@ export function IssueMetadataProperties({
       items={[
         {
           label: "Namespace",
-          value: namespaceId ? (
-            <InternalLink
-              className="text-primary px-2 underline-offset-4 hover:underline"
-              to={internalPath(`/namespaces/${namespaceId}`)}
-            >
-              {namespaceLabel}
-            </InternalLink>
-          ) : (
-            <span className="px-2">Unknown</span>
-          ),
+          value:
+            organizationSlug && namespaceSlug ? (
+              <InternalLink
+                className="text-primary px-2 underline-offset-4 hover:underline"
+                to={internalPath(
+                  namespacePath({ organizationSlug, namespaceSlug })
+                )}
+              >
+                {namespaceLabel}
+              </InternalLink>
+            ) : (
+              <span className="px-2">Unknown</span>
+            ),
         },
         {
           label: "Project",
           value:
-            namespaceId && projectId ? (
+            organizationSlug && namespaceSlug && projectKey ? (
               <InternalLink
                 className="text-primary px-2 underline-offset-4 hover:underline"
                 to={internalPath(
-                  `/namespaces/${namespaceId}/projects/${projectId}/work`
+                  projectWorkPath({
+                    organizationSlug,
+                    namespaceSlug,
+                    projectKey,
+                  })
                 )}
               >
                 {projectLabel}

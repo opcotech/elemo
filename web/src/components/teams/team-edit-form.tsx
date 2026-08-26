@@ -35,12 +35,14 @@ type TeamEditFormValues = z.infer<typeof teamEditFormSchema>;
 interface TeamEditFormProps {
   team: Team;
   organizationId: string;
+  organizationSlug: string;
   teamId: string;
 }
 
 export function TeamEditForm({
   team,
   organizationId,
+  organizationSlug,
   teamId,
 }: TeamEditFormProps) {
   const navigate = useNavigate();
@@ -79,19 +81,19 @@ export function TeamEditForm({
     errorMessagePrefix: "Failed to update team",
     queryKeysToInvalidate: [
       v1OrganizationTeamsGetOptions({
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
       }).queryKey,
       v1OrganizationTeamGetOptions({
         path: {
-          id: organizationId,
+          organizationRef: organizationId,
           team_id: teamId,
         },
       }).queryKey,
     ],
     navigateOnSuccess: (navigateTo) =>
       navigateTo({
-        to: "/settings/organizations/$organizationId",
-        params: { organizationId },
+        to: "/settings/organizations/$organizationSlug",
+        params: { organizationSlug },
       }),
     transformValues: (values) => {
       const normalizedBody = normalizePatchData(teamEditFormSchema, values, {
@@ -100,7 +102,7 @@ export function TeamEditForm({
       });
       return {
         path: {
-          id: organizationId,
+          organizationRef: organizationId,
           team_id: teamId,
         },
         body: normalizedBody,
@@ -115,8 +117,8 @@ export function TeamEditForm({
         onSubmit={mutation.handleSubmit}
         onCancel={() =>
           navigate({
-            to: "/settings/organizations/$organizationId",
-            params: { organizationId },
+            to: "/settings/organizations/$organizationSlug",
+            params: { organizationSlug },
           })
         }
         isPending={mutation.isPending}

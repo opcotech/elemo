@@ -1,6 +1,7 @@
 import { withErrorHandling } from "./error-handler";
 
 import type { Client } from "@/lib/api/client";
+import { projectIdPath } from "@/lib/api/refs";
 import {
   v1IssueGet,
   v1IssueRelationsCreate,
@@ -46,7 +47,7 @@ export async function createIssue(
     async () => {
       return await v1ProjectsIssuesCreate({
         client,
-        path: { id: projectId },
+        path: projectIdPath(projectId),
         body: issueCreateData,
         throwOnError: true,
       });

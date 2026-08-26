@@ -95,6 +95,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TearDownSuite() {
 
 func (s *NamespaceServiceIntegrationTestSuite) TestCreate() {
 	ns, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug:        testModel.UniqueSlug(),
 		Name:        "test-namespace",
 		Description: "test namespace description",
 	})
@@ -113,6 +114,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestCreateWithoutPermission() {
 	otherCtx := context.WithValue(context.Background(), pkg.CtxKeyUserID, otherUser.ID)
 
 	_, err = s.namespaceService.Create(otherCtx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "unauthorized-ns", Description: "should fail description",
 	})
 	s.Assert().ErrorIs(err, service.ErrNoPermission)
@@ -120,6 +122,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestCreateWithoutPermission() {
 
 func (s *NamespaceServiceIntegrationTestSuite) TestGet() {
 	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "get-namespace", Description: "get namespace description",
 	})
 	s.Require().NoError(err)
@@ -132,10 +135,12 @@ func (s *NamespaceServiceIntegrationTestSuite) TestGet() {
 
 func (s *NamespaceServiceIntegrationTestSuite) TestList() {
 	_, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "ns-one", Description: "ns one description",
 	})
 	s.Require().NoError(err)
 	_, err = s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "ns-two", Description: "ns two description",
 	})
 	s.Require().NoError(err)
@@ -147,11 +152,13 @@ func (s *NamespaceServiceIntegrationTestSuite) TestList() {
 
 func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromProjectViewer() {
 	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "viewer-namespace", Description: "viewer namespace description",
 	})
 	s.Require().NoError(err)
 
 	sibling, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "other-namespace", Description: "other namespace description",
 	})
 	s.Require().NoError(err)
@@ -189,6 +196,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromProjectView
 
 func (s *NamespaceServiceIntegrationTestSuite) TestOrgMemberDoesNotListUnreadableNamespaces() {
 	_, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "member-hidden", Description: "member hidden description",
 	})
 	s.Require().NoError(err)
@@ -211,6 +219,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestOrgMemberDoesNotListUnreadabl
 
 func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromCrossOrgProjectViewer() {
 	ns, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "shared-namespace", Description: "shared namespace description",
 	})
 	s.Require().NoError(err)
@@ -257,6 +266,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestListAccessibleFromCrossOrgPro
 
 func (s *NamespaceServiceIntegrationTestSuite) TestUpdate() {
 	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "upd-namespace", Description: "upd namespace description",
 	})
 	s.Require().NoError(err)
@@ -271,6 +281,7 @@ func (s *NamespaceServiceIntegrationTestSuite) TestUpdate() {
 
 func (s *NamespaceServiceIntegrationTestSuite) TestDelete() {
 	created, err := s.namespaceService.Create(s.ctx, s.organization.ID, service.CreateNamespaceOpts{
+		Slug: testModel.UniqueSlug(),
 		Name: "del-namespace", Description: "del namespace description",
 	})
 	s.Require().NoError(err)

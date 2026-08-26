@@ -31,6 +31,17 @@ type NamespaceGetQuery struct {
 	Projection NamespaceProjection
 }
 
+// NamespaceGetByRefQuery compiles a namespace read by xid or slug under an
+// organization. When ActorID is set, the namespace must also be reachable
+// from the actor's grants (ListAccessible semantics).
+type NamespaceGetByRefQuery struct {
+	OrganizationID model.ID
+	ID             model.ID
+	Slug           string
+	ActorID        model.ID
+	Projection     NamespaceProjection
+}
+
 type NamespaceListQuery struct {
 	OrgID      model.ID
 	ActorID    model.ID
@@ -58,6 +69,53 @@ func (q NamespaceGetQuery) Compile() (QueryPlan, error) {
 		Params:     map[string]any{"id": q.ID.String()},
 		Alias:      "ns",
 		Projection: q.Projection,
+	})
+}
+
+func (q NamespaceGetByRefQuery) Compile() (QueryPlan, error) {
+	if err := q.OrganizationID.Validate(); err != nil {
+		return QueryPlan{}, err
+	}
+
+	byID := !q.ID.IsNil()
+	if !byID && strings.TrimSpace(q.Slug) == "" {
+		return QueryPlan{}, ErrQueryCompile
+	}
+
+	params := map[string]any{
+		"org_id": q.OrganizationID.String(),
+	}
+
+	var nsPattern string
+	if byID {
+		params["id"] = q.ID.String()
+		nsPattern = `(ns:` + model.ResourceTypeNamespace.String() + ` {id: $id})`
+	} else {
+		params["slug"] = q.Slug
+		nsPattern = `(ns:` + model.ResourceTypeNamespace.String() + ` {slug: $slug})`
+	}
+
+	ownership := `
+	MATCH (org:` + q.OrganizationID.Label() + ` {id: $org_id})-[:` + EdgeKindHasNamespace.String() + `]->` + nsPattern + `
+	WHERE ns.organization_id = $org_id`
+
+	var match string
+	if q.ActorID.IsNil() {
+		match = ownership
+	} else {
+		if err := applyNamespaceReachableGrantParams(q.ActorID, params); err != nil {
+			return QueryPlan{}, err
+		}
+		match = namespaceReachableFromGrantsCypher() + ownership
+	}
+
+	return compileNamespaceRoot(namespaceRootQueryInput{
+		Name:         "namespace.get_by_ref",
+		Match:        match,
+		Params:       params,
+		Alias:        "ns",
+		Projection:   q.Projection,
+		Organization: true,
 	})
 }
 

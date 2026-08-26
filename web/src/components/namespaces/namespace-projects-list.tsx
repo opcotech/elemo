@@ -29,6 +29,7 @@ import {
 } from "@/hooks/use-permissions";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NamespacesProjectsGetOptions } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import type { EffectiveActions, PartialProject } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
@@ -50,8 +51,8 @@ interface ProjectRowProps {
   project: PartialProject;
   permissions: EffectiveActions | undefined;
   isPermissionsLoading: boolean;
-  organizationId: string;
-  namespaceId: string;
+  organizationSlug: string;
+  namespaceSlug: string;
   onDeleteClick: (project: PartialProject) => void;
 }
 
@@ -59,8 +60,8 @@ function ProjectRow({
   project,
   permissions,
   isPermissionsLoading,
-  organizationId,
-  namespaceId,
+  organizationSlug,
+  namespaceSlug,
   onDeleteClick,
 }: ProjectRowProps) {
   const hasProjectReadPermission = can(permissions, Action.ProjectRead);
@@ -71,11 +72,11 @@ function ProjectRow({
     <TableRow>
       <TableCell className="font-mono text-sm">
         <ConditionalLink
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId"
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey"
           params={{
-            organizationId,
-            namespaceId,
-            projectId: project.id,
+            organizationSlug,
+            namespaceSlug,
+            projectKey: project.key,
           }}
           condition={hasProjectReadPermission}
         >
@@ -84,11 +85,11 @@ function ProjectRow({
       </TableCell>
       <TableCell className="font-medium">
         <ConditionalLink
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId"
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey"
           params={{
-            organizationId,
-            namespaceId,
-            projectId: project.id,
+            organizationSlug,
+            namespaceSlug,
+            projectKey: project.key,
           }}
           condition={hasProjectReadPermission}
         >
@@ -119,11 +120,11 @@ function ProjectRow({
                 size="sm"
                 render={
                   <Link
-                    to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/$projectId/edit"
+                    to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit"
                     params={{
-                      organizationId,
-                      namespaceId,
-                      projectId: project.id,
+                      organizationSlug,
+                      namespaceSlug,
+                      projectKey: project.key,
                     }}
                   />
                 }
@@ -151,13 +152,17 @@ function ProjectRow({
 
 interface NamespaceProjectsListProps {
   organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
   namespacePermissions: EffectiveActions | undefined;
 }
 
 export function NamespaceProjectsList({
   organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
   namespacePermissions,
 }: NamespaceProjectsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -172,7 +177,7 @@ export function NamespaceProjectsList({
     error,
   } = useQuery(
     v1NamespacesProjectsGetOptions({
-      path: { id: namespaceId },
+      path: namespaceRefPath(organizationId, namespaceId),
       query: cursorPageQuery(pageNav.pageToken),
     })
   );
@@ -210,8 +215,8 @@ export function NamespaceProjectsList({
       size="sm"
       render={
         <Link
-          to="/settings/organizations/$organizationId/namespaces/$namespaceId/projects/new"
-          params={{ organizationId, namespaceId }}
+          to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new"
+          params={{ organizationSlug, namespaceSlug }}
         />
       }
     >
@@ -271,8 +276,8 @@ export function NamespaceProjectsList({
                   project={project}
                   permissions={permissionQuery?.data}
                   isPermissionsLoading={permissionQuery?.isLoading ?? true}
-                  organizationId={organizationId}
-                  namespaceId={namespaceId}
+                  organizationSlug={organizationSlug}
+                  namespaceSlug={namespaceSlug}
                   onDeleteClick={handleDeleteClick}
                 />
               );
@@ -286,7 +291,9 @@ export function NamespaceProjectsList({
         <ProjectDeleteDialog
           project={selectedProject}
           organizationId={organizationId}
+          organizationSlug={organizationSlug}
           namespaceId={namespaceId}
+          namespaceSlug={namespaceSlug}
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           onSuccess={handleDeleteSuccess}

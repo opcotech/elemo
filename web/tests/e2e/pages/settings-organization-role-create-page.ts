@@ -4,9 +4,11 @@ import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { RoleCreateFormSection } from "../sections";
 
+import { settingsOrganizationPath } from "@/lib/paths";
+
 /**
  * Page Object Model for Organization Role Create page.
- * Represents the role creation view at /settings/organizations/:id/roles/new
+ * Represents the role creation view at /settings/organizations/:organizationSlug/roles/new
  */
 export class SettingsOrganizationRoleCreatePage extends BaseComponent {
   public readonly roleCreateForm: RoleCreateFormSection;
@@ -19,12 +21,12 @@ export class SettingsOrganizationRoleCreatePage extends BaseComponent {
   /**
    * Navigate to the role create page.
    *
-   * @param organizationId - The ID of the organization to create role in.
+   * @param organizationSlug - Canonical organization slug.
    */
-  async goto(organizationId: string): Promise<void> {
+  async goto(organizationSlug: string): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/roles/new`
+      `${settingsOrganizationPath({ organizationSlug })}/roles/new`
     );
   }
 }

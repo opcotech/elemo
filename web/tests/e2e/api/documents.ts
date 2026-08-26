@@ -1,6 +1,7 @@
 import { withErrorHandling } from "./error-handler";
 
 import type { Client } from "@/lib/api/client";
+import { projectIdPath } from "@/lib/api/refs";
 import {
   v1DocumentGet,
   v1DocumentUpdate,
@@ -56,7 +57,7 @@ export async function createProjectDocument(
     async () => {
       return await v1ProjectsDocumentsCreate({
         client,
-        path: { id: projectId },
+        path: projectIdPath(projectId),
         body: documentCreateBody(documentData),
         throwOnError: true,
       });
@@ -82,7 +83,7 @@ export async function createOrganizationDocument(
     async () => {
       return await v1OrganizationsDocumentsCreate({
         client,
-        path: { id: organizationId },
+        path: { organizationRef: organizationId },
         body: documentCreateBody(documentData),
         throwOnError: true,
       });
@@ -101,6 +102,7 @@ export async function createOrganizationDocument(
  */
 export async function createNamespaceDocument(
   client: Client,
+  organizationId: string,
   namespaceId: string,
   documentData: DocumentCreateFields
 ): Promise<Document> {
@@ -108,13 +110,13 @@ export async function createNamespaceDocument(
     async () => {
       return await v1NamespacesDocumentsCreate({
         client,
-        path: { id: namespaceId },
+        path: { organizationRef: organizationId, namespaceRef: namespaceId },
         body: documentCreateBody(documentData),
         throwOnError: true,
       });
     },
     {
-      endpoint: `/v1/namespaces/${namespaceId}/documents`,
+      endpoint: `/v1/organizations/${organizationId}/namespaces/${namespaceId}/documents`,
       method: "POST",
     }
   );

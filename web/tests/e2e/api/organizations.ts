@@ -1,6 +1,6 @@
 import { withErrorHandling } from "./error-handler";
 import { grantActions } from "./permissions";
-import { getRandomString } from "../utils/random";
+import { getRandomSlug, getRandomString } from "../utils/random";
 
 import type { Client } from "@/lib/api/client";
 import {
@@ -20,6 +20,7 @@ export async function createOrganization(
   orgData: Partial<OrganizationCreate> & { name: string; email: string }
 ): Promise<Organization> {
   const orgCreateData: OrganizationCreate = {
+    slug: orgData.slug || getRandomSlug("org"),
     name: orgData.name,
     email: orgData.email,
     logo: orgData.logo || "https://picsum.photos/id/64/100/100",
@@ -48,7 +49,7 @@ export async function createOrganization(
     async () => {
       return await v1OrganizationGet({
         client,
-        path: { id: orgId },
+        path: { organizationRef: orgId },
         throwOnError: true,
       });
     },
@@ -78,7 +79,7 @@ export async function addMemberToOrganization(
     async () => {
       return await v1OrganizationMembersAdd({
         client,
-        path: { id: orgId },
+        path: { organizationRef: orgId },
         body: { user_id: userId },
         throwOnError: true,
       });

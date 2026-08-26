@@ -538,7 +538,7 @@ export const mockGlobalSearchEntries: readonly GlobalSearchEntry[] = [
     namespaceId: item.namespaceId,
     projectId: item.projectId,
     personId: item.assigneeId,
-    href: `/work/${item.namespaceId}/${item.key}`,
+    href: `/work/acme/${item.namespaceId.replace(/^namespace-/, "")}/${item.key}`,
   })),
   ...mockDocumentBodies.map((document) => ({
     dataSource: "mock" as const,

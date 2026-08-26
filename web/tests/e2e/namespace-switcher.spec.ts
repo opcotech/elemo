@@ -3,7 +3,7 @@ import { expect, test } from "./fixtures";
 import { fillLocator } from "./helpers";
 import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "./utils/db";
-import { getRandomString } from "./utils/random";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
@@ -13,10 +13,11 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
   let ownerUser: User;
   let ownerApiClient: Client;
   let organizationId: string;
+  let organizationSlug: string;
   let organizationName: string;
-  let namespaceAId: string;
+  let namespaceASlug: string;
   let namespaceAName: string;
-  let namespaceBId: string;
+  let namespaceBSlug: string;
   let namespaceBName: string;
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
@@ -35,30 +36,33 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
       email: `switcher-${uniqueId}@example.com`,
     });
     organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     namespaceAName = `Alpha NS ${uniqueId}`;
-    const namespaceAResponse = await v1OrganizationsNamespacesCreate({
+    namespaceASlug = getRandomSlug("ns");
+    await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: namespaceASlug,
         name: namespaceAName,
         description: `First namespace ${uniqueId}`,
       },
       throwOnError: true,
     });
-    namespaceAId = namespaceAResponse.data.id ?? "";
 
     namespaceBName = `Zulu NS ${uniqueId}`;
-    const namespaceBResponse = await v1OrganizationsNamespacesCreate({
+    namespaceBSlug = getRandomSlug("ns");
+    await v1OrganizationsNamespacesCreate({
       client: ownerApiClient,
-      path: { id: organizationId },
+      path: { organizationRef: organizationId },
       body: {
+        slug: namespaceBSlug,
         name: namespaceBName,
         description: `Second namespace ${uniqueId}`,
       },
       throwOnError: true,
     });
-    namespaceBId = namespaceBResponse.data.id ?? "";
   });
 
   test("should switch between namespaces and update shell context", async ({
@@ -77,7 +81,11 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     await switcher.click();
 
     await page.getByRole("option", { name: namespaceAName }).click();
-    await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceAId}`));
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/organizations/${organizationSlug}/namespaces/${namespaceASlug}`
+      )
+    );
     await expect(
       page.getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceAName}`,
@@ -90,7 +98,11 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
       })
       .click();
     await page.getByRole("option", { name: namespaceBName }).click();
-    await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceBId}`));
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/organizations/${organizationSlug}/namespaces/${namespaceBSlug}`
+      )
+    );
     await expect(
       page.getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceBName}`,
@@ -140,7 +152,11 @@ test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
     ).toBeHidden();
 
     await page.getByRole("option", { name: namespaceBName }).click();
-    await expect(page).toHaveURL(new RegExp(`/namespaces/${namespaceBId}`));
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/organizations/${organizationSlug}/namespaces/${namespaceBSlug}`
+      )
+    );
     await expect(
       page.getByRole("combobox", {
         name: `Switch namespace, current: ${namespaceBName}`,

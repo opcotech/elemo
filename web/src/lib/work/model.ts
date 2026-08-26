@@ -8,10 +8,15 @@ export type DataSource = "mock" | "api";
 
 export type Scope =
   | { readonly type: "global" }
-  | { readonly type: "namespace"; readonly namespaceId: string }
+  | {
+      readonly type: "namespace";
+      readonly namespaceId: string;
+      readonly organizationId?: string;
+    }
   | {
       readonly type: "project";
       readonly namespaceId?: string;
+      readonly organizationId?: string;
       readonly projectId: string;
     }
   | { readonly type: "person"; readonly personId: string };
@@ -30,6 +35,9 @@ export interface WorkPerson {
 export interface WorkNamespaceRef {
   readonly id: string;
   readonly name: string;
+  readonly slug?: string;
+  readonly organizationId?: string;
+  readonly organizationSlug?: string;
 }
 
 export interface WorkProjectRef {
@@ -43,6 +51,8 @@ export interface WorkParentRef {
   readonly key: string;
   readonly title: string;
   readonly namespaceId?: string;
+  readonly namespaceSlug?: string;
+  readonly organizationSlug?: string;
 }
 
 export interface WorkItem {
@@ -52,6 +62,9 @@ export interface WorkItem {
   readonly title: string;
   readonly summary: string;
   readonly namespaceId: string;
+  readonly organizationId?: string;
+  readonly organizationSlug?: string;
+  readonly namespaceSlug?: string;
   readonly projectId: string | null;
   readonly namespace?: WorkNamespaceRef;
   readonly project?: WorkProjectRef;

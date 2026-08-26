@@ -38,6 +38,8 @@
         $ref: "#/components/responses/401"
       "403":
         $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new organization.
@@ -48,9 +50,9 @@
       - Organization
     requestBody:
       $ref: "#/components/requestBodies/OrganizationCreate"
-"/v1/organizations/{id}":
+"/v1/organizations/{organizationRef}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   get:
     summary: Get organization
     tags:
@@ -129,9 +131,9 @@
       - Organization
     requestBody:
       $ref: "#/components/requestBodies/OrganizationPatch"
-"/v1/organizations/{id}/members":
+"/v1/organizations/{organizationRef}/members":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   get:
     summary: Get organization members
     tags:
@@ -198,9 +200,9 @@
                 example: 9bsv0s46s6s002p9ltq0
             required:
               - user_id
-"/v1/organizations/{id}/members/invite":
+"/v1/organizations/{organizationRef}/members/invite":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   post:
     summary: Invite member to organization
     operationId: v1OrganizationMembersInvite
@@ -241,9 +243,9 @@
                 example: 9bsv0s46s6s002p9ltq0
             required:
               - email
-"/v1/organizations/{id}/members/{user_id}":
+"/v1/organizations/{organizationRef}/members/{user_id}":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
     - schema:
         type: string
         example: 9bsv0s46s6s002p9ltq0
@@ -274,9 +276,9 @@
     tags:
       - Organization
       - User
-"/v1/organizations/{id}/members/{user_id}/invite":
+"/v1/organizations/{organizationRef}/members/{user_id}/invite":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
     - schema:
         type: string
         example: 9bsv0s46s6s002p9ltq0
@@ -307,9 +309,9 @@
     tags:
       - Organization
       - User
-"/v1/organizations/{id}/members/accept":
+"/v1/organizations/{organizationRef}/members/accept":
   parameters:
-    - $ref: "#/components/parameters/id"
+    - $ref: "#/components/parameters/organizationRef"
   post:
     summary: Accept organization invitation
     operationId: v1OrganizationMembersAccept

@@ -88,7 +88,7 @@ export function OrganizationInviteAcceptForm() {
       }
       return {
         path: {
-          id: organization,
+          organizationRef: organization,
         },
         body: {
           token,
@@ -147,7 +147,7 @@ export function OrganizationInviteAcceptForm() {
 
     acceptWithoutPasswordMutation.mutate({
       path: {
-        id: organization,
+        organizationRef: organization,
       },
       body: {
         token,

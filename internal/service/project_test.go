@@ -20,6 +20,7 @@ import (
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
+	"github.com/opcotech/elemo/internal/pkg/validate"
 	"github.com/opcotech/elemo/internal/repository"
 	testModel "github.com/opcotech/elemo/internal/testutil/model"
 )
@@ -732,14 +733,16 @@ func TestProjectService_Get(t *testing.T) {
 func TestProjectService_GetByKey(t *testing.T) {
 	repoProject := testModel.NewRepositoryProject()
 	projectKey := repoProject.Key
+	namespaceID := model.MustNewID(model.ResourceTypeNamespace)
 	want := service.ProjectFromRepository(repoProject)
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService
+		baseService func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string) service.ProjectService
 	}
 	type args struct {
-		ctx context.Context
-		key string
+		ctx         context.Context
+		namespaceID model.ID
+		key         string
 	}
 	tests := []struct {
 		name    string
@@ -751,7 +754,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 		{
 			name: "get project by key",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string) service.ProjectService {
 					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -759,7 +762,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
+					projectRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -782,15 +785,16 @@ func TestProjectService_GetByKey(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				key: projectKey,
+				ctx:         context.Background(),
+				namespaceID: namespaceID,
+				key:         projectKey,
 			},
 			want: want,
 		},
 		{
 			name: "get project by key with no permission",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string) service.ProjectService {
 					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -798,7 +802,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
+					projectRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.ProjectDetailProjection()).Return(repoProject, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -821,15 +825,16 @@ func TestProjectService_GetByKey(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				key: projectKey,
+				ctx:         context.Background(),
+				namespaceID: namespaceID,
+				key:         projectKey,
 			},
 			wantErr: service.ErrNoPermission,
 		},
 		{
 			name: "get project by key with empty key",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ string) service.ProjectService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ string) service.ProjectService {
 					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -853,15 +858,16 @@ func TestProjectService_GetByKey(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				key: "",
+				ctx:         context.Background(),
+				namespaceID: namespaceID,
+				key:         "",
 			},
-			wantErr: model.ErrInvalidProjectDetails,
+			wantErr: validate.ErrInvalidProjectKey,
 		},
 		{
 			name: "get project by key with repository error",
 			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, key string) service.ProjectService {
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string) service.ProjectService {
 					span := mocktrace.NewMockSpan(ctrl)
 					span.EXPECT().End(gomock.Len(0))
 
@@ -869,7 +875,7 @@ func TestProjectService_GetByKey(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.projectService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().GetByKey(ctx, key, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
+					projectRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.ProjectDetailProjection()).Return(nil, repository.ErrProjectRead)
 
 					return func() service.ProjectService {
 						svc, err := service.NewProjectService(
@@ -888,8 +894,9 @@ func TestProjectService_GetByKey(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.Background(),
-				key: projectKey,
+				ctx:         context.Background(),
+				namespaceID: namespaceID,
+				key:         projectKey,
 			},
 			wantErr: repository.ErrProjectRead,
 		},
@@ -901,9 +908,9 @@ func TestProjectService_GetByKey(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.key)
+			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.namespaceID, tt.args.key)
 
-			got, err := s.GetByKey(tt.args.ctx, tt.args.key)
+			got, err := s.GetByKey(tt.args.ctx, tt.args.namespaceID, tt.args.key)
 			if tt.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tt.wantErr)
@@ -1188,7 +1195,6 @@ func TestProjectService_Update(t *testing.T) {
 
 					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
-						Key:         opts.Key,
 						Name:        opts.Name,
 						Description: opts.Description,
 						Logo:        opts.Logo,
@@ -1222,51 +1228,6 @@ func TestProjectService_Update(t *testing.T) {
 				ctx:  context.Background(),
 				id:   projectID,
 				opts: opts,
-			},
-			want: want,
-		},
-		{
-			name: "update project normalizes key to uppercase",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateProjectOpts) service.ProjectService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.projectService/Update", gomock.Len(0)).Return(ctx, span)
-
-					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
-					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
-						Key: optional.Some("ENG"),
-					}, repository.ProjectDetailProjection()).Return(repoProject, nil)
-
-					permSvc := mocksvc.NewMockPermissionService(ctrl)
-					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
-					return func() service.ProjectService {
-						svc, err := service.NewProjectService(
-							projectRepo,
-							permSvc,
-							licenseSvc,
-							mockSearchIndex(ctrl),
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				id:   projectID,
-				opts: service.UpdateProjectOpts{Key: optional.Some("eng")},
 			},
 			want: want,
 		},
@@ -1394,7 +1355,6 @@ func TestProjectService_Update(t *testing.T) {
 
 					projectRepo := mockrepo.NewMockProjectRepository(ctrl)
 					projectRepo.EXPECT().Update(ctx, id, repository.UpdateProjectOpts{
-						Key:         opts.Key,
 						Name:        opts.Name,
 						Description: opts.Description,
 						Logo:        opts.Logo,

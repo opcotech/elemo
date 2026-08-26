@@ -30,7 +30,11 @@ test.describe("@issues.work-inspector Issue Work Inspector E2E Tests", () => {
       password: USER_DEFAULT_PASSWORD,
     });
     const workPage = new WorkPage(page);
-    await workPage.gotoProjectWork(workspace.namespaceId, workspace.projectId);
+    await workPage.gotoProjectWork(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workspace.projectKey
+    );
     await workPage.waitForLoad(`${workspace.projectName} / Work`);
     await workPage.surface.selectLayout("List");
     return workPage;
@@ -75,7 +79,9 @@ test.describe("@issues.work-inspector Issue Work Inspector E2E Tests", () => {
     await workPage.inspector.openFullPage(issue.key);
 
     await expect(page).toHaveURL(
-      new RegExp(`/work/${workspace.namespaceId}/${issue.key}`)
+      new RegExp(
+        `/work/${workspace.organizationSlug}/${workspace.namespaceSlug}/${issue.key}`
+      )
     );
     const workItem = new WorkItemPage(page);
     await workItem.waitForLoad();

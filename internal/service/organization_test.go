@@ -39,7 +39,7 @@ func organizationsToRepository(orgs []*service.Organization) []*repository.Organ
 			continue
 		}
 		out[i] = &repository.Organization{
-			ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
+			ID: o.ID, Slug: o.Slug, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
 			Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
 			DocumentCount: o.DocumentCount,
 			CreatedAt:     o.CreatedAt, UpdatedAt: o.UpdatedAt,
@@ -53,7 +53,7 @@ func organizationToRepository(o *service.Organization) *repository.Organization 
 		return nil
 	}
 	return &repository.Organization{
-		ID: o.ID, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
+		ID: o.ID, Slug: o.Slug, Name: o.Name, Email: o.Email, Logo: o.Logo, Website: o.Website,
 		Status: o.Status, NamespaceCount: o.NamespaceCount, TeamCount: o.TeamCount, MemberCount: o.MemberCount,
 		DocumentCount: o.DocumentCount,
 		CreatedAt:     o.CreatedAt, UpdatedAt: o.UpdatedAt,
@@ -176,6 +176,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -225,6 +226,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -320,6 +322,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -371,6 +374,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -418,6 +422,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -465,6 +470,7 @@ func TestOrganizationService_Create(t *testing.T) {
 				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
 				owner: userID,
 				opts: service.CreateOrganizationOpts{
+					Slug:    "acme-org",
 					Name:    "test-org",
 					Email:   "org@example.com",
 					Logo:    "https://www.gravatar.com/avatar",
@@ -683,6 +689,86 @@ func TestOrganizationService_Get(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOrganizationService_GetByRef(t *testing.T) {
+	t.Parallel()
+
+	repoOrg := testModel.NewRepositoryOrganization()
+	want := service.OrganizationFromRepository(repoOrg)
+	ctx := context.Background()
+
+	t.Run("get organization by slug", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0)).Times(2)
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.organizationService/GetByRef", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(ctx, "service.organizationService/Resolve", gomock.Len(0)).Return(ctx, span)
+
+		organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
+		organizationRepo.EXPECT().GetByRef(ctx, model.ID{}, repoOrg.Slug, repository.OrganizationDetailProjection()).Return(repoOrg, nil)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, repoOrg.ID, model.ActionOrganizationRead).Return(true, nil)
+
+		svc, err := service.NewOrganizationService(
+			organizationRepo,
+			mockrepo.NewMockUserRepository(ctrl),
+			mockrepo.NewMockUserTokenRepository(ctrl),
+			mockrepo.NewMockRoleRepository(ctrl),
+			permSvc,
+			mocksvc.NewMockLicenseService(ctrl),
+			mocksvc.NewMockEmailService(ctrl),
+			mocksvc.NewMockNotificationService(ctrl),
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		require.NoError(t, err)
+
+		got, err := svc.GetByRef(ctx, model.ID{}, repoOrg.Slug)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("get organization by slug without permission", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0)).Times(2)
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.organizationService/GetByRef", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(ctx, "service.organizationService/Resolve", gomock.Len(0)).Return(ctx, span)
+
+		organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
+		organizationRepo.EXPECT().GetByRef(ctx, model.ID{}, repoOrg.Slug, repository.OrganizationDetailProjection()).Return(repoOrg, nil)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, repoOrg.ID, model.ActionOrganizationRead).Return(false, nil)
+
+		svc, err := service.NewOrganizationService(
+			organizationRepo,
+			mockrepo.NewMockUserRepository(ctrl),
+			mockrepo.NewMockUserTokenRepository(ctrl),
+			mockrepo.NewMockRoleRepository(ctrl),
+			permSvc,
+			mocksvc.NewMockLicenseService(ctrl),
+			mocksvc.NewMockEmailService(ctrl),
+			mocksvc.NewMockNotificationService(ctrl),
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		require.NoError(t, err)
+
+		got, err := svc.GetByRef(ctx, model.ID{}, repoOrg.Slug)
+		require.ErrorIs(t, err, service.ErrNoPermission)
+		require.Nil(t, got)
+	})
 }
 
 func TestOrganizationService_List(t *testing.T) {
@@ -4676,6 +4762,7 @@ func TestOrganizationService_Create_SeedsAuth(t *testing.T) {
 	org := testModel.NewRepositoryOrganization()
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, owner)
 	opts := service.CreateOrganizationOpts{
+		Slug:    "acme-org",
 		Name:    "test-org",
 		Email:   "org@example.com",
 		Logo:    "https://www.gravatar.com/avatar",

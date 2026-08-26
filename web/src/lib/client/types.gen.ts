@@ -193,6 +193,10 @@ export type Organization = {
      */
     id: string;
     /**
+     * Globally unique canonical kebab-case slug. Immutable after create.
+     */
+    slug: string;
+    /**
      * Name of the organization.
      */
     name: string;
@@ -253,6 +257,10 @@ export type PartialOrganization = {
      */
     id: string;
     /**
+     * Globally unique canonical kebab-case slug.
+     */
+    slug: string;
+    /**
      * Name of the organization.
      */
     name: string;
@@ -284,6 +292,10 @@ export type Namespace = {
      * Unique identifier of the namespace.
      */
     id: string;
+    /**
+     * Organization-scoped canonical kebab-case slug. Immutable after create.
+     */
+    slug: string;
     /**
      * Name of the namespace.
      */
@@ -321,6 +333,10 @@ export type AccessibleNamespace = {
      */
     id: string;
     /**
+     * Organization-scoped canonical kebab-case slug.
+     */
+    slug: string;
+    /**
      * Name of the namespace.
      */
     name: string;
@@ -357,6 +373,10 @@ export type PartialNamespace = {
      * Unique identifier of the namespace.
      */
     id: string;
+    /**
+     * Organization-scoped canonical kebab-case slug.
+     */
+    slug: string;
     /**
      * Name of the namespace.
      */
@@ -1254,6 +1274,14 @@ export type SearchResult = {
     organization_id?: string | null;
     namespace_id?: string | null;
     project_id?: string | null;
+    /**
+     * Owning organization slug when the hit is in an organization.
+     */
+    organization_slug?: string;
+    /**
+     * Owning namespace slug when the hit is in a namespace.
+     */
+    namespace_slug?: string;
     created_at: string;
     updated_at?: string | null;
 };
@@ -1453,6 +1481,28 @@ export type SearchProjectId = string;
 export type Id = string;
 
 /**
+ * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+ *
+ */
+export type OrganizationRef = string;
+
+/**
+ * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+ *
+ */
+export type NamespaceRef = string;
+
+/**
+ * Namespace-scoped project key. Uppercased on write; `NEW` is reserved.
+ */
+export type ProjectKey = string;
+
+/**
+ * Project xid.
+ */
+export type ProjectId = string;
+
+/**
  * ID of the document.
  */
 export type DocumentId = string;
@@ -1634,6 +1684,10 @@ export type OrganizationInvitationAccept = {
 
 export type OrganizationCreate = {
     /**
+     * Globally unique canonical kebab-case slug. Reserved values are join and new. Must not parse as an xid.
+     */
+    slug: string;
+    /**
      * Name of the organization.
      */
     name: string;
@@ -1677,6 +1731,10 @@ export type NamespaceCreate = {
      */
     name: string;
     /**
+     * Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
+     */
+    slug: string;
+    /**
      * Description of the namespace.
      */
     description?: string | null;
@@ -1695,7 +1753,7 @@ export type NamespacePatch = {
 
 export type ProjectCreate = {
     /**
-     * Key of the project.
+     * Namespace-scoped project key. Uppercased on write. NEW is reserved.
      */
     key: string;
     /**
@@ -1714,10 +1772,6 @@ export type ProjectCreate = {
 };
 
 export type ProjectPatch = {
-    /**
-     * Key of the project.
-     */
-    key?: string;
     /**
      * Name of the project.
      */
@@ -2923,6 +2977,10 @@ export type V1OrganizationsCreateErrors = {
      */
     403: HttpError;
     /**
+     * Conflict
+     */
+    409: HttpError;
+    /**
      * Internal Server Error
      */
     500: HttpError;
@@ -2948,9 +3006,10 @@ export type V1OrganizationDeleteData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -2958,7 +3017,7 @@ export type V1OrganizationDeleteData = {
          */
         force?: boolean;
     };
-    url: '/v1/organizations/{id}';
+    url: '/v1/organizations/{organizationRef}';
 };
 
 export type V1OrganizationDeleteErrors = {
@@ -2999,12 +3058,13 @@ export type V1OrganizationGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}';
+    url: '/v1/organizations/{organizationRef}';
 };
 
 export type V1OrganizationGetErrors = {
@@ -3045,12 +3105,13 @@ export type V1OrganizationUpdateData = {
     body?: OrganizationPatch;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}';
+    url: '/v1/organizations/{organizationRef}';
 };
 
 export type V1OrganizationUpdateErrors = {
@@ -3091,9 +3152,10 @@ export type V1OrganizationMembersGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -3105,7 +3167,7 @@ export type V1OrganizationMembersGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/organizations/{id}/members';
+    url: '/v1/organizations/{organizationRef}/members';
 };
 
 export type V1OrganizationMembersGetErrors = {
@@ -3151,12 +3213,13 @@ export type V1OrganizationMembersAddData = {
     };
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/members';
+    url: '/v1/organizations/{organizationRef}/members';
 };
 
 export type V1OrganizationMembersAddErrors = {
@@ -3211,12 +3274,13 @@ export type V1OrganizationMembersInviteData = {
     };
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/members/invite';
+    url: '/v1/organizations/{organizationRef}/members/invite';
 };
 
 export type V1OrganizationMembersInviteErrors = {
@@ -3262,16 +3326,17 @@ export type V1OrganizationMemberRemoveData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the user.
          */
         user_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/members/{user_id}';
+    url: '/v1/organizations/{organizationRef}/members/{user_id}';
 };
 
 export type V1OrganizationMemberRemoveErrors = {
@@ -3312,16 +3377,17 @@ export type V1OrganizationMemberInviteRevokeData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the user.
          */
         user_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/members/{user_id}/invite';
+    url: '/v1/organizations/{organizationRef}/members/{user_id}/invite';
 };
 
 export type V1OrganizationMemberInviteRevokeErrors = {
@@ -3365,12 +3431,13 @@ export type V1OrganizationMembersAcceptData = {
     body?: OrganizationInvitationAccept;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/members/accept';
+    url: '/v1/organizations/{organizationRef}/members/accept';
 };
 
 export type V1OrganizationMembersAcceptErrors = {
@@ -3411,9 +3478,10 @@ export type V1OrganizationRolesGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -3425,7 +3493,7 @@ export type V1OrganizationRolesGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/organizations/{id}/roles';
+    url: '/v1/organizations/{organizationRef}/roles';
 };
 
 export type V1OrganizationRolesGetErrors = {
@@ -3466,12 +3534,13 @@ export type V1OrganizationRolesCreateData = {
     body?: RoleCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/roles';
+    url: '/v1/organizations/{organizationRef}/roles';
 };
 
 export type V1OrganizationRolesCreateErrors = {
@@ -3517,16 +3586,17 @@ export type V1OrganizationRoleDeleteData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the role.
          */
         role_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/roles/{role_id}';
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}';
 };
 
 export type V1OrganizationRoleDeleteErrors = {
@@ -3567,16 +3637,17 @@ export type V1OrganizationRoleGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the role.
          */
         role_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/roles/{role_id}';
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}';
 };
 
 export type V1OrganizationRoleGetErrors = {
@@ -3617,16 +3688,17 @@ export type V1OrganizationRoleUpdateData = {
     body?: RolePatch;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the role.
          */
         role_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/roles/{role_id}';
+    url: '/v1/organizations/{organizationRef}/roles/{role_id}';
 };
 
 export type V1OrganizationRoleUpdateErrors = {
@@ -3667,9 +3739,10 @@ export type V1OrganizationTeamsGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -3681,7 +3754,7 @@ export type V1OrganizationTeamsGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/organizations/{id}/teams';
+    url: '/v1/organizations/{organizationRef}/teams';
 };
 
 export type V1OrganizationTeamsGetErrors = {
@@ -3722,12 +3795,13 @@ export type V1OrganizationTeamsCreateData = {
     body?: TeamCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams';
+    url: '/v1/organizations/{organizationRef}/teams';
 };
 
 export type V1OrganizationTeamsCreateErrors = {
@@ -3773,16 +3847,17 @@ export type V1OrganizationTeamDeleteData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
         team_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams/{team_id}';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}';
 };
 
 export type V1OrganizationTeamDeleteErrors = {
@@ -3823,16 +3898,17 @@ export type V1OrganizationTeamGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
         team_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams/{team_id}';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}';
 };
 
 export type V1OrganizationTeamGetErrors = {
@@ -3873,16 +3949,17 @@ export type V1OrganizationTeamUpdateData = {
     body?: TeamPatch;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
         team_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams/{team_id}';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}';
 };
 
 export type V1OrganizationTeamUpdateErrors = {
@@ -3923,9 +4000,10 @@ export type V1OrganizationTeamMembersGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
@@ -3941,7 +4019,7 @@ export type V1OrganizationTeamMembersGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/organizations/{id}/teams/{team_id}/members';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members';
 };
 
 export type V1OrganizationTeamMembersGetErrors = {
@@ -3987,16 +4065,17 @@ export type V1OrganizationTeamMembersAddData = {
     };
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
         team_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams/{team_id}/members';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members';
 };
 
 export type V1OrganizationTeamMembersAddErrors = {
@@ -4042,9 +4121,10 @@ export type V1OrganizationTeamMemberRemoveData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
         /**
          * ID of the team.
          */
@@ -4055,7 +4135,7 @@ export type V1OrganizationTeamMemberRemoveData = {
         user_id: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/teams/{team_id}/members/{user_id}';
+    url: '/v1/organizations/{organizationRef}/teams/{team_id}/members/{user_id}';
 };
 
 export type V1OrganizationTeamMemberRemoveErrors = {
@@ -4096,9 +4176,10 @@ export type V1OrganizationsNamespacesGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -4110,7 +4191,7 @@ export type V1OrganizationsNamespacesGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/organizations/{id}/namespaces';
+    url: '/v1/organizations/{organizationRef}/namespaces';
 };
 
 export type V1OrganizationsNamespacesGetErrors = {
@@ -4151,12 +4232,13 @@ export type V1OrganizationsNamespacesCreateData = {
     body?: NamespaceCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/namespaces';
+    url: '/v1/organizations/{organizationRef}/namespaces';
 };
 
 export type V1OrganizationsNamespacesCreateErrors = {
@@ -4176,6 +4258,10 @@ export type V1OrganizationsNamespacesCreateErrors = {
      * The requested resource not found
      */
     404: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
     /**
      * Internal Server Error
      */
@@ -4244,12 +4330,18 @@ export type V1NamespaceDeleteData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}';
 };
 
 export type V1NamespaceDeleteErrors = {
@@ -4290,12 +4382,18 @@ export type V1NamespaceGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}';
 };
 
 export type V1NamespaceGetErrors = {
@@ -4327,7 +4425,7 @@ export type V1NamespaceGetResponses = {
     /**
      * OK
      */
-    200: Namespace;
+    200: AccessibleNamespace;
 };
 
 export type V1NamespaceGetResponse = V1NamespaceGetResponses[keyof V1NamespaceGetResponses];
@@ -4336,12 +4434,18 @@ export type V1NamespaceUpdateData = {
     body?: NamespacePatch;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}';
 };
 
 export type V1NamespaceUpdateErrors = {
@@ -4382,9 +4486,15 @@ export type V1NamespacesProjectsGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: {
         /**
@@ -4396,7 +4506,7 @@ export type V1NamespacesProjectsGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/namespaces/{id}/projects';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects';
 };
 
 export type V1NamespacesProjectsGetErrors = {
@@ -4437,12 +4547,18 @@ export type V1NamespacesProjectsCreateData = {
     body?: ProjectCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}/projects';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects';
 };
 
 export type V1NamespacesProjectsCreateErrors = {
@@ -4462,6 +4578,10 @@ export type V1NamespacesProjectsCreateErrors = {
      * The requested resource not found
      */
     404: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
     /**
      * Internal Server Error
      */
@@ -4484,16 +4604,72 @@ export type V1NamespacesProjectsCreateResponses = {
 
 export type V1NamespacesProjectsCreateResponse = V1NamespacesProjectsCreateResponses[keyof V1NamespacesProjectsCreateResponses];
 
+export type V1NamespacesProjectsKeyGetData = {
+    body?: never;
+    path: {
+        /**
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
+         */
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
+        /**
+         * Namespace-scoped project key. Uppercased on write; `NEW` is reserved.
+         */
+        projectKey: string;
+    };
+    query?: never;
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/projects/{projectKey}';
+};
+
+export type V1NamespacesProjectsKeyGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1NamespacesProjectsKeyGetError = V1NamespacesProjectsKeyGetErrors[keyof V1NamespacesProjectsKeyGetErrors];
+
+export type V1NamespacesProjectsKeyGetResponses = {
+    /**
+     * OK
+     */
+    200: Project;
+};
+
+export type V1NamespacesProjectsKeyGetResponse = V1NamespacesProjectsKeyGetResponses[keyof V1NamespacesProjectsKeyGetResponses];
+
 export type V1ProjectDeleteData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}';
+    url: '/v1/projects/{projectId}';
 };
 
 export type V1ProjectDeleteErrors = {
@@ -4534,12 +4710,12 @@ export type V1ProjectGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}';
+    url: '/v1/projects/{projectId}';
 };
 
 export type V1ProjectGetErrors = {
@@ -4580,12 +4756,12 @@ export type V1ProjectUpdateData = {
     body?: ProjectPatch;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}';
+    url: '/v1/projects/{projectId}';
 };
 
 export type V1ProjectUpdateErrors = {
@@ -4626,9 +4802,15 @@ export type V1NamespacesIssuesGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: {
         /**
@@ -4656,7 +4838,7 @@ export type V1NamespacesIssuesGetData = {
          */
         order?: 'rank:asc' | 'rank:desc' | 'numeric_id:asc' | 'numeric_id:desc' | 'title:asc' | 'title:desc' | 'priority:asc' | 'priority:desc' | 'status:asc' | 'status:desc' | 'due_date:asc' | 'due_date:desc' | 'created_at:asc' | 'created_at:desc' | 'updated_at:asc' | 'updated_at:desc';
     };
-    url: '/v1/namespaces/{id}/issues';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues';
 };
 
 export type V1NamespacesIssuesGetErrors = {
@@ -4697,16 +4879,22 @@ export type V1NamespacesIssuesKeyGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
         /**
          * Composite issue key built from the owner project key and numeric ID.
          */
         key: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}/issues/{key}';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/issues/{key}';
 };
 
 export type V1NamespacesIssuesKeyGetErrors = {
@@ -4747,9 +4935,9 @@ export type V1ProjectsIssuesGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: {
         /**
@@ -4777,7 +4965,7 @@ export type V1ProjectsIssuesGetData = {
          */
         order?: 'rank:asc' | 'rank:desc' | 'numeric_id:asc' | 'numeric_id:desc' | 'title:asc' | 'title:desc' | 'priority:asc' | 'priority:desc' | 'status:asc' | 'status:desc' | 'due_date:asc' | 'due_date:desc' | 'created_at:asc' | 'created_at:desc' | 'updated_at:asc' | 'updated_at:desc';
     };
-    url: '/v1/projects/{id}/issues';
+    url: '/v1/projects/{projectId}/issues';
 };
 
 export type V1ProjectsIssuesGetErrors = {
@@ -4818,12 +5006,12 @@ export type V1ProjectsIssuesCreateData = {
     body?: IssueCreate;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}/issues';
+    url: '/v1/projects/{projectId}/issues';
 };
 
 export type V1ProjectsIssuesCreateErrors = {
@@ -5203,9 +5391,10 @@ export type V1OrganizationsDocumentsGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -5225,7 +5414,7 @@ export type V1OrganizationsDocumentsGetData = {
          */
         all?: boolean;
     };
-    url: '/v1/organizations/{id}/documents';
+    url: '/v1/organizations/{organizationRef}/documents';
 };
 
 export type V1OrganizationsDocumentsGetErrors = {
@@ -5266,12 +5455,13 @@ export type V1OrganizationsDocumentsCreateData = {
     body?: DocumentCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/documents';
+    url: '/v1/organizations/{organizationRef}/documents';
 };
 
 export type V1OrganizationsDocumentsCreateErrors = {
@@ -5312,9 +5502,15 @@ export type V1NamespacesDocumentsGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: {
         /**
@@ -5334,7 +5530,7 @@ export type V1NamespacesDocumentsGetData = {
          */
         all?: boolean;
     };
-    url: '/v1/namespaces/{id}/documents';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents';
 };
 
 export type V1NamespacesDocumentsGetErrors = {
@@ -5375,12 +5571,18 @@ export type V1NamespacesDocumentsCreateData = {
     body?: DocumentCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}/documents';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/documents';
 };
 
 export type V1NamespacesDocumentsCreateErrors = {
@@ -5421,9 +5623,9 @@ export type V1ProjectsDocumentsGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: {
         /**
@@ -5435,7 +5637,7 @@ export type V1ProjectsDocumentsGetData = {
          */
         page_token?: string;
     };
-    url: '/v1/projects/{id}/documents';
+    url: '/v1/projects/{projectId}/documents';
 };
 
 export type V1ProjectsDocumentsGetErrors = {
@@ -5476,12 +5678,12 @@ export type V1ProjectsDocumentsCreateData = {
     body?: DocumentCreate;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}/documents';
+    url: '/v1/projects/{projectId}/documents';
 };
 
 export type V1ProjectsDocumentsCreateErrors = {
@@ -5522,16 +5724,16 @@ export type V1ProjectsDocumentsUnrelateData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
         /**
          * ID of the document.
          */
         documentId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}/documents/{documentId}';
+    url: '/v1/projects/{projectId}/documents/{documentId}';
 };
 
 export type V1ProjectsDocumentsUnrelateErrors = {
@@ -5572,16 +5774,16 @@ export type V1ProjectsDocumentsRelateData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Project xid.
          */
-        id: string;
+        projectId: string;
         /**
          * ID of the document.
          */
         documentId: string;
     };
     query?: never;
-    url: '/v1/projects/{id}/documents/{documentId}';
+    url: '/v1/projects/{projectId}/documents/{documentId}';
 };
 
 export type V1ProjectsDocumentsRelateErrors = {
@@ -5961,9 +6163,10 @@ export type V1OrganizationsFoldersGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: {
         /**
@@ -5979,7 +6182,7 @@ export type V1OrganizationsFoldersGetData = {
          */
         parent_id?: string;
     };
-    url: '/v1/organizations/{id}/folders';
+    url: '/v1/organizations/{organizationRef}/folders';
 };
 
 export type V1OrganizationsFoldersGetErrors = {
@@ -6020,12 +6223,13 @@ export type V1OrganizationsFoldersCreateData = {
     body?: FolderCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
     };
     query?: never;
-    url: '/v1/organizations/{id}/folders';
+    url: '/v1/organizations/{organizationRef}/folders';
 };
 
 export type V1OrganizationsFoldersCreateErrors = {
@@ -6066,9 +6270,15 @@ export type V1NamespacesFoldersGetData = {
     body?: never;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: {
         /**
@@ -6084,7 +6294,7 @@ export type V1NamespacesFoldersGetData = {
          */
         parent_id?: string;
     };
-    url: '/v1/namespaces/{id}/folders';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders';
 };
 
 export type V1NamespacesFoldersGetErrors = {
@@ -6125,12 +6335,18 @@ export type V1NamespacesFoldersCreateData = {
     body?: FolderCreate;
     path: {
         /**
-         * ID of the resource.
+         * Organization xid or canonical kebab-case slug. Valid xids are parsed first; otherwise the value must be a canonical slug (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, 3-50 characters). Xid-shaped slugs are rejected.
+         *
          */
-        id: string;
+        organizationRef: string;
+        /**
+         * Namespace xid or canonical kebab-case slug under the resolved organization. Valid xids are parsed first; a namespace xid under the wrong organization returns not found.
+         *
+         */
+        namespaceRef: string;
     };
     query?: never;
-    url: '/v1/namespaces/{id}/folders';
+    url: '/v1/organizations/{organizationRef}/namespaces/{namespaceRef}/folders';
 };
 
 export type V1NamespacesFoldersCreateErrors = {

@@ -59,7 +59,6 @@ type CreateProjectOpts struct {
 // UpdateProjectOpts holds the fields that can be updated on a project.
 // Undefined fields (Defined == false) are left unchanged.
 type UpdateProjectOpts struct {
-	Key         optional.Optional[string]
 	Name        optional.Optional[string]
 	Description optional.Optional[string]
 	Logo        optional.Optional[string]
@@ -70,9 +69,6 @@ type UpdateProjectOpts struct {
 func (o UpdateProjectOpts) patch() map[string]any {
 	p := make(map[string]any)
 
-	if o.Key.Defined {
-		p["key"] = *o.Key.Value
-	}
 	if o.Name.Defined {
 		p["name"] = *o.Name.Value
 	}
@@ -93,7 +89,7 @@ func (o UpdateProjectOpts) patch() map[string]any {
 type ProjectRepository interface {
 	Create(ctx context.Context, opts CreateProjectOpts) (*Project, error)
 	Get(ctx context.Context, id model.ID, proj ProjectProjection) (*Project, error)
-	GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error)
+	GetByKey(ctx context.Context, namespaceID model.ID, key string, proj ProjectProjection) (*Project, error)
 	ListForNamespace(ctx context.Context, query ProjectListQuery) (Page[*Project], error)
 	Update(ctx context.Context, id model.ID, opts UpdateProjectOpts, proj ProjectProjection) (*Project, error)
 	Delete(ctx context.Context, id model.ID) error
@@ -252,7 +248,7 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 	MATCH (n:` + opts.NamespaceID.Label() + ` {id: $namespace_id})
 	CREATE
 		(p:` + id.Label() + ` {
-			id: $id, key: $key, name: $name, description: $description, logo: $logo, status: $status,
+			id: $id, key: $key, namespace_id: $namespace_id, name: $name, description: $description, logo: $logo, status: $status,
 			next_issue_id: $next_issue_id, created_at: datetime($created_at)
 		}),
 		(n)-[:` + EdgeKindHasProject.String() + `]->(p),
@@ -273,7 +269,7 @@ func (r *Neo4jProjectRepository) Create(ctx context.Context, opts CreateProjectO
 	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
-		return nil, errors.Join(ErrProjectCreate, err)
+		return nil, errors.Join(ErrProjectCreate, mapUniquenessError(err))
 	}
 
 	project, err := r.Get(ctx, id, ProjectDetailProjection())
@@ -310,13 +306,14 @@ func (r *Neo4jProjectRepository) Get(ctx context.Context, id model.ID, proj Proj
 	return projects[0], nil
 }
 
-func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error) {
+func (r *Neo4jProjectRepository) GetByKey(ctx context.Context, namespaceID model.ID, key string, proj ProjectProjection) (*Project, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.ProjectRepository/GetByKey")
 	defer span.End()
 
 	plan, err := CompileQuery(ProjectGetByKeyQuery{
-		Key:        key,
-		Projection: proj,
+		NamespaceID: namespaceID,
+		Key:         key,
+		Projection:  proj,
 	})
 	if err != nil {
 		return nil, errors.Join(ErrProjectRead, err)
@@ -504,15 +501,15 @@ func (r *RedisCachedProjectRepository) Get(ctx context.Context, id model.ID, pro
 	return project, nil
 }
 
-func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string, proj ProjectProjection) (*Project, error) {
+func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, namespaceID model.ID, key string, proj ProjectProjection) (*Project, error) {
 	var project *Project
 	var err error
 
-	plan, err := CompileQuery(ProjectGetByKeyQuery{Key: key, Projection: proj})
+	plan, err := CompileQuery(ProjectGetByKeyQuery{NamespaceID: namespaceID, Key: key, Projection: proj})
 	if err != nil {
 		return nil, err
 	}
-	cacheKey := plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", key)
+	cacheKey := plan.CacheKey(model.ResourceTypeProject.String(), "GetByKey", namespaceID.String(), key)
 	if err = r.cacheRepo.Get(ctx, cacheKey, &project); err != nil {
 		return nil, err
 	}
@@ -521,7 +518,7 @@ func (r *RedisCachedProjectRepository) GetByKey(ctx context.Context, key string,
 		return project, nil
 	}
 
-	if project, err = r.projectRepo.GetByKey(ctx, key, proj); err != nil {
+	if project, err = r.projectRepo.GetByKey(ctx, namespaceID, key, proj); err != nil {
 		return nil, err
 	}
 

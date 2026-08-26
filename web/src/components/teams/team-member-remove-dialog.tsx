@@ -30,10 +30,7 @@ export function TeamMemberRemoveDialog({
 }: TeamMemberRemoveDialogProps) {
   const queryKeysToInvalidate: QueryKey[] = [
     v1OrganizationTeamMembersGetOptions({
-      path: {
-        id: organizationId,
-        team_id: teamId,
-      },
+      path: { organizationRef: organizationId, team_id: teamId },
     }).queryKey,
   ];
 
@@ -52,7 +49,7 @@ export function TeamMemberRemoveDialog({
   const handleConfirm = () => {
     deleteMutation.mutate({
       path: {
-        id: organizationId,
+        organizationRef: organizationId,
         team_id: teamId,
         user_id: member.id,
       },

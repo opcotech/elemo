@@ -31,6 +31,12 @@ SearchResult:
     project_id:
       type: string
       nullable: true
+    organization_slug:
+      type: string
+      description: Owning organization slug when the hit is in an organization.
+    namespace_slug:
+      type: string
+      description: Owning namespace slug when the hit is in a namespace.
     created_at:
       type: string
       format: date-time

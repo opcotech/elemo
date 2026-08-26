@@ -86,6 +86,21 @@ func (mr *MockNamespaceRepositoryMockRecorder) Get(ctx, id, proj any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockNamespaceRepository)(nil).Get), ctx, id, proj)
 }
 
+// GetByRef mocks base method.
+func (m *MockNamespaceRepository) GetByRef(ctx context.Context, orgID, id model.ID, slug string, actorID model.ID, proj repository.NamespaceProjection) (*repository.AccessibleNamespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByRef", ctx, orgID, id, slug, actorID, proj)
+	ret0, _ := ret[0].(*repository.AccessibleNamespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByRef indicates an expected call of GetByRef.
+func (mr *MockNamespaceRepositoryMockRecorder) GetByRef(ctx, orgID, id, slug, actorID, proj any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByRef", reflect.TypeOf((*MockNamespaceRepository)(nil).GetByRef), ctx, orgID, id, slug, actorID, proj)
+}
+
 // ListAccessible mocks base method.
 func (m *MockNamespaceRepository) ListAccessible(ctx context.Context, query repository.NamespaceListAccessibleQuery) (repository.Page[*repository.AccessibleNamespace], error) {
 	m.ctrl.T.Helper()

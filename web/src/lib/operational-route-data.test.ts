@@ -9,16 +9,15 @@ import {
 
 const organization = {
   id: "organization-1",
+  slug: "acme",
   name: "Acme",
 };
 
 const namespace = {
   id: "namespace-1",
+  slug: "product",
   name: "Product",
-  projects: [{ id: "project-1", name: "Web" }],
   organization,
-  organizationId: organization.id,
-  organizationName: organization.name,
 };
 
 const project = {
@@ -35,20 +34,6 @@ function queryId(options: { queryKey: readonly unknown[] }) {
   return JSON.stringify(options.queryKey);
 }
 
-function listedPage<T>(items: T[]) {
-  return { items, page_info: { has_more: false } };
-}
-
-function isAccessibleNamespacesQuery(options: {
-  queryKey: readonly unknown[];
-}) {
-  return (
-    Array.isArray(options.queryKey) &&
-    options.queryKey[0] === "elemo" &&
-    options.queryKey[1] === "accessible-namespaces"
-  );
-}
-
 function createQueryClient(
   resolve: (options: { queryKey: readonly unknown[] }) => unknown
 ) {
@@ -56,92 +41,58 @@ function createQueryClient(
     fetchQuery: vi.fn((options: { queryKey: readonly unknown[] }) =>
       Promise.resolve(resolve(options))
     ),
+    setQueryData: vi.fn(),
   } as unknown as QueryClient;
 }
 
 describe("operational route loaders", () => {
   it("loads a reachable namespace without requiring namespace.read", async () => {
     const queryClient = createQueryClient((options) => {
-      if (isAccessibleNamespacesQuery(options)) {
-        return {
-          organizations: [organization],
-          namespaces: [namespace],
-        };
+      if (queryId(options) === "v1NamespaceGet") {
+        return namespace;
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadNamespaceOperationalContext(queryClient, "namespace-1")
+      loadNamespaceOperationalContext(queryClient, "acme", "product")
     ).resolves.toEqual({
       namespace,
       organization,
     });
   });
 
-  it("throws not-found when the namespace is outside the accessible workspace", async () => {
-    const queryClient = createQueryClient(() => ({
-      organizations: [organization],
-      namespaces: [],
-    }));
+  it("rejects xid-shaped namespace slugs without looking the namespace up", async () => {
+    const queryClient = createQueryClient(() => {
+      throw new Error("lookup should not run");
+    });
 
     await expect(
-      loadNamespaceOperationalContext(queryClient, "missing-namespace")
+      loadNamespaceOperationalContext(
+        queryClient,
+        "acme",
+        "9bsv0s46s6s002p9ltq0"
+      )
     ).rejects.toMatchObject({ isNotFound: true });
   });
 
-  it("rejects projects that do not belong to the namespace URL", async () => {
+  it("loads a project by namespace-scoped key with only project.read", async () => {
     const queryClient = createQueryClient((options) => {
-      if (isAccessibleNamespacesQuery(options)) {
-        return {
-          organizations: [organization],
-          namespaces: [
-            {
-              ...namespace,
-              projects: [{ id: "other-project", name: "Other" }],
-            },
-          ],
-        };
+      const id = queryId(options);
+      if (id === "v1NamespaceGet") {
+        return namespace;
       }
-      if (queryId(options) === "v1PermissionResourceGet") {
-        return { actions: ["project.read"] };
-      }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([{ id: "other-project", name: "Other" }]);
-      }
-      if (queryId(options) === "v1ProjectGet") {
+      if (id === "v1NamespacesProjectsKeyGet") {
         return project;
+      }
+      if (id === "v1PermissionResourceGet") {
+        return { actions: ["project.read"] };
       }
       throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
     });
 
     await expect(
-      loadProjectOperationalContext(queryClient, "namespace-1", "project-1")
-    ).rejects.toMatchObject({ isNotFound: true });
-  });
-
-  it("loads a project with only project.read", async () => {
-    const queryClient = createQueryClient((options) => {
-      if (isAccessibleNamespacesQuery(options)) {
-        return {
-          organizations: [organization],
-          namespaces: [namespace],
-        };
-      }
-      if (queryId(options) === "v1PermissionResourceGet") {
-        return { actions: ["project.read"] };
-      }
-      if (queryId(options) === "v1NamespacesProjectsGet") {
-        return listedPage([project]);
-      }
-      if (queryId(options) === "v1ProjectGet") {
-        return project;
-      }
-      throw new Error(`Unexpected query ${JSON.stringify(options.queryKey)}`);
-    });
-
-    await expect(
-      loadProjectOperationalContext(queryClient, "namespace-1", "project-1")
+      loadProjectOperationalContext(queryClient, "acme", "product", "WEB")
     ).resolves.toEqual({
       namespace,
       organization,
@@ -155,7 +106,7 @@ describe("operational route loaders", () => {
     });
 
     await expect(
-      loadNamespaceOperationalContext(queryClient, "namespace-1")
+      loadNamespaceOperationalContext(queryClient, "acme", "product")
     ).rejects.toMatchObject({ isNotFound: true });
   });
 });

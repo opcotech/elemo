@@ -4,6 +4,8 @@ import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
 import { ProjectDangerZoneSection, ProjectInfoSection } from "../sections";
 
+import { settingsProjectPath } from "@/lib/paths";
+
 export class SettingsOrganizationProjectDetailsPage extends BaseComponent {
   public readonly projectInfo: ProjectInfoSection;
   public readonly dangerZone: ProjectDangerZoneSection;
@@ -15,13 +17,13 @@ export class SettingsOrganizationProjectDetailsPage extends BaseComponent {
   }
 
   async goto(
-    organizationId: string,
-    namespaceId: string,
-    projectId: string
+    organizationSlug: string,
+    namespaceSlug: string,
+    projectKey: string
   ): Promise<void> {
     await navigateAndWait(
       this.page,
-      `/settings/organizations/${organizationId}/namespaces/${namespaceId}/projects/${projectId}`
+      settingsProjectPath({ organizationSlug, namespaceSlug, projectKey })
     );
   }
 

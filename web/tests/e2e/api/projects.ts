@@ -2,6 +2,7 @@ import { withErrorHandling } from "./error-handler";
 import { getRandomString } from "../utils/random";
 
 import type { Client } from "@/lib/api/client";
+import { projectIdPath } from "@/lib/api/refs";
 import { v1NamespacesProjectsCreate, v1ProjectGet } from "@/lib/api/sdk";
 import type { Project, ProjectCreate } from "@/lib/api/types";
 
@@ -28,6 +29,7 @@ export function getRandomProjectKey(length: number = 6): string {
  */
 export async function createProject(
   client: Client,
+  organizationId: string,
   namespaceId: string,
   projectData: Partial<ProjectCreate> & { key: string; name: string }
 ): Promise<Project> {
@@ -44,13 +46,13 @@ export async function createProject(
     async () => {
       return await v1NamespacesProjectsCreate({
         client,
-        path: { id: namespaceId },
+        path: { organizationRef: organizationId, namespaceRef: namespaceId },
         body: projectCreateData,
         throwOnError: true,
       });
     },
     {
-      endpoint: `/v1/namespaces/${namespaceId}/projects`,
+      endpoint: `/v1/organizations/${organizationId}/namespaces/${namespaceId}/projects`,
       method: "POST",
     }
   );
@@ -61,7 +63,7 @@ export async function createProject(
     async () => {
       return await v1ProjectGet({
         client,
-        path: { id: projectId },
+        path: projectIdPath(projectId),
         throwOnError: true,
       });
     },

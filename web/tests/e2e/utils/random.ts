@@ -19,3 +19,9 @@ export function getRandomString(length: number = 10): string {
   }
   return result;
 }
+
+/** Canonical kebab-case slug unique enough for parallel e2e runs. */
+export function getRandomSlug(prefix: string = "org"): string {
+  const suffix = getRandomString(8).toLowerCase();
+  return `${prefix}-${suffix}`.replace(/[^a-z0-9-]/g, "");
+}

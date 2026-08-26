@@ -33,7 +33,11 @@ test.describe("@documents.issue Document Issue E2E Tests", () => {
     });
 
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
     await workItem.documents.waitForLoad();
     return { workItem, issue };
@@ -74,7 +78,11 @@ test.describe("@documents.issue Document Issue E2E Tests", () => {
     });
 
     const workItem = new WorkItemPage(page);
-    await workItem.goto(workspace.namespaceId, issue.key);
+    await workItem.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      issue.key
+    );
     await workItem.waitForLoad();
     await workItem.documents.waitForLoad();
     await expect(workItem.documents.getDocumentLink(name)).toBeVisible();
@@ -84,9 +92,14 @@ test.describe("@documents.issue Document Issue E2E Tests", () => {
     page,
   }) => {
     const name = `Available doc ${getRandomString(8)}`;
-    await createNamespaceDocument(workspace.client, workspace.namespaceId, {
-      title: name,
-    });
+    await createNamespaceDocument(
+      workspace.client,
+      workspace.organizationId,
+      workspace.namespaceId,
+      {
+        title: name,
+      }
+    );
     const { workItem } = await openIssue(page);
 
     await workItem.documents.linkDocument(name);

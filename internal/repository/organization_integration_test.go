@@ -208,6 +208,56 @@ func (s *OrganizationRepositoryIntegrationTestSuite) TestGetInvitations() {
 	s.Require().Len(invitations, 2)
 }
 
+func (s *OrganizationRepositoryIntegrationTestSuite) TestGetByRef() {
+	created, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	byID, err := s.OrganizationRepo.GetByRef(context.Background(), created.ID, "", repository.OrganizationDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, byID.ID)
+	s.Assert().Equal(s.createOpts.Slug, byID.Slug)
+
+	bySlug, err := s.OrganizationRepo.GetByRef(context.Background(), model.ID{}, s.createOpts.Slug, repository.OrganizationDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, bySlug.ID)
+}
+
+func (s *OrganizationRepositoryIntegrationTestSuite) TestCreateDuplicateSlug() {
+	_, err := s.OrganizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+
+	dup := testModel.NewCreateOrganizationOpts(s.testUser.ID)
+	dup.Slug = s.createOpts.Slug
+	_, err = s.OrganizationRepo.Create(context.Background(), dup)
+	s.Assert().ErrorIs(err, repository.ErrSlugConflict)
+}
+
+func (s *OrganizationRepositoryIntegrationTestSuite) TestCreateConcurrentDuplicateSlug() {
+	slug := s.createOpts.Slug
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			opts := testModel.NewCreateOrganizationOpts(s.testUser.ID)
+			opts.Slug = slug
+			_, err := s.OrganizationRepo.Create(context.Background(), opts)
+			errs <- err
+		}()
+	}
+
+	var succeeded, conflicted int
+	for range 2 {
+		err := <-errs
+		if err == nil {
+			succeeded++
+			continue
+		}
+		s.Assert().ErrorIs(err, repository.ErrSlugConflict)
+		conflicted++
+	}
+	s.Assert().Equal(1, succeeded)
+	s.Assert().Equal(1, conflicted)
+}
+
 func TestOrganizationRepositoryIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(OrganizationRepositoryIntegrationTestSuite))
 }
@@ -277,6 +327,17 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestList() {
 	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
 }
 
+func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestGetByRef() {
+	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	original, err := s.OrganizationRepo.GetByRef(context.Background(), model.ID{}, created.Slug, repository.OrganizationDetailProjection())
+	s.Require().NoError(err)
+	usingCache, err := s.organizationRepo.GetByRef(context.Background(), model.ID{}, created.Slug, repository.OrganizationDetailProjection())
+	s.Require().NoError(err)
+	s.Assert().Equal(original, usingCache)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+}
+
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
 	created, err := s.organizationRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)
@@ -285,7 +346,7 @@ func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestUpdate() {
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", org.Name)
-	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 1)
+	s.Assert().Len(s.Keys(&s.ContainerIntegrationTestSuite, "*"), 2)
 }
 
 func (s *CachedOrganizationRepositoryIntegrationTestSuite) TestDelete() {

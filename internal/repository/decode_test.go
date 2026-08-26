@@ -617,6 +617,7 @@ func TestNeo4jRecordOptionalPartialNamespace(t *testing.T) {
 	id := model.MustNewID(model.ResourceTypeNamespace)
 	node := testNode([]string{model.ResourceTypeNamespace.String()}, map[string]any{
 		"id":   id.String(),
+		"slug": "acme",
 		"name": "Acme",
 	})
 
@@ -626,6 +627,7 @@ func TestNeo4jRecordOptionalPartialNamespace(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, got)
 		assert.Equal(t, id, got.ID)
+		assert.Equal(t, "acme", got.Slug)
 		assert.Equal(t, "Acme", got.Name)
 	})
 

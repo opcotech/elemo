@@ -87,18 +87,18 @@ func (mr *MockProjectServiceMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // GetByKey mocks base method.
-func (m *MockProjectService) GetByKey(ctx context.Context, key string) (*service.Project, error) {
+func (m *MockProjectService) GetByKey(ctx context.Context, namespaceID model.ID, key string) (*service.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByKey", ctx, key)
+	ret := m.ctrl.Call(m, "GetByKey", ctx, namespaceID, key)
 	ret0, _ := ret[0].(*service.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByKey indicates an expected call of GetByKey.
-func (mr *MockProjectServiceMockRecorder) GetByKey(ctx, key any) *gomock.Call {
+func (mr *MockProjectServiceMockRecorder) GetByKey(ctx, namespaceID, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectService)(nil).GetByKey), ctx, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByKey", reflect.TypeOf((*MockProjectService)(nil).GetByKey), ctx, namespaceID, key)
 }
 
 // List mocks base method.

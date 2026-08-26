@@ -47,9 +47,9 @@ func mustProjectGetKey(t *testing.T, id model.ID, proj repository.ProjectProject
 	return mustPlanCacheKey(t, repository.ProjectGetQuery{ID: id, Projection: proj}, model.ResourceTypeProject.String(), "Get", id.String())
 }
 
-func mustProjectGetByKeyKey(t *testing.T, key string, proj repository.ProjectProjection) string {
+func mustProjectGetByKeyKey(t *testing.T, namespaceID model.ID, key string, proj repository.ProjectProjection) string {
 	t.Helper()
-	return mustPlanCacheKey(t, repository.ProjectGetByKeyQuery{Key: key, Projection: proj}, model.ResourceTypeProject.String(), "GetByKey", key)
+	return mustPlanCacheKey(t, repository.ProjectGetByKeyQuery{NamespaceID: namespaceID, Key: key, Projection: proj}, model.ResourceTypeProject.String(), "GetByKey", namespaceID.String(), key)
 }
 
 func mustProjectListKey(t *testing.T, namespaceID model.ID, page repository.CursorPage, proj repository.ProjectProjection) string {
@@ -333,12 +333,13 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 func TestCachedProjectRepository_GetByKey(t *testing.T) {
 	type fields struct {
 		cacheRepo   func(ctrl *gomock.Controller, ctx context.Context, cacheKey string, project *repository.Project) []repository.RedisRepositoryOption
-		projectRepo func(ctrl *gomock.Controller, ctx context.Context, key string, proj repository.ProjectProjection, project *repository.Project) repository.ProjectRepository
+		projectRepo func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string, proj repository.ProjectProjection, project *repository.Project) repository.ProjectRepository
 	}
 	type args struct {
-		ctx  context.Context
-		key  string
-		proj repository.ProjectProjection
+		ctx         context.Context
+		namespaceID model.ID
+		key         string
+		proj        repository.ProjectProjection
 	}
 
 	tests := []struct {
@@ -373,16 +374,17 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 						repository.WithRedisRepositoryTracer(tracer),
 					}
 				},
-				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, key string, proj repository.ProjectProjection, project *repository.Project) repository.ProjectRepository {
+				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, namespaceID model.ID, key string, proj repository.ProjectProjection, project *repository.Project) repository.ProjectRepository {
 					repo := mockrepo.NewMockProjectRepository(ctrl)
-					repo.EXPECT().GetByKey(ctx, key, proj).Return(project, nil)
+					repo.EXPECT().GetByKey(ctx, namespaceID, key, proj).Return(project, nil)
 					return repo
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
-				key:  "PROJ",
-				proj: repository.ProjectDetailProjection(),
+				ctx:         context.Background(),
+				namespaceID: model.MustNewID(model.ResourceTypeNamespace),
+				key:         "PROJ",
+				proj:        repository.ProjectDetailProjection(),
 			},
 		},
 	}
@@ -396,11 +398,11 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 
 			want := testProject(model.MustNewID(model.ResourceTypeProject), tt.args.proj)
 			want.Key = tt.args.key
-			cacheKey := mustProjectGetByKeyKey(t, tt.args.key, tt.args.proj)
+			cacheKey := mustProjectGetByKeyKey(t, tt.args.namespaceID, tt.args.key, tt.args.proj)
 
 			repo := func() *repository.RedisCachedProjectRepository {
 				r, err := repository.NewCachedProjectRepository(
-					tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.key, tt.args.proj, want),
+					tt.fields.projectRepo(ctrl, tt.args.ctx, tt.args.namespaceID, tt.args.key, tt.args.proj, want),
 					tt.fields.cacheRepo(ctrl, tt.args.ctx, cacheKey, want)...,
 				)
 				if err != nil {
@@ -409,7 +411,7 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 				return r
 			}()
 
-			got, err := repo.GetByKey(tt.args.ctx, tt.args.key, tt.args.proj)
+			got, err := repo.GetByKey(tt.args.ctx, tt.args.namespaceID, tt.args.key, tt.args.proj)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, want, got)
 		})

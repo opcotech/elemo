@@ -31,6 +31,7 @@ import {
   v1NamespacesProjectsGetOptions,
   v1SearchGetOptions,
 } from "@/lib/api/query-options";
+import { namespaceRefPath } from "@/lib/api/refs";
 import { v1NamespacesProjectsGet, v1SearchGet } from "@/lib/api/sdk";
 import { recentEntityLinkType } from "@/lib/recent-entity";
 import {
@@ -101,12 +102,18 @@ export function SearchPage({
     (namespace) => namespace.id === search.namespace_id
   );
   const projectListOptions = v1NamespacesProjectsGetOptions({
-    path: { id: search.namespace_id ?? "" },
+    path: namespaceRefPath(
+      selectedNamespace?.organizationId ?? "",
+      search.namespace_id ?? ""
+    ),
   });
   const { data: projectsPage, isLoading: isProjectsLoading } = useQuery({
     ...collectedListQuery(projectListOptions, async (pageToken, signal) => {
       const { data } = await v1NamespacesProjectsGet({
-        path: { id: search.namespace_id ?? "" },
+        path: namespaceRefPath(
+          selectedNamespace?.organizationId ?? "",
+          search.namespace_id ?? ""
+        ),
         query: cursorPageQuery(pageToken),
         signal,
         throwOnError: true,

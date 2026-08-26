@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	searchSearchableAttributes = []string{"title", "content", "key"}
+	searchSearchableAttributes = []string{"title", "content", "key", "organization_slug", "namespace_slug"}
 	searchFilterableAttributes = []any{
 		"type",
 		"scope_ids",
@@ -40,6 +40,8 @@ var (
 		"organization_id",
 		"namespace_id",
 		"project_id",
+		"organization_slug",
+		"namespace_slug",
 		"created_at",
 		"updated_at",
 	}
@@ -49,17 +51,19 @@ var (
 // ID is the Meilisearch primary key (ResourceType_xid). Scope and parent
 // fields use ResourceType:xid composite identifiers.
 type SearchDocument struct {
-	ID             string   `json:"id"`
-	Type           string   `json:"type"`
-	Title          string   `json:"title"`
-	Content        string   `json:"content,omitempty"`
-	Key            string   `json:"key,omitempty"`
-	OrganizationID string   `json:"organization_id,omitempty"`
-	NamespaceID    string   `json:"namespace_id,omitempty"`
-	ProjectID      string   `json:"project_id,omitempty"`
-	ScopeIDs       []string `json:"scope_ids"`
-	CreatedAt      int64    `json:"created_at"`
-	UpdatedAt      int64    `json:"updated_at"`
+	ID               string   `json:"id"`
+	Type             string   `json:"type"`
+	Title            string   `json:"title"`
+	Content          string   `json:"content,omitempty"`
+	Key              string   `json:"key,omitempty"`
+	OrganizationID   string   `json:"organization_id,omitempty"`
+	NamespaceID      string   `json:"namespace_id,omitempty"`
+	ProjectID        string   `json:"project_id,omitempty"`
+	OrganizationSlug string   `json:"organization_slug,omitempty"`
+	NamespaceSlug    string   `json:"namespace_slug,omitempty"`
+	ScopeIDs         []string `json:"scope_ids"`
+	CreatedAt        int64    `json:"created_at"`
+	UpdatedAt        int64    `json:"updated_at"`
 }
 
 // SearchTypeFilter restricts hits of one resource type to grant scopes.

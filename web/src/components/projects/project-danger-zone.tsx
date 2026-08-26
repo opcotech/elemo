@@ -7,19 +7,23 @@ interface ProjectDangerZoneProps {
   project: Project;
   permissions: EffectiveActions;
   organizationId: string;
+  organizationSlug: string;
   namespaceId: string;
+  namespaceSlug: string;
 }
 
 export function ProjectDangerZone({
   project,
   permissions,
   organizationId,
+  organizationSlug,
   namespaceId,
+  namespaceSlug,
 }: ProjectDangerZoneProps) {
   return (
     <EntityDangerZone
       entity={project}
-      context={{ organizationId, namespaceId }}
+      context={{ organizationId, organizationSlug, namespaceId, namespaceSlug }}
       permissions={permissions}
       config={projectLifecycleConfig}
       mutationOptions={v1ProjectDeleteMutation()}

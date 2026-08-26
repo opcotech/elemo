@@ -68,16 +68,18 @@ type SearchQuery struct {
 // SearchResult is a public hit. It never includes scope ancestry or
 // Meilisearch ranking fields.
 type SearchResult struct {
-	ID             model.ID
-	Type           model.ResourceType
-	Title          string
-	Subtitle       string
-	Key            string
-	OrganizationID *model.ID
-	NamespaceID    *model.ID
-	ProjectID      *model.ID
-	CreatedAt      time.Time
-	UpdatedAt      *time.Time
+	ID               model.ID
+	Type             model.ResourceType
+	Title            string
+	Subtitle         string
+	Key              string
+	OrganizationID   *model.ID
+	NamespaceID      *model.ID
+	ProjectID        *model.ID
+	OrganizationSlug string
+	NamespaceSlug    string
+	CreatedAt        time.Time
+	UpdatedAt        *time.Time
 }
 
 type searchPageToken struct {
@@ -174,7 +176,7 @@ func buildSearchDocument(input IndexInput, ancestry []model.ID) repository.Searc
 }
 
 func searchDocumentFromRecord(rec repository.SearchableRecord) repository.SearchDocument {
-	return buildSearchDocument(IndexInput{
+	doc := buildSearchDocument(IndexInput{
 		ID:        rec.ID,
 		Title:     rec.Title,
 		Content:   rec.Content,
@@ -182,6 +184,9 @@ func searchDocumentFromRecord(rec repository.SearchableRecord) repository.Search
 		CreatedAt: unixTimePtr(rec.CreatedAt),
 		UpdatedAt: unixTimePtr(rec.UpdatedAt),
 	}, rec.Ancestry)
+	doc.OrganizationSlug = rec.OrganizationSlug
+	doc.NamespaceSlug = rec.NamespaceSlug
+	return doc
 }
 
 func parseOptionalComposite(value string) *model.ID {
@@ -218,16 +223,18 @@ func searchDocumentToResult(doc repository.SearchDocument) (*SearchResult, error
 		updatedAt = &t
 	}
 	return &SearchResult{
-		ID:             id,
-		Type:           id.Type,
-		Title:          doc.Title,
-		Subtitle:       searchResultSubtitle(doc),
-		Key:            doc.Key,
-		OrganizationID: parseOptionalComposite(doc.OrganizationID),
-		NamespaceID:    parseOptionalComposite(doc.NamespaceID),
-		ProjectID:      parseOptionalComposite(doc.ProjectID),
-		CreatedAt:      createdAt,
-		UpdatedAt:      updatedAt,
+		ID:               id,
+		Type:             id.Type,
+		Title:            doc.Title,
+		Subtitle:         searchResultSubtitle(doc),
+		Key:              doc.Key,
+		OrganizationID:   parseOptionalComposite(doc.OrganizationID),
+		NamespaceID:      parseOptionalComposite(doc.NamespaceID),
+		ProjectID:        parseOptionalComposite(doc.ProjectID),
+		OrganizationSlug: doc.OrganizationSlug,
+		NamespaceSlug:    doc.NamespaceSlug,
+		CreatedAt:        createdAt,
+		UpdatedAt:        updatedAt,
 	}, nil
 }
 

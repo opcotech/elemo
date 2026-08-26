@@ -145,6 +145,7 @@ func (s *seeder) seedOrganization(
 ) (*seededOrg, error) {
 	org, err := s.deps.orgs.Create(ctx, admin.ID, service.CreateOrganizationOpts{
 		Name:    spec.name,
+		Slug:    spec.slug,
 		Email:   spec.email,
 		Website: spec.website,
 	})
@@ -207,6 +208,7 @@ func (s *seeder) seedOrganization(
 	for _, nsSpec := range spec.namespaces {
 		ns, err := s.deps.namespaces.Create(adminCtx, org.ID, service.CreateNamespaceOpts{
 			Name:        nsSpec.name,
+			Slug:        nsSpec.slug,
 			Description: nsSpec.description,
 		})
 		if err != nil {

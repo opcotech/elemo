@@ -92,7 +92,11 @@ test.describe("@operational Recent sidebar entities", () => {
     const workItemPage = new WorkItemPage(page);
     const documentPage = new DocumentPage(page);
 
-    await workItemPage.goto(workspace.namespaceId, workKey);
+    await workItemPage.goto(
+      workspace.organizationSlug,
+      workspace.namespaceSlug,
+      workKey
+    );
     await workItemPage.waitForLoad();
     await expect(workItemPage.getTitleButton()).toHaveText(workTitle);
     await expect(
@@ -120,7 +124,7 @@ test.describe("@operational Recent sidebar entities", () => {
     await expectRecentTypePersisted(page, "document");
 
     await page.goto(
-      `/namespaces/${workspace.namespaceId}/projects/${workspace.projectId}`,
+      `/organizations/${workspace.organizationSlug}/namespaces/${workspace.namespaceSlug}/projects/${workspace.projectKey}`,
       {
         waitUntil: "domcontentloaded",
       }

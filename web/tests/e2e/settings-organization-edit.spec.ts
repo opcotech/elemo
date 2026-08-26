@@ -24,7 +24,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
   let ownerUser: User;
   let memberUser: User;
   let readOnlyMemberUser: User;
-  let organizationId: string;
+  let organizationSlug: string;
   let organizationName: string;
 
   test.beforeAll(async ({ testConfig, createApiClient }) => {
@@ -47,7 +47,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       name: organizationName,
       email: `test-${uniqueId}@example.com`,
     });
-    organizationId = organization.id;
+    organizationSlug = organization.slug;
 
     // Grant membership to member user with write permission
     await grantMembershipToUser(
@@ -101,7 +101,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
 
     // Click edit button
@@ -131,7 +131,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     });
 
     const orgEditPage = new SettingsOrganizationEditPage(page);
-    await orgEditPage.goto(organizationId);
+    await orgEditPage.goto(organizationSlug);
     await orgEditPage.organizationEditForm.waitForLoad();
 
     // Try submitting with empty name
@@ -176,7 +176,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     });
 
     const orgEditPage = new SettingsOrganizationEditPage(page);
-    await orgEditPage.goto(organizationId);
+    await orgEditPage.goto(organizationSlug);
     await orgEditPage.organizationEditForm.waitForLoad();
 
     // Try updating with duplicate name
@@ -203,7 +203,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
 
     // Verify the edit button is visible
@@ -221,7 +221,7 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
     });
 
     const orgDetailsPage = new SettingsOrganizationDetailsPage(page);
-    await orgDetailsPage.goto(organizationId);
+    await orgDetailsPage.goto(organizationSlug);
     await orgDetailsPage.organizationInfo.waitForLoad();
 
     // Verify the edit button is visible

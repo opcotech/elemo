@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import { v1ProjectGetOptions } from "@/lib/api/query-options";
+import { projectIdPath } from "@/lib/api/refs";
 import {
   documentCreateContextCopy,
   documentCreateParentFromNavigation,
@@ -13,7 +14,7 @@ export function QuickCreateContext() {
   const parent = documentCreateParentFromNavigation(context);
   const { data: workspace } = useAccessibleNamespaces();
   const { data: project } = useQuery({
-    ...v1ProjectGetOptions({ path: { id: context.projectId ?? "" } }),
+    ...v1ProjectGetOptions({ path: projectIdPath(context.projectId ?? "") }),
     enabled: context.type === "project" && Boolean(context.projectId),
   });
   const organization = workspace?.organizations.find(

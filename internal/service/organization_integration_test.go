@@ -130,6 +130,7 @@ func serviceCreateOrgOpts() service.CreateOrganizationOpts {
 	o := testModel.NewCreateOrganizationOpts(model.MustNewNilID(model.ResourceTypeUser))
 	return service.CreateOrganizationOpts{
 		Name:    o.Name,
+		Slug:    o.Slug,
 		Email:   o.Email,
 		Logo:    o.Logo,
 		Website: o.Website,
