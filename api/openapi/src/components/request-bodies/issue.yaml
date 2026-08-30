@@ -46,6 +46,11 @@ IssueCreate:
             format: date-time
             description: Start date of the issue.
             nullable: true
+          custom_fields:
+            type: array
+            description: Typed initial custom-field values for the created issue.
+            items:
+              $ref: "#/components/schemas/CustomFieldWrite"
         required:
           - kind
           - title

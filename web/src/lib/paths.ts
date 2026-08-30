@@ -117,6 +117,24 @@ export function settingsProjectEditPath(input: ProjectPathInput): string {
   return `${settingsProjectPath(input)}/edit`;
 }
 
+export function settingsProjectCustomFieldsPath(
+  input: ProjectPathInput
+): string {
+  return `${settingsProjectPath(input)}/custom-fields`;
+}
+
+export function settingsOrganizationCustomFieldsPath(
+  input: OrganizationPathInput
+): string {
+  return `${settingsOrganizationPath(input)}/custom-fields`;
+}
+
+export function settingsNamespaceCustomFieldsPath(
+  input: NamespacePathInput
+): string {
+  return `${settingsNamespacePath(input)}/custom-fields`;
+}
+
 export function organizationRouteParams({
   organizationSlug,
 }: OrganizationPathInput) {

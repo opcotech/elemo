@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit } from "lucide-react";
+import { Edit, ListTree } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,23 @@ export function ProjectDetailInfo({
             }
           >
             Open project
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link
+                to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields"
+                params={{
+                  organizationSlug,
+                  namespaceSlug,
+                  projectKey: project.key,
+                }}
+              />
+            }
+          >
+            <ListTree className="size-4" />
+            Custom fields
           </Button>
           {hasWritePermission && (
             <Button

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit } from "lucide-react";
+import { Edit, ListTree } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
@@ -47,6 +47,22 @@ export function NamespaceDetailInfo({
             }
           >
             Open namespace
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link
+                to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields"
+                params={{
+                  organizationSlug,
+                  namespaceSlug: namespace.slug,
+                }}
+              />
+            }
+          >
+            <ListTree className="size-4" />
+            Custom fields
           </Button>
           {hasWritePermission && (
             <Button

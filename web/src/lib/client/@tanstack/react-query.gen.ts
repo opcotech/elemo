@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { type Options, v1DocumentDelete, v1DocumentGet, v1DocumentUpdate, v1FolderDelete, v1FolderGet, v1FolderUpdate, v1IssueDelete, v1IssueGet, v1IssueRelationDelete, v1IssueRelationsCreate, v1IssueRelationsGet, v1IssueRelationUpdate, v1IssuesDocumentsCreate, v1IssuesDocumentsGet, v1IssuesDocumentsRelate, v1IssuesDocumentsUnrelate, v1IssueUpdate, v1LabelsGet, v1NamespaceDelete, v1NamespaceGet, v1NamespacesDocumentsCreate, v1NamespacesDocumentsGet, v1NamespacesFoldersCreate, v1NamespacesFoldersGet, v1NamespacesGet, v1NamespacesIssuesGet, v1NamespacesIssuesKeyGet, v1NamespacesProjectsCreate, v1NamespacesProjectsGet, v1NamespacesProjectsKeyGet, v1NamespaceUpdate, v1NotificationDelete, v1NotificationGet, v1NotificationsGet, v1NotificationUpdate, v1OrganizationDelete, v1OrganizationGet, v1OrganizationMemberInviteRevoke, v1OrganizationMemberRemove, v1OrganizationMembersAccept, v1OrganizationMembersAdd, v1OrganizationMembersGet, v1OrganizationMembersInvite, v1OrganizationRoleDelete, v1OrganizationRoleGet, v1OrganizationRolesCreate, v1OrganizationRolesGet, v1OrganizationRoleUpdate, v1OrganizationsCreate, v1OrganizationsDocumentsCreate, v1OrganizationsDocumentsGet, v1OrganizationsFoldersCreate, v1OrganizationsFoldersGet, v1OrganizationsGet, v1OrganizationsNamespacesCreate, v1OrganizationsNamespacesGet, v1OrganizationTeamDelete, v1OrganizationTeamGet, v1OrganizationTeamMemberRemove, v1OrganizationTeamMembersAdd, v1OrganizationTeamMembersGet, v1OrganizationTeamsCreate, v1OrganizationTeamsGet, v1OrganizationTeamUpdate, v1OrganizationUpdate, v1PermissionDelete, v1PermissionGet, v1PermissionResourceGet, v1PermissionsCreate, v1ProjectDelete, v1ProjectGet, v1ProjectsDocumentsCreate, v1ProjectsDocumentsGet, v1ProjectsDocumentsRelate, v1ProjectsDocumentsUnrelate, v1ProjectsIssuesCreate, v1ProjectsIssuesGet, v1ProjectUpdate, v1SearchGet, v1SystemHealth, v1SystemHeartbeat, v1SystemLicense, v1SystemVersion, v1TodoDelete, v1TodoGet, v1TodosCreate, v1TodosGet, v1TodoUpdate, v1UserDelete, v1UserGet, v1UserRequestPasswordReset, v1UserResetPassword, v1UsersCreate, v1UsersGet, v1UsersIssuesGet, v1UserUpdate } from '../sdk.gen';
-import type { V1DocumentDeleteData, V1DocumentDeleteError, V1DocumentDeleteResponse, V1DocumentGetData, V1DocumentGetError, V1DocumentGetResponse, V1DocumentUpdateData, V1DocumentUpdateError, V1DocumentUpdateResponse, V1FolderDeleteData, V1FolderDeleteError, V1FolderDeleteResponse, V1FolderGetData, V1FolderGetError, V1FolderGetResponse, V1FolderUpdateData, V1FolderUpdateError, V1FolderUpdateResponse, V1IssueDeleteData, V1IssueDeleteError, V1IssueDeleteResponse, V1IssueGetData, V1IssueGetError, V1IssueGetResponse, V1IssueRelationDeleteData, V1IssueRelationDeleteError, V1IssueRelationDeleteResponse, V1IssueRelationsCreateData, V1IssueRelationsCreateError, V1IssueRelationsCreateResponse, V1IssueRelationsGetData, V1IssueRelationsGetError, V1IssueRelationsGetResponse, V1IssueRelationUpdateData, V1IssueRelationUpdateError, V1IssueRelationUpdateResponse, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateError, V1IssuesDocumentsCreateResponse, V1IssuesDocumentsGetData, V1IssuesDocumentsGetError, V1IssuesDocumentsGetResponse, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateError, V1IssuesDocumentsRelateResponse, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateError, V1IssuesDocumentsUnrelateResponse, V1IssueUpdateData, V1IssueUpdateError, V1IssueUpdateResponse, V1LabelsGetData, V1LabelsGetError, V1LabelsGetResponse, V1NamespaceDeleteData, V1NamespaceDeleteError, V1NamespaceDeleteResponse, V1NamespaceGetData, V1NamespaceGetError, V1NamespaceGetResponse, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateError, V1NamespacesDocumentsCreateResponse, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetError, V1NamespacesDocumentsGetResponse, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateError, V1NamespacesFoldersCreateResponse, V1NamespacesFoldersGetData, V1NamespacesFoldersGetError, V1NamespacesFoldersGetResponse, V1NamespacesGetData, V1NamespacesGetError, V1NamespacesGetResponse, V1NamespacesIssuesGetData, V1NamespacesIssuesGetError, V1NamespacesIssuesGetResponse, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetError, V1NamespacesIssuesKeyGetResponse, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateError, V1NamespacesProjectsCreateResponse, V1NamespacesProjectsGetData, V1NamespacesProjectsGetError, V1NamespacesProjectsGetResponse, V1NamespacesProjectsKeyGetData, V1NamespacesProjectsKeyGetError, V1NamespacesProjectsKeyGetResponse, V1NamespaceUpdateData, V1NamespaceUpdateError, V1NamespaceUpdateResponse, V1NotificationDeleteData, V1NotificationDeleteError, V1NotificationDeleteResponse, V1NotificationGetData, V1NotificationGetError, V1NotificationGetResponse, V1NotificationsGetData, V1NotificationsGetError, V1NotificationsGetResponse, V1NotificationUpdateData, V1NotificationUpdateError, V1NotificationUpdateResponse, V1OrganizationDeleteData, V1OrganizationDeleteError, V1OrganizationDeleteResponse, V1OrganizationGetData, V1OrganizationGetError, V1OrganizationGetResponse, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeError, V1OrganizationMemberInviteRevokeResponse, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveError, V1OrganizationMemberRemoveResponse, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptError, V1OrganizationMembersAcceptResponse, V1OrganizationMembersAddData, V1OrganizationMembersAddError, V1OrganizationMembersAddResponse, V1OrganizationMembersGetData, V1OrganizationMembersGetError, V1OrganizationMembersGetResponse, V1OrganizationMembersInviteData, V1OrganizationMembersInviteError, V1OrganizationMembersInviteResponse, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteError, V1OrganizationRoleDeleteResponse, V1OrganizationRoleGetData, V1OrganizationRoleGetError, V1OrganizationRoleGetResponse, V1OrganizationRolesCreateData, V1OrganizationRolesCreateError, V1OrganizationRolesCreateResponse, V1OrganizationRolesGetData, V1OrganizationRolesGetError, V1OrganizationRolesGetResponse, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateError, V1OrganizationRoleUpdateResponse, V1OrganizationsCreateData, V1OrganizationsCreateError, V1OrganizationsCreateResponse, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateError, V1OrganizationsDocumentsCreateResponse, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetError, V1OrganizationsDocumentsGetResponse, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateError, V1OrganizationsFoldersCreateResponse, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetError, V1OrganizationsFoldersGetResponse, V1OrganizationsGetData, V1OrganizationsGetError, V1OrganizationsGetResponse, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateError, V1OrganizationsNamespacesCreateResponse, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetError, V1OrganizationsNamespacesGetResponse, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteError, V1OrganizationTeamDeleteResponse, V1OrganizationTeamGetData, V1OrganizationTeamGetError, V1OrganizationTeamGetResponse, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveError, V1OrganizationTeamMemberRemoveResponse, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddError, V1OrganizationTeamMembersAddResponse, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetError, V1OrganizationTeamMembersGetResponse, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateError, V1OrganizationTeamsCreateResponse, V1OrganizationTeamsGetData, V1OrganizationTeamsGetError, V1OrganizationTeamsGetResponse, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateError, V1OrganizationTeamUpdateResponse, V1OrganizationUpdateData, V1OrganizationUpdateError, V1OrganizationUpdateResponse, V1PermissionDeleteData, V1PermissionDeleteError, V1PermissionDeleteResponse, V1PermissionGetData, V1PermissionGetError, V1PermissionGetResponse, V1PermissionResourceGetData, V1PermissionResourceGetError, V1PermissionResourceGetResponse, V1PermissionsCreateData, V1PermissionsCreateError, V1PermissionsCreateResponse, V1ProjectDeleteData, V1ProjectDeleteError, V1ProjectDeleteResponse, V1ProjectGetData, V1ProjectGetError, V1ProjectGetResponse, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateError, V1ProjectsDocumentsCreateResponse, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetError, V1ProjectsDocumentsGetResponse, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateError, V1ProjectsDocumentsRelateResponse, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateError, V1ProjectsDocumentsUnrelateResponse, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateError, V1ProjectsIssuesCreateResponse, V1ProjectsIssuesGetData, V1ProjectsIssuesGetError, V1ProjectsIssuesGetResponse, V1ProjectUpdateData, V1ProjectUpdateError, V1ProjectUpdateResponse, V1SearchGetData, V1SearchGetError, V1SearchGetResponse, V1SystemHealthData, V1SystemHealthError, V1SystemHealthResponse, V1SystemHeartbeatData, V1SystemHeartbeatError, V1SystemHeartbeatResponse, V1SystemLicenseData, V1SystemLicenseError, V1SystemLicenseResponse, V1SystemVersionData, V1SystemVersionError, V1SystemVersionResponse, V1TodoDeleteData, V1TodoDeleteError, V1TodoDeleteResponse, V1TodoGetData, V1TodoGetError, V1TodoGetResponse, V1TodosCreateData, V1TodosCreateError, V1TodosCreateResponse, V1TodosGetData, V1TodosGetError, V1TodosGetResponse, V1TodoUpdateData, V1TodoUpdateError, V1TodoUpdateResponse, V1UserDeleteData, V1UserDeleteError, V1UserDeleteResponse, V1UserGetData, V1UserGetError, V1UserGetResponse, V1UserRequestPasswordResetData, V1UserRequestPasswordResetError, V1UserResetPasswordData, V1UserResetPasswordError, V1UserResetPasswordResponse, V1UsersCreateData, V1UsersCreateError, V1UsersCreateResponse, V1UsersGetData, V1UsersGetError, V1UsersGetResponse, V1UsersIssuesGetData, V1UsersIssuesGetError, V1UsersIssuesGetResponse, V1UserUpdateData, V1UserUpdateError, V1UserUpdateResponse } from '../types.gen';
+import { type Options, v1CustomFieldArchive, v1CustomFieldDelete, v1CustomFieldGet, v1CustomFieldsCreate, v1CustomFieldsGet, v1CustomFieldsSearch, v1CustomFieldUpdate, v1DocumentDelete, v1DocumentGet, v1DocumentUpdate, v1FolderDelete, v1FolderGet, v1FolderUpdate, v1IssueDelete, v1IssueGet, v1IssueRelationDelete, v1IssueRelationsCreate, v1IssueRelationsGet, v1IssueRelationUpdate, v1IssuesDocumentsCreate, v1IssuesDocumentsGet, v1IssuesDocumentsRelate, v1IssuesDocumentsUnrelate, v1IssueUpdate, v1LabelsGet, v1NamespaceDelete, v1NamespaceGet, v1NamespacesDocumentsCreate, v1NamespacesDocumentsGet, v1NamespacesFoldersCreate, v1NamespacesFoldersGet, v1NamespacesGet, v1NamespacesIssuesGet, v1NamespacesIssuesKeyGet, v1NamespacesProjectsCreate, v1NamespacesProjectsGet, v1NamespacesProjectsKeyGet, v1NamespaceUpdate, v1NotificationDelete, v1NotificationGet, v1NotificationsGet, v1NotificationUpdate, v1OrganizationDelete, v1OrganizationGet, v1OrganizationMemberInviteRevoke, v1OrganizationMemberRemove, v1OrganizationMembersAccept, v1OrganizationMembersAdd, v1OrganizationMembersGet, v1OrganizationMembersInvite, v1OrganizationRoleDelete, v1OrganizationRoleGet, v1OrganizationRolesCreate, v1OrganizationRolesGet, v1OrganizationRoleUpdate, v1OrganizationsCreate, v1OrganizationsDocumentsCreate, v1OrganizationsDocumentsGet, v1OrganizationsFoldersCreate, v1OrganizationsFoldersGet, v1OrganizationsGet, v1OrganizationsNamespacesCreate, v1OrganizationsNamespacesGet, v1OrganizationTeamDelete, v1OrganizationTeamGet, v1OrganizationTeamMemberRemove, v1OrganizationTeamMembersAdd, v1OrganizationTeamMembersGet, v1OrganizationTeamsCreate, v1OrganizationTeamsGet, v1OrganizationTeamUpdate, v1OrganizationUpdate, v1PermissionDelete, v1PermissionGet, v1PermissionResourceGet, v1PermissionsCreate, v1ProjectDelete, v1ProjectGet, v1ProjectsDocumentsCreate, v1ProjectsDocumentsGet, v1ProjectsDocumentsRelate, v1ProjectsDocumentsUnrelate, v1ProjectsIssuesCreate, v1ProjectsIssuesGet, v1ProjectUpdate, v1ResourceCustomFieldsGet, v1ResourceCustomFieldValueDelete, v1ResourceCustomFieldValuePut, v1SearchGet, v1SystemHealth, v1SystemHeartbeat, v1SystemLicense, v1SystemVersion, v1TodoDelete, v1TodoGet, v1TodosCreate, v1TodosGet, v1TodoUpdate, v1UserDelete, v1UserGet, v1UserRequestPasswordReset, v1UserResetPassword, v1UsersCreate, v1UsersGet, v1UsersIssuesGet, v1UserUpdate } from '../sdk.gen';
+import type { V1CustomFieldArchiveData, V1CustomFieldArchiveError, V1CustomFieldArchiveResponse, V1CustomFieldDeleteData, V1CustomFieldDeleteError, V1CustomFieldDeleteResponse, V1CustomFieldGetData, V1CustomFieldGetError, V1CustomFieldGetResponse, V1CustomFieldsCreateData, V1CustomFieldsCreateError, V1CustomFieldsCreateResponse, V1CustomFieldsGetData, V1CustomFieldsGetError, V1CustomFieldsGetResponse, V1CustomFieldsSearchData, V1CustomFieldsSearchError, V1CustomFieldsSearchResponse, V1CustomFieldUpdateData, V1CustomFieldUpdateError, V1CustomFieldUpdateResponse, V1DocumentDeleteData, V1DocumentDeleteError, V1DocumentDeleteResponse, V1DocumentGetData, V1DocumentGetError, V1DocumentGetResponse, V1DocumentUpdateData, V1DocumentUpdateError, V1DocumentUpdateResponse, V1FolderDeleteData, V1FolderDeleteError, V1FolderDeleteResponse, V1FolderGetData, V1FolderGetError, V1FolderGetResponse, V1FolderUpdateData, V1FolderUpdateError, V1FolderUpdateResponse, V1IssueDeleteData, V1IssueDeleteError, V1IssueDeleteResponse, V1IssueGetData, V1IssueGetError, V1IssueGetResponse, V1IssueRelationDeleteData, V1IssueRelationDeleteError, V1IssueRelationDeleteResponse, V1IssueRelationsCreateData, V1IssueRelationsCreateError, V1IssueRelationsCreateResponse, V1IssueRelationsGetData, V1IssueRelationsGetError, V1IssueRelationsGetResponse, V1IssueRelationUpdateData, V1IssueRelationUpdateError, V1IssueRelationUpdateResponse, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateError, V1IssuesDocumentsCreateResponse, V1IssuesDocumentsGetData, V1IssuesDocumentsGetError, V1IssuesDocumentsGetResponse, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateError, V1IssuesDocumentsRelateResponse, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateError, V1IssuesDocumentsUnrelateResponse, V1IssueUpdateData, V1IssueUpdateError, V1IssueUpdateResponse, V1LabelsGetData, V1LabelsGetError, V1LabelsGetResponse, V1NamespaceDeleteData, V1NamespaceDeleteError, V1NamespaceDeleteResponse, V1NamespaceGetData, V1NamespaceGetError, V1NamespaceGetResponse, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateError, V1NamespacesDocumentsCreateResponse, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetError, V1NamespacesDocumentsGetResponse, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateError, V1NamespacesFoldersCreateResponse, V1NamespacesFoldersGetData, V1NamespacesFoldersGetError, V1NamespacesFoldersGetResponse, V1NamespacesGetData, V1NamespacesGetError, V1NamespacesGetResponse, V1NamespacesIssuesGetData, V1NamespacesIssuesGetError, V1NamespacesIssuesGetResponse, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetError, V1NamespacesIssuesKeyGetResponse, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateError, V1NamespacesProjectsCreateResponse, V1NamespacesProjectsGetData, V1NamespacesProjectsGetError, V1NamespacesProjectsGetResponse, V1NamespacesProjectsKeyGetData, V1NamespacesProjectsKeyGetError, V1NamespacesProjectsKeyGetResponse, V1NamespaceUpdateData, V1NamespaceUpdateError, V1NamespaceUpdateResponse, V1NotificationDeleteData, V1NotificationDeleteError, V1NotificationDeleteResponse, V1NotificationGetData, V1NotificationGetError, V1NotificationGetResponse, V1NotificationsGetData, V1NotificationsGetError, V1NotificationsGetResponse, V1NotificationUpdateData, V1NotificationUpdateError, V1NotificationUpdateResponse, V1OrganizationDeleteData, V1OrganizationDeleteError, V1OrganizationDeleteResponse, V1OrganizationGetData, V1OrganizationGetError, V1OrganizationGetResponse, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeError, V1OrganizationMemberInviteRevokeResponse, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveError, V1OrganizationMemberRemoveResponse, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptError, V1OrganizationMembersAcceptResponse, V1OrganizationMembersAddData, V1OrganizationMembersAddError, V1OrganizationMembersAddResponse, V1OrganizationMembersGetData, V1OrganizationMembersGetError, V1OrganizationMembersGetResponse, V1OrganizationMembersInviteData, V1OrganizationMembersInviteError, V1OrganizationMembersInviteResponse, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteError, V1OrganizationRoleDeleteResponse, V1OrganizationRoleGetData, V1OrganizationRoleGetError, V1OrganizationRoleGetResponse, V1OrganizationRolesCreateData, V1OrganizationRolesCreateError, V1OrganizationRolesCreateResponse, V1OrganizationRolesGetData, V1OrganizationRolesGetError, V1OrganizationRolesGetResponse, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateError, V1OrganizationRoleUpdateResponse, V1OrganizationsCreateData, V1OrganizationsCreateError, V1OrganizationsCreateResponse, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateError, V1OrganizationsDocumentsCreateResponse, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetError, V1OrganizationsDocumentsGetResponse, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateError, V1OrganizationsFoldersCreateResponse, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetError, V1OrganizationsFoldersGetResponse, V1OrganizationsGetData, V1OrganizationsGetError, V1OrganizationsGetResponse, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateError, V1OrganizationsNamespacesCreateResponse, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetError, V1OrganizationsNamespacesGetResponse, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteError, V1OrganizationTeamDeleteResponse, V1OrganizationTeamGetData, V1OrganizationTeamGetError, V1OrganizationTeamGetResponse, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveError, V1OrganizationTeamMemberRemoveResponse, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddError, V1OrganizationTeamMembersAddResponse, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetError, V1OrganizationTeamMembersGetResponse, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateError, V1OrganizationTeamsCreateResponse, V1OrganizationTeamsGetData, V1OrganizationTeamsGetError, V1OrganizationTeamsGetResponse, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateError, V1OrganizationTeamUpdateResponse, V1OrganizationUpdateData, V1OrganizationUpdateError, V1OrganizationUpdateResponse, V1PermissionDeleteData, V1PermissionDeleteError, V1PermissionDeleteResponse, V1PermissionGetData, V1PermissionGetError, V1PermissionGetResponse, V1PermissionResourceGetData, V1PermissionResourceGetError, V1PermissionResourceGetResponse, V1PermissionsCreateData, V1PermissionsCreateError, V1PermissionsCreateResponse, V1ProjectDeleteData, V1ProjectDeleteError, V1ProjectDeleteResponse, V1ProjectGetData, V1ProjectGetError, V1ProjectGetResponse, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateError, V1ProjectsDocumentsCreateResponse, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetError, V1ProjectsDocumentsGetResponse, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateError, V1ProjectsDocumentsRelateResponse, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateError, V1ProjectsDocumentsUnrelateResponse, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateError, V1ProjectsIssuesCreateResponse, V1ProjectsIssuesGetData, V1ProjectsIssuesGetError, V1ProjectsIssuesGetResponse, V1ProjectUpdateData, V1ProjectUpdateError, V1ProjectUpdateResponse, V1ResourceCustomFieldsGetData, V1ResourceCustomFieldsGetError, V1ResourceCustomFieldsGetResponse, V1ResourceCustomFieldValueDeleteData, V1ResourceCustomFieldValueDeleteError, V1ResourceCustomFieldValueDeleteResponse, V1ResourceCustomFieldValuePutData, V1ResourceCustomFieldValuePutError, V1ResourceCustomFieldValuePutResponse, V1SearchGetData, V1SearchGetError, V1SearchGetResponse, V1SystemHealthData, V1SystemHealthError, V1SystemHealthResponse, V1SystemHeartbeatData, V1SystemHeartbeatError, V1SystemHeartbeatResponse, V1SystemLicenseData, V1SystemLicenseError, V1SystemLicenseResponse, V1SystemVersionData, V1SystemVersionError, V1SystemVersionResponse, V1TodoDeleteData, V1TodoDeleteError, V1TodoDeleteResponse, V1TodoGetData, V1TodoGetError, V1TodoGetResponse, V1TodosCreateData, V1TodosCreateError, V1TodosCreateResponse, V1TodosGetData, V1TodosGetError, V1TodosGetResponse, V1TodoUpdateData, V1TodoUpdateError, V1TodoUpdateResponse, V1UserDeleteData, V1UserDeleteError, V1UserDeleteResponse, V1UserGetData, V1UserGetError, V1UserGetResponse, V1UserRequestPasswordResetData, V1UserRequestPasswordResetError, V1UserResetPasswordData, V1UserResetPasswordError, V1UserResetPasswordResponse, V1UsersCreateData, V1UsersCreateError, V1UsersCreateResponse, V1UsersGetData, V1UsersGetError, V1UsersGetResponse, V1UsersIssuesGetData, V1UsersIssuesGetError, V1UsersIssuesGetResponse, V1UserUpdateData, V1UserUpdateError, V1UserUpdateResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1828,6 +1828,193 @@ export const v1SearchGetOptions = (options?: Options<V1SearchGetData>) => queryO
     },
     queryKey: v1SearchGetQueryKey(options)
 });
+
+export const v1CustomFieldsGetQueryKey = (options: Options<V1CustomFieldsGetData>) => createQueryKey('v1CustomFieldsGet', options);
+
+/**
+ * List custom field definitions
+ *
+ * List custom-field definitions that apply at a scope, including inherited ancestors.
+ */
+export const v1CustomFieldsGetOptions = (options: Options<V1CustomFieldsGetData>) => queryOptions<V1CustomFieldsGetResponse, V1CustomFieldsGetError, V1CustomFieldsGetResponse, ReturnType<typeof v1CustomFieldsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1CustomFieldsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1CustomFieldsGetQueryKey(options)
+});
+
+/**
+ * Create custom field definition
+ *
+ * Create a typed custom-field definition. The definition is immediately usable.
+ */
+export const v1CustomFieldsCreateMutation = (options?: Partial<Options<V1CustomFieldsCreateData>>): UseMutationOptions<V1CustomFieldsCreateResponse, V1CustomFieldsCreateError, Options<V1CustomFieldsCreateData>> => {
+    const mutationOptions: UseMutationOptions<V1CustomFieldsCreateResponse, V1CustomFieldsCreateError, Options<V1CustomFieldsCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1CustomFieldsCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Search resources by custom field
+ *
+ * Return permission-filtered resource IDs matching an indexed custom-field predicate.
+ */
+export const v1CustomFieldsSearchMutation = (options?: Partial<Options<V1CustomFieldsSearchData>>): UseMutationOptions<V1CustomFieldsSearchResponse, V1CustomFieldsSearchError, Options<V1CustomFieldsSearchData>> => {
+    const mutationOptions: UseMutationOptions<V1CustomFieldsSearchResponse, V1CustomFieldsSearchError, Options<V1CustomFieldsSearchData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1CustomFieldsSearch({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete custom field definition
+ *
+ * Hard-delete a definition that has no stored values.
+ */
+export const v1CustomFieldDeleteMutation = (options?: Partial<Options<V1CustomFieldDeleteData>>): UseMutationOptions<V1CustomFieldDeleteResponse, V1CustomFieldDeleteError, Options<V1CustomFieldDeleteData>> => {
+    const mutationOptions: UseMutationOptions<V1CustomFieldDeleteResponse, V1CustomFieldDeleteError, Options<V1CustomFieldDeleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1CustomFieldDelete({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1CustomFieldGetQueryKey = (options: Options<V1CustomFieldGetData>) => createQueryKey('v1CustomFieldGet', options);
+
+/**
+ * Get custom field definition
+ */
+export const v1CustomFieldGetOptions = (options: Options<V1CustomFieldGetData>) => queryOptions<V1CustomFieldGetResponse, V1CustomFieldGetError, V1CustomFieldGetResponse, ReturnType<typeof v1CustomFieldGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1CustomFieldGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1CustomFieldGetQueryKey(options)
+});
+
+/**
+ * Update custom field definition
+ *
+ * Apply constrained schema evolution. Identity fields cannot change.
+ */
+export const v1CustomFieldUpdateMutation = (options?: Partial<Options<V1CustomFieldUpdateData>>): UseMutationOptions<V1CustomFieldUpdateResponse, V1CustomFieldUpdateError, Options<V1CustomFieldUpdateData>> => {
+    const mutationOptions: UseMutationOptions<V1CustomFieldUpdateResponse, V1CustomFieldUpdateError, Options<V1CustomFieldUpdateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1CustomFieldUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Archive custom field definition
+ *
+ * Retire a definition. Stored values remain readable; new writes are rejected.
+ */
+export const v1CustomFieldArchiveMutation = (options?: Partial<Options<V1CustomFieldArchiveData>>): UseMutationOptions<V1CustomFieldArchiveResponse, V1CustomFieldArchiveError, Options<V1CustomFieldArchiveData>> => {
+    const mutationOptions: UseMutationOptions<V1CustomFieldArchiveResponse, V1CustomFieldArchiveError, Options<V1CustomFieldArchiveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1CustomFieldArchive({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1ResourceCustomFieldsGetQueryKey = (options: Options<V1ResourceCustomFieldsGetData>) => createQueryKey('v1ResourceCustomFieldsGet', options);
+
+/**
+ * List effective custom fields
+ *
+ * Return inherited definitions and stored values for a resource.
+ */
+export const v1ResourceCustomFieldsGetOptions = (options: Options<V1ResourceCustomFieldsGetData>) => queryOptions<V1ResourceCustomFieldsGetResponse, V1ResourceCustomFieldsGetError, V1ResourceCustomFieldsGetResponse, ReturnType<typeof v1ResourceCustomFieldsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1ResourceCustomFieldsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1ResourceCustomFieldsGetQueryKey(options)
+});
+
+/**
+ * Clear custom field value
+ */
+export const v1ResourceCustomFieldValueDeleteMutation = (options?: Partial<Options<V1ResourceCustomFieldValueDeleteData>>): UseMutationOptions<V1ResourceCustomFieldValueDeleteResponse, V1ResourceCustomFieldValueDeleteError, Options<V1ResourceCustomFieldValueDeleteData>> => {
+    const mutationOptions: UseMutationOptions<V1ResourceCustomFieldValueDeleteResponse, V1ResourceCustomFieldValueDeleteError, Options<V1ResourceCustomFieldValueDeleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1ResourceCustomFieldValueDelete({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Set custom field value
+ */
+export const v1ResourceCustomFieldValuePutMutation = (options?: Partial<Options<V1ResourceCustomFieldValuePutData>>): UseMutationOptions<V1ResourceCustomFieldValuePutResponse, V1ResourceCustomFieldValuePutError, Options<V1ResourceCustomFieldValuePutData>> => {
+    const mutationOptions: UseMutationOptions<V1ResourceCustomFieldValuePutResponse, V1ResourceCustomFieldValuePutError, Options<V1ResourceCustomFieldValuePutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1ResourceCustomFieldValuePut({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const v1SystemHealthQueryKey = (options?: Options<V1SystemHealthData>) => createQueryKey('v1SystemHealth', options);
 

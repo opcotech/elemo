@@ -34,6 +34,17 @@ func WithTaskSearchService(searchService service.SearchService) TaskHandlerOptio
 	}
 }
 
+// WithTaskCustomFieldService sets the custom-field service for reconcile tasks.
+func WithTaskCustomFieldService(customFieldService service.CustomFieldService) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		if customFieldService == nil {
+			return ErrNoCustomFieldService
+		}
+		t.customFieldService = customFieldService
+		return nil
+	}
+}
+
 // WithTaskGraphDatabase sets the graph database for search tasks.
 func WithTaskGraphDatabase(db *repository.Neo4jDatabase) TaskHandlerOption {
 	return func(t *baseTaskHandler) error {
@@ -97,11 +108,12 @@ type baseTaskHandler struct {
 	logger log.Logger
 	tracer tracing.Tracer
 
-	emailService     service.EmailService
-	searchService    service.SearchService
-	graphDB          *repository.Neo4jDatabase
-	queueClient      service.SearchTaskEnqueuer
-	reindexBatchSize int
+	emailService       service.EmailService
+	searchService      service.SearchService
+	customFieldService service.CustomFieldService
+	graphDB            *repository.Neo4jDatabase
+	queueClient        service.SearchTaskEnqueuer
+	reindexBatchSize   int
 }
 
 // newBaseTaskHandler creates a new base task handler.

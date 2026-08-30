@@ -40,6 +40,7 @@ import { Route as AuthenticatedSettingsOrganizationsIndexRouteImport } from './r
 import { Route as AuthenticatedSettingsOrganizationsNewRouteImport } from './routes/_authenticated.settings/organizations/new'
 import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/custom-fields'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/edit'
 import { Route as AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRouteImport } from './routes/_authenticated.work.$organizationSlug.$namespaceSlug.$issueKey'
 import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.index'
@@ -53,6 +54,7 @@ import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRout
 import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsIndexRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.index'
 import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/roles/$roleId/edit'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/teams/$teamId/edit'
@@ -62,6 +64,7 @@ import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceS
 import { Route as AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRouteImport } from './routes/_authenticated.organizations.$organizationSlug.namespaces.$namespaceSlug.projects.$projectKey.work'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/index'
+import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
 import { Route as AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRouteImport } from './routes/_authenticated.settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -238,6 +241,14 @@ const AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute =
     path: '/organizations/$organizationSlug/',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/custom-fields',
+      path: '/organizations/$organizationSlug/custom-fields',
+      getParentRoute: () => AuthenticatedSettingsRoute,
+    } as any,
+  )
 const AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute =
   AuthenticatedSettingsOrganizationsOrganizationSlugEditRouteImport.update({
     id: '/organizations/$organizationSlug/edit',
@@ -341,6 +352,14 @@ const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugI
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields',
+      getParentRoute: () => AuthenticatedSettingsRoute,
+    } as any,
+  )
 const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute =
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRouteImport.update(
     {
@@ -417,6 +436,14 @@ const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugP
       getParentRoute: () => AuthenticatedSettingsRoute,
     } as any,
   )
+const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute =
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRouteImport.update(
+    {
+      id: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields',
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields',
+      getParentRoute: () => AuthenticatedSettingsRoute,
+    } as any,
+  )
 const AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute =
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRouteImport.update(
     {
@@ -456,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren
+  '/settings/organizations/$organizationSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute
   '/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
   '/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
   '/settings/organizations/$organizationSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
@@ -468,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
   '/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
   '/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
@@ -478,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
@@ -505,6 +535,7 @@ export interface FileRoutesByTo {
   '/organizations/$organizationSlug': typeof AuthenticatedOrganizationsOrganizationSlugIndexRoute
   '/settings/namespaces': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/settings/organizations': typeof AuthenticatedSettingsOrganizationsIndexRoute
+  '/settings/organizations/$organizationSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute
   '/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
   '/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
   '/settings/organizations/$organizationSlug': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
@@ -515,6 +546,7 @@ export interface FileRoutesByTo {
   '/settings/organizations/$organizationSlug/roles/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
   '/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
   '/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
   '/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
@@ -525,6 +557,7 @@ export interface FileRoutesByTo {
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
   '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
   '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
@@ -560,6 +593,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/namespaces/': typeof AuthenticatedSettingsNamespacesIndexRoute
   '/_authenticated/settings/organizations/': typeof AuthenticatedSettingsOrganizationsIndexRoute
   '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugRouteWithChildren
+  '/_authenticated/settings/organizations/$organizationSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute
   '/_authenticated/settings/organizations/$organizationSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
   '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey': typeof AuthenticatedWorkOrganizationSlugNamespaceSlugIssueKeyRoute
   '/_authenticated/settings/organizations/$organizationSlug/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
@@ -572,6 +606,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/organizations/$organizationSlug/teams/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
   '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
   '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyRouteWithChildren
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute
   '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
   '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
   '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
@@ -582,6 +617,7 @@ export interface FileRoutesById {
   '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyWorkRoute
   '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
   '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
+  '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute
   '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
   '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/': typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
@@ -617,6 +653,7 @@ export interface FileRouteTypes {
     | '/settings/namespaces/'
     | '/settings/organizations/'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/settings/organizations/$organizationSlug/custom-fields'
     | '/settings/organizations/$organizationSlug/edit'
     | '/work/$organizationSlug/$namespaceSlug/$issueKey'
     | '/settings/organizations/$organizationSlug/'
@@ -629,6 +666,7 @@ export interface FileRouteTypes {
     | '/settings/organizations/$organizationSlug/teams/new'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
     | '/settings/organizations/$organizationSlug/roles/$roleId/edit'
     | '/settings/organizations/$organizationSlug/teams/$teamId/edit'
@@ -639,6 +677,7 @@ export interface FileRouteTypes {
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
   fileRoutesByTo: FileRoutesByTo
@@ -666,6 +705,7 @@ export interface FileRouteTypes {
     | '/organizations/$organizationSlug'
     | '/settings/namespaces'
     | '/settings/organizations'
+    | '/settings/organizations/$organizationSlug/custom-fields'
     | '/settings/organizations/$organizationSlug/edit'
     | '/work/$organizationSlug/$namespaceSlug/$issueKey'
     | '/settings/organizations/$organizationSlug'
@@ -676,6 +716,7 @@ export interface FileRouteTypes {
     | '/settings/organizations/$organizationSlug/roles/new'
     | '/settings/organizations/$organizationSlug/teams/new'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
     | '/settings/organizations/$organizationSlug/roles/$roleId/edit'
     | '/settings/organizations/$organizationSlug/teams/$teamId/edit'
@@ -686,6 +727,7 @@ export interface FileRouteTypes {
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
     | '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
     | '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
   id:
@@ -720,6 +762,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/namespaces/'
     | '/_authenticated/settings/organizations/'
     | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug'
+    | '/_authenticated/settings/organizations/$organizationSlug/custom-fields'
     | '/_authenticated/settings/organizations/$organizationSlug/edit'
     | '/_authenticated/work/$organizationSlug/$namespaceSlug/$issueKey'
     | '/_authenticated/settings/organizations/$organizationSlug/'
@@ -732,6 +775,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/organizations/$organizationSlug/teams/new'
     | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/'
     | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
     | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
     | '/_authenticated/settings/organizations/$organizationSlug/roles/$roleId/edit'
     | '/_authenticated/settings/organizations/$organizationSlug/teams/$teamId/edit'
@@ -742,6 +786,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/work'
     | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/new'
     | '/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
+    | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
     | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit'
     | '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
   fileRoutesById: FileRoutesById
@@ -973,6 +1018,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/organizations/$organizationSlug/custom-fields': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/custom-fields'
+      path: '/organizations/$organizationSlug/custom-fields'
+      fullPath: '/settings/organizations/$organizationSlug/custom-fields'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/organizations/$organizationSlug/edit': {
       id: '/_authenticated/settings/organizations/$organizationSlug/edit'
       path: '/organizations/$organizationSlug/edit'
@@ -1064,6 +1116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/custom-fields'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit': {
       id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
       path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/edit'
@@ -1125,6 +1184,13 @@ declare module '@tanstack/react-router' {
       path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey'
       fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/'
       preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields': {
+      id: '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
+      path: '/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
+      fullPath: '/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/custom-fields'
+      preLoaderRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/projects/$projectKey/edit': {
@@ -1282,16 +1348,19 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsOrganizationsNewRoute: typeof AuthenticatedSettingsOrganizationsNewRoute
   AuthenticatedSettingsNamespacesIndexRoute: typeof AuthenticatedSettingsNamespacesIndexRoute
   AuthenticatedSettingsOrganizationsIndexRoute: typeof AuthenticatedSettingsOrganizationsIndexRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNewRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugTeamsTeamIdEditRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute: typeof AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute
 }
@@ -1307,6 +1376,8 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsNamespacesIndexRoute,
   AuthenticatedSettingsOrganizationsIndexRoute:
     AuthenticatedSettingsOrganizationsIndexRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugCustomFieldsRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute:
     AuthenticatedSettingsOrganizationsOrganizationSlugEditRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugIndexRoute:
@@ -1317,6 +1388,8 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsOrganizationsOrganizationSlugRolesNewRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute:
     AuthenticatedSettingsOrganizationsOrganizationSlugTeamsNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugCustomFieldsRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute:
     AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugEditRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugRolesRoleIdEditRoute:
@@ -1327,6 +1400,8 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugIndexRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute:
     AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsNewRoute,
+  AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute:
+    AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyCustomFieldsRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute:
     AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyEditRoute,
   AuthenticatedSettingsOrganizationsOrganizationSlugNamespacesNamespaceSlugProjectsProjectKeyIndexRoute:

@@ -24,6 +24,399 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CustomFieldBooleanSchemaKind.
+const (
+	CustomFieldBooleanSchemaKindBoolean CustomFieldBooleanSchemaKind = "boolean"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldBooleanSchemaKind enum.
+func (e CustomFieldBooleanSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldBooleanSchemaKindBoolean:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldBooleanValueKind.
+const (
+	CustomFieldBooleanValueKindBoolean CustomFieldBooleanValueKind = "boolean"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldBooleanValueKind enum.
+func (e CustomFieldBooleanValueKind) Valid() bool {
+	switch e {
+	case CustomFieldBooleanValueKindBoolean:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDateSchemaKind.
+const (
+	CustomFieldDateSchemaKindDate CustomFieldDateSchemaKind = "date"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDateSchemaKind enum.
+func (e CustomFieldDateSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldDateSchemaKindDate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDateTimeSchemaKind.
+const (
+	CustomFieldDateTimeSchemaKindDatetime CustomFieldDateTimeSchemaKind = "datetime"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDateTimeSchemaKind enum.
+func (e CustomFieldDateTimeSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldDateTimeSchemaKindDatetime:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDateTimeValueKind.
+const (
+	CustomFieldDateTimeValueKindDatetime CustomFieldDateTimeValueKind = "datetime"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDateTimeValueKind enum.
+func (e CustomFieldDateTimeValueKind) Valid() bool {
+	switch e {
+	case CustomFieldDateTimeValueKindDatetime:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDateValueKind.
+const (
+	CustomFieldDateValueKindDate CustomFieldDateValueKind = "date"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDateValueKind enum.
+func (e CustomFieldDateValueKind) Valid() bool {
+	switch e {
+	case CustomFieldDateValueKindDate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDecimalSchemaKind.
+const (
+	CustomFieldDecimalSchemaKindDecimal CustomFieldDecimalSchemaKind = "decimal"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDecimalSchemaKind enum.
+func (e CustomFieldDecimalSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldDecimalSchemaKindDecimal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldDecimalValueKind.
+const (
+	CustomFieldDecimalValueKindDecimal CustomFieldDecimalValueKind = "decimal"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldDecimalValueKind enum.
+func (e CustomFieldDecimalValueKind) Valid() bool {
+	switch e {
+	case CustomFieldDecimalValueKindDecimal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldIntegerSchemaKind.
+const (
+	CustomFieldIntegerSchemaKindInteger CustomFieldIntegerSchemaKind = "integer"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldIntegerSchemaKind enum.
+func (e CustomFieldIntegerSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldIntegerSchemaKindInteger:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldIntegerValueKind.
+const (
+	CustomFieldIntegerValueKindInteger CustomFieldIntegerValueKind = "integer"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldIntegerValueKind enum.
+func (e CustomFieldIntegerValueKind) Valid() bool {
+	switch e {
+	case CustomFieldIntegerValueKindInteger:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldKind.
+const (
+	CustomFieldKindBoolean           CustomFieldKind = "boolean"
+	CustomFieldKindDate              CustomFieldKind = "date"
+	CustomFieldKindDatetime          CustomFieldKind = "datetime"
+	CustomFieldKindDecimal           CustomFieldKind = "decimal"
+	CustomFieldKindInteger           CustomFieldKind = "integer"
+	CustomFieldKindMultiSelect       CustomFieldKind = "multi_select"
+	CustomFieldKindResourceReference CustomFieldKind = "resource_reference"
+	CustomFieldKindSingleSelect      CustomFieldKind = "single_select"
+	CustomFieldKindText              CustomFieldKind = "text"
+	CustomFieldKindUrl               CustomFieldKind = "url"
+	CustomFieldKindUserReference     CustomFieldKind = "user_reference"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldKind enum.
+func (e CustomFieldKind) Valid() bool {
+	switch e {
+	case CustomFieldKindBoolean:
+		return true
+	case CustomFieldKindDate:
+		return true
+	case CustomFieldKindDatetime:
+		return true
+	case CustomFieldKindDecimal:
+		return true
+	case CustomFieldKindInteger:
+		return true
+	case CustomFieldKindMultiSelect:
+		return true
+	case CustomFieldKindResourceReference:
+		return true
+	case CustomFieldKindSingleSelect:
+		return true
+	case CustomFieldKindText:
+		return true
+	case CustomFieldKindUrl:
+		return true
+	case CustomFieldKindUserReference:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldMultiSelectValueKind.
+const (
+	CustomFieldMultiSelectValueKindMultiSelect CustomFieldMultiSelectValueKind = "multi_select"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldMultiSelectValueKind enum.
+func (e CustomFieldMultiSelectValueKind) Valid() bool {
+	switch e {
+	case CustomFieldMultiSelectValueKindMultiSelect:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldPredicateOp.
+const (
+	CustomFieldPredicateOpEq    CustomFieldPredicateOp = "eq"
+	CustomFieldPredicateOpGt    CustomFieldPredicateOp = "gt"
+	CustomFieldPredicateOpGte   CustomFieldPredicateOp = "gte"
+	CustomFieldPredicateOpLt    CustomFieldPredicateOp = "lt"
+	CustomFieldPredicateOpLte   CustomFieldPredicateOp = "lte"
+	CustomFieldPredicateOpMatch CustomFieldPredicateOp = "match"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldPredicateOp enum.
+func (e CustomFieldPredicateOp) Valid() bool {
+	switch e {
+	case CustomFieldPredicateOpEq:
+		return true
+	case CustomFieldPredicateOpGt:
+		return true
+	case CustomFieldPredicateOpGte:
+		return true
+	case CustomFieldPredicateOpLt:
+		return true
+	case CustomFieldPredicateOpLte:
+		return true
+	case CustomFieldPredicateOpMatch:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldResourceReferenceSchemaKind.
+const (
+	CustomFieldResourceReferenceSchemaKindResourceReference CustomFieldResourceReferenceSchemaKind = "resource_reference"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldResourceReferenceSchemaKind enum.
+func (e CustomFieldResourceReferenceSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldResourceReferenceSchemaKindResourceReference:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldResourceReferenceValueKind.
+const (
+	CustomFieldResourceReferenceValueKindResourceReference CustomFieldResourceReferenceValueKind = "resource_reference"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldResourceReferenceValueKind enum.
+func (e CustomFieldResourceReferenceValueKind) Valid() bool {
+	switch e {
+	case CustomFieldResourceReferenceValueKindResourceReference:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldSelectSchemaKind.
+const (
+	CustomFieldSelectSchemaKindMultiSelect  CustomFieldSelectSchemaKind = "multi_select"
+	CustomFieldSelectSchemaKindSingleSelect CustomFieldSelectSchemaKind = "single_select"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldSelectSchemaKind enum.
+func (e CustomFieldSelectSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldSelectSchemaKindMultiSelect:
+		return true
+	case CustomFieldSelectSchemaKindSingleSelect:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldSingleSelectValueKind.
+const (
+	CustomFieldSingleSelectValueKindSingleSelect CustomFieldSingleSelectValueKind = "single_select"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldSingleSelectValueKind enum.
+func (e CustomFieldSingleSelectValueKind) Valid() bool {
+	switch e {
+	case CustomFieldSingleSelectValueKindSingleSelect:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldTextSchemaKind.
+const (
+	CustomFieldTextSchemaKindText CustomFieldTextSchemaKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldTextSchemaKind enum.
+func (e CustomFieldTextSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldTextSchemaKindText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldTextValueKind.
+const (
+	CustomFieldTextValueKindText CustomFieldTextValueKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldTextValueKind enum.
+func (e CustomFieldTextValueKind) Valid() bool {
+	switch e {
+	case CustomFieldTextValueKindText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldURLSchemaKind.
+const (
+	CustomFieldURLSchemaKindUrl CustomFieldURLSchemaKind = "url"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldURLSchemaKind enum.
+func (e CustomFieldURLSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldURLSchemaKindUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldURLValueKind.
+const (
+	CustomFieldURLValueKindUrl CustomFieldURLValueKind = "url"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldURLValueKind enum.
+func (e CustomFieldURLValueKind) Valid() bool {
+	switch e {
+	case CustomFieldURLValueKindUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldUserReferenceSchemaKind.
+const (
+	CustomFieldUserReferenceSchemaKindUserReference CustomFieldUserReferenceSchemaKind = "user_reference"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldUserReferenceSchemaKind enum.
+func (e CustomFieldUserReferenceSchemaKind) Valid() bool {
+	switch e {
+	case CustomFieldUserReferenceSchemaKindUserReference:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomFieldUserReferenceValueKind.
+const (
+	CustomFieldUserReferenceValueKindUserReference CustomFieldUserReferenceValueKind = "user_reference"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldUserReferenceValueKind enum.
+func (e CustomFieldUserReferenceValueKind) Valid() bool {
+	switch e {
+	case CustomFieldUserReferenceValueKindUserReference:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentLibraryType.
 const (
 	DocumentLibraryTypeNamespace    DocumentLibraryType = "Namespace"
@@ -848,26 +1241,27 @@ func (e ProjectStatus) Valid() bool {
 
 // Defines values for ResourceType.
 const (
-	ResourceTypeAssignment    ResourceType = "Assignment"
-	ResourceTypeAttachment    ResourceType = "Attachment"
-	ResourceTypeComment       ResourceType = "Comment"
-	ResourceTypeDocument      ResourceType = "Document"
-	ResourceTypeFolder        ResourceType = "Folder"
-	ResourceTypeInstallation  ResourceType = "Installation"
-	ResourceTypeIssue         ResourceType = "Issue"
-	ResourceTypeIssueRelation ResourceType = "IssueRelation"
-	ResourceTypeLabel         ResourceType = "Label"
-	ResourceTypeNamespace     ResourceType = "Namespace"
-	ResourceTypeNotification  ResourceType = "Notification"
-	ResourceTypeOrganization  ResourceType = "Organization"
-	ResourceTypePermission    ResourceType = "Permission"
-	ResourceTypeProject       ResourceType = "Project"
-	ResourceTypeResourceType  ResourceType = "ResourceType"
-	ResourceTypeRole          ResourceType = "Role"
-	ResourceTypeTeam          ResourceType = "Team"
-	ResourceTypeTodo          ResourceType = "Todo"
-	ResourceTypeUser          ResourceType = "User"
-	ResourceTypeUserToken     ResourceType = "UserToken"
+	ResourceTypeAssignment            ResourceType = "Assignment"
+	ResourceTypeAttachment            ResourceType = "Attachment"
+	ResourceTypeComment               ResourceType = "Comment"
+	ResourceTypeCustomFieldDefinition ResourceType = "CustomFieldDefinition"
+	ResourceTypeDocument              ResourceType = "Document"
+	ResourceTypeFolder                ResourceType = "Folder"
+	ResourceTypeInstallation          ResourceType = "Installation"
+	ResourceTypeIssue                 ResourceType = "Issue"
+	ResourceTypeIssueRelation         ResourceType = "IssueRelation"
+	ResourceTypeLabel                 ResourceType = "Label"
+	ResourceTypeNamespace             ResourceType = "Namespace"
+	ResourceTypeNotification          ResourceType = "Notification"
+	ResourceTypeOrganization          ResourceType = "Organization"
+	ResourceTypePermission            ResourceType = "Permission"
+	ResourceTypeProject               ResourceType = "Project"
+	ResourceTypeResourceType          ResourceType = "ResourceType"
+	ResourceTypeRole                  ResourceType = "Role"
+	ResourceTypeTeam                  ResourceType = "Team"
+	ResourceTypeTodo                  ResourceType = "Todo"
+	ResourceTypeUser                  ResourceType = "User"
+	ResourceTypeUserToken             ResourceType = "UserToken"
 )
 
 // Valid indicates whether the value is a known member of the ResourceType enum.
@@ -878,6 +1272,8 @@ func (e ResourceType) Valid() bool {
 	case ResourceTypeAttachment:
 		return true
 	case ResourceTypeComment:
+		return true
+	case ResourceTypeCustomFieldDefinition:
 		return true
 	case ResourceTypeDocument:
 		return true
@@ -1465,8 +1861,290 @@ type AccessibleNamespacePage struct {
 
 // Action Fine-grained authorization action. Exact match only; wildcards are not supported.
 //
-// Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+// Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
 type Action = string
+
+// CustomFieldBooleanSchema defines model for CustomFieldBooleanSchema.
+type CustomFieldBooleanSchema struct {
+	Kind CustomFieldBooleanSchemaKind `json:"kind"`
+}
+
+// CustomFieldBooleanSchemaKind defines model for CustomFieldBooleanSchema.Kind.
+type CustomFieldBooleanSchemaKind string
+
+// CustomFieldBooleanValue defines model for CustomFieldBooleanValue.
+type CustomFieldBooleanValue struct {
+	Boolean bool                        `json:"boolean"`
+	Kind    CustomFieldBooleanValueKind `json:"kind"`
+}
+
+// CustomFieldBooleanValueKind defines model for CustomFieldBooleanValue.Kind.
+type CustomFieldBooleanValueKind string
+
+// CustomFieldDateSchema defines model for CustomFieldDateSchema.
+type CustomFieldDateSchema struct {
+	Kind CustomFieldDateSchemaKind `json:"kind"`
+	Max  *openapi_types.Date       `json:"max,omitempty"`
+	Min  *openapi_types.Date       `json:"min,omitempty"`
+}
+
+// CustomFieldDateSchemaKind defines model for CustomFieldDateSchema.Kind.
+type CustomFieldDateSchemaKind string
+
+// CustomFieldDateTimeSchema defines model for CustomFieldDateTimeSchema.
+type CustomFieldDateTimeSchema struct {
+	Kind CustomFieldDateTimeSchemaKind `json:"kind"`
+	Max  *time.Time                    `json:"max,omitempty"`
+	Min  *time.Time                    `json:"min,omitempty"`
+}
+
+// CustomFieldDateTimeSchemaKind defines model for CustomFieldDateTimeSchema.Kind.
+type CustomFieldDateTimeSchemaKind string
+
+// CustomFieldDateTimeValue defines model for CustomFieldDateTimeValue.
+type CustomFieldDateTimeValue struct {
+	Datetime time.Time                    `json:"datetime"`
+	Kind     CustomFieldDateTimeValueKind `json:"kind"`
+}
+
+// CustomFieldDateTimeValueKind defines model for CustomFieldDateTimeValue.Kind.
+type CustomFieldDateTimeValueKind string
+
+// CustomFieldDateValue defines model for CustomFieldDateValue.
+type CustomFieldDateValue struct {
+	Date openapi_types.Date       `json:"date"`
+	Kind CustomFieldDateValueKind `json:"kind"`
+}
+
+// CustomFieldDateValueKind defines model for CustomFieldDateValue.Kind.
+type CustomFieldDateValueKind string
+
+// CustomFieldDecimalSchema defines model for CustomFieldDecimalSchema.
+type CustomFieldDecimalSchema struct {
+	Kind CustomFieldDecimalSchemaKind `json:"kind"`
+
+	// Max Example: 100.00
+	Max *string `json:"max,omitempty"`
+
+	// Min Example: 0.01
+	Min   *string `json:"min,omitempty"`
+	Scale *int    `json:"scale,omitempty"`
+}
+
+// CustomFieldDecimalSchemaKind defines model for CustomFieldDecimalSchema.Kind.
+type CustomFieldDecimalSchemaKind string
+
+// CustomFieldDecimalValue defines model for CustomFieldDecimalValue.
+type CustomFieldDecimalValue struct {
+	// Decimal Example: 12.50
+	Decimal string                      `json:"decimal"`
+	Kind    CustomFieldDecimalValueKind `json:"kind"`
+}
+
+// CustomFieldDecimalValueKind defines model for CustomFieldDecimalValue.Kind.
+type CustomFieldDecimalValueKind string
+
+// CustomFieldDefinition defines model for CustomFieldDefinition.
+type CustomFieldDefinition struct {
+	Archived    bool       `json:"archived"`
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+	Description *string    `json:"description,omitempty"`
+
+	// Id Example: 9bsv0s46s6s002p9ltq0
+	Id            string `json:"id"`
+	IndexExact    bool   `json:"index_exact"`
+	IndexFulltext bool   `json:"index_fulltext"`
+	IndexRange    bool   `json:"index_range"`
+
+	// Key Example: story_points
+	Key  string          `json:"key"`
+	Kind CustomFieldKind `json:"kind"`
+
+	// Name Example: Story points
+	Name              string            `json:"name"`
+	Order             int               `json:"order"`
+	OwnerUserId       string            `json:"owner_user_id"`
+	RegistrarClientId *string           `json:"registrar_client_id,omitempty"`
+	Required          bool              `json:"required"`
+	Schema            CustomFieldSchema `json:"schema"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId    string       `json:"scope_id"`
+	ScopeType  ResourceType `json:"scope_type"`
+	TargetType ResourceType `json:"target_type"`
+	UpdatedAt  *time.Time   `json:"updated_at,omitempty"`
+}
+
+// CustomFieldEntry defines model for CustomFieldEntry.
+type CustomFieldEntry struct {
+	Definition CustomFieldDefinition `json:"definition"`
+	Value      *CustomFieldValue     `json:"value,omitempty"`
+}
+
+// CustomFieldIntegerSchema defines model for CustomFieldIntegerSchema.
+type CustomFieldIntegerSchema struct {
+	Kind CustomFieldIntegerSchemaKind `json:"kind"`
+	Max  *int64                       `json:"max,omitempty"`
+	Min  *int64                       `json:"min,omitempty"`
+}
+
+// CustomFieldIntegerSchemaKind defines model for CustomFieldIntegerSchema.Kind.
+type CustomFieldIntegerSchemaKind string
+
+// CustomFieldIntegerValue defines model for CustomFieldIntegerValue.
+type CustomFieldIntegerValue struct {
+	Integer int64                       `json:"integer"`
+	Kind    CustomFieldIntegerValueKind `json:"kind"`
+}
+
+// CustomFieldIntegerValueKind defines model for CustomFieldIntegerValue.Kind.
+type CustomFieldIntegerValueKind string
+
+// CustomFieldKind defines model for CustomFieldKind.
+type CustomFieldKind string
+
+// CustomFieldMultiSelectValue defines model for CustomFieldMultiSelectValue.
+type CustomFieldMultiSelectValue struct {
+	Kind       CustomFieldMultiSelectValueKind `json:"kind"`
+	OptionKeys []string                        `json:"option_keys"`
+}
+
+// CustomFieldMultiSelectValueKind defines model for CustomFieldMultiSelectValue.Kind.
+type CustomFieldMultiSelectValueKind string
+
+// CustomFieldOption defines model for CustomFieldOption.
+type CustomFieldOption struct {
+	// Color Example: #3366ff
+	Color    *string `json:"color,omitempty"`
+	Disabled bool    `json:"disabled"`
+
+	// Key Example: prod
+	Key string `json:"key"`
+
+	// Label Example: Production
+	Label string `json:"label"`
+	Order *int   `json:"order,omitempty"`
+}
+
+// CustomFieldPredicateOp defines model for CustomFieldPredicateOp.
+type CustomFieldPredicateOp string
+
+// CustomFieldResourceReferenceSchema defines model for CustomFieldResourceReferenceSchema.
+type CustomFieldResourceReferenceSchema struct {
+	AllowedTypes []ResourceType                         `json:"allowed_types"`
+	Kind         CustomFieldResourceReferenceSchemaKind `json:"kind"`
+	Multiple     *bool                                  `json:"multiple,omitempty"`
+}
+
+// CustomFieldResourceReferenceSchemaKind defines model for CustomFieldResourceReferenceSchema.Kind.
+type CustomFieldResourceReferenceSchemaKind string
+
+// CustomFieldResourceReferenceValue defines model for CustomFieldResourceReferenceValue.
+type CustomFieldResourceReferenceValue struct {
+	Kind        CustomFieldResourceReferenceValueKind `json:"kind"`
+	ResourceId  *string                               `json:"resource_id,omitempty"`
+	ResourceIds *[]string                             `json:"resource_ids,omitempty"`
+}
+
+// CustomFieldResourceReferenceValueKind defines model for CustomFieldResourceReferenceValue.Kind.
+type CustomFieldResourceReferenceValueKind string
+
+// CustomFieldSchema defines model for CustomFieldSchema.
+type CustomFieldSchema struct {
+	union json.RawMessage
+}
+
+// CustomFieldSearchResult defines model for CustomFieldSearchResult.
+type CustomFieldSearchResult struct {
+	ResourceIds []string `json:"resource_ids"`
+}
+
+// CustomFieldSelectSchema defines model for CustomFieldSelectSchema.
+type CustomFieldSelectSchema struct {
+	Kind    CustomFieldSelectSchemaKind `json:"kind"`
+	Options []CustomFieldOption         `json:"options"`
+}
+
+// CustomFieldSelectSchemaKind defines model for CustomFieldSelectSchema.Kind.
+type CustomFieldSelectSchemaKind string
+
+// CustomFieldSingleSelectValue defines model for CustomFieldSingleSelectValue.
+type CustomFieldSingleSelectValue struct {
+	Kind      CustomFieldSingleSelectValueKind `json:"kind"`
+	OptionKey string                           `json:"option_key"`
+}
+
+// CustomFieldSingleSelectValueKind defines model for CustomFieldSingleSelectValue.Kind.
+type CustomFieldSingleSelectValueKind string
+
+// CustomFieldTextSchema defines model for CustomFieldTextSchema.
+type CustomFieldTextSchema struct {
+	Kind      CustomFieldTextSchemaKind `json:"kind"`
+	MaxLength *int                      `json:"max_length,omitempty"`
+	MinLength *int                      `json:"min_length,omitempty"`
+	Pattern   *string                   `json:"pattern,omitempty"`
+}
+
+// CustomFieldTextSchemaKind defines model for CustomFieldTextSchema.Kind.
+type CustomFieldTextSchemaKind string
+
+// CustomFieldTextValue defines model for CustomFieldTextValue.
+type CustomFieldTextValue struct {
+	Kind CustomFieldTextValueKind `json:"kind"`
+	Text string                   `json:"text"`
+}
+
+// CustomFieldTextValueKind defines model for CustomFieldTextValue.Kind.
+type CustomFieldTextValueKind string
+
+// CustomFieldURLSchema defines model for CustomFieldURLSchema.
+type CustomFieldURLSchema struct {
+	AllowedSchemes []string                 `json:"allowed_schemes"`
+	Kind           CustomFieldURLSchemaKind `json:"kind"`
+}
+
+// CustomFieldURLSchemaKind defines model for CustomFieldURLSchema.Kind.
+type CustomFieldURLSchemaKind string
+
+// CustomFieldURLValue defines model for CustomFieldURLValue.
+type CustomFieldURLValue struct {
+	Kind CustomFieldURLValueKind `json:"kind"`
+	Url  string                  `json:"url"`
+}
+
+// CustomFieldURLValueKind defines model for CustomFieldURLValue.Kind.
+type CustomFieldURLValueKind string
+
+// CustomFieldUserReferenceSchema defines model for CustomFieldUserReferenceSchema.
+type CustomFieldUserReferenceSchema struct {
+	Kind     CustomFieldUserReferenceSchemaKind `json:"kind"`
+	Multiple *bool                              `json:"multiple,omitempty"`
+}
+
+// CustomFieldUserReferenceSchemaKind defines model for CustomFieldUserReferenceSchema.Kind.
+type CustomFieldUserReferenceSchemaKind string
+
+// CustomFieldUserReferenceValue defines model for CustomFieldUserReferenceValue.
+type CustomFieldUserReferenceValue struct {
+	Kind    CustomFieldUserReferenceValueKind `json:"kind"`
+	UserId  *string                           `json:"user_id,omitempty"`
+	UserIds *[]string                         `json:"user_ids,omitempty"`
+}
+
+// CustomFieldUserReferenceValueKind defines model for CustomFieldUserReferenceValue.Kind.
+type CustomFieldUserReferenceValueKind string
+
+// CustomFieldValue defines model for CustomFieldValue.
+type CustomFieldValue struct {
+	union json.RawMessage
+}
+
+// CustomFieldWrite defines model for CustomFieldWrite.
+type CustomFieldWrite struct {
+	// DefinitionId Example: 9bsv0s46s6s002p9ltq0
+	DefinitionId string           `json:"definition_id"`
+	Value        CustomFieldValue `json:"value"`
+}
 
 // Document A document in an organization or namespace library.
 type Document struct {
@@ -2853,6 +3531,62 @@ type N409 = HTTPError
 // N500 HTTP error description.
 type N500 = HTTPError
 
+// CustomFieldCreate defines model for CustomFieldCreate.
+type CustomFieldCreate struct {
+	Description   *string `json:"description,omitempty"`
+	IndexExact    *bool   `json:"index_exact,omitempty"`
+	IndexFulltext *bool   `json:"index_fulltext,omitempty"`
+	IndexRange    *bool   `json:"index_range,omitempty"`
+
+	// Key Example: story_points
+	Key  string          `json:"key"`
+	Kind CustomFieldKind `json:"kind"`
+
+	// Name Example: Story points
+	Name     string            `json:"name"`
+	Order    *int              `json:"order,omitempty"`
+	Required *bool             `json:"required,omitempty"`
+	Schema   CustomFieldSchema `json:"schema"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId    string       `json:"scope_id"`
+	ScopeType  ResourceType `json:"scope_type"`
+	TargetType ResourceType `json:"target_type"`
+}
+
+// CustomFieldPatch defines model for CustomFieldPatch.
+type CustomFieldPatch struct {
+	Archived      Optional[bool]     `json:"archived,omitempty"`
+	Description   Optional[string]   `json:"description,omitempty"`
+	IndexExact    Optional[bool]     `json:"index_exact,omitempty"`
+	IndexFulltext Optional[bool]     `json:"index_fulltext,omitempty"`
+	IndexRange    Optional[bool]     `json:"index_range,omitempty"`
+	Name          Optional[string]   `json:"name,omitempty"`
+	Order         Optional[int]      `json:"order,omitempty"`
+	Required      Optional[bool]     `json:"required,omitempty"`
+	Schema        *CustomFieldSchema `json:"schema,omitempty"`
+}
+
+// CustomFieldSearch defines model for CustomFieldSearch.
+type CustomFieldSearch struct {
+	Boolean      *bool                  `json:"boolean,omitempty"`
+	Date         *openapi_types.Date    `json:"date,omitempty"`
+	Datetime     *time.Time             `json:"datetime,omitempty"`
+	Decimal      *string                `json:"decimal,omitempty"`
+	DefinitionId string                 `json:"definition_id"`
+	Integer      *int64                 `json:"integer,omitempty"`
+	Limit        *int                   `json:"limit,omitempty"`
+	Op           CustomFieldPredicateOp `json:"op"`
+	OptionKey    *string                `json:"option_key,omitempty"`
+	ResourceId   *string                `json:"resource_id,omitempty"`
+	Text         *string                `json:"text,omitempty"`
+	Url          *string                `json:"url,omitempty"`
+	UserId       *string                `json:"user_id,omitempty"`
+}
+
+// CustomFieldValuePut defines model for CustomFieldValuePut.
+type CustomFieldValuePut = CustomFieldValue
+
 // DocumentCreate defines model for DocumentCreate.
 type DocumentCreate struct {
 	// Content Body of the document.
@@ -2958,6 +3692,9 @@ type GrantCreate struct {
 
 // IssueCreate defines model for IssueCreate.
 type IssueCreate struct {
+	// CustomFields Typed initial custom-field values for the created issue.
+	CustomFields *[]CustomFieldWrite `json:"custom_fields,omitempty"`
+
 	// Description Description of the issue.
 	//
 	// Example: Add OAuth2 password and authorization code flows.
@@ -3488,6 +4225,68 @@ type UserPatch struct {
 	//
 	// Example: test-user
 	Username *string `json:"username,omitempty"`
+}
+
+// V1CustomFieldsGetParams defines parameters for V1CustomFieldsGet.
+type V1CustomFieldsGetParams struct {
+	// ScopeId Organization, namespace, or project ID that owns or inherits definitions.
+	ScopeId         string       `form:"scope_id" json:"scope_id"`
+	ScopeType       ResourceType `form:"scope_type" json:"scope_type"`
+	TargetType      ResourceType `form:"target_type" json:"target_type"`
+	IncludeArchived *bool        `form:"include_archived,omitempty" json:"include_archived,omitempty"`
+}
+
+// V1CustomFieldsCreateJSONBody defines parameters for V1CustomFieldsCreate.
+type V1CustomFieldsCreateJSONBody struct {
+	Description   *string `json:"description,omitempty"`
+	IndexExact    *bool   `json:"index_exact,omitempty"`
+	IndexFulltext *bool   `json:"index_fulltext,omitempty"`
+	IndexRange    *bool   `json:"index_range,omitempty"`
+
+	// Key Example: story_points
+	Key  string          `json:"key"`
+	Kind CustomFieldKind `json:"kind"`
+
+	// Name Example: Story points
+	Name     string            `json:"name"`
+	Order    *int              `json:"order,omitempty"`
+	Required *bool             `json:"required,omitempty"`
+	Schema   CustomFieldSchema `json:"schema"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId    string       `json:"scope_id"`
+	ScopeType  ResourceType `json:"scope_type"`
+	TargetType ResourceType `json:"target_type"`
+}
+
+// V1CustomFieldsSearchJSONBody defines parameters for V1CustomFieldsSearch.
+type V1CustomFieldsSearchJSONBody struct {
+	Boolean      *bool                  `json:"boolean,omitempty"`
+	Date         *openapi_types.Date    `json:"date,omitempty"`
+	Datetime     *time.Time             `json:"datetime,omitempty"`
+	Decimal      *string                `json:"decimal,omitempty"`
+	DefinitionId string                 `json:"definition_id"`
+	Integer      *int64                 `json:"integer,omitempty"`
+	Limit        *int                   `json:"limit,omitempty"`
+	Op           CustomFieldPredicateOp `json:"op"`
+	OptionKey    *string                `json:"option_key,omitempty"`
+	ResourceId   *string                `json:"resource_id,omitempty"`
+	Text         *string                `json:"text,omitempty"`
+	Url          *string                `json:"url,omitempty"`
+	UserId       *string                `json:"user_id,omitempty"`
+}
+
+// V1CustomFieldUpdateJSONBody defines parameters for V1CustomFieldUpdate.
+type V1CustomFieldUpdateJSONBody struct {
+	Archived      Optional[bool]     `json:"archived,omitempty"`
+	Description   Optional[string]   `json:"description,omitempty"`
+	IndexExact    Optional[bool]     `json:"index_exact,omitempty"`
+	IndexFulltext Optional[bool]     `json:"index_fulltext,omitempty"`
+	IndexRange    Optional[bool]     `json:"index_range,omitempty"`
+	Name          Optional[string]   `json:"name,omitempty"`
+	Order         Optional[int]      `json:"order,omitempty"`
+	Required      Optional[bool]     `json:"required,omitempty"`
+	Schema        *CustomFieldSchema `json:"schema,omitempty"`
 }
 
 // V1DocumentUpdateJSONBody defines parameters for V1DocumentUpdate.
@@ -4217,6 +5016,9 @@ type V1ProjectsIssuesGetParamsOrder string
 
 // V1ProjectsIssuesCreateJSONBody defines parameters for V1ProjectsIssuesCreate.
 type V1ProjectsIssuesCreateJSONBody struct {
+	// CustomFields Typed initial custom-field values for the created issue.
+	CustomFields *[]CustomFieldWrite `json:"custom_fields,omitempty"`
+
 	// Description Description of the issue.
 	//
 	// Example: Add OAuth2 password and authorization code flows.
@@ -4538,6 +5340,15 @@ type V1UsersIssuesGetParams struct {
 // V1UsersIssuesGetParamsOrder defines parameters for V1UsersIssuesGet.
 type V1UsersIssuesGetParamsOrder string
 
+// V1CustomFieldsCreateJSONRequestBody defines body for V1CustomFieldsCreate for application/json ContentType.
+type V1CustomFieldsCreateJSONRequestBody V1CustomFieldsCreateJSONBody
+
+// V1CustomFieldsSearchJSONRequestBody defines body for V1CustomFieldsSearch for application/json ContentType.
+type V1CustomFieldsSearchJSONRequestBody V1CustomFieldsSearchJSONBody
+
+// V1CustomFieldUpdateJSONRequestBody defines body for V1CustomFieldUpdate for application/json ContentType.
+type V1CustomFieldUpdateJSONRequestBody V1CustomFieldUpdateJSONBody
+
 // V1DocumentUpdateJSONRequestBody defines body for V1DocumentUpdate for application/json ContentType.
 type V1DocumentUpdateJSONRequestBody V1DocumentUpdateJSONBody
 
@@ -4622,6 +5433,9 @@ type V1ProjectsDocumentsCreateJSONRequestBody V1ProjectsDocumentsCreateJSONBody
 // V1ProjectsIssuesCreateJSONRequestBody defines body for V1ProjectsIssuesCreate for application/json ContentType.
 type V1ProjectsIssuesCreateJSONRequestBody V1ProjectsIssuesCreateJSONBody
 
+// V1ResourceCustomFieldValuePutJSONRequestBody defines body for V1ResourceCustomFieldValuePut for application/json ContentType.
+type V1ResourceCustomFieldValuePutJSONRequestBody = CustomFieldValue
+
 // V1TodosCreateJSONRequestBody defines body for V1TodosCreate for application/json ContentType.
 type V1TodosCreateJSONRequestBody V1TodosCreateJSONBody
 
@@ -4637,8 +5451,765 @@ type V1UserResetPasswordJSONRequestBody V1UserResetPasswordJSONBody
 // V1UserUpdateJSONRequestBody defines body for V1UserUpdate for application/json ContentType.
 type V1UserUpdateJSONRequestBody V1UserUpdateJSONBody
 
+// AsCustomFieldTextSchema returns the union data inside the CustomFieldSchema as a CustomFieldTextSchema
+func (t CustomFieldSchema) AsCustomFieldTextSchema() (CustomFieldTextSchema, error) {
+	var body CustomFieldTextSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldTextSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldTextSchema
+func (t *CustomFieldSchema) FromCustomFieldTextSchema(v CustomFieldTextSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldTextSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldTextSchema
+func (t *CustomFieldSchema) MergeCustomFieldTextSchema(v CustomFieldTextSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldIntegerSchema returns the union data inside the CustomFieldSchema as a CustomFieldIntegerSchema
+func (t CustomFieldSchema) AsCustomFieldIntegerSchema() (CustomFieldIntegerSchema, error) {
+	var body CustomFieldIntegerSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldIntegerSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldIntegerSchema
+func (t *CustomFieldSchema) FromCustomFieldIntegerSchema(v CustomFieldIntegerSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldIntegerSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldIntegerSchema
+func (t *CustomFieldSchema) MergeCustomFieldIntegerSchema(v CustomFieldIntegerSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDecimalSchema returns the union data inside the CustomFieldSchema as a CustomFieldDecimalSchema
+func (t CustomFieldSchema) AsCustomFieldDecimalSchema() (CustomFieldDecimalSchema, error) {
+	var body CustomFieldDecimalSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDecimalSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldDecimalSchema
+func (t *CustomFieldSchema) FromCustomFieldDecimalSchema(v CustomFieldDecimalSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDecimalSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldDecimalSchema
+func (t *CustomFieldSchema) MergeCustomFieldDecimalSchema(v CustomFieldDecimalSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldBooleanSchema returns the union data inside the CustomFieldSchema as a CustomFieldBooleanSchema
+func (t CustomFieldSchema) AsCustomFieldBooleanSchema() (CustomFieldBooleanSchema, error) {
+	var body CustomFieldBooleanSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldBooleanSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldBooleanSchema
+func (t *CustomFieldSchema) FromCustomFieldBooleanSchema(v CustomFieldBooleanSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldBooleanSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldBooleanSchema
+func (t *CustomFieldSchema) MergeCustomFieldBooleanSchema(v CustomFieldBooleanSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDateSchema returns the union data inside the CustomFieldSchema as a CustomFieldDateSchema
+func (t CustomFieldSchema) AsCustomFieldDateSchema() (CustomFieldDateSchema, error) {
+	var body CustomFieldDateSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDateSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldDateSchema
+func (t *CustomFieldSchema) FromCustomFieldDateSchema(v CustomFieldDateSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDateSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldDateSchema
+func (t *CustomFieldSchema) MergeCustomFieldDateSchema(v CustomFieldDateSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDateTimeSchema returns the union data inside the CustomFieldSchema as a CustomFieldDateTimeSchema
+func (t CustomFieldSchema) AsCustomFieldDateTimeSchema() (CustomFieldDateTimeSchema, error) {
+	var body CustomFieldDateTimeSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDateTimeSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldDateTimeSchema
+func (t *CustomFieldSchema) FromCustomFieldDateTimeSchema(v CustomFieldDateTimeSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDateTimeSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldDateTimeSchema
+func (t *CustomFieldSchema) MergeCustomFieldDateTimeSchema(v CustomFieldDateTimeSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldURLSchema returns the union data inside the CustomFieldSchema as a CustomFieldURLSchema
+func (t CustomFieldSchema) AsCustomFieldURLSchema() (CustomFieldURLSchema, error) {
+	var body CustomFieldURLSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldURLSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldURLSchema
+func (t *CustomFieldSchema) FromCustomFieldURLSchema(v CustomFieldURLSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldURLSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldURLSchema
+func (t *CustomFieldSchema) MergeCustomFieldURLSchema(v CustomFieldURLSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldSelectSchema returns the union data inside the CustomFieldSchema as a CustomFieldSelectSchema
+func (t CustomFieldSchema) AsCustomFieldSelectSchema() (CustomFieldSelectSchema, error) {
+	var body CustomFieldSelectSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldSelectSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldSelectSchema
+func (t *CustomFieldSchema) FromCustomFieldSelectSchema(v CustomFieldSelectSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldSelectSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldSelectSchema
+func (t *CustomFieldSchema) MergeCustomFieldSelectSchema(v CustomFieldSelectSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldUserReferenceSchema returns the union data inside the CustomFieldSchema as a CustomFieldUserReferenceSchema
+func (t CustomFieldSchema) AsCustomFieldUserReferenceSchema() (CustomFieldUserReferenceSchema, error) {
+	var body CustomFieldUserReferenceSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldUserReferenceSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldUserReferenceSchema
+func (t *CustomFieldSchema) FromCustomFieldUserReferenceSchema(v CustomFieldUserReferenceSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldUserReferenceSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldUserReferenceSchema
+func (t *CustomFieldSchema) MergeCustomFieldUserReferenceSchema(v CustomFieldUserReferenceSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldResourceReferenceSchema returns the union data inside the CustomFieldSchema as a CustomFieldResourceReferenceSchema
+func (t CustomFieldSchema) AsCustomFieldResourceReferenceSchema() (CustomFieldResourceReferenceSchema, error) {
+	var body CustomFieldResourceReferenceSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldResourceReferenceSchema overwrites any union data inside the CustomFieldSchema as the provided CustomFieldResourceReferenceSchema
+func (t *CustomFieldSchema) FromCustomFieldResourceReferenceSchema(v CustomFieldResourceReferenceSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldResourceReferenceSchema performs a merge with any union data inside the CustomFieldSchema, using the provided CustomFieldResourceReferenceSchema
+func (t *CustomFieldSchema) MergeCustomFieldResourceReferenceSchema(v CustomFieldResourceReferenceSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CustomFieldSchema) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t CustomFieldSchema) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "boolean":
+		return t.AsCustomFieldBooleanSchema()
+	case "date":
+		return t.AsCustomFieldDateSchema()
+	case "datetime":
+		return t.AsCustomFieldDateTimeSchema()
+	case "decimal":
+		return t.AsCustomFieldDecimalSchema()
+	case "integer":
+		return t.AsCustomFieldIntegerSchema()
+	case "multi_select":
+		return t.AsCustomFieldSelectSchema()
+	case "resource_reference":
+		return t.AsCustomFieldResourceReferenceSchema()
+	case "single_select":
+		return t.AsCustomFieldSelectSchema()
+	case "text":
+		return t.AsCustomFieldTextSchema()
+	case "url":
+		return t.AsCustomFieldURLSchema()
+	case "user_reference":
+		return t.AsCustomFieldUserReferenceSchema()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t CustomFieldSchema) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CustomFieldSchema) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCustomFieldTextValue returns the union data inside the CustomFieldValue as a CustomFieldTextValue
+func (t CustomFieldValue) AsCustomFieldTextValue() (CustomFieldTextValue, error) {
+	var body CustomFieldTextValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldTextValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldTextValue
+func (t *CustomFieldValue) FromCustomFieldTextValue(v CustomFieldTextValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"text"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldTextValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldTextValue
+func (t *CustomFieldValue) MergeCustomFieldTextValue(v CustomFieldTextValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"text"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldIntegerValue returns the union data inside the CustomFieldValue as a CustomFieldIntegerValue
+func (t CustomFieldValue) AsCustomFieldIntegerValue() (CustomFieldIntegerValue, error) {
+	var body CustomFieldIntegerValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldIntegerValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldIntegerValue
+func (t *CustomFieldValue) FromCustomFieldIntegerValue(v CustomFieldIntegerValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"integer"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldIntegerValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldIntegerValue
+func (t *CustomFieldValue) MergeCustomFieldIntegerValue(v CustomFieldIntegerValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"integer"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDecimalValue returns the union data inside the CustomFieldValue as a CustomFieldDecimalValue
+func (t CustomFieldValue) AsCustomFieldDecimalValue() (CustomFieldDecimalValue, error) {
+	var body CustomFieldDecimalValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDecimalValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldDecimalValue
+func (t *CustomFieldValue) FromCustomFieldDecimalValue(v CustomFieldDecimalValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"decimal"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDecimalValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldDecimalValue
+func (t *CustomFieldValue) MergeCustomFieldDecimalValue(v CustomFieldDecimalValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"decimal"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldBooleanValue returns the union data inside the CustomFieldValue as a CustomFieldBooleanValue
+func (t CustomFieldValue) AsCustomFieldBooleanValue() (CustomFieldBooleanValue, error) {
+	var body CustomFieldBooleanValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldBooleanValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldBooleanValue
+func (t *CustomFieldValue) FromCustomFieldBooleanValue(v CustomFieldBooleanValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"boolean"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldBooleanValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldBooleanValue
+func (t *CustomFieldValue) MergeCustomFieldBooleanValue(v CustomFieldBooleanValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"boolean"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDateValue returns the union data inside the CustomFieldValue as a CustomFieldDateValue
+func (t CustomFieldValue) AsCustomFieldDateValue() (CustomFieldDateValue, error) {
+	var body CustomFieldDateValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDateValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldDateValue
+func (t *CustomFieldValue) FromCustomFieldDateValue(v CustomFieldDateValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"date"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDateValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldDateValue
+func (t *CustomFieldValue) MergeCustomFieldDateValue(v CustomFieldDateValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"date"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldDateTimeValue returns the union data inside the CustomFieldValue as a CustomFieldDateTimeValue
+func (t CustomFieldValue) AsCustomFieldDateTimeValue() (CustomFieldDateTimeValue, error) {
+	var body CustomFieldDateTimeValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldDateTimeValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldDateTimeValue
+func (t *CustomFieldValue) FromCustomFieldDateTimeValue(v CustomFieldDateTimeValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"datetime"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldDateTimeValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldDateTimeValue
+func (t *CustomFieldValue) MergeCustomFieldDateTimeValue(v CustomFieldDateTimeValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"datetime"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldURLValue returns the union data inside the CustomFieldValue as a CustomFieldURLValue
+func (t CustomFieldValue) AsCustomFieldURLValue() (CustomFieldURLValue, error) {
+	var body CustomFieldURLValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldURLValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldURLValue
+func (t *CustomFieldValue) FromCustomFieldURLValue(v CustomFieldURLValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"url"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldURLValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldURLValue
+func (t *CustomFieldValue) MergeCustomFieldURLValue(v CustomFieldURLValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"url"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldSingleSelectValue returns the union data inside the CustomFieldValue as a CustomFieldSingleSelectValue
+func (t CustomFieldValue) AsCustomFieldSingleSelectValue() (CustomFieldSingleSelectValue, error) {
+	var body CustomFieldSingleSelectValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldSingleSelectValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldSingleSelectValue
+func (t *CustomFieldValue) FromCustomFieldSingleSelectValue(v CustomFieldSingleSelectValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"single_select"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldSingleSelectValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldSingleSelectValue
+func (t *CustomFieldValue) MergeCustomFieldSingleSelectValue(v CustomFieldSingleSelectValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"single_select"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldMultiSelectValue returns the union data inside the CustomFieldValue as a CustomFieldMultiSelectValue
+func (t CustomFieldValue) AsCustomFieldMultiSelectValue() (CustomFieldMultiSelectValue, error) {
+	var body CustomFieldMultiSelectValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldMultiSelectValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldMultiSelectValue
+func (t *CustomFieldValue) FromCustomFieldMultiSelectValue(v CustomFieldMultiSelectValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"multi_select"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldMultiSelectValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldMultiSelectValue
+func (t *CustomFieldValue) MergeCustomFieldMultiSelectValue(v CustomFieldMultiSelectValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"multi_select"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldUserReferenceValue returns the union data inside the CustomFieldValue as a CustomFieldUserReferenceValue
+func (t CustomFieldValue) AsCustomFieldUserReferenceValue() (CustomFieldUserReferenceValue, error) {
+	var body CustomFieldUserReferenceValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldUserReferenceValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldUserReferenceValue
+func (t *CustomFieldValue) FromCustomFieldUserReferenceValue(v CustomFieldUserReferenceValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"user_reference"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldUserReferenceValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldUserReferenceValue
+func (t *CustomFieldValue) MergeCustomFieldUserReferenceValue(v CustomFieldUserReferenceValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"user_reference"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomFieldResourceReferenceValue returns the union data inside the CustomFieldValue as a CustomFieldResourceReferenceValue
+func (t CustomFieldValue) AsCustomFieldResourceReferenceValue() (CustomFieldResourceReferenceValue, error) {
+	var body CustomFieldResourceReferenceValue
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomFieldResourceReferenceValue overwrites any union data inside the CustomFieldValue as the provided CustomFieldResourceReferenceValue
+func (t *CustomFieldValue) FromCustomFieldResourceReferenceValue(v CustomFieldResourceReferenceValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"resource_reference"}`))
+	t.union = b
+	return err
+}
+
+// MergeCustomFieldResourceReferenceValue performs a merge with any union data inside the CustomFieldValue, using the provided CustomFieldResourceReferenceValue
+func (t *CustomFieldValue) MergeCustomFieldResourceReferenceValue(v CustomFieldResourceReferenceValue) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"kind":"resource_reference"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CustomFieldValue) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"kind"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t CustomFieldValue) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "boolean":
+		return t.AsCustomFieldBooleanValue()
+	case "date":
+		return t.AsCustomFieldDateValue()
+	case "datetime":
+		return t.AsCustomFieldDateTimeValue()
+	case "decimal":
+		return t.AsCustomFieldDecimalValue()
+	case "integer":
+		return t.AsCustomFieldIntegerValue()
+	case "multi_select":
+		return t.AsCustomFieldMultiSelectValue()
+	case "resource_reference":
+		return t.AsCustomFieldResourceReferenceValue()
+	case "single_select":
+		return t.AsCustomFieldSingleSelectValue()
+	case "text":
+		return t.AsCustomFieldTextValue()
+	case "url":
+		return t.AsCustomFieldURLValue()
+	case "user_reference":
+		return t.AsCustomFieldUserReferenceValue()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t CustomFieldValue) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CustomFieldValue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// V1CustomFieldsGet List custom field definitions
+	// (GET /v1/custom-fields)
+	V1CustomFieldsGet(w http.ResponseWriter, r *http.Request, params V1CustomFieldsGetParams)
+	// V1CustomFieldsCreate Create custom field definition
+	// (POST /v1/custom-fields)
+	V1CustomFieldsCreate(w http.ResponseWriter, r *http.Request)
+	// V1CustomFieldsSearch Search resources by custom field
+	// (POST /v1/custom-fields/search)
+	V1CustomFieldsSearch(w http.ResponseWriter, r *http.Request)
+	// V1CustomFieldDelete Delete custom field definition
+	// (DELETE /v1/custom-fields/{id})
+	V1CustomFieldDelete(w http.ResponseWriter, r *http.Request, id Id)
+	// V1CustomFieldGet Get custom field definition
+	// (GET /v1/custom-fields/{id})
+	V1CustomFieldGet(w http.ResponseWriter, r *http.Request, id Id)
+	// V1CustomFieldUpdate Update custom field definition
+	// (PATCH /v1/custom-fields/{id})
+	V1CustomFieldUpdate(w http.ResponseWriter, r *http.Request, id Id)
+	// V1CustomFieldArchive Archive custom field definition
+	// (POST /v1/custom-fields/{id}/archive)
+	V1CustomFieldArchive(w http.ResponseWriter, r *http.Request, id Id)
 	// V1DocumentDelete Delete document
 	// (DELETE /v1/documents/{id})
 	V1DocumentDelete(w http.ResponseWriter, r *http.Request, id Id)
@@ -4873,6 +6444,15 @@ type ServerInterface interface {
 	// V1ProjectsIssuesCreate Create issue in project
 	// (POST /v1/projects/{projectId}/issues)
 	V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Request, projectId ProjectId)
+	// V1ResourceCustomFieldsGet List effective custom fields
+	// (GET /v1/resources/{resourceType}/{id}/custom-fields)
+	V1ResourceCustomFieldsGet(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id)
+	// V1ResourceCustomFieldValueDelete Clear custom field value
+	// (DELETE /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+	V1ResourceCustomFieldValueDelete(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string)
+	// V1ResourceCustomFieldValuePut Set custom field value
+	// (PUT /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+	V1ResourceCustomFieldValuePut(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string)
 	// V1SearchGet Search resources
 	// (GET /v1/search)
 	V1SearchGet(w http.ResponseWriter, r *http.Request, params V1SearchGetParams)
@@ -4932,6 +6512,48 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// V1CustomFieldsGet List custom field definitions
+// (GET /v1/custom-fields)
+func (_ Unimplemented) V1CustomFieldsGet(w http.ResponseWriter, r *http.Request, params V1CustomFieldsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldsCreate Create custom field definition
+// (POST /v1/custom-fields)
+func (_ Unimplemented) V1CustomFieldsCreate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldsSearch Search resources by custom field
+// (POST /v1/custom-fields/search)
+func (_ Unimplemented) V1CustomFieldsSearch(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldDelete Delete custom field definition
+// (DELETE /v1/custom-fields/{id})
+func (_ Unimplemented) V1CustomFieldDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldGet Get custom field definition
+// (GET /v1/custom-fields/{id})
+func (_ Unimplemented) V1CustomFieldGet(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldUpdate Update custom field definition
+// (PATCH /v1/custom-fields/{id})
+func (_ Unimplemented) V1CustomFieldUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1CustomFieldArchive Archive custom field definition
+// (POST /v1/custom-fields/{id}/archive)
+func (_ Unimplemented) V1CustomFieldArchive(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // V1DocumentDelete Delete document
 // (DELETE /v1/documents/{id})
@@ -5401,6 +7023,24 @@ func (_ Unimplemented) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// V1ResourceCustomFieldsGet List effective custom fields
+// (GET /v1/resources/{resourceType}/{id}/custom-fields)
+func (_ Unimplemented) V1ResourceCustomFieldsGet(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1ResourceCustomFieldValueDelete Clear custom field value
+// (DELETE /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+func (_ Unimplemented) V1ResourceCustomFieldValueDelete(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1ResourceCustomFieldValuePut Set custom field value
+// (PUT /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+func (_ Unimplemented) V1ResourceCustomFieldValuePut(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // V1SearchGet Search resources
 // (GET /v1/search)
 func (_ Unimplemented) V1SearchGet(w http.ResponseWriter, r *http.Request, params V1SearchGetParams) {
@@ -5517,6 +7157,210 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// V1CustomFieldsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1CustomFieldsGetParams
+
+	// ------------- Required query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "target_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "target_type", r.URL.Query(), &params.TargetType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_archived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_archived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_archived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_archived", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldsGet(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldsCreate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldsCreate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldsSearch operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldsSearch(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldsSearch(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldDelete(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldGet operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldGet(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldUpdate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1CustomFieldArchive operation middleware
+func (siw *ServerInterfaceWrapper) V1CustomFieldArchive(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1CustomFieldArchive(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // V1DocumentDelete operation middleware
 func (siw *ServerInterfaceWrapper) V1DocumentDelete(w http.ResponseWriter, r *http.Request) {
@@ -8523,6 +10367,129 @@ func (siw *ServerInterfaceWrapper) V1ProjectsIssuesCreate(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// V1ResourceCustomFieldsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1ResourceCustomFieldsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "resourceType" -------------
+	var resourceType ResourceType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceType", chi.URLParam(r, "resourceType"), &resourceType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resourceType", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ResourceCustomFieldsGet(w, r, resourceType, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1ResourceCustomFieldValueDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1ResourceCustomFieldValueDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "resourceType" -------------
+	var resourceType ResourceType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceType", chi.URLParam(r, "resourceType"), &resourceType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resourceType", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ResourceCustomFieldValueDelete(w, r, resourceType, id, definitionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1ResourceCustomFieldValuePut operation middleware
+func (siw *ServerInterfaceWrapper) V1ResourceCustomFieldValuePut(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "resourceType" -------------
+	var resourceType ResourceType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceType", chi.URLParam(r, "resourceType"), &resourceType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resourceType", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1ResourceCustomFieldValuePut(w, r, resourceType, id, definitionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // V1SearchGet operation middleware
 func (siw *ServerInterfaceWrapper) V1SearchGet(w http.ResponseWriter, r *http.Request) {
 
@@ -9539,6 +11506,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/v1/search", wrapper.V1SearchGet)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/custom-fields", wrapper.V1CustomFieldsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/custom-fields", wrapper.V1CustomFieldsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/custom-fields/search", wrapper.V1CustomFieldsSearch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/custom-fields/{id}", wrapper.V1CustomFieldDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/custom-fields/{id}", wrapper.V1CustomFieldGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/custom-fields/{id}", wrapper.V1CustomFieldUpdate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/custom-fields/{id}/archive", wrapper.V1CustomFieldArchive)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/resources/{resourceType}/{id}/custom-fields", wrapper.V1ResourceCustomFieldsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}", wrapper.V1ResourceCustomFieldValueDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}", wrapper.V1ResourceCustomFieldValuePut)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/system/health", wrapper.V1SystemHealth)
 	})
 	r.Group(func(r chi.Router) {
@@ -9570,6 +11567,645 @@ type N404JSONResponse HTTPError
 type N409JSONResponse HTTPError
 
 type N500JSONResponse HTTPError
+
+type V1CustomFieldsGetRequestObject struct {
+	Params V1CustomFieldsGetParams
+}
+
+type V1CustomFieldsGetResponseObject interface {
+	VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldsGet200JSONResponse []CustomFieldDefinition
+
+func (response V1CustomFieldsGet200JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldsGet400JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldsGet401JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldsGet403JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldsGet404JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldsGet500JSONResponse) VisitV1CustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreateRequestObject struct {
+	Body *V1CustomFieldsCreateJSONRequestBody
+}
+
+type V1CustomFieldsCreateResponseObject interface {
+	VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldsCreate201JSONResponse CustomFieldDefinition
+
+func (response V1CustomFieldsCreate201JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldsCreate400JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldsCreate401JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldsCreate403JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1CustomFieldsCreate409JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldsCreate500JSONResponse) VisitV1CustomFieldsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearchRequestObject struct {
+	Body *V1CustomFieldsSearchJSONRequestBody
+}
+
+type V1CustomFieldsSearchResponseObject interface {
+	VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldsSearch200JSONResponse CustomFieldSearchResult
+
+func (response V1CustomFieldsSearch200JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearch400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldsSearch400JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearch401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldsSearch401JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearch403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldsSearch403JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearch404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldsSearch404JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldsSearch500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldsSearch500JSONResponse) VisitV1CustomFieldsSearchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldDeleteRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1CustomFieldDeleteResponseObject interface {
+	VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldDelete204Response struct {
+}
+
+func (response V1CustomFieldDelete204Response) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1CustomFieldDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldDelete400JSONResponse) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldDelete401JSONResponse) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldDelete403JSONResponse) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldDelete404JSONResponse) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldDelete500JSONResponse) VisitV1CustomFieldDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGetRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1CustomFieldGetResponseObject interface {
+	VisitV1CustomFieldGetResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldGet200JSONResponse CustomFieldDefinition
+
+func (response V1CustomFieldGet200JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldGet400JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldGet401JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldGet403JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldGet404JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldGet500JSONResponse) VisitV1CustomFieldGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdateRequestObject struct {
+	Id   Id `json:"id"`
+	Body *V1CustomFieldUpdateJSONRequestBody
+}
+
+type V1CustomFieldUpdateResponseObject interface {
+	VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldUpdate200JSONResponse CustomFieldDefinition
+
+func (response V1CustomFieldUpdate200JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldUpdate400JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldUpdate401JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldUpdate403JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldUpdate404JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldUpdate500JSONResponse) VisitV1CustomFieldUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchiveRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type V1CustomFieldArchiveResponseObject interface {
+	VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error
+}
+
+type V1CustomFieldArchive200JSONResponse CustomFieldDefinition
+
+func (response V1CustomFieldArchive200JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchive400JSONResponse struct{ N400JSONResponse }
+
+func (response V1CustomFieldArchive400JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchive401JSONResponse struct{ N401JSONResponse }
+
+func (response V1CustomFieldArchive401JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchive403JSONResponse struct{ N403JSONResponse }
+
+func (response V1CustomFieldArchive403JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchive404JSONResponse struct{ N404JSONResponse }
+
+func (response V1CustomFieldArchive404JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1CustomFieldArchive500JSONResponse struct{ N500JSONResponse }
+
+func (response V1CustomFieldArchive500JSONResponse) VisitV1CustomFieldArchiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type V1DocumentDeleteRequestObject struct {
 	Id Id `json:"id"`
@@ -16631,6 +19267,276 @@ func (response V1ProjectsIssuesCreate500JSONResponse) VisitV1ProjectsIssuesCreat
 	return err
 }
 
+type V1ResourceCustomFieldsGetRequestObject struct {
+	ResourceType ResourceType `json:"resourceType"`
+	Id           Id           `json:"id"`
+}
+
+type V1ResourceCustomFieldsGetResponseObject interface {
+	VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error
+}
+
+type V1ResourceCustomFieldsGet200JSONResponse []CustomFieldEntry
+
+func (response V1ResourceCustomFieldsGet200JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ResourceCustomFieldsGet400JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ResourceCustomFieldsGet401JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ResourceCustomFieldsGet403JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ResourceCustomFieldsGet404JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ResourceCustomFieldsGet500JSONResponse) VisitV1ResourceCustomFieldsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValueDeleteRequestObject struct {
+	ResourceType ResourceType `json:"resourceType"`
+	Id           Id           `json:"id"`
+	DefinitionId string       `json:"definitionId"`
+}
+
+type V1ResourceCustomFieldValueDeleteResponseObject interface {
+	VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1ResourceCustomFieldValueDelete204Response struct {
+}
+
+func (response V1ResourceCustomFieldValueDelete204Response) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1ResourceCustomFieldValueDelete400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ResourceCustomFieldValueDelete400JSONResponse) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValueDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ResourceCustomFieldValueDelete401JSONResponse) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValueDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ResourceCustomFieldValueDelete403JSONResponse) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValueDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ResourceCustomFieldValueDelete404JSONResponse) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValueDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ResourceCustomFieldValueDelete500JSONResponse) VisitV1ResourceCustomFieldValueDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValuePutRequestObject struct {
+	ResourceType ResourceType `json:"resourceType"`
+	Id           Id           `json:"id"`
+	DefinitionId string       `json:"definitionId"`
+	Body         *V1ResourceCustomFieldValuePutJSONRequestBody
+}
+
+type V1ResourceCustomFieldValuePutResponseObject interface {
+	VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error
+}
+
+type V1ResourceCustomFieldValuePut204Response struct {
+}
+
+func (response V1ResourceCustomFieldValuePut204Response) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1ResourceCustomFieldValuePut400JSONResponse struct{ N400JSONResponse }
+
+func (response V1ResourceCustomFieldValuePut400JSONResponse) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValuePut401JSONResponse struct{ N401JSONResponse }
+
+func (response V1ResourceCustomFieldValuePut401JSONResponse) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValuePut403JSONResponse struct{ N403JSONResponse }
+
+func (response V1ResourceCustomFieldValuePut403JSONResponse) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValuePut404JSONResponse struct{ N404JSONResponse }
+
+func (response V1ResourceCustomFieldValuePut404JSONResponse) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1ResourceCustomFieldValuePut500JSONResponse struct{ N500JSONResponse }
+
+func (response V1ResourceCustomFieldValuePut500JSONResponse) VisitV1ResourceCustomFieldValuePutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type V1SearchGetRequestObject struct {
 	Params V1SearchGetParams
 }
@@ -17934,6 +20840,27 @@ func (response V1UsersIssuesGet500JSONResponse) VisitV1UsersIssuesGetResponse(w 
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// V1CustomFieldsGet List custom field definitions
+	// (GET /v1/custom-fields)
+	V1CustomFieldsGet(ctx context.Context, request V1CustomFieldsGetRequestObject) (V1CustomFieldsGetResponseObject, error)
+	// V1CustomFieldsCreate Create custom field definition
+	// (POST /v1/custom-fields)
+	V1CustomFieldsCreate(ctx context.Context, request V1CustomFieldsCreateRequestObject) (V1CustomFieldsCreateResponseObject, error)
+	// V1CustomFieldsSearch Search resources by custom field
+	// (POST /v1/custom-fields/search)
+	V1CustomFieldsSearch(ctx context.Context, request V1CustomFieldsSearchRequestObject) (V1CustomFieldsSearchResponseObject, error)
+	// V1CustomFieldDelete Delete custom field definition
+	// (DELETE /v1/custom-fields/{id})
+	V1CustomFieldDelete(ctx context.Context, request V1CustomFieldDeleteRequestObject) (V1CustomFieldDeleteResponseObject, error)
+	// V1CustomFieldGet Get custom field definition
+	// (GET /v1/custom-fields/{id})
+	V1CustomFieldGet(ctx context.Context, request V1CustomFieldGetRequestObject) (V1CustomFieldGetResponseObject, error)
+	// V1CustomFieldUpdate Update custom field definition
+	// (PATCH /v1/custom-fields/{id})
+	V1CustomFieldUpdate(ctx context.Context, request V1CustomFieldUpdateRequestObject) (V1CustomFieldUpdateResponseObject, error)
+	// V1CustomFieldArchive Archive custom field definition
+	// (POST /v1/custom-fields/{id}/archive)
+	V1CustomFieldArchive(ctx context.Context, request V1CustomFieldArchiveRequestObject) (V1CustomFieldArchiveResponseObject, error)
 	// V1DocumentDelete Delete document
 	// (DELETE /v1/documents/{id})
 	V1DocumentDelete(ctx context.Context, request V1DocumentDeleteRequestObject) (V1DocumentDeleteResponseObject, error)
@@ -18168,6 +21095,15 @@ type StrictServerInterface interface {
 	// V1ProjectsIssuesCreate Create issue in project
 	// (POST /v1/projects/{projectId}/issues)
 	V1ProjectsIssuesCreate(ctx context.Context, request V1ProjectsIssuesCreateRequestObject) (V1ProjectsIssuesCreateResponseObject, error)
+	// V1ResourceCustomFieldsGet List effective custom fields
+	// (GET /v1/resources/{resourceType}/{id}/custom-fields)
+	V1ResourceCustomFieldsGet(ctx context.Context, request V1ResourceCustomFieldsGetRequestObject) (V1ResourceCustomFieldsGetResponseObject, error)
+	// V1ResourceCustomFieldValueDelete Clear custom field value
+	// (DELETE /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+	V1ResourceCustomFieldValueDelete(ctx context.Context, request V1ResourceCustomFieldValueDeleteRequestObject) (V1ResourceCustomFieldValueDeleteResponseObject, error)
+	// V1ResourceCustomFieldValuePut Set custom field value
+	// (PUT /v1/resources/{resourceType}/{id}/custom-fields/{definitionId})
+	V1ResourceCustomFieldValuePut(ctx context.Context, request V1ResourceCustomFieldValuePutRequestObject) (V1ResourceCustomFieldValuePutResponseObject, error)
 	// V1SearchGet Search resources
 	// (GET /v1/search)
 	V1SearchGet(ctx context.Context, request V1SearchGetRequestObject) (V1SearchGetResponseObject, error)
@@ -18261,6 +21197,214 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// V1CustomFieldsGet operation middleware
+func (sh *strictHandler) V1CustomFieldsGet(w http.ResponseWriter, r *http.Request, params V1CustomFieldsGetParams) {
+	var request V1CustomFieldsGetRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldsGet(ctx, request.(V1CustomFieldsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldsGetResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldsCreate operation middleware
+func (sh *strictHandler) V1CustomFieldsCreate(w http.ResponseWriter, r *http.Request) {
+	var request V1CustomFieldsCreateRequestObject
+
+	var body V1CustomFieldsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldsCreate(ctx, request.(V1CustomFieldsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldsCreateResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldsSearch operation middleware
+func (sh *strictHandler) V1CustomFieldsSearch(w http.ResponseWriter, r *http.Request) {
+	var request V1CustomFieldsSearchRequestObject
+
+	var body V1CustomFieldsSearchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldsSearch(ctx, request.(V1CustomFieldsSearchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldsSearch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldsSearchResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldsSearchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldDelete operation middleware
+func (sh *strictHandler) V1CustomFieldDelete(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1CustomFieldDeleteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldDelete(ctx, request.(V1CustomFieldDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldDeleteResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldGet operation middleware
+func (sh *strictHandler) V1CustomFieldGet(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1CustomFieldGetRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldGet(ctx, request.(V1CustomFieldGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldGetResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldUpdate operation middleware
+func (sh *strictHandler) V1CustomFieldUpdate(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1CustomFieldUpdateRequestObject
+
+	request.Id = id
+
+	var body V1CustomFieldUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldUpdate(ctx, request.(V1CustomFieldUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldUpdateResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1CustomFieldArchive operation middleware
+func (sh *strictHandler) V1CustomFieldArchive(w http.ResponseWriter, r *http.Request, id Id) {
+	var request V1CustomFieldArchiveRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1CustomFieldArchive(ctx, request.(V1CustomFieldArchiveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1CustomFieldArchive")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1CustomFieldArchiveResponseObject); ok {
+		if err := validResponse.VisitV1CustomFieldArchiveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // V1DocumentDelete operation middleware
@@ -20615,6 +23759,99 @@ func (sh *strictHandler) V1ProjectsIssuesCreate(w http.ResponseWriter, r *http.R
 	}
 }
 
+// V1ResourceCustomFieldsGet operation middleware
+func (sh *strictHandler) V1ResourceCustomFieldsGet(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id) {
+	var request V1ResourceCustomFieldsGetRequestObject
+
+	request.ResourceType = resourceType
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ResourceCustomFieldsGet(ctx, request.(V1ResourceCustomFieldsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ResourceCustomFieldsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ResourceCustomFieldsGetResponseObject); ok {
+		if err := validResponse.VisitV1ResourceCustomFieldsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1ResourceCustomFieldValueDelete operation middleware
+func (sh *strictHandler) V1ResourceCustomFieldValueDelete(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string) {
+	var request V1ResourceCustomFieldValueDeleteRequestObject
+
+	request.ResourceType = resourceType
+	request.Id = id
+	request.DefinitionId = definitionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ResourceCustomFieldValueDelete(ctx, request.(V1ResourceCustomFieldValueDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ResourceCustomFieldValueDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ResourceCustomFieldValueDeleteResponseObject); ok {
+		if err := validResponse.VisitV1ResourceCustomFieldValueDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1ResourceCustomFieldValuePut operation middleware
+func (sh *strictHandler) V1ResourceCustomFieldValuePut(w http.ResponseWriter, r *http.Request, resourceType ResourceType, id Id, definitionId string) {
+	var request V1ResourceCustomFieldValuePutRequestObject
+
+	request.ResourceType = resourceType
+	request.Id = id
+	request.DefinitionId = definitionId
+
+	var body V1ResourceCustomFieldValuePutJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1ResourceCustomFieldValuePut(ctx, request.(V1ResourceCustomFieldValuePutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1ResourceCustomFieldValuePut")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1ResourceCustomFieldValuePutResponseObject); ok {
+		if err := validResponse.VisitV1ResourceCustomFieldValuePutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1SearchGet operation middleware
 func (sh *strictHandler) V1SearchGet(w http.ResponseWriter, r *http.Request, params V1SearchGetParams) {
 	var request V1SearchGetRequestObject
@@ -21126,286 +24363,334 @@ func (sh *strictHandler) V1UsersIssuesGet(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"/x8A",
+	"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",
+	"K3Vd8WvBKToqxRmq5B17d3H3fwcA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

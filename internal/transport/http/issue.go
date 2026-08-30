@@ -591,6 +591,14 @@ func createIssueJSONRequestBodyToCreateIssueOpts(body *api.V1ProjectsIssuesCreat
 		opts.StartDate = body.StartDate
 	}
 
+	if body.CustomFields != nil {
+		writes, err := customFieldWritesFromAPI(*body.CustomFields)
+		if err != nil {
+			return service.CreateIssueOpts{}, err
+		}
+		opts.CustomFields = writes
+	}
+
 	return opts, nil
 }
 

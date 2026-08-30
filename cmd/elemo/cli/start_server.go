@@ -420,6 +420,19 @@ var startServerCmd = &cobra.Command{
 			}
 		}
 
+		var customFieldRepo repository.CustomFieldRepository
+		{
+			repo, err := repository.NewCustomFieldRepository(
+				repository.WithPGDatabase(relDB),
+				repository.WithPGRepositoryLogger(logger.Named("custom_field_repository")),
+				repository.WithPGRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize custom field repository", slog.Any("error", err))
+			}
+			customFieldRepo = repo
+		}
+
 		var staticFileRepo repository.StaticFileRepository
 		{
 			repo, err := repository.NewStaticFileRepository(
@@ -473,6 +486,17 @@ var startServerCmd = &cobra.Command{
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize license service", slog.Any("error", err))
+		}
+
+		customFieldService, err := service.NewCustomFieldService(
+			customFieldRepo,
+			permissionService,
+			licenseService,
+			service.WithLogger(logger.Named("custom_field_service")),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize custom field service", slog.Any("error", err))
 		}
 
 		systemService, err := service.NewSystemService(
@@ -590,6 +614,7 @@ var startServerCmd = &cobra.Command{
 			permissionService,
 			licenseService,
 			searchService,
+			customFieldService,
 			service.WithLogger(logger.Named("issue_service")),
 			service.WithTracer(tracer),
 		)
@@ -671,6 +696,7 @@ var startServerCmd = &cobra.Command{
 				PermissionService:   permissionService,
 				NotificationService: notificationService,
 				SearchService:       searchService,
+				CustomFieldService:  customFieldService,
 			},
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithLogger(logger.Named("http_server")),
@@ -685,8 +711,14 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize system license expiry task", slog.Any("error", err))
 		}
 
+		customFieldReconcileTask, err := queue.NewCustomFieldReconcileTask()
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize custom field reconcile task", slog.Any("error", err))
+		}
+
 		taskScheduler, err := queue.NewScheduler(
 			queue.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
+			queue.WithSchedulerTask("@every 1m", customFieldReconcileTask),
 			queue.WithSchedulerConfig(&cfg.Worker),
 			queue.WithSchedulerLogger(logger.Named("task_scheduler")),
 			queue.WithSchedulerTracer(tracer),

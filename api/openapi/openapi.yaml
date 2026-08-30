@@ -78,6 +78,8 @@ tags:
     description: Permission-aware global search across resources.
   - name: Team
     description: Teams that group users within an organization.
+  - name: Custom Field
+    description: Typed custom-field definitions and values.
 servers:
   - url: "https://{domain}/api"
     description: Self-hosted instance.
@@ -2003,11 +2005,12 @@ components:
       description: |
         Fine-grained authorization action. Exact match only; wildcards are not supported.
 
-        Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+        Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
       examples:
         - organization.read
         - project.update
         - permission.manage
+        - custom_field.manage
     Grant:
       title: Grant
       type: object
@@ -2182,6 +2185,7 @@ components:
         - UserToken
         - Folder
         - Installation
+        - CustomFieldDefinition
     RolePage:
       title: RolePage
       type: object
@@ -2322,6 +2326,556 @@ components:
       required:
         - items
         - page_info
+    CustomFieldKind:
+      title: CustomFieldKind
+      type: string
+      enum:
+        - text
+        - integer
+        - decimal
+        - boolean
+        - date
+        - datetime
+        - url
+        - single_select
+        - multi_select
+        - user_reference
+        - resource_reference
+    CustomFieldOption:
+      title: CustomFieldOption
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - label
+        - disabled
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{1,62}$"
+          example: prod
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Production
+        color:
+          type: string
+          maxLength: 32
+          example: "#3366ff"
+        disabled:
+          type: boolean
+        order:
+          type: integer
+    CustomFieldTextSchema:
+      title: CustomFieldTextSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - text
+        min_length:
+          type: integer
+          minimum: 0
+        max_length:
+          type: integer
+          minimum: 0
+          maximum: 8000
+        pattern:
+          type: string
+    CustomFieldIntegerSchema:
+      title: CustomFieldIntegerSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - integer
+        min:
+          type: integer
+          format: int64
+        max:
+          type: integer
+          format: int64
+    CustomFieldDecimalSchema:
+      title: CustomFieldDecimalSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - decimal
+        min:
+          type: string
+          example: "0.01"
+        max:
+          type: string
+          example: "100.00"
+        scale:
+          type: integer
+          minimum: 0
+          maximum: 38
+    CustomFieldBooleanSchema:
+      title: CustomFieldBooleanSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - boolean
+    CustomFieldDateSchema:
+      title: CustomFieldDateSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - date
+        min:
+          type: string
+          format: date
+        max:
+          type: string
+          format: date
+    CustomFieldDateTimeSchema:
+      title: CustomFieldDateTimeSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - datetime
+        min:
+          type: string
+          format: date-time
+        max:
+          type: string
+          format: date-time
+    CustomFieldURLSchema:
+      title: CustomFieldURLSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - allowed_schemes
+      properties:
+        kind:
+          type: string
+          enum:
+            - url
+        allowed_schemes:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            example: https
+    CustomFieldSelectSchema:
+      title: CustomFieldSelectSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - options
+      properties:
+        kind:
+          type: string
+          enum:
+            - single_select
+            - multi_select
+        options:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CustomFieldOption"
+    CustomFieldUserReferenceSchema:
+      title: CustomFieldUserReferenceSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - user_reference
+        multiple:
+          type: boolean
+    CustomFieldResourceReferenceSchema:
+      title: CustomFieldResourceReferenceSchema
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - allowed_types
+      properties:
+        kind:
+          type: string
+          enum:
+            - resource_reference
+        allowed_types:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ResourceType"
+        multiple:
+          type: boolean
+    CustomFieldSchema:
+      title: CustomFieldSchema
+      oneOf:
+        - $ref: "#/components/schemas/CustomFieldTextSchema"
+        - $ref: "#/components/schemas/CustomFieldIntegerSchema"
+        - $ref: "#/components/schemas/CustomFieldDecimalSchema"
+        - $ref: "#/components/schemas/CustomFieldBooleanSchema"
+        - $ref: "#/components/schemas/CustomFieldDateSchema"
+        - $ref: "#/components/schemas/CustomFieldDateTimeSchema"
+        - $ref: "#/components/schemas/CustomFieldURLSchema"
+        - $ref: "#/components/schemas/CustomFieldSelectSchema"
+        - $ref: "#/components/schemas/CustomFieldUserReferenceSchema"
+        - $ref: "#/components/schemas/CustomFieldResourceReferenceSchema"
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: "#/components/schemas/CustomFieldTextSchema"
+          integer: "#/components/schemas/CustomFieldIntegerSchema"
+          decimal: "#/components/schemas/CustomFieldDecimalSchema"
+          boolean: "#/components/schemas/CustomFieldBooleanSchema"
+          date: "#/components/schemas/CustomFieldDateSchema"
+          datetime: "#/components/schemas/CustomFieldDateTimeSchema"
+          url: "#/components/schemas/CustomFieldURLSchema"
+          single_select: "#/components/schemas/CustomFieldSelectSchema"
+          multi_select: "#/components/schemas/CustomFieldSelectSchema"
+          user_reference: "#/components/schemas/CustomFieldUserReferenceSchema"
+          resource_reference: "#/components/schemas/CustomFieldResourceReferenceSchema"
+    CustomFieldDefinition:
+      title: CustomFieldDefinition
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - key
+        - name
+        - kind
+        - scope_id
+        - scope_type
+        - target_type
+        - required
+        - archived
+        - index_exact
+        - index_range
+        - index_fulltext
+        - order
+        - owner_user_id
+        - schema
+      properties:
+        id:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{1,62}$"
+          example: story_points
+        name:
+          type: string
+          minLength: 3
+          maxLength: 120
+          example: Story points
+        description:
+          type: string
+          maxLength: 500
+        kind:
+          $ref: "#/components/schemas/CustomFieldKind"
+        scope_id:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        scope_type:
+          $ref: "#/components/schemas/ResourceType"
+        target_type:
+          $ref: "#/components/schemas/ResourceType"
+        required:
+          type: boolean
+        archived:
+          type: boolean
+        index_exact:
+          type: boolean
+        index_range:
+          type: boolean
+        index_fulltext:
+          type: boolean
+        order:
+          type: integer
+        owner_user_id:
+          type: string
+        registrar_client_id:
+          type: string
+        schema:
+          $ref: "#/components/schemas/CustomFieldSchema"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    CustomFieldTextValue:
+      title: CustomFieldTextValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - text
+      properties:
+        kind:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+    CustomFieldIntegerValue:
+      title: CustomFieldIntegerValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - integer
+      properties:
+        kind:
+          type: string
+          enum:
+            - integer
+        integer:
+          type: integer
+          format: int64
+    CustomFieldDecimalValue:
+      title: CustomFieldDecimalValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - decimal
+      properties:
+        kind:
+          type: string
+          enum:
+            - decimal
+        decimal:
+          type: string
+          example: "12.50"
+    CustomFieldBooleanValue:
+      title: CustomFieldBooleanValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - boolean
+      properties:
+        kind:
+          type: string
+          enum:
+            - boolean
+        boolean:
+          type: boolean
+    CustomFieldDateValue:
+      title: CustomFieldDateValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - date
+      properties:
+        kind:
+          type: string
+          enum:
+            - date
+        date:
+          type: string
+          format: date
+    CustomFieldDateTimeValue:
+      title: CustomFieldDateTimeValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - datetime
+      properties:
+        kind:
+          type: string
+          enum:
+            - datetime
+        datetime:
+          type: string
+          format: date-time
+    CustomFieldURLValue:
+      title: CustomFieldURLValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - url
+      properties:
+        kind:
+          type: string
+          enum:
+            - url
+        url:
+          type: string
+          format: uri
+    CustomFieldSingleSelectValue:
+      title: CustomFieldSingleSelectValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - option_key
+      properties:
+        kind:
+          type: string
+          enum:
+            - single_select
+        option_key:
+          type: string
+    CustomFieldMultiSelectValue:
+      title: CustomFieldMultiSelectValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - option_keys
+      properties:
+        kind:
+          type: string
+          enum:
+            - multi_select
+        option_keys:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    CustomFieldUserReferenceValue:
+      title: CustomFieldUserReferenceValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - user_reference
+        user_id:
+          type: string
+        user_ids:
+          type: array
+          items:
+            type: string
+    CustomFieldResourceReferenceValue:
+      title: CustomFieldResourceReferenceValue
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - resource_reference
+        resource_id:
+          type: string
+        resource_ids:
+          type: array
+          items:
+            type: string
+    CustomFieldValue:
+      title: CustomFieldValue
+      oneOf:
+        - $ref: "#/components/schemas/CustomFieldTextValue"
+        - $ref: "#/components/schemas/CustomFieldIntegerValue"
+        - $ref: "#/components/schemas/CustomFieldDecimalValue"
+        - $ref: "#/components/schemas/CustomFieldBooleanValue"
+        - $ref: "#/components/schemas/CustomFieldDateValue"
+        - $ref: "#/components/schemas/CustomFieldDateTimeValue"
+        - $ref: "#/components/schemas/CustomFieldURLValue"
+        - $ref: "#/components/schemas/CustomFieldSingleSelectValue"
+        - $ref: "#/components/schemas/CustomFieldMultiSelectValue"
+        - $ref: "#/components/schemas/CustomFieldUserReferenceValue"
+        - $ref: "#/components/schemas/CustomFieldResourceReferenceValue"
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: "#/components/schemas/CustomFieldTextValue"
+          integer: "#/components/schemas/CustomFieldIntegerValue"
+          decimal: "#/components/schemas/CustomFieldDecimalValue"
+          boolean: "#/components/schemas/CustomFieldBooleanValue"
+          date: "#/components/schemas/CustomFieldDateValue"
+          datetime: "#/components/schemas/CustomFieldDateTimeValue"
+          url: "#/components/schemas/CustomFieldURLValue"
+          single_select: "#/components/schemas/CustomFieldSingleSelectValue"
+          multi_select: "#/components/schemas/CustomFieldMultiSelectValue"
+          user_reference: "#/components/schemas/CustomFieldUserReferenceValue"
+          resource_reference: "#/components/schemas/CustomFieldResourceReferenceValue"
+    CustomFieldEntry:
+      title: CustomFieldEntry
+      type: object
+      additionalProperties: false
+      required:
+        - definition
+      properties:
+        definition:
+          $ref: "#/components/schemas/CustomFieldDefinition"
+        value:
+          $ref: "#/components/schemas/CustomFieldValue"
+    CustomFieldWrite:
+      title: CustomFieldWrite
+      type: object
+      additionalProperties: false
+      required:
+        - definition_id
+        - value
+      properties:
+        definition_id:
+          type: string
+          example: 9bsv0s46s6s002p9ltq0
+        value:
+          $ref: "#/components/schemas/CustomFieldValue"
+    CustomFieldSearchResult:
+      title: CustomFieldSearchResult
+      type: object
+      additionalProperties: false
+      required:
+        - resource_ids
+      properties:
+        resource_ids:
+          type: array
+          items:
+            type: string
+    CustomFieldPredicateOp:
+      title: CustomFieldPredicateOp
+      type: string
+      enum:
+        - eq
+        - gt
+        - gte
+        - lt
+        - lte
+        - match
     SystemHealth:
       title: SystemHealth
       type: object
@@ -2523,6 +3077,8 @@ components:
             role.read: Read access to roles.
             notification: Read and write access to in-app notifications.
             notification.read: Read access to in-app notifications.
+            custom_field: Read and write access to custom fields.
+            custom_field.read: Read access to custom fields.
           refreshUrl: /oauth/authorize
         clientCredentials:
           tokenUrl: /oauth/token
@@ -2548,6 +3104,8 @@ components:
             role.read: Read access to roles.
             notification: Read and write access to in-app notifications.
             notification.read: Read access to in-app notifications.
+            custom_field: Read and write access to custom fields.
+            custom_field.read: Read access to custom fields.
         authorizationCode:
           authorizationUrl: /oauth/authorize
           tokenUrl: /oauth/token
@@ -2573,6 +3131,8 @@ components:
             role.read: Read access to roles.
             notification: Read and write access to in-app notifications.
             notification.read: Read access to in-app notifications.
+            custom_field: Read and write access to custom fields.
+            custom_field.read: Read access to custom fields.
   responses:
     "201":
       description: Example response
@@ -3432,6 +3992,11 @@ components:
                 format: date-time
                 description: Start date of the issue.
                 nullable: true
+              custom_fields:
+                type: array
+                description: Typed initial custom-field values for the created issue.
+                items:
+                  $ref: "#/components/schemas/CustomFieldWrite"
             required:
               - kind
               - title
@@ -3880,6 +4445,145 @@ components:
                 nullable: true
                 x-go-type: "Optional[string]"
                 x-go-type-skip-optional-pointer: true
+    CustomFieldCreate:
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - key
+              - name
+              - kind
+              - scope_id
+              - scope_type
+              - target_type
+              - schema
+            properties:
+              key:
+                type: string
+                pattern: "^[a-z][a-z0-9_]{1,62}$"
+                example: story_points
+              name:
+                type: string
+                minLength: 3
+                maxLength: 120
+                example: Story points
+              description:
+                type: string
+                maxLength: 500
+              kind:
+                $ref: "#/components/schemas/CustomFieldKind"
+              scope_id:
+                type: string
+                example: 9bsv0s46s6s002p9ltq0
+              scope_type:
+                $ref: "#/components/schemas/ResourceType"
+              target_type:
+                $ref: "#/components/schemas/ResourceType"
+              required:
+                type: boolean
+              index_exact:
+                type: boolean
+              index_range:
+                type: boolean
+              index_fulltext:
+                type: boolean
+              order:
+                type: integer
+              schema:
+                $ref: "#/components/schemas/CustomFieldSchema"
+    CustomFieldPatch:
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              name:
+                type: string
+                minLength: 3
+                maxLength: 120
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              description:
+                type: string
+                maxLength: 500
+                x-go-type: "Optional[string]"
+                x-go-type-skip-optional-pointer: true
+              required:
+                type: boolean
+                x-go-type: "Optional[bool]"
+                x-go-type-skip-optional-pointer: true
+              archived:
+                type: boolean
+                x-go-type: "Optional[bool]"
+                x-go-type-skip-optional-pointer: true
+              index_exact:
+                type: boolean
+                x-go-type: "Optional[bool]"
+                x-go-type-skip-optional-pointer: true
+              index_range:
+                type: boolean
+                x-go-type: "Optional[bool]"
+                x-go-type-skip-optional-pointer: true
+              index_fulltext:
+                type: boolean
+                x-go-type: "Optional[bool]"
+                x-go-type-skip-optional-pointer: true
+              order:
+                type: integer
+                x-go-type: "Optional[int]"
+                x-go-type-skip-optional-pointer: true
+              schema:
+                $ref: "#/components/schemas/CustomFieldSchema"
+    CustomFieldValuePut:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CustomFieldValue"
+    CustomFieldSearch:
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - definition_id
+              - op
+            properties:
+              definition_id:
+                type: string
+              op:
+                $ref: "#/components/schemas/CustomFieldPredicateOp"
+              text:
+                type: string
+              integer:
+                type: integer
+                format: int64
+              decimal:
+                type: string
+              boolean:
+                type: boolean
+              date:
+                type: string
+                format: date
+              datetime:
+                type: string
+                format: date-time
+              url:
+                type: string
+              option_key:
+                type: string
+              user_id:
+                type: string
+              resource_id:
+                type: string
+              limit:
+                type: integer
+                minimum: 1
+                maximum: 1000
+                default: 100
 paths:
   /v1/users:
     get:
@@ -6575,6 +7279,315 @@ paths:
           $ref: "#/components/responses/400"
         "401":
           $ref: "#/components/responses/401"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/custom-fields":
+    get:
+      summary: List custom field definitions
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldsGet
+      description: List custom-field definitions that apply at a scope, including inherited ancestors.
+      security:
+        - oauth2:
+            - custom_field.read
+      parameters:
+        - name: scope_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Organization, namespace, or project ID that owns or inherits definitions.
+        - name: scope_type
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ResourceType"
+        - name: target_type
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ResourceType"
+        - name: include_archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomFieldDefinition"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    post:
+      summary: Create custom field definition
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldsCreate
+      description: Create a typed custom-field definition. The definition is immediately usable.
+      security:
+        - oauth2:
+            - custom_field
+      requestBody:
+        $ref: "#/components/requestBodies/CustomFieldCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldDefinition"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "409":
+          $ref: "#/components/responses/409"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/custom-fields/search":
+    post:
+      summary: Search resources by custom field
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldsSearch
+      description: Return permission-filtered resource IDs matching an indexed custom-field predicate.
+      security:
+        - oauth2:
+            - custom_field.read
+      requestBody:
+        $ref: "#/components/requestBodies/CustomFieldSearch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldSearchResult"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/custom-fields/{id}":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: Get custom field definition
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldGet
+      security:
+        - oauth2:
+            - custom_field.read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldDefinition"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    patch:
+      summary: Update custom field definition
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldUpdate
+      description: Apply constrained schema evolution. Identity fields cannot change.
+      security:
+        - oauth2:
+            - custom_field
+      requestBody:
+        $ref: "#/components/requestBodies/CustomFieldPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldDefinition"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      summary: Delete custom field definition
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldDelete
+      description: Hard-delete a definition that has no stored values.
+      security:
+        - oauth2:
+            - custom_field
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/custom-fields/{id}/archive":
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: Archive custom field definition
+      tags:
+        - Custom Field
+      operationId: v1CustomFieldArchive
+      description: Retire a definition. Stored values remain readable; new writes are rejected.
+      security:
+        - oauth2:
+            - custom_field
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldDefinition"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/resources/{resourceType}/{id}/custom-fields":
+    parameters:
+      - name: resourceType
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: List effective custom fields
+      tags:
+        - Custom Field
+      operationId: v1ResourceCustomFieldsGet
+      description: Return inherited definitions and stored values for a resource.
+      security:
+        - oauth2:
+            - custom_field.read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomFieldEntry"
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+  "/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}":
+    parameters:
+      - name: resourceType
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - $ref: "#/components/parameters/id"
+      - name: definitionId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Set custom field value
+      tags:
+        - Custom Field
+      operationId: v1ResourceCustomFieldValuePut
+      security:
+        - oauth2:
+            - custom_field
+      requestBody:
+        $ref: "#/components/requestBodies/CustomFieldValuePut"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+    delete:
+      summary: Clear custom field value
+      tags:
+        - Custom Field
+      operationId: v1ResourceCustomFieldValueDelete
+      security:
+        - oauth2:
+            - custom_field
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/400"
+        "401":
+          $ref: "#/components/responses/401"
+        "403":
+          $ref: "#/components/responses/403"
+        "404":
+          $ref: "#/components/responses/404"
         "500":
           $ref: "#/components/responses/500"
   /v1/system/health:

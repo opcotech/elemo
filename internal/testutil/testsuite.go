@@ -142,6 +142,7 @@ type PgContainerIntegrationTestSuite struct {
 
 	NotificationRepo    *repository.PGNotificationRepository
 	UserTokenRepository *repository.PGUserTokenRepository
+	CustomFieldRepo     *repository.PGCustomFieldRepository
 }
 
 func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
@@ -160,6 +161,9 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 	ts.Require().NoError(err)
 
 	s.UserTokenRepository, err = repository.NewUserTokenRepository(repository.WithPGDatabase(s.PostgresDB))
+	ts.Require().NoError(err)
+
+	s.CustomFieldRepo, err = repository.NewCustomFieldRepository(repository.WithPGDatabase(s.PostgresDB))
 	ts.Require().NoError(err)
 
 	s.BootstrapPgDatabase(ts)

@@ -146,6 +146,7 @@ func TestIssueService_Delete_DeletesSearch(t *testing.T) {
 			permSvc,
 			licenseSvc,
 			searchSvc,
+			nopCustomFieldService{},
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(tracer),
 		)

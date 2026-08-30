@@ -7,6 +7,14 @@ var (
 	ErrInvalidAssignmentKind            = errors.New("invalid assigned to kind")                // the assigned to kind is invalid
 	ErrInvalidAttachmentDetails         = errors.New("invalid attachment details")              // the attachment details are invalid
 	ErrInvalidCommentDetails            = errors.New("invalid comment details")                 // the comment details are invalid
+	ErrInvalidCustomFieldDetails        = errors.New("invalid custom field details")            // the custom field details are invalid
+	ErrInvalidCustomFieldKind           = errors.New("invalid custom field kind")               // the custom field kind is invalid
+	ErrInvalidCustomFieldValue          = errors.New("invalid custom field value")              // the custom field value is invalid
+	ErrCustomFieldArchived              = errors.New("custom field is archived")                // archived fields reject writes
+	ErrCustomFieldInUse                 = errors.New("custom field has stored values")          // hard delete is blocked while values exist
+	ErrCustomFieldIdentityImmutable     = errors.New("custom field identity is immutable")      // key, kind, scope, owner, or target cannot change
+	ErrCustomFieldOptionInUse           = errors.New("custom field option is in use")           // referenced option keys cannot be deleted
+	ErrCustomFieldRequired              = errors.New("custom field value is required")          // a required field is missing a value
 	ErrInvalidDocumentDetails           = errors.New("invalid document details")                // the document details are invalid
 	ErrInvalidFolderDetails             = errors.New("invalid folder details")                  // the folder details are invalid
 	ErrInvalidHealthStatus              = errors.New("invalid health status")                   // health status is invalid

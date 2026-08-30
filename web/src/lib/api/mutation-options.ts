@@ -1,6 +1,10 @@
 import "@/lib/api/client";
 
 export {
+  v1CustomFieldArchiveMutation,
+  v1CustomFieldDeleteMutation,
+  v1CustomFieldsCreateMutation,
+  v1CustomFieldUpdateMutation,
   v1DocumentDeleteMutation,
   v1DocumentUpdateMutation,
   v1FolderDeleteMutation,
@@ -35,6 +39,8 @@ export {
   v1ProjectsDocumentsCreateMutation,
   v1ProjectsDocumentsRelateMutation,
   v1ProjectsDocumentsUnrelateMutation,
+  v1ResourceCustomFieldValueDeleteMutation,
+  v1ResourceCustomFieldValuePutMutation,
   v1TodoDeleteMutation,
   v1TodoUpdateMutation,
   v1UserResetPasswordMutation,

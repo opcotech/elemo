@@ -20,6 +20,7 @@ import { useIssueUpdate } from "./use-issue-update";
 import { workItemPath, workItemUrl } from "./utils";
 import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
+import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
 import { ContentWidth } from "@/components/layout/content-width";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
@@ -474,6 +475,12 @@ function LiveWorkItemPage({
               onPatch={updateIssue}
             />
           </Section>
+          <IssueCustomFields
+            issueId={issue.id}
+            namespaceId={namespaceId}
+            disabled={isPending || deleteMutation.isPending}
+            mode="edit"
+          />
           <Section title="Metadata" data-section="issue-metadata">
             <IssueMetadataProperties
               organizationSlug={organizationSlug}

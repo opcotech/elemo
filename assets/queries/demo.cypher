@@ -1641,7 +1641,7 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'role.manage', 'team.manage', 'permission.manage'
+        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainr10', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
       {id: 'd9tcjmf92rs8isainr20', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
@@ -1649,13 +1649,13 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainr30', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
         'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainr40', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
         'project.read', 'issue.read', 'document.read'
@@ -1677,7 +1677,7 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'role.manage', 'team.manage', 'permission.manage'
+        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainr90', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
       {id: 'd9tcjmf92rs8isainra0', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
@@ -1685,13 +1685,13 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainrb0', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
         'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage'
       ]},
       {id: 'd9tcjmf92rs8isainrc0', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
         'project.read', 'issue.read', 'document.read'
@@ -1715,6 +1715,7 @@ ON CREATE SET
   r.description = tmpl.description,
   r.actions = tmpl.actions,
   r.created_at = datetime()
+ON MATCH SET r.actions = tmpl.actions
 MERGE (o)-[d:DEFINES_ROLE {id: tmpl.id}]->(r)
 ON CREATE SET d.created_at = datetime()
 MERGE (r)-[s:IN_SCOPE_OF]->(o)

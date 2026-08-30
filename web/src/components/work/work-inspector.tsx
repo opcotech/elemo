@@ -7,6 +7,7 @@ import { MarkdownContent } from "./markdown-content";
 import { workItemPath, workItemUrl } from "./utils";
 import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
+import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader } from "@/components/shared/entity-header";
@@ -90,6 +91,13 @@ export function WorkInspector({ item }: { item: WorkItem }) {
           )}
         </Section>
       )}
+      {isApi ? (
+        <IssueCustomFields
+          issueId={item.id}
+          namespaceId={namespaceId}
+          mode="readonly"
+        />
+      ) : null}
       <Section title="Metadata" data-section="issue-metadata">
         <IssueMetadataProperties
           compact

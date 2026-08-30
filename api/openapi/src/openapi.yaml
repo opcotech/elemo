@@ -78,6 +78,8 @@ tags:
     description: Permission-aware global search across resources.
   - name: Team
     description: Teams that group users within an organization.
+  - name: Custom Field
+    description: Typed custom-field definitions and values.
 servers:
   - url: "https://{domain}/api"
     description: Self-hosted instance.

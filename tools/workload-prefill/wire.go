@@ -334,6 +334,23 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	if err != nil {
 		return nil, fmt.Errorf("project service: %w", err)
 	}
+	customFieldRepo, err := repository.NewCustomFieldRepository(
+		repository.WithPGDatabase(relDB),
+		repository.WithPGRepositoryLogger(logger.Named("custom_field_repository")),
+		repository.WithPGRepositoryTracer(tracer),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("custom field repository: %w", err)
+	}
+	customFieldService, err := service.NewCustomFieldService(
+		customFieldRepo,
+		permissionService,
+		licenseService,
+		namedOpts("custom_field_service")...,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("custom field service: %w", err)
+	}
 	d.issues, err = service.NewIssueService(
 		issueRepo,
 		assignmentRepo,
@@ -341,6 +358,7 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		permissionService,
 		licenseService,
 		noopSearch,
+		customFieldService,
 		namedOpts("issue_service")...,
 	)
 	if err != nil {

@@ -12,7 +12,10 @@ import {
   SearchableEntitySelect,
 } from "@/components/ui/entity-select";
 import type { EntitySelectOption } from "@/components/ui/entity-select";
-import { PropertyList } from "@/components/ui/property-list";
+import {
+  PropertyList,
+  propertyControlClassName,
+} from "@/components/ui/property-list";
 import {
   Select,
   SelectContent,
@@ -75,9 +78,6 @@ const issuePriorities: readonly IssuePriority[] = [
   "lowest",
 ];
 
-const propertyControlClassName =
-  "border-transparent bg-transparent shadow-none hover:bg-primary/5 hover:border-primary/20 hover:text-foreground aria-expanded:text-foreground dark:bg-transparent dark:hover:bg-primary/10 dark:hover:border-primary/30 h-8 w-full justify-between px-2 font-medium";
-
 const UNSET_PARENT_VALUE = "__unset__";
 
 export function IssueParentSelect({
@@ -124,7 +124,7 @@ export function IssueParentSelect({
   const parentOptions: EntitySelectOption[] = [
     {
       value: UNSET_PARENT_VALUE,
-      title: "None",
+      title: "—",
       searchText: "none unset",
     },
     ...parentCandidates.map(issueToSelectOption),
@@ -136,7 +136,7 @@ export function IssueParentSelect({
       options={parentOptions}
       value={issue.parent?.id ?? UNSET_PARENT_VALUE}
       disabled={disabled || !project?.id}
-      placeholder="None"
+      placeholder="—"
       searchPlaceholder="Search issues…"
       emptyMessage="No issues found."
       triggerClassName={propertyControlClassName}
@@ -445,7 +445,7 @@ export function IssueDetailsProperties({
               options={reviewerOptions}
               value={reviewerIds}
               disabled={disabled}
-              placeholder="None"
+              placeholder="—"
               searchPlaceholder="Search people…"
               emptyMessage="No people found."
               triggerClassName={propertyControlClassName}
@@ -526,7 +526,7 @@ export function IssueDetailsProperties({
               options={labelOptions}
               value={labelIds}
               disabled={disabled}
-              placeholder="None"
+              placeholder="—"
               searchPlaceholder="Search labels…"
               emptyMessage="No labels found."
               triggerClassName={propertyControlClassName}

@@ -110,16 +110,17 @@ type IssueRelation struct {
 
 // CreateIssueOpts holds the data required to create an issue.
 type CreateIssueOpts struct {
-	Parent      *model.ID             `json:"parent" validate:"omitempty"`
-	Kind        model.IssueKind       `json:"kind" validate:"required,min=1,max=4"`
-	Title       string                `json:"title" validate:"required,min=3,max=120"`
-	Description string                `json:"description" validate:"omitempty,min=3"`
-	Status      model.IssueStatus     `json:"status" validate:"omitempty,min=1,max=6"`
-	Priority    model.IssuePriority   `json:"priority" validate:"omitempty,min=1,max=5"`
-	Resolution  model.IssueResolution `json:"resolution" validate:"omitempty,min=1,max=7"`
-	Links       []model.IssueLink     `json:"links" validate:"omitempty,dive"`
-	DueDate     *time.Time            `json:"due_date" validate:"omitempty"`
-	StartDate   *time.Time            `json:"start_date" validate:"omitempty"`
+	Parent       *model.ID             `json:"parent" validate:"omitempty"`
+	Kind         model.IssueKind       `json:"kind" validate:"required,min=1,max=4"`
+	Title        string                `json:"title" validate:"required,min=3,max=120"`
+	Description  string                `json:"description" validate:"omitempty,min=3"`
+	Status       model.IssueStatus     `json:"status" validate:"omitempty,min=1,max=6"`
+	Priority     model.IssuePriority   `json:"priority" validate:"omitempty,min=1,max=5"`
+	Resolution   model.IssueResolution `json:"resolution" validate:"omitempty,min=1,max=7"`
+	Links        []model.IssueLink     `json:"links" validate:"omitempty,dive"`
+	DueDate      *time.Time            `json:"due_date" validate:"omitempty"`
+	StartDate    *time.Time            `json:"start_date" validate:"omitempty"`
+	CustomFields []CustomFieldWrite
 }
 
 // Validate validates the create options.
@@ -191,12 +192,13 @@ type IssueService interface {
 // issueService is the concrete implementation of IssueService.
 type issueService struct {
 	runtime
-	issueRepo         repository.IssueRepository
-	assignmentRepo    repository.AssignmentRepository
-	labelRepo         repository.LabelRepository
-	permissionService PermissionService
-	licenseService    LicenseService
-	searchService     SearchService
+	issueRepo          repository.IssueRepository
+	assignmentRepo     repository.AssignmentRepository
+	labelRepo          repository.LabelRepository
+	permissionService  PermissionService
+	licenseService     LicenseService
+	searchService      SearchService
+	customFieldService CustomFieldService
 }
 
 func partialAssigneesFromRepository(assignees []repository.PartialAssignee) []PartialAssignee {
@@ -558,6 +560,11 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
+	issueID := model.MustNewID(model.ResourceTypeIssue)
+	if err := s.customFieldService.StageForResource(ctx, projectID, issueID, opts.CustomFields); err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
+	}
+
 	status := opts.Status
 	if status == 0 {
 		status = model.IssueStatusOpen
@@ -579,6 +586,7 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 	}
 
 	issue, err := s.issueRepo.Create(ctx, repository.CreateIssueOpts{
+		ID:          &issueID,
 		ProjectID:   projectID,
 		Parent:      opts.Parent,
 		Kind:        opts.Kind,
@@ -593,7 +601,16 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 		StartDate:   opts.StartDate,
 	})
 	if err != nil {
+		if abortErr := s.customFieldService.AbortForResource(ctx, issueID); abortErr != nil {
+			return nil, errors.Join(ErrIssueCreate, err, abortErr)
+		}
 		return nil, errors.Join(ErrIssueCreate, err)
+	}
+	if err := s.customFieldService.CommitForResource(ctx, issueID); err != nil {
+		s.logger.Warn(ctx, "failed to commit custom field values",
+			log.WithError(err),
+			log.WithValue(issueID.Composite()),
+		)
 	}
 
 	actions, err := roleTemplateActions(model.RoleKeyIssueMaintainer)
@@ -903,6 +920,12 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 	if err := s.issueRepo.Delete(ctx, id); err != nil {
 		return errors.Join(ErrIssueDelete, err)
 	}
+	if err := s.customFieldService.DeleteForResource(ctx, id); err != nil {
+		s.logger.Warn(ctx, "failed to delete custom field values",
+			log.WithError(err),
+			log.WithValue(id.Composite()),
+		)
+	}
 
 	if err := s.searchService.Delete(ctx, id); err != nil {
 		s.logger.Warn(ctx, "failed to delete search document",
@@ -1105,6 +1128,7 @@ func NewIssueService(
 	permissionService PermissionService,
 	licenseService LicenseService,
 	searchService SearchService,
+	customFieldService CustomFieldService,
 	opts ...Option,
 ) (IssueService, error) {
 	rt, err := newRuntime(opts...)
@@ -1113,13 +1137,14 @@ func NewIssueService(
 	}
 
 	svc := &issueService{
-		runtime:           rt,
-		issueRepo:         issueRepo,
-		assignmentRepo:    assignmentRepo,
-		labelRepo:         labelRepo,
-		permissionService: permissionService,
-		licenseService:    licenseService,
-		searchService:     searchService,
+		runtime:            rt,
+		issueRepo:          issueRepo,
+		assignmentRepo:     assignmentRepo,
+		labelRepo:          labelRepo,
+		permissionService:  permissionService,
+		licenseService:     licenseService,
+		searchService:      searchService,
+		customFieldService: customFieldService,
 	}
 
 	if svc.issueRepo == nil {
@@ -1144,6 +1169,10 @@ func NewIssueService(
 
 	if svc.searchService == nil {
 		return nil, ErrNoSearchService
+	}
+
+	if svc.customFieldService == nil {
+		return nil, ErrNoCustomFieldService
 	}
 
 	return svc, nil

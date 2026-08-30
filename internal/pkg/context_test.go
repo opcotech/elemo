@@ -161,6 +161,12 @@ func TestCtxKeyConstants(t *testing.T) {
 		assert.Equal(t, CtxKey("userID"), CtxKeyUserID)
 	})
 
+	t.Run("should have correct oauth client ID key", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Equal(t, CtxKey("oauthClientID"), CtxKeyOAuthClientID)
+	})
+
 	t.Run("should have correct logger key", func(t *testing.T) {
 		t.Parallel()
 
@@ -215,6 +221,31 @@ func TestCtxUserIDValue(t *testing.T) {
 	t.Run("missing user", func(t *testing.T) {
 		t.Parallel()
 		_, ok := CtxUserIDValue(context.Background())
+		assert.False(t, ok)
+	})
+}
+
+func TestCtxOAuthClientID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns client id", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), CtxKeyOAuthClientID, "client-1")
+		got, ok := CtxOAuthClientID(ctx)
+		require.True(t, ok)
+		assert.Equal(t, "client-1", got)
+	})
+
+	t.Run("missing client id", func(t *testing.T) {
+		t.Parallel()
+		_, ok := CtxOAuthClientID(context.Background())
+		assert.False(t, ok)
+	})
+
+	t.Run("empty client id", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), CtxKeyOAuthClientID, "")
+		_, ok := CtxOAuthClientID(ctx)
 		assert.False(t, ok)
 	})
 }

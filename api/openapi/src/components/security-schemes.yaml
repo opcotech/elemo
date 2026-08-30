@@ -24,6 +24,8 @@ oauth2:
         role.read: Read access to roles.
         notification: Read and write access to in-app notifications.
         notification.read: Read access to in-app notifications.
+        custom_field: Read and write access to custom fields.
+        custom_field.read: Read access to custom fields.
       refreshUrl: /oauth/authorize
     clientCredentials:
       tokenUrl: /oauth/token
@@ -49,6 +51,8 @@ oauth2:
         role.read: Read access to roles.
         notification: Read and write access to in-app notifications.
         notification.read: Read access to in-app notifications.
+        custom_field: Read and write access to custom fields.
+        custom_field.read: Read access to custom fields.
     authorizationCode:
       authorizationUrl: /oauth/authorize
       tokenUrl: /oauth/token
@@ -74,3 +78,5 @@ oauth2:
         role.read: Read access to roles.
         notification: Read and write access to in-app notifications.
         notification.read: Read access to in-app notifications.
+        custom_field: Read and write access to custom fields.
+        custom_field.read: Read access to custom fields.

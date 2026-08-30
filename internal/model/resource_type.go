@@ -6,26 +6,27 @@ import (
 )
 
 const (
-	ResourceTypeKind          ResourceType = iota + 1 // ResourceType
-	ResourceTypeAssignment                            // Assignment
-	ResourceTypeAttachment                            // Attachment
-	ResourceTypeComment                               // Comment
-	ResourceTypeDocument                              // Document
-	ResourceTypeIssue                                 // Issue
-	ResourceTypeIssueRelation                         // IssueRelation
-	ResourceTypeLabel                                 // Label
-	ResourceTypeNamespace                             // Namespace
-	ResourceTypeNotification                          // Notification
-	ResourceTypeOrganization                          // Organization
-	ResourceTypePermission                            // Permission
-	ResourceTypeProject                               // Project
-	ResourceTypeRole                                  // Role
-	ResourceTypeTodo                                  // Todo
-	ResourceTypeUser                                  // User
-	ResourceTypeUserToken                             // UserToken
-	ResourceTypeFolder                                // Folder
-	ResourceTypeInstallation                          // Installation
-	ResourceTypeTeam                                  // Team
+	ResourceTypeKind                  ResourceType = iota + 1 // ResourceType
+	ResourceTypeAssignment                                    // Assignment
+	ResourceTypeAttachment                                    // Attachment
+	ResourceTypeComment                                       // Comment
+	ResourceTypeDocument                                      // Document
+	ResourceTypeIssue                                         // Issue
+	ResourceTypeIssueRelation                                 // IssueRelation
+	ResourceTypeLabel                                         // Label
+	ResourceTypeNamespace                                     // Namespace
+	ResourceTypeNotification                                  // Notification
+	ResourceTypeOrganization                                  // Organization
+	ResourceTypePermission                                    // Permission
+	ResourceTypeProject                                       // Project
+	ResourceTypeRole                                          // Role
+	ResourceTypeTodo                                          // Todo
+	ResourceTypeUser                                          // User
+	ResourceTypeUserToken                                     // UserToken
+	ResourceTypeFolder                                        // Folder
+	ResourceTypeInstallation                                  // Installation
+	ResourceTypeTeam                                          // Team
+	ResourceTypeCustomFieldDefinition                         // CustomFieldDefinition
 )
 
 // ResourceType is the type of resource that is being managed in the system.

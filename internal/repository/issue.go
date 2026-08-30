@@ -112,6 +112,7 @@ type IssueRelationItem struct {
 // CreateIssueOpts holds the data required to create an issue.
 // NumericID is allocated atomically from the project's next_issue_id counter.
 type CreateIssueOpts struct {
+	ID          *model.ID
 	ProjectID   model.ID
 	Parent      *model.ID
 	Kind        model.IssueKind
@@ -861,6 +862,16 @@ func (r *Neo4jIssueRepository) Create(ctx context.Context, opts CreateIssueOpts)
 
 	createdAt := time.Now().UTC()
 	id := model.MustNewID(model.ResourceTypeIssue)
+	if opts.ID != nil && !opts.ID.IsNil() {
+		id = *opts.ID
+		existing, err := r.Get(ctx, id, IssueDetailProjection())
+		if err == nil {
+			return existing, nil
+		}
+		if !errors.Is(err, ErrNotFound) {
+			return nil, errors.Join(ErrIssueCreate, err)
+		}
+	}
 
 	links := opts.Links
 	if links == nil {

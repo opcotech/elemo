@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit } from "lucide-react";
+import { Edit, ListTree } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,21 +26,36 @@ export function OrganizationDetailInfo({
       title="Organization Information"
       description="Details about the organization and its status."
       actions={
-        hasWritePermission ? (
+        <>
           <Button
             variant="outline"
             size="sm"
             render={
               <Link
-                to="/settings/organizations/$organizationSlug/edit"
+                to="/settings/organizations/$organizationSlug/custom-fields"
                 params={{ organizationSlug: organization.slug }}
               />
             }
           >
-            <Edit className="size-4" />
-            Edit
+            <ListTree className="size-4" />
+            Custom fields
           </Button>
-        ) : null
+          {hasWritePermission ? (
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link
+                  to="/settings/organizations/$organizationSlug/edit"
+                  params={{ organizationSlug: organization.slug }}
+                />
+              }
+            >
+              <Edit className="size-4" />
+              Edit
+            </Button>
+          ) : null}
+        </>
       }
     >
       <DetailField label="Name" value={organization.name} />

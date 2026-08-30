@@ -14,6 +14,7 @@ export * from "./projects";
 export * from "./roles";
 export * from "./teams";
 export * from "./issues";
+export * from "./custom-fields";
 export * from "./documents";
 export * from "./folders";
 export * from "./todos";

@@ -1,8 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 
+import { CustomFieldEditor } from "@/components/custom-fields/field-editor";
 import { QuickCreateContext } from "@/components/quick-create/context-panel";
 import { MoreProperties } from "@/components/quick-create/more-properties";
 import type { QuickCreateKindProps } from "@/components/quick-create/types";
@@ -20,6 +23,7 @@ import {
   FieldProvider,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,17 +35,26 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { useNavigationContext } from "@/hooks/use-navigation-context";
-import { v1ProjectsIssuesGetOptions } from "@/lib/api/query-options";
+import {
+  v1CustomFieldsGetOptions,
+  v1ProjectsIssuesGetOptions,
+} from "@/lib/api/query-options";
 import { projectIdPath } from "@/lib/api/refs";
 import { zIssueCreate } from "@/lib/api/schemas";
 import { v1ProjectsIssuesCreate } from "@/lib/api/sdk";
 import type {
+  CustomFieldValue,
   IssueCreate,
   Options,
   V1ProjectsIssuesCreateData,
 } from "@/lib/api/types";
+import {
+  customFieldWritesFromValues,
+  missingRequiredCustomFieldNames,
+} from "@/lib/custom-fields/value";
 import { createFormSchema, normalizeFormData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
+import { useOrganizationMembersForNamespace } from "@/lib/work/use-organization-members-for-namespace";
 
 const workQuickCreateSchema = createFormSchema(
   zIssueCreate.pick({
@@ -66,6 +79,42 @@ export function WorkQuickCreate({
   const navigation = useNavigationContext();
   const canCreateInProject =
     navigation.type === "project" && Boolean(navigation.projectId);
+  const [customValues, setCustomValues] = useState<
+    Record<string, CustomFieldValue | undefined>
+  >({});
+  const [customFieldError, setCustomFieldError] = useState<string>();
+  const { members } = useOrganizationMembersForNamespace(
+    navigation.namespaceId,
+    { enabled: canCreateInProject }
+  );
+  const {
+    data: customFieldDefinitions = [],
+    isPending: customFieldsPending,
+    isError: customFieldsError,
+  } = useQuery({
+    ...v1CustomFieldsGetOptions({
+      query: {
+        scope_id: navigation.projectId ?? "",
+        scope_type: "Project",
+        target_type: "Issue",
+        include_archived: false,
+      },
+    }),
+    enabled: canCreateInProject,
+    retry: false,
+  });
+  const activeDefinitions = useMemo(
+    () => customFieldDefinitions.filter((definition) => !definition.archived),
+    [customFieldDefinitions]
+  );
+  const requiredDefinitions = activeDefinitions.filter(
+    (definition) => definition.required
+  );
+  const optionalDefinitions = activeDefinitions.filter(
+    (definition) => !definition.required
+  );
+  const customFieldsBlocked = customFieldsPending || customFieldsError;
+
   const form = useForm<WorkQuickCreateValues>({
     resolver: zodResolver(workQuickCreateSchema),
     defaultValues,
@@ -100,12 +149,17 @@ export function WorkQuickCreate({
         workQuickCreateSchema,
         values
       ) as Pick<IssueCreate, "title" | "description" | "kind">;
+      const customFields = customFieldWritesFromValues(
+        activeDefinitions,
+        customValues
+      );
       return {
         path: projectIdPath(navigation.projectId!),
         body: {
           kind: normalizedBody.kind,
           title: normalizedBody.title,
           description: normalizedBody.description || undefined,
+          ...(customFields.length > 0 ? { custom_fields: customFields } : {}),
         },
       };
     },
@@ -167,7 +221,23 @@ export function WorkQuickCreate({
 
   return (
     <FieldProvider {...form}>
-      <form onSubmit={mutation.handleSubmit}>
+      <form
+        onSubmit={(event) => {
+          const missing = missingRequiredCustomFieldNames(
+            requiredDefinitions,
+            customValues
+          );
+          if (missing.length > 0) {
+            event.preventDefault();
+            setCustomFieldError(
+              `Fill required custom fields: ${missing.join(", ")}`
+            );
+            return;
+          }
+          setCustomFieldError(undefined);
+          mutation.handleSubmit(event);
+        }}
+      >
         <FieldGroup className="my-5">
           {errorMessage && (
             <Alert variant="destructive">
@@ -175,6 +245,21 @@ export function WorkQuickCreate({
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
+          {customFieldsError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Custom fields unavailable</AlertTitle>
+              <AlertDescription>
+                Custom field definitions could not be loaded. Try again before
+                creating the issue.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {customFieldError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Custom fields required</AlertTitle>
+              <AlertDescription>{customFieldError}</AlertDescription>
+            </Alert>
+          ) : null}
 
           <ControlledField
             control={form.control}
@@ -248,6 +333,49 @@ export function WorkQuickCreate({
             />
           </MoreProperties>
 
+          {requiredDefinitions.map((definition) => (
+            <div key={definition.id} className="space-y-2">
+              <Label>
+                {definition.name}
+                {definition.required ? " *" : ""}
+              </Label>
+              <CustomFieldEditor
+                key={definition.id}
+                definition={definition}
+                value={customValues[definition.id]}
+                members={members}
+                onCommit={(next) =>
+                  setCustomValues((current) => ({
+                    ...current,
+                    [definition.id]: next,
+                  }))
+                }
+              />
+            </div>
+          ))}
+
+          {optionalDefinitions.length > 0 ? (
+            <MoreProperties>
+              {optionalDefinitions.map((definition) => (
+                <div key={definition.id} className="space-y-2">
+                  <Label>{definition.name}</Label>
+                  <CustomFieldEditor
+                    key={definition.id}
+                    definition={definition}
+                    value={customValues[definition.id]}
+                    members={members}
+                    onCommit={(next) =>
+                      setCustomValues((current) => ({
+                        ...current,
+                        [definition.id]: next,
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </MoreProperties>
+          ) : null}
+
           <QuickCreateContext />
         </FieldGroup>
 
@@ -260,7 +388,10 @@ export function WorkQuickCreate({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            disabled={mutation.isPending || customFieldsBlocked}
+          >
             {mutation.isPending ? (
               <>
                 <Spinner size="xs" className="mr-0.5 text-white" />
