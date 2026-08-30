@@ -149,6 +149,7 @@ const action = `https://app.loops.so/api/newsletter-form/${formId}`;
             "Thanks! We'll let you know when we launch.",
             "success",
           );
+          window.umami?.track("waitlist-submitted");
           return;
         }
 
