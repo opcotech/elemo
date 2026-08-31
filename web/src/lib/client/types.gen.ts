@@ -1099,7 +1099,7 @@ export type NotificationPage = {
  *
  * Fine-grained authorization action. Exact match only; wildcards are not supported.
  *
- * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage, plugin.install, plugin.manage, extension.create, extension.read, extension.update, extension.delete.
  *
  */
 export type Action = string;
@@ -1201,7 +1201,7 @@ export type Role = {
 /**
  * ResourceType
  */
-export type ResourceType = 'Assignment' | 'Attachment' | 'Comment' | 'Document' | 'Issue' | 'IssueRelation' | 'Label' | 'Namespace' | 'Notification' | 'Organization' | 'Permission' | 'Project' | 'ResourceType' | 'Role' | 'Team' | 'Todo' | 'User' | 'UserToken' | 'Folder' | 'Installation' | 'CustomFieldDefinition';
+export type ResourceType = 'Assignment' | 'Attachment' | 'Comment' | 'Document' | 'Issue' | 'IssueRelation' | 'Label' | 'Namespace' | 'Notification' | 'Organization' | 'Permission' | 'Project' | 'ResourceType' | 'Role' | 'Team' | 'Todo' | 'User' | 'UserToken' | 'Folder' | 'Installation' | 'CustomFieldDefinition' | 'Extension';
 
 /**
  * RolePage
@@ -1593,6 +1593,226 @@ export type CustomFieldSearchResult = {
 export type CustomFieldPredicateOp = 'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'match';
 
 /**
+ * PluginStatus
+ *
+ * Lifecycle state of a plugin installation or runtime instance.
+ */
+export type PluginStatus = 'unknown' | 'installed' | 'starting' | 'active' | 'disabling' | 'disabled' | 'failed';
+
+/**
+ * PluginCapability
+ *
+ * Closed host-API capability granted at install time.
+ */
+export type PluginCapability = 'issues.read' | 'issues.update' | 'projects.read' | 'users.read' | 'permissions.check' | 'plugin.storage.read' | 'plugin.storage.write' | 'graph.read' | 'graph.write' | 'events.publish';
+
+/**
+ * PluginUISlot
+ *
+ * Host UI contribution point declared by a plugin.
+ */
+export type PluginUiSlot = 'issue.sidebar' | 'issue.actions' | 'issue.activity' | 'organization.settings' | 'project.settings' | 'project.sidebar';
+
+/**
+ * PluginConfigFieldType
+ *
+ * Closed activation config field type.
+ */
+export type PluginConfigFieldType = 'string' | 'integer' | 'boolean' | 'graph_binding';
+
+/**
+ * PluginGraphRelationDirection
+ *
+ * Direction of listed plugin domain relations.
+ */
+export type PluginGraphRelationDirection = 'outgoing' | 'incoming' | 'both';
+
+/**
+ * PluginConfigField
+ *
+ * Declared per-activation config field from the plugin manifest.
+ */
+export type PluginConfigField = {
+    name: string;
+    type: PluginConfigFieldType;
+    /**
+     * Foreign graph alias when type is graph_binding.
+     */
+    foreign?: string;
+    required?: boolean;
+};
+
+/**
+ * PluginGraphPropertySummary
+ */
+export type PluginGraphPropertySummary = {
+    name: string;
+    type: string;
+    required?: boolean;
+};
+
+/**
+ * PluginGraphKindSummary
+ *
+ * Local graph kind advertised for host binding pickers.
+ */
+export type PluginGraphKindSummary = {
+    kind: string;
+    parent: string;
+    properties?: Array<PluginGraphPropertySummary>;
+};
+
+/**
+ * PluginGraphForeignSummary
+ *
+ * Declared foreign graph alias resolved at activation.
+ */
+export type PluginGraphForeignSummary = {
+    name: string;
+    parent: string;
+    properties?: Array<PluginGraphPropertySummary>;
+};
+
+/**
+ * PluginGraphSummary
+ *
+ * Local kinds and foreign aliases from the plugin manifest.
+ */
+export type PluginGraphSummary = {
+    nodes?: Array<PluginGraphKindSummary>;
+    foreign?: Array<PluginGraphForeignSummary>;
+};
+
+/**
+ * PluginConfig
+ *
+ * Per-activation plugin configuration.
+ */
+export type PluginConfig = {
+    config: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * Plugin
+ *
+ * An installed plugin package and its runtime status.
+ */
+export type Plugin = {
+    /**
+     * Installation row ID.
+     */
+    id: string;
+    /**
+     * Reverse-domain plugin identifier.
+     */
+    plugin_id: string;
+    name: string;
+    version: string;
+    status: PluginStatus;
+    capabilities: Array<PluginCapability>;
+    slots: Array<PluginUiSlot>;
+    /**
+     * Last runtime error, if the plugin failed to start.
+     */
+    error?: string;
+    /**
+     * Scoped activation when listing for a manage scope.
+     */
+    enabled?: boolean | null;
+    /**
+     * Per-activation config when listing for a manage scope.
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+    config_schema?: Array<PluginConfigField>;
+    graph?: PluginGraphSummary;
+    created_at: string;
+    updated_at?: string | null;
+};
+
+/**
+ * FrontendPlugin
+ *
+ * Active frontend plugin discovery payload for a workspace scope.
+ */
+export type FrontendPlugin = {
+    id: string;
+    version: string;
+    entrypoint: string;
+    module?: string;
+    slots: Array<PluginUiSlot>;
+};
+
+/**
+ * PluginInvokeResult
+ *
+ * Result of POST /v1/plugins/{pluginId}/invoke.
+ */
+export type PluginInvokeResult = {
+    ok: boolean;
+    error?: string;
+    /**
+     * Plugin-defined JSON payload.
+     */
+    data?: unknown;
+};
+
+/**
+ * ExtensionNode
+ *
+ * Plugin-defined Neo4j graph node (label Extension).
+ */
+export type ExtensionNode = {
+    id: string;
+    plugin_id: string;
+    kind: string;
+    properties: {
+        [key: string]: unknown;
+    };
+    /**
+     * Direct IN_SCOPE_OF parent id.
+     */
+    parent_id?: string | null;
+    parent_type?: ResourceType;
+    created_at?: string | null;
+    updated_at?: string | null;
+};
+
+/**
+ * ExtensionNodePage
+ */
+export type ExtensionNodePage = {
+    items: Array<ExtensionNode>;
+    page_info: PageInfo;
+};
+
+/**
+ * ExtensionRelation
+ *
+ * Namespaced plugin domain edge.
+ */
+export type ExtensionRelation = {
+    id: string;
+    kind: string;
+    from: string;
+    from_type: ResourceType;
+    to: string;
+    to_type: ResourceType;
+    created_at?: string | null;
+};
+
+/**
+ * ExtensionRelationPage
+ */
+export type ExtensionRelationPage = {
+    items: Array<ExtensionRelation>;
+    page_info: PageInfo;
+};
+
+/**
  * SystemHealth
  */
 export type SystemHealth = {
@@ -1844,6 +2064,11 @@ export type UserEmail = string;
  * Irreversibly delete the user.
  */
 export type Force = boolean;
+
+/**
+ * Reverse-domain plugin identifier.
+ */
+export type PluginId = string;
 
 export type UserPatch = {
     /**
@@ -2414,6 +2639,75 @@ export type CustomFieldSearch = {
     user_id?: string;
     resource_id?: string;
     limit?: number;
+};
+
+export type PluginEnable = {
+    scope_id: string;
+    scope_type: ResourceType;
+    /**
+     * Optional activation config applied when enabling.
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+};
+
+export type PluginInvoke = {
+    function: string;
+    /**
+     * Composite or bare resource ID the call is scoped to.
+     */
+    scope_id: string;
+    /**
+     * Plugin-defined JSON payload.
+     */
+    payload?: unknown;
+};
+
+export type PluginGraphNodeCreate = {
+    kind: string;
+    parent_id: string;
+    parent_type: ResourceType;
+    properties?: {
+        [key: string]: unknown;
+    };
+    relation?: {
+        kind: string;
+        to_id: string;
+        to_type: ResourceType;
+    };
+};
+
+export type PluginGraphNodeUpdate = {
+    properties: {
+        [key: string]: unknown;
+    };
+};
+
+export type PluginGraphNodeMove = {
+    parent_id: string;
+    parent_type: ResourceType;
+};
+
+export type PluginGraphRelationCreate = {
+    kind: string;
+    from_id: string;
+    from_type: ResourceType;
+    to_id: string;
+    to_type: ResourceType;
+};
+
+export type PluginPackage = {
+    /**
+     * Plugin zip archive. Maximum size is 32MB.
+     */
+    package: Blob | File;
+};
+
+export type PluginConfigUpdate = {
+    config: {
+        [key: string]: unknown;
+    };
 };
 
 export type V1UsersGetData = {
@@ -7564,6 +7858,968 @@ export type V1ResourceCustomFieldValuePutResponses = {
 };
 
 export type V1ResourceCustomFieldValuePutResponse = V1ResourceCustomFieldValuePutResponses[keyof V1ResourceCustomFieldValuePutResponses];
+
+export type V1PluginsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        scope_id?: string;
+        scope_type?: ResourceType;
+    };
+    url: '/v1/plugins';
+};
+
+export type V1PluginsGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginsGetError = V1PluginsGetErrors[keyof V1PluginsGetErrors];
+
+export type V1PluginsGetResponses = {
+    /**
+     * OK
+     */
+    200: Array<Plugin>;
+};
+
+export type V1PluginsGetResponse = V1PluginsGetResponses[keyof V1PluginsGetResponses];
+
+export type V1PluginsCreateData = {
+    body?: PluginPackage;
+    path?: never;
+    query?: never;
+    url: '/v1/plugins';
+};
+
+export type V1PluginsCreateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginsCreateError = V1PluginsCreateErrors[keyof V1PluginsCreateErrors];
+
+export type V1PluginsCreateResponses = {
+    /**
+     * Created
+     */
+    201: Plugin;
+};
+
+export type V1PluginsCreateResponse = V1PluginsCreateResponses[keyof V1PluginsCreateResponses];
+
+export type V1PluginsFrontendGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        scope_id: string;
+        scope_type: ResourceType;
+    };
+    url: '/v1/plugins/frontend';
+};
+
+export type V1PluginsFrontendGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginsFrontendGetError = V1PluginsFrontendGetErrors[keyof V1PluginsFrontendGetErrors];
+
+export type V1PluginsFrontendGetResponses = {
+    /**
+     * OK
+     */
+    200: Array<FrontendPlugin>;
+};
+
+export type V1PluginsFrontendGetResponse = V1PluginsFrontendGetResponses[keyof V1PluginsFrontendGetResponses];
+
+export type V1PluginDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}';
+};
+
+export type V1PluginDeleteErrors = {
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginDeleteError = V1PluginDeleteErrors[keyof V1PluginDeleteErrors];
+
+export type V1PluginDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1PluginDeleteResponse = V1PluginDeleteResponses[keyof V1PluginDeleteResponses];
+
+export type V1PluginGetData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}';
+};
+
+export type V1PluginGetErrors = {
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGetError = V1PluginGetErrors[keyof V1PluginGetErrors];
+
+export type V1PluginGetResponses = {
+    /**
+     * OK
+     */
+    200: Plugin;
+};
+
+export type V1PluginGetResponse = V1PluginGetResponses[keyof V1PluginGetResponses];
+
+export type V1PluginEnableData = {
+    body?: PluginEnable;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/enable';
+};
+
+export type V1PluginEnableErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginEnableError = V1PluginEnableErrors[keyof V1PluginEnableErrors];
+
+export type V1PluginEnableResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1PluginEnableResponse = V1PluginEnableResponses[keyof V1PluginEnableResponses];
+
+export type V1PluginDisableData = {
+    body?: PluginEnable;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/disable';
+};
+
+export type V1PluginDisableErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginDisableError = V1PluginDisableErrors[keyof V1PluginDisableErrors];
+
+export type V1PluginDisableResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1PluginDisableResponse = V1PluginDisableResponses[keyof V1PluginDisableResponses];
+
+export type V1PluginConfigGetData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query: {
+        scope_id: string;
+        scope_type: ResourceType;
+    };
+    url: '/v1/plugins/{pluginId}/config';
+};
+
+export type V1PluginConfigGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginConfigGetError = V1PluginConfigGetErrors[keyof V1PluginConfigGetErrors];
+
+export type V1PluginConfigGetResponses = {
+    /**
+     * OK
+     */
+    200: PluginConfig;
+};
+
+export type V1PluginConfigGetResponse = V1PluginConfigGetResponses[keyof V1PluginConfigGetResponses];
+
+export type V1PluginConfigPatchData = {
+    body?: PluginConfigUpdate;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query: {
+        scope_id: string;
+        scope_type: ResourceType;
+    };
+    url: '/v1/plugins/{pluginId}/config';
+};
+
+export type V1PluginConfigPatchErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginConfigPatchError = V1PluginConfigPatchErrors[keyof V1PluginConfigPatchErrors];
+
+export type V1PluginConfigPatchResponses = {
+    /**
+     * OK
+     */
+    200: PluginConfig;
+};
+
+export type V1PluginConfigPatchResponse = V1PluginConfigPatchResponses[keyof V1PluginConfigPatchResponses];
+
+export type V1PluginUpgradeData = {
+    body?: PluginPackage;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/upgrade';
+};
+
+export type V1PluginUpgradeErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginUpgradeError = V1PluginUpgradeErrors[keyof V1PluginUpgradeErrors];
+
+export type V1PluginUpgradeResponses = {
+    /**
+     * OK
+     */
+    200: Plugin;
+};
+
+export type V1PluginUpgradeResponse = V1PluginUpgradeResponses[keyof V1PluginUpgradeResponses];
+
+export type V1PluginInvokeData = {
+    body?: PluginInvoke;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/invoke';
+};
+
+export type V1PluginInvokeErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginInvokeError = V1PluginInvokeErrors[keyof V1PluginInvokeErrors];
+
+export type V1PluginInvokeResponses = {
+    /**
+     * OK
+     */
+    200: PluginInvokeResult;
+};
+
+export type V1PluginInvokeResponse = V1PluginInvokeResponses[keyof V1PluginInvokeResponses];
+
+export type V1PluginGraphNodesGetData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query: {
+        kind: string;
+        scope_id: string;
+        scope_type: ResourceType;
+        /**
+         * JSON object of property equality filters.
+         */
+        equals?: string;
+        /**
+         * Read nodes owned by another plugin when a foreign binding allows it.
+         */
+        owner_plugin_id?: string;
+        /**
+         * Maximum number of items to return.
+         */
+        page_size?: number;
+        /**
+         * Opaque continuation token from a previous page_info.next_page_token.
+         */
+        page_token?: string;
+    };
+    url: '/v1/plugins/{pluginId}/graph/nodes';
+};
+
+export type V1PluginGraphNodesGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodesGetError = V1PluginGraphNodesGetErrors[keyof V1PluginGraphNodesGetErrors];
+
+export type V1PluginGraphNodesGetResponses = {
+    /**
+     * OK
+     */
+    200: ExtensionNodePage;
+};
+
+export type V1PluginGraphNodesGetResponse = V1PluginGraphNodesGetResponses[keyof V1PluginGraphNodesGetResponses];
+
+export type V1PluginGraphNodesCreateData = {
+    body?: PluginGraphNodeCreate;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/nodes';
+};
+
+export type V1PluginGraphNodesCreateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodesCreateError = V1PluginGraphNodesCreateErrors[keyof V1PluginGraphNodesCreateErrors];
+
+export type V1PluginGraphNodesCreateResponses = {
+    /**
+     * Created
+     */
+    201: ExtensionNode;
+};
+
+export type V1PluginGraphNodesCreateResponse = V1PluginGraphNodesCreateResponses[keyof V1PluginGraphNodesCreateResponses];
+
+export type V1PluginGraphNodeDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/nodes/{id}';
+};
+
+export type V1PluginGraphNodeDeleteErrors = {
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodeDeleteError = V1PluginGraphNodeDeleteErrors[keyof V1PluginGraphNodeDeleteErrors];
+
+export type V1PluginGraphNodeDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1PluginGraphNodeDeleteResponse = V1PluginGraphNodeDeleteResponses[keyof V1PluginGraphNodeDeleteResponses];
+
+export type V1PluginGraphNodeGetData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Read a node owned by another plugin when a foreign binding allows it.
+         */
+        owner_plugin_id?: string;
+    };
+    url: '/v1/plugins/{pluginId}/graph/nodes/{id}';
+};
+
+export type V1PluginGraphNodeGetErrors = {
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodeGetError = V1PluginGraphNodeGetErrors[keyof V1PluginGraphNodeGetErrors];
+
+export type V1PluginGraphNodeGetResponses = {
+    /**
+     * OK
+     */
+    200: ExtensionNode;
+};
+
+export type V1PluginGraphNodeGetResponse = V1PluginGraphNodeGetResponses[keyof V1PluginGraphNodeGetResponses];
+
+export type V1PluginGraphNodeUpdateData = {
+    body?: PluginGraphNodeUpdate;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/nodes/{id}';
+};
+
+export type V1PluginGraphNodeUpdateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodeUpdateError = V1PluginGraphNodeUpdateErrors[keyof V1PluginGraphNodeUpdateErrors];
+
+export type V1PluginGraphNodeUpdateResponses = {
+    /**
+     * OK
+     */
+    200: ExtensionNode;
+};
+
+export type V1PluginGraphNodeUpdateResponse = V1PluginGraphNodeUpdateResponses[keyof V1PluginGraphNodeUpdateResponses];
+
+export type V1PluginGraphNodeMoveData = {
+    body?: PluginGraphNodeMove;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/nodes/{id}/move';
+};
+
+export type V1PluginGraphNodeMoveErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphNodeMoveError = V1PluginGraphNodeMoveErrors[keyof V1PluginGraphNodeMoveErrors];
+
+export type V1PluginGraphNodeMoveResponses = {
+    /**
+     * OK
+     */
+    200: ExtensionNode;
+};
+
+export type V1PluginGraphNodeMoveResponse = V1PluginGraphNodeMoveResponses[keyof V1PluginGraphNodeMoveResponses];
+
+export type V1PluginGraphRelationsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query: {
+        kind: string;
+        node_id: string;
+        node_type: ResourceType;
+        /**
+         * Relation list direction. Defaults to outgoing.
+         */
+        direction?: PluginGraphRelationDirection;
+        /**
+         * Maximum number of items to return.
+         */
+        page_size?: number;
+        /**
+         * Opaque continuation token from a previous page_info.next_page_token.
+         */
+        page_token?: string;
+    };
+    url: '/v1/plugins/{pluginId}/graph/relations';
+};
+
+export type V1PluginGraphRelationsGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphRelationsGetError = V1PluginGraphRelationsGetErrors[keyof V1PluginGraphRelationsGetErrors];
+
+export type V1PluginGraphRelationsGetResponses = {
+    /**
+     * OK
+     */
+    200: ExtensionRelationPage;
+};
+
+export type V1PluginGraphRelationsGetResponse = V1PluginGraphRelationsGetResponses[keyof V1PluginGraphRelationsGetResponses];
+
+export type V1PluginGraphRelationsCreateData = {
+    body?: PluginGraphRelationCreate;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/relations';
+};
+
+export type V1PluginGraphRelationsCreateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphRelationsCreateError = V1PluginGraphRelationsCreateErrors[keyof V1PluginGraphRelationsCreateErrors];
+
+export type V1PluginGraphRelationsCreateResponses = {
+    /**
+     * Created
+     */
+    201: ExtensionRelation;
+};
+
+export type V1PluginGraphRelationsCreateResponse = V1PluginGraphRelationsCreateResponses[keyof V1PluginGraphRelationsCreateResponses];
+
+export type V1PluginGraphRelationDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Reverse-domain plugin identifier.
+         */
+        pluginId: string;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/plugins/{pluginId}/graph/relations/{id}';
+};
+
+export type V1PluginGraphRelationDeleteErrors = {
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1PluginGraphRelationDeleteError = V1PluginGraphRelationDeleteErrors[keyof V1PluginGraphRelationDeleteErrors];
+
+export type V1PluginGraphRelationDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1PluginGraphRelationDeleteResponse = V1PluginGraphRelationDeleteResponses[keyof V1PluginGraphRelationDeleteResponses];
 
 export type V1SystemHealthData = {
     body?: never;

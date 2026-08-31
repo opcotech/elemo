@@ -6,6 +6,7 @@ import { OrganizationDangerZone } from "@/components/organizations/organization-
 import { OrganizationDetailInfo } from "@/components/organizations/organization-detail-info";
 import { OrganizationMembersList } from "@/components/organizations/organization-members-list";
 import { OrganizationNotFound } from "@/components/organizations/organization-not-found";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { RolesList } from "@/components/roles/roles-list";
 import {
   SettingsEntityDetailError,
@@ -54,6 +55,14 @@ function OrganizationDetailPage() {
       <OrganizationDetailInfo
         organization={organization}
         permissions={permissions}
+      />
+
+      <PluginSlot
+        name="organization.settings"
+        context={{
+          organizationId,
+          organizationSlug: organization.slug,
+        }}
       />
 
       {hasReadAccess && (

@@ -95,6 +95,28 @@ build.frontend: ## Build front-end app
 	$(call log, build front-end app)
 	@$(PNPM_RUN) build
 
+.PHONY: plugins.timetracking
+plugins.timetracking: ## Build the Time Tracking reference plugin zip
+	$(call log, build com.elemo.timetracking plugin)
+	@mkdir -p '$(BUILD_DIR)/plugins' '$(ROOT_DIR)/plugins/timetracking/backend'
+	@CGO_ENABLED=0 GOOS=wasip1 GOARCH=wasm $(GO_EXEC) -C '$(ROOT_DIR)/plugins/timetracking' build -buildmode=c-shared -o backend/plugin.wasm .
+	@rm -f '$(ROOT_DIR)/plugins/timetracking/backend/plugin.h'
+	@cd '$(ROOT_DIR)/web' && NODE_ENV=production $(PNPM_EXEC) exec vite build --config '../plugins/timetracking/frontend/vite.config.ts'
+	@rm -f '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip'
+	@cd '$(ROOT_DIR)/plugins/timetracking' && zip -q '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip' plugin.yaml backend/plugin.wasm frontend/index.js
+	@echo '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip'
+
+.PHONY: plugins.accounting
+plugins.accounting: ## Build the Accounting reference plugin zip
+	$(call log, build com.elemo.accounting plugin)
+	@mkdir -p '$(BUILD_DIR)/plugins' '$(ROOT_DIR)/plugins/accounting/backend'
+	@CGO_ENABLED=0 GOOS=wasip1 GOARCH=wasm $(GO_EXEC) -C '$(ROOT_DIR)/plugins/accounting' build -buildmode=c-shared -o backend/plugin.wasm .
+	@rm -f '$(ROOT_DIR)/plugins/accounting/backend/plugin.h'
+	@cd '$(ROOT_DIR)/web' && NODE_ENV=production $(PNPM_EXEC) exec vite build --config '../plugins/accounting/frontend/vite.config.ts'
+	@rm -f '$(BUILD_DIR)/plugins/com.elemo.accounting.zip'
+	@cd '$(ROOT_DIR)/plugins/accounting' && zip -q '$(BUILD_DIR)/plugins/com.elemo.accounting.zip' plugin.yaml backend/plugin.wasm frontend/index.js
+	@echo '$(BUILD_DIR)/plugins/com.elemo.accounting.zip'
+
 .PHONY: dev
 dev: start.backend dev.frontend ## Start backend and front-end for development
 

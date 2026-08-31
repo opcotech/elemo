@@ -39,7 +39,8 @@ UNWIND [
   'Role',
   'Team',
   'Todo',
-  'User'
+  'User',
+  'Extension'
 ] AS rt
 MERGE (r:ResourceType {id: rt, system: true})
 ON CREATE SET r.created_at = datetime();
@@ -124,3 +125,8 @@ CREATE TEXT INDEX label_name_idx IF NOT EXISTS FOR (n:Label) ON (n.name);
 CREATE CONSTRAINT label_id_unique IF NOT EXISTS FOR (n:Label) REQUIRE n.id IS UNIQUE;
 CREATE TEXT INDEX todo_id_idx IF NOT EXISTS FOR (n:Todo) ON (n.id);
 CREATE CONSTRAINT todo_id_unique IF NOT EXISTS FOR (n:Todo) REQUIRE n.id IS UNIQUE;
+
+// Extension (plugin-defined graph nodes)
+CREATE TEXT INDEX extension_id_idx IF NOT EXISTS FOR (n:Extension) ON (n.id);
+CREATE CONSTRAINT extension_id_unique IF NOT EXISTS FOR (n:Extension) REQUIRE n.id IS UNIQUE;
+CREATE INDEX extension_plugin_kind_idx IF NOT EXISTS FOR (n:Extension) ON (n.plugin_id, n.kind);

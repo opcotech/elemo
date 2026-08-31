@@ -79,9 +79,12 @@ func (s *seeder) run(ctx context.Context) (seedSummary, error) {
 	if _, err := s.deps.permissions.Create(ctx, service.CreateGrantOpts{
 		Principal: admin.ID,
 		Scope:     model.InstallationID(),
-		Actions:   []model.Action{model.ActionOrganizationCreate},
+		Actions: []model.Action{
+			model.ActionOrganizationCreate,
+			model.ActionPluginInstall,
+		},
 	}); err != nil {
-		return seedSummary{}, fmt.Errorf("grant organization.create: %w", err)
+		return seedSummary{}, fmt.Errorf("grant installation actions: %w", err)
 	}
 
 	demoCtx := withUser(ctx, admin.ID)

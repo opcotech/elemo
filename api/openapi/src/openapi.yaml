@@ -80,6 +80,8 @@ tags:
     description: Teams that group users within an organization.
   - name: Custom Field
     description: Typed custom-field definitions and values.
+  - name: Plugin
+    description: Runtime plugins, activations, and plugin-defined graph nodes.
 servers:
   - url: "https://{domain}/api"
     description: Self-hosted instance.

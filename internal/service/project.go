@@ -8,6 +8,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -198,6 +199,10 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 
 	out := projectFromRepository(project)
 	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
+	publishDomainEvent(ctx, s.eventBus, s.logger, event.Event{
+		Type:     model.PluginEventProjectCreated,
+		Resource: out.ID,
+	})
 	return out, nil
 }
 
@@ -315,6 +320,10 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 
 	out := projectFromRepository(project)
 	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
+	publishDomainEvent(ctx, s.eventBus, s.logger, event.Event{
+		Type:     model.PluginEventProjectUpdated,
+		Resource: out.ID,
+	})
 	return out, nil
 }
 

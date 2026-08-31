@@ -33,6 +33,12 @@ const (
 	ActionTeamManage                Action = "team.manage"
 	ActionPermissionManage          Action = "permission.manage"
 	ActionCustomFieldManage         Action = "custom_field.manage"
+	ActionPluginInstall             Action = "plugin.install"
+	ActionPluginManage              Action = "plugin.manage"
+	ActionExtensionCreate           Action = "extension.create"
+	ActionExtensionRead             Action = "extension.read"
+	ActionExtensionUpdate           Action = "extension.update"
+	ActionExtensionDelete           Action = "extension.delete"
 )
 
 const (
@@ -113,6 +119,12 @@ var Actions = []Action{
 	ActionTeamManage,
 	ActionPermissionManage,
 	ActionCustomFieldManage,
+	ActionPluginInstall,
+	ActionPluginManage,
+	ActionExtensionCreate,
+	ActionExtensionRead,
+	ActionExtensionUpdate,
+	ActionExtensionDelete,
 }
 
 var actionSet = func() map[Action]struct{} {
@@ -168,6 +180,11 @@ var orgScopedActions = []Action{
 	ActionTeamManage,
 	ActionPermissionManage,
 	ActionCustomFieldManage,
+	ActionPluginManage,
+	ActionExtensionCreate,
+	ActionExtensionRead,
+	ActionExtensionUpdate,
+	ActionExtensionDelete,
 }
 
 var namespaceScopedActions = []Action{
@@ -192,6 +209,11 @@ var namespaceScopedActions = []Action{
 	ActionTeamManage,
 	ActionPermissionManage,
 	ActionCustomFieldManage,
+	ActionPluginManage,
+	ActionExtensionCreate,
+	ActionExtensionRead,
+	ActionExtensionUpdate,
+	ActionExtensionDelete,
 }
 
 var projectMaintainerActions = []Action{
@@ -212,12 +234,18 @@ var projectMaintainerActions = []Action{
 	ActionTeamManage,
 	ActionPermissionManage,
 	ActionCustomFieldManage,
+	ActionPluginManage,
+	ActionExtensionCreate,
+	ActionExtensionRead,
+	ActionExtensionUpdate,
+	ActionExtensionDelete,
 }
 
 var projectViewerActions = []Action{
 	ActionProjectRead,
 	ActionIssueRead,
 	ActionDocumentRead,
+	ActionExtensionRead,
 }
 
 var issueMaintainerActions = []Action{
@@ -245,8 +273,8 @@ var RoleTemplates = []RoleTemplate{
 	{
 		Key:         RoleKeyOrgMember,
 		Name:        "Organization member",
-		Description: "Read the organization they belong to.",
-		Actions:     []Action{ActionOrganizationRead},
+		Description: "Read the organization they belong to, including plugin graph nodes.",
+		Actions:     []Action{ActionOrganizationRead, ActionExtensionRead},
 	},
 	{
 		Key:         RoleKeyNamespaceAdmin,
@@ -361,6 +389,8 @@ func ReadActionFor(rt ResourceType) (Action, bool) {
 		return ActionIssueRead, true
 	case ResourceTypeDocument, ResourceTypeFolder:
 		return ActionDocumentRead, true
+	case ResourceTypeExtension:
+		return ActionExtensionRead, true
 	default:
 		return "", false
 	}
@@ -380,6 +410,8 @@ func UpdateActionFor(rt ResourceType) (Action, bool) {
 		return ActionIssueUpdate, true
 	case ResourceTypeDocument, ResourceTypeFolder:
 		return ActionDocumentUpdate, true
+	case ResourceTypeExtension:
+		return ActionExtensionUpdate, true
 	default:
 		return "", false
 	}

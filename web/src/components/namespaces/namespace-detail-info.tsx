@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, ListTree } from "lucide-react";
+import { Edit, ListTree, Puzzle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
@@ -63,6 +63,22 @@ export function NamespaceDetailInfo({
           >
             <ListTree className="size-4" />
             Custom fields
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link
+                to="/settings/organizations/$organizationSlug/namespaces/$namespaceSlug/plugins"
+                params={{
+                  organizationSlug,
+                  namespaceSlug: namespace.slug,
+                }}
+              />
+            }
+          >
+            <Puzzle className="size-4" />
+            Plugins
           </Button>
           {hasWritePermission && (
             <Button

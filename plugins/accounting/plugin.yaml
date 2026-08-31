@@ -1,0 +1,102 @@
+schemaVersion: 1
+id: com.elemo.accounting
+name: Accounting
+version: 1.0.0
+requires:
+  pluginApi: "^1"
+backend:
+  entry: backend/plugin.wasm
+frontend:
+  entry: frontend/index.js
+capabilities:
+  - issues.read
+  - projects.read
+  - users.read
+  - graph.read
+  - graph.write
+events:
+  - extension.created
+  - extension.updated
+  - extension.deleted
+slots:
+  - organization.settings
+  - project.settings
+  - project.sidebar
+  - issue.sidebar
+config:
+  - name: time_source
+    type: graph_binding
+    foreign: LoggedTime
+    required: false
+graph:
+  foreign:
+    - name: LoggedTime
+      parent: Issue
+      properties:
+        - name: seconds
+          type: integer
+          required: true
+  nodes:
+    - kind: Account
+      scope:
+        parent: Organization
+      properties:
+        - name: code
+          type: string
+          required: true
+        - name: name
+          type: string
+          required: true
+        - name: description
+          type: string
+        - name: active
+          type: boolean
+    - kind: Budget
+      scope:
+        parent: Account
+      properties:
+        - name: name
+          type: string
+        - name: seconds
+          type: integer
+          required: true
+        - name: threshold
+          type: integer
+          required: true
+        - name: period_start
+          type: date
+          required: true
+        - name: period_end
+          type: date
+          required: true
+    - kind: ProjectCharge
+      scope:
+        parent: Project
+    - kind: IssueCharge
+      scope:
+        parent: Issue
+  relations:
+    - kind: HAS_BUDGET
+      from: Account
+      to: Budget
+      cardinality: one-to-many
+    - kind: BILLED_TO
+      from: ProjectCharge
+      to: Budget
+      cardinality: many-to-one
+    - kind: CHARGED_ON
+      from: ProjectCharge
+      to: Project
+      cardinality: many-to-one
+    - kind: ISSUE_BILLED_TO
+      from: IssueCharge
+      to: Budget
+      cardinality: many-to-one
+    - kind: ISSUE_CHARGED_ON
+      from: IssueCharge
+      to: Issue
+      cardinality: many-to-one
+    - kind: COUNTED_AGAINST
+      from: LoggedTime
+      to: Budget
+      cardinality: many-to-one

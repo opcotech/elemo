@@ -18,8 +18,10 @@
     "useUnknownInCatchVariables": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@elemo/plugin-sdk": ["packages/plugin-sdk/src/index.ts"],
+      "@elemo/plugin-ui": ["packages/plugin-ui/src/index.ts"]
     }
   },
-  "include": [".storybook", "src", "tests", "vite.config.ts"]
+  "include": [".storybook", "src", "packages", "tests", "vite.config.ts"]
 }

@@ -91,7 +91,11 @@ func TestRoleTemplate_ActionStrings(t *testing.T) {
 
 	tmpl, err := RoleTemplateByKey(RoleKeyProjectViewer)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"project.read", "issue.read", "document.read"}, tmpl.ActionStrings())
+	assert.Equal(t, []string{"project.read", "issue.read", "document.read", "extension.read"}, tmpl.ActionStrings())
+
+	member, err := RoleTemplateByKey(RoleKeyOrgMember)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"organization.read", "extension.read"}, member.ActionStrings())
 }
 
 func TestParseActions(t *testing.T) {
@@ -141,6 +145,7 @@ func TestReadActionFor(t *testing.T) {
 		{"team", ResourceTypeTeam, "", false},
 		{"role", ResourceTypeRole, "", false},
 		{"custom field", ResourceTypeCustomFieldDefinition, "", false},
+		{"extension", ResourceTypeExtension, ActionExtensionRead, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

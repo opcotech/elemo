@@ -26,6 +26,8 @@ oauth2:
         notification.read: Read access to in-app notifications.
         custom_field: Read and write access to custom fields.
         custom_field.read: Read access to custom fields.
+        plugin: Read and write access to plugins.
+        plugin.read: Read access to plugins.
       refreshUrl: /oauth/authorize
     clientCredentials:
       tokenUrl: /oauth/token
@@ -53,6 +55,8 @@ oauth2:
         notification.read: Read access to in-app notifications.
         custom_field: Read and write access to custom fields.
         custom_field.read: Read access to custom fields.
+        plugin: Read and write access to plugins.
+        plugin.read: Read access to plugins.
     authorizationCode:
       authorizationUrl: /oauth/authorize
       tokenUrl: /oauth/token
@@ -80,3 +84,5 @@ oauth2:
         notification.read: Read access to in-app notifications.
         custom_field: Read and write access to custom fields.
         custom_field.read: Read access to custom fields.
+        plugin: Read and write access to plugins.
+        plugin.read: Read access to plugins.

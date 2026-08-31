@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
@@ -67,6 +68,8 @@ var startServerCmd = &cobra.Command{
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize message queue", slog.Any("error", err))
 		}
+
+		eventBus := event.NewBus()
 		defer func(messageQueue *queue.Client) {
 			err := messageQueue.Close(context.Background())
 			if err != nil {
@@ -433,6 +436,32 @@ var startServerCmd = &cobra.Command{
 			customFieldRepo = repo
 		}
 
+		var pluginRepo repository.PluginRepository
+		{
+			repo, err := repository.NewPluginRepository(
+				repository.WithPGDatabase(relDB),
+				repository.WithPGRepositoryLogger(logger.Named("plugin_repository")),
+				repository.WithPGRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize plugin repository", slog.Any("error", err))
+			}
+			pluginRepo = repo
+		}
+
+		var extensionRepo repository.ExtensionRepository
+		{
+			repo, err := repository.NewExtensionRepository(
+				repository.WithNeo4jDatabase(graphDB),
+				repository.WithNeo4jRepositoryLogger(logger.Named("extension_repository")),
+				repository.WithNeo4jRepositoryTracer(tracer),
+			)
+			if err != nil {
+				logger.Fatal(context.Background(), "failed to initialize extension repository", slog.Any("error", err))
+			}
+			extensionRepo = repo
+		}
+
 		var staticFileRepo repository.StaticFileRepository
 		{
 			repo, err := repository.NewStaticFileRepository(
@@ -602,6 +631,7 @@ var startServerCmd = &cobra.Command{
 			searchService,
 			service.WithLogger(logger.Named("project_service")),
 			service.WithTracer(tracer),
+			service.WithEventBus(eventBus),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize project service", slog.Any("error", err))
@@ -617,6 +647,7 @@ var startServerCmd = &cobra.Command{
 			customFieldService,
 			service.WithLogger(logger.Named("issue_service")),
 			service.WithTracer(tracer),
+			service.WithEventBus(eventBus),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize issue service", slog.Any("error", err))
@@ -671,6 +702,27 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
 		}
 
+		pluginService, err := service.NewPluginService(
+			cfg.Plugin,
+			pluginRepo,
+			extensionRepo,
+			permissionService,
+			licenseService,
+			issueService,
+			projectService,
+			userService,
+			eventBus,
+			service.WithLogger(logger.Named("plugin_service")),
+			service.WithTracer(tracer),
+			service.WithEventBus(eventBus),
+		)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize plugin service", slog.Any("error", err))
+		}
+		if err := pluginService.Restore(context.Background()); err != nil {
+			logger.Fatal(context.Background(), "failed to restore plugins", slog.Any("error", err))
+		}
+
 		authProvider, err := initAuthProvider(relDBPool)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize auth server", slog.Any("error", err))
@@ -697,6 +749,7 @@ var startServerCmd = &cobra.Command{
 				NotificationService: notificationService,
 				SearchService:       searchService,
 				CustomFieldService:  customFieldService,
+				PluginService:       pluginService,
 			},
 			elemoHttp.WithConfig(cfg.Server),
 			elemoHttp.WithLogger(logger.Named("http_server")),

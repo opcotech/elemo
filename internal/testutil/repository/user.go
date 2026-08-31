@@ -28,7 +28,7 @@ func GrantOrganizationCreate(userID model.ID, db *repository.Neo4jDatabase) erro
 		"installation_id": installationID.String(),
 		"user_id":         userID.String(),
 		"grant_id":        model.MustNewID(model.ResourceTypePermission).String(),
-		"actions":         []string{model.ActionOrganizationCreate.String()},
+		"actions":         []string{model.ActionOrganizationCreate.String(), model.ActionPluginInstall.String()},
 	}
 
 	return repository.Neo4jExecuteWriteAndConsume(ctx, db, cypher, params)

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
@@ -175,6 +176,18 @@ func enqueueSearchIndex(ctx context.Context, logger log.Logger, searchService Se
 		logger.Warn(ctx, "failed to enqueue search index",
 			log.WithError(err),
 			log.WithValue(id.Composite()),
+		)
+	}
+}
+
+func publishDomainEvent(ctx context.Context, bus EventPublisher, logger log.Logger, evt event.Event) {
+	if bus == nil {
+		return
+	}
+	if err := bus.Publish(ctx, evt); err != nil {
+		logger.Warn(ctx, "failed to publish domain event",
+			log.WithError(err),
+			log.WithValue(string(evt.Type)),
 		)
 	}
 }

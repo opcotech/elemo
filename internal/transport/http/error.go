@@ -10,6 +10,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/validate"
+	elemoplugin "github.com/opcotech/elemo/internal/plugin"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 )
@@ -113,6 +114,19 @@ func isClientValidationError(err error) bool {
 		errors.Is(err, model.ErrCustomFieldIdentityImmutable) ||
 		errors.Is(err, model.ErrCustomFieldOptionInUse) ||
 		errors.Is(err, model.ErrCustomFieldRequired) ||
+		errors.Is(err, model.ErrInvalidPluginManifest) ||
+		errors.Is(err, model.ErrInvalidPluginID) ||
+		errors.Is(err, model.ErrPluginSchemaVersion) ||
+		errors.Is(err, model.ErrPluginAPIIncompatible) ||
+		errors.Is(err, model.ErrPluginGraphSchema) ||
+		errors.Is(err, model.ErrPluginConfigInvalid) ||
+		errors.Is(err, model.ErrPluginGraphBinding) ||
+		errors.Is(err, model.ErrInvalidPluginCapability) ||
+		errors.Is(err, service.ErrPluginSchemaNotAdditive) ||
+		errors.Is(err, elemoplugin.ErrPackageInvalid) ||
+		errors.Is(err, elemoplugin.ErrPackageTooLarge) ||
+		errors.Is(err, elemoplugin.ErrManifestParse) ||
+		errors.Is(err, elemoplugin.ErrNotReactor) ||
 		errors.Is(err, model.ErrInvalidAction) ||
 		errors.Is(err, model.ErrNotAPrincipal) ||
 		errors.Is(err, validate.ErrInvalidSlug) ||
@@ -126,7 +140,9 @@ func isClientValidationError(err error) bool {
 func isConflictError(err error) bool {
 	return errors.Is(err, repository.ErrSlugConflict) ||
 		errors.Is(err, repository.ErrProjectKeyConflict) ||
-		errors.Is(err, repository.ErrCustomFieldKeyConflict)
+		errors.Is(err, repository.ErrCustomFieldKeyConflict) ||
+		errors.Is(err, repository.ErrPluginConflict) ||
+		errors.Is(err, model.ErrPluginRelationCardinality)
 }
 
 func isForbiddenError(err error) bool {

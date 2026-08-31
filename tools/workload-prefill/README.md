@@ -1,7 +1,8 @@
 # Workload Prefill
 
-Destructive demo seeder that wipes Neo4j, Meilisearch, Redis, and Postgres
-tokens, then fills a mature-company world through Elemo's internal services.
+Destructive demo seeder that wipes Neo4j, Meilisearch, Redis, Postgres
+tokens, and plugin installations, then fills a mature-company world through
+Elemo's internal services.
 
 This does **not** replace `assets/queries/demo.cypher`. Use `scripts/setup.sh`
 for the small ACME workspace, and this tool when you need a large tenant for
@@ -32,8 +33,9 @@ make demo.prefill
 ```
 
 The `-yes` flag is required. The run **deletes all graph data**, rebuilds
-bootstrap constraints, truncates `user_tokens` and `notifications`, flushes
-Redis, and clears the search index.
+bootstrap constraints, truncates `user_tokens`, `notifications`, and plugin
+tables, removes extracted plugin packages (source trees with a root
+`plugin.yaml` are kept), flushes Redis, and clears the search index.
 
 ### Flags
 
@@ -81,7 +83,7 @@ Every account uses the same password (`AppleTree123` unless `-password` is set).
 
 | Email | Role |
 | --- | --- |
-| `demo@elemo.example` | Installation `organization.create` + Elemo org-admin |
+| `demo@elemo.example` | Installation `organization.create` + `plugin.install` + Elemo org-admin |
 | `maya.chen@kite.example` | Kite Analytics org-admin |
 | `luis.navarro@harbor.example` | Harbor Logistics org-admin |
 | `priya.shah@nimbus.example` | Nimbus Cloud org-admin |

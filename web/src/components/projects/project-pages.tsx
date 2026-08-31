@@ -12,6 +12,7 @@ import {
 import { DocumentRenameDialog } from "@/components/documents/document-rename-dialog";
 import { DocumentSummaryList } from "@/components/documents/document-summary-list";
 import { ContentWidth } from "@/components/layout/content-width";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
@@ -325,6 +326,17 @@ export function ProjectOverviewPage({
               ]}
             />
           </Section>
+          <PluginSlot
+            name="project.sidebar"
+            context={{
+              organizationId: namespace.organization.id,
+              organizationSlug: namespace.organization.slug,
+              namespaceId: namespace.id,
+              namespaceSlug: namespace.slug,
+              projectId: project.id,
+              projectKey: project.key,
+            }}
+          />
           <Section title="Relations">
             <MockDataAlert title="Illustrative relationships" className="mb-3">
               Project relationships are illustrative examples linked to the work

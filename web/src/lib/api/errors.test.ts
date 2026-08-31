@@ -56,4 +56,21 @@ describe("api error helpers", () => {
       })
     ).toThrow(ApiError);
   });
+
+  it("accepts empty 204 responses as success", () => {
+    expect(
+      throwIfApiFailed({
+        response: { status: 204, statusText: "No Content" } as Response,
+      })
+    ).toBeUndefined();
+  });
+
+  it("does not treat a 204 parse error as failure", () => {
+    expect(
+      throwIfApiFailed({
+        error: new Error("Failed to parse JSON"),
+        response: { status: 204, statusText: "No Content" } as Response,
+      })
+    ).toBeUndefined();
+  });
 });

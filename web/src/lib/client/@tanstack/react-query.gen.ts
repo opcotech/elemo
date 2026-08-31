@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { type Options, v1CustomFieldArchive, v1CustomFieldDelete, v1CustomFieldGet, v1CustomFieldsCreate, v1CustomFieldsGet, v1CustomFieldsSearch, v1CustomFieldUpdate, v1DocumentDelete, v1DocumentGet, v1DocumentUpdate, v1FolderDelete, v1FolderGet, v1FolderUpdate, v1IssueDelete, v1IssueGet, v1IssueRelationDelete, v1IssueRelationsCreate, v1IssueRelationsGet, v1IssueRelationUpdate, v1IssuesDocumentsCreate, v1IssuesDocumentsGet, v1IssuesDocumentsRelate, v1IssuesDocumentsUnrelate, v1IssueUpdate, v1LabelsGet, v1NamespaceDelete, v1NamespaceGet, v1NamespacesDocumentsCreate, v1NamespacesDocumentsGet, v1NamespacesFoldersCreate, v1NamespacesFoldersGet, v1NamespacesGet, v1NamespacesIssuesGet, v1NamespacesIssuesKeyGet, v1NamespacesProjectsCreate, v1NamespacesProjectsGet, v1NamespacesProjectsKeyGet, v1NamespaceUpdate, v1NotificationDelete, v1NotificationGet, v1NotificationsGet, v1NotificationUpdate, v1OrganizationDelete, v1OrganizationGet, v1OrganizationMemberInviteRevoke, v1OrganizationMemberRemove, v1OrganizationMembersAccept, v1OrganizationMembersAdd, v1OrganizationMembersGet, v1OrganizationMembersInvite, v1OrganizationRoleDelete, v1OrganizationRoleGet, v1OrganizationRolesCreate, v1OrganizationRolesGet, v1OrganizationRoleUpdate, v1OrganizationsCreate, v1OrganizationsDocumentsCreate, v1OrganizationsDocumentsGet, v1OrganizationsFoldersCreate, v1OrganizationsFoldersGet, v1OrganizationsGet, v1OrganizationsNamespacesCreate, v1OrganizationsNamespacesGet, v1OrganizationTeamDelete, v1OrganizationTeamGet, v1OrganizationTeamMemberRemove, v1OrganizationTeamMembersAdd, v1OrganizationTeamMembersGet, v1OrganizationTeamsCreate, v1OrganizationTeamsGet, v1OrganizationTeamUpdate, v1OrganizationUpdate, v1PermissionDelete, v1PermissionGet, v1PermissionResourceGet, v1PermissionsCreate, v1ProjectDelete, v1ProjectGet, v1ProjectsDocumentsCreate, v1ProjectsDocumentsGet, v1ProjectsDocumentsRelate, v1ProjectsDocumentsUnrelate, v1ProjectsIssuesCreate, v1ProjectsIssuesGet, v1ProjectUpdate, v1ResourceCustomFieldsGet, v1ResourceCustomFieldValueDelete, v1ResourceCustomFieldValuePut, v1SearchGet, v1SystemHealth, v1SystemHeartbeat, v1SystemLicense, v1SystemVersion, v1TodoDelete, v1TodoGet, v1TodosCreate, v1TodosGet, v1TodoUpdate, v1UserDelete, v1UserGet, v1UserRequestPasswordReset, v1UserResetPassword, v1UsersCreate, v1UsersGet, v1UsersIssuesGet, v1UserUpdate } from '../sdk.gen';
-import type { V1CustomFieldArchiveData, V1CustomFieldArchiveError, V1CustomFieldArchiveResponse, V1CustomFieldDeleteData, V1CustomFieldDeleteError, V1CustomFieldDeleteResponse, V1CustomFieldGetData, V1CustomFieldGetError, V1CustomFieldGetResponse, V1CustomFieldsCreateData, V1CustomFieldsCreateError, V1CustomFieldsCreateResponse, V1CustomFieldsGetData, V1CustomFieldsGetError, V1CustomFieldsGetResponse, V1CustomFieldsSearchData, V1CustomFieldsSearchError, V1CustomFieldsSearchResponse, V1CustomFieldUpdateData, V1CustomFieldUpdateError, V1CustomFieldUpdateResponse, V1DocumentDeleteData, V1DocumentDeleteError, V1DocumentDeleteResponse, V1DocumentGetData, V1DocumentGetError, V1DocumentGetResponse, V1DocumentUpdateData, V1DocumentUpdateError, V1DocumentUpdateResponse, V1FolderDeleteData, V1FolderDeleteError, V1FolderDeleteResponse, V1FolderGetData, V1FolderGetError, V1FolderGetResponse, V1FolderUpdateData, V1FolderUpdateError, V1FolderUpdateResponse, V1IssueDeleteData, V1IssueDeleteError, V1IssueDeleteResponse, V1IssueGetData, V1IssueGetError, V1IssueGetResponse, V1IssueRelationDeleteData, V1IssueRelationDeleteError, V1IssueRelationDeleteResponse, V1IssueRelationsCreateData, V1IssueRelationsCreateError, V1IssueRelationsCreateResponse, V1IssueRelationsGetData, V1IssueRelationsGetError, V1IssueRelationsGetResponse, V1IssueRelationUpdateData, V1IssueRelationUpdateError, V1IssueRelationUpdateResponse, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateError, V1IssuesDocumentsCreateResponse, V1IssuesDocumentsGetData, V1IssuesDocumentsGetError, V1IssuesDocumentsGetResponse, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateError, V1IssuesDocumentsRelateResponse, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateError, V1IssuesDocumentsUnrelateResponse, V1IssueUpdateData, V1IssueUpdateError, V1IssueUpdateResponse, V1LabelsGetData, V1LabelsGetError, V1LabelsGetResponse, V1NamespaceDeleteData, V1NamespaceDeleteError, V1NamespaceDeleteResponse, V1NamespaceGetData, V1NamespaceGetError, V1NamespaceGetResponse, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateError, V1NamespacesDocumentsCreateResponse, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetError, V1NamespacesDocumentsGetResponse, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateError, V1NamespacesFoldersCreateResponse, V1NamespacesFoldersGetData, V1NamespacesFoldersGetError, V1NamespacesFoldersGetResponse, V1NamespacesGetData, V1NamespacesGetError, V1NamespacesGetResponse, V1NamespacesIssuesGetData, V1NamespacesIssuesGetError, V1NamespacesIssuesGetResponse, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetError, V1NamespacesIssuesKeyGetResponse, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateError, V1NamespacesProjectsCreateResponse, V1NamespacesProjectsGetData, V1NamespacesProjectsGetError, V1NamespacesProjectsGetResponse, V1NamespacesProjectsKeyGetData, V1NamespacesProjectsKeyGetError, V1NamespacesProjectsKeyGetResponse, V1NamespaceUpdateData, V1NamespaceUpdateError, V1NamespaceUpdateResponse, V1NotificationDeleteData, V1NotificationDeleteError, V1NotificationDeleteResponse, V1NotificationGetData, V1NotificationGetError, V1NotificationGetResponse, V1NotificationsGetData, V1NotificationsGetError, V1NotificationsGetResponse, V1NotificationUpdateData, V1NotificationUpdateError, V1NotificationUpdateResponse, V1OrganizationDeleteData, V1OrganizationDeleteError, V1OrganizationDeleteResponse, V1OrganizationGetData, V1OrganizationGetError, V1OrganizationGetResponse, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeError, V1OrganizationMemberInviteRevokeResponse, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveError, V1OrganizationMemberRemoveResponse, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptError, V1OrganizationMembersAcceptResponse, V1OrganizationMembersAddData, V1OrganizationMembersAddError, V1OrganizationMembersAddResponse, V1OrganizationMembersGetData, V1OrganizationMembersGetError, V1OrganizationMembersGetResponse, V1OrganizationMembersInviteData, V1OrganizationMembersInviteError, V1OrganizationMembersInviteResponse, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteError, V1OrganizationRoleDeleteResponse, V1OrganizationRoleGetData, V1OrganizationRoleGetError, V1OrganizationRoleGetResponse, V1OrganizationRolesCreateData, V1OrganizationRolesCreateError, V1OrganizationRolesCreateResponse, V1OrganizationRolesGetData, V1OrganizationRolesGetError, V1OrganizationRolesGetResponse, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateError, V1OrganizationRoleUpdateResponse, V1OrganizationsCreateData, V1OrganizationsCreateError, V1OrganizationsCreateResponse, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateError, V1OrganizationsDocumentsCreateResponse, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetError, V1OrganizationsDocumentsGetResponse, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateError, V1OrganizationsFoldersCreateResponse, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetError, V1OrganizationsFoldersGetResponse, V1OrganizationsGetData, V1OrganizationsGetError, V1OrganizationsGetResponse, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateError, V1OrganizationsNamespacesCreateResponse, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetError, V1OrganizationsNamespacesGetResponse, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteError, V1OrganizationTeamDeleteResponse, V1OrganizationTeamGetData, V1OrganizationTeamGetError, V1OrganizationTeamGetResponse, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveError, V1OrganizationTeamMemberRemoveResponse, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddError, V1OrganizationTeamMembersAddResponse, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetError, V1OrganizationTeamMembersGetResponse, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateError, V1OrganizationTeamsCreateResponse, V1OrganizationTeamsGetData, V1OrganizationTeamsGetError, V1OrganizationTeamsGetResponse, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateError, V1OrganizationTeamUpdateResponse, V1OrganizationUpdateData, V1OrganizationUpdateError, V1OrganizationUpdateResponse, V1PermissionDeleteData, V1PermissionDeleteError, V1PermissionDeleteResponse, V1PermissionGetData, V1PermissionGetError, V1PermissionGetResponse, V1PermissionResourceGetData, V1PermissionResourceGetError, V1PermissionResourceGetResponse, V1PermissionsCreateData, V1PermissionsCreateError, V1PermissionsCreateResponse, V1ProjectDeleteData, V1ProjectDeleteError, V1ProjectDeleteResponse, V1ProjectGetData, V1ProjectGetError, V1ProjectGetResponse, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateError, V1ProjectsDocumentsCreateResponse, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetError, V1ProjectsDocumentsGetResponse, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateError, V1ProjectsDocumentsRelateResponse, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateError, V1ProjectsDocumentsUnrelateResponse, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateError, V1ProjectsIssuesCreateResponse, V1ProjectsIssuesGetData, V1ProjectsIssuesGetError, V1ProjectsIssuesGetResponse, V1ProjectUpdateData, V1ProjectUpdateError, V1ProjectUpdateResponse, V1ResourceCustomFieldsGetData, V1ResourceCustomFieldsGetError, V1ResourceCustomFieldsGetResponse, V1ResourceCustomFieldValueDeleteData, V1ResourceCustomFieldValueDeleteError, V1ResourceCustomFieldValueDeleteResponse, V1ResourceCustomFieldValuePutData, V1ResourceCustomFieldValuePutError, V1ResourceCustomFieldValuePutResponse, V1SearchGetData, V1SearchGetError, V1SearchGetResponse, V1SystemHealthData, V1SystemHealthError, V1SystemHealthResponse, V1SystemHeartbeatData, V1SystemHeartbeatError, V1SystemHeartbeatResponse, V1SystemLicenseData, V1SystemLicenseError, V1SystemLicenseResponse, V1SystemVersionData, V1SystemVersionError, V1SystemVersionResponse, V1TodoDeleteData, V1TodoDeleteError, V1TodoDeleteResponse, V1TodoGetData, V1TodoGetError, V1TodoGetResponse, V1TodosCreateData, V1TodosCreateError, V1TodosCreateResponse, V1TodosGetData, V1TodosGetError, V1TodosGetResponse, V1TodoUpdateData, V1TodoUpdateError, V1TodoUpdateResponse, V1UserDeleteData, V1UserDeleteError, V1UserDeleteResponse, V1UserGetData, V1UserGetError, V1UserGetResponse, V1UserRequestPasswordResetData, V1UserRequestPasswordResetError, V1UserResetPasswordData, V1UserResetPasswordError, V1UserResetPasswordResponse, V1UsersCreateData, V1UsersCreateError, V1UsersCreateResponse, V1UsersGetData, V1UsersGetError, V1UsersGetResponse, V1UsersIssuesGetData, V1UsersIssuesGetError, V1UsersIssuesGetResponse, V1UserUpdateData, V1UserUpdateError, V1UserUpdateResponse } from '../types.gen';
+import { type Options, v1CustomFieldArchive, v1CustomFieldDelete, v1CustomFieldGet, v1CustomFieldsCreate, v1CustomFieldsGet, v1CustomFieldsSearch, v1CustomFieldUpdate, v1DocumentDelete, v1DocumentGet, v1DocumentUpdate, v1FolderDelete, v1FolderGet, v1FolderUpdate, v1IssueDelete, v1IssueGet, v1IssueRelationDelete, v1IssueRelationsCreate, v1IssueRelationsGet, v1IssueRelationUpdate, v1IssuesDocumentsCreate, v1IssuesDocumentsGet, v1IssuesDocumentsRelate, v1IssuesDocumentsUnrelate, v1IssueUpdate, v1LabelsGet, v1NamespaceDelete, v1NamespaceGet, v1NamespacesDocumentsCreate, v1NamespacesDocumentsGet, v1NamespacesFoldersCreate, v1NamespacesFoldersGet, v1NamespacesGet, v1NamespacesIssuesGet, v1NamespacesIssuesKeyGet, v1NamespacesProjectsCreate, v1NamespacesProjectsGet, v1NamespacesProjectsKeyGet, v1NamespaceUpdate, v1NotificationDelete, v1NotificationGet, v1NotificationsGet, v1NotificationUpdate, v1OrganizationDelete, v1OrganizationGet, v1OrganizationMemberInviteRevoke, v1OrganizationMemberRemove, v1OrganizationMembersAccept, v1OrganizationMembersAdd, v1OrganizationMembersGet, v1OrganizationMembersInvite, v1OrganizationRoleDelete, v1OrganizationRoleGet, v1OrganizationRolesCreate, v1OrganizationRolesGet, v1OrganizationRoleUpdate, v1OrganizationsCreate, v1OrganizationsDocumentsCreate, v1OrganizationsDocumentsGet, v1OrganizationsFoldersCreate, v1OrganizationsFoldersGet, v1OrganizationsGet, v1OrganizationsNamespacesCreate, v1OrganizationsNamespacesGet, v1OrganizationTeamDelete, v1OrganizationTeamGet, v1OrganizationTeamMemberRemove, v1OrganizationTeamMembersAdd, v1OrganizationTeamMembersGet, v1OrganizationTeamsCreate, v1OrganizationTeamsGet, v1OrganizationTeamUpdate, v1OrganizationUpdate, v1PermissionDelete, v1PermissionGet, v1PermissionResourceGet, v1PermissionsCreate, v1PluginConfigGet, v1PluginConfigPatch, v1PluginDelete, v1PluginDisable, v1PluginEnable, v1PluginGet, v1PluginGraphNodeDelete, v1PluginGraphNodeGet, v1PluginGraphNodeMove, v1PluginGraphNodesCreate, v1PluginGraphNodesGet, v1PluginGraphNodeUpdate, v1PluginGraphRelationDelete, v1PluginGraphRelationsCreate, v1PluginGraphRelationsGet, v1PluginInvoke, v1PluginsCreate, v1PluginsFrontendGet, v1PluginsGet, v1PluginUpgrade, v1ProjectDelete, v1ProjectGet, v1ProjectsDocumentsCreate, v1ProjectsDocumentsGet, v1ProjectsDocumentsRelate, v1ProjectsDocumentsUnrelate, v1ProjectsIssuesCreate, v1ProjectsIssuesGet, v1ProjectUpdate, v1ResourceCustomFieldsGet, v1ResourceCustomFieldValueDelete, v1ResourceCustomFieldValuePut, v1SearchGet, v1SystemHealth, v1SystemHeartbeat, v1SystemLicense, v1SystemVersion, v1TodoDelete, v1TodoGet, v1TodosCreate, v1TodosGet, v1TodoUpdate, v1UserDelete, v1UserGet, v1UserRequestPasswordReset, v1UserResetPassword, v1UsersCreate, v1UsersGet, v1UsersIssuesGet, v1UserUpdate } from '../sdk.gen';
+import type { V1CustomFieldArchiveData, V1CustomFieldArchiveError, V1CustomFieldArchiveResponse, V1CustomFieldDeleteData, V1CustomFieldDeleteError, V1CustomFieldDeleteResponse, V1CustomFieldGetData, V1CustomFieldGetError, V1CustomFieldGetResponse, V1CustomFieldsCreateData, V1CustomFieldsCreateError, V1CustomFieldsCreateResponse, V1CustomFieldsGetData, V1CustomFieldsGetError, V1CustomFieldsGetResponse, V1CustomFieldsSearchData, V1CustomFieldsSearchError, V1CustomFieldsSearchResponse, V1CustomFieldUpdateData, V1CustomFieldUpdateError, V1CustomFieldUpdateResponse, V1DocumentDeleteData, V1DocumentDeleteError, V1DocumentDeleteResponse, V1DocumentGetData, V1DocumentGetError, V1DocumentGetResponse, V1DocumentUpdateData, V1DocumentUpdateError, V1DocumentUpdateResponse, V1FolderDeleteData, V1FolderDeleteError, V1FolderDeleteResponse, V1FolderGetData, V1FolderGetError, V1FolderGetResponse, V1FolderUpdateData, V1FolderUpdateError, V1FolderUpdateResponse, V1IssueDeleteData, V1IssueDeleteError, V1IssueDeleteResponse, V1IssueGetData, V1IssueGetError, V1IssueGetResponse, V1IssueRelationDeleteData, V1IssueRelationDeleteError, V1IssueRelationDeleteResponse, V1IssueRelationsCreateData, V1IssueRelationsCreateError, V1IssueRelationsCreateResponse, V1IssueRelationsGetData, V1IssueRelationsGetError, V1IssueRelationsGetResponse, V1IssueRelationUpdateData, V1IssueRelationUpdateError, V1IssueRelationUpdateResponse, V1IssuesDocumentsCreateData, V1IssuesDocumentsCreateError, V1IssuesDocumentsCreateResponse, V1IssuesDocumentsGetData, V1IssuesDocumentsGetError, V1IssuesDocumentsGetResponse, V1IssuesDocumentsRelateData, V1IssuesDocumentsRelateError, V1IssuesDocumentsRelateResponse, V1IssuesDocumentsUnrelateData, V1IssuesDocumentsUnrelateError, V1IssuesDocumentsUnrelateResponse, V1IssueUpdateData, V1IssueUpdateError, V1IssueUpdateResponse, V1LabelsGetData, V1LabelsGetError, V1LabelsGetResponse, V1NamespaceDeleteData, V1NamespaceDeleteError, V1NamespaceDeleteResponse, V1NamespaceGetData, V1NamespaceGetError, V1NamespaceGetResponse, V1NamespacesDocumentsCreateData, V1NamespacesDocumentsCreateError, V1NamespacesDocumentsCreateResponse, V1NamespacesDocumentsGetData, V1NamespacesDocumentsGetError, V1NamespacesDocumentsGetResponse, V1NamespacesFoldersCreateData, V1NamespacesFoldersCreateError, V1NamespacesFoldersCreateResponse, V1NamespacesFoldersGetData, V1NamespacesFoldersGetError, V1NamespacesFoldersGetResponse, V1NamespacesGetData, V1NamespacesGetError, V1NamespacesGetResponse, V1NamespacesIssuesGetData, V1NamespacesIssuesGetError, V1NamespacesIssuesGetResponse, V1NamespacesIssuesKeyGetData, V1NamespacesIssuesKeyGetError, V1NamespacesIssuesKeyGetResponse, V1NamespacesProjectsCreateData, V1NamespacesProjectsCreateError, V1NamespacesProjectsCreateResponse, V1NamespacesProjectsGetData, V1NamespacesProjectsGetError, V1NamespacesProjectsGetResponse, V1NamespacesProjectsKeyGetData, V1NamespacesProjectsKeyGetError, V1NamespacesProjectsKeyGetResponse, V1NamespaceUpdateData, V1NamespaceUpdateError, V1NamespaceUpdateResponse, V1NotificationDeleteData, V1NotificationDeleteError, V1NotificationDeleteResponse, V1NotificationGetData, V1NotificationGetError, V1NotificationGetResponse, V1NotificationsGetData, V1NotificationsGetError, V1NotificationsGetResponse, V1NotificationUpdateData, V1NotificationUpdateError, V1NotificationUpdateResponse, V1OrganizationDeleteData, V1OrganizationDeleteError, V1OrganizationDeleteResponse, V1OrganizationGetData, V1OrganizationGetError, V1OrganizationGetResponse, V1OrganizationMemberInviteRevokeData, V1OrganizationMemberInviteRevokeError, V1OrganizationMemberInviteRevokeResponse, V1OrganizationMemberRemoveData, V1OrganizationMemberRemoveError, V1OrganizationMemberRemoveResponse, V1OrganizationMembersAcceptData, V1OrganizationMembersAcceptError, V1OrganizationMembersAcceptResponse, V1OrganizationMembersAddData, V1OrganizationMembersAddError, V1OrganizationMembersAddResponse, V1OrganizationMembersGetData, V1OrganizationMembersGetError, V1OrganizationMembersGetResponse, V1OrganizationMembersInviteData, V1OrganizationMembersInviteError, V1OrganizationMembersInviteResponse, V1OrganizationRoleDeleteData, V1OrganizationRoleDeleteError, V1OrganizationRoleDeleteResponse, V1OrganizationRoleGetData, V1OrganizationRoleGetError, V1OrganizationRoleGetResponse, V1OrganizationRolesCreateData, V1OrganizationRolesCreateError, V1OrganizationRolesCreateResponse, V1OrganizationRolesGetData, V1OrganizationRolesGetError, V1OrganizationRolesGetResponse, V1OrganizationRoleUpdateData, V1OrganizationRoleUpdateError, V1OrganizationRoleUpdateResponse, V1OrganizationsCreateData, V1OrganizationsCreateError, V1OrganizationsCreateResponse, V1OrganizationsDocumentsCreateData, V1OrganizationsDocumentsCreateError, V1OrganizationsDocumentsCreateResponse, V1OrganizationsDocumentsGetData, V1OrganizationsDocumentsGetError, V1OrganizationsDocumentsGetResponse, V1OrganizationsFoldersCreateData, V1OrganizationsFoldersCreateError, V1OrganizationsFoldersCreateResponse, V1OrganizationsFoldersGetData, V1OrganizationsFoldersGetError, V1OrganizationsFoldersGetResponse, V1OrganizationsGetData, V1OrganizationsGetError, V1OrganizationsGetResponse, V1OrganizationsNamespacesCreateData, V1OrganizationsNamespacesCreateError, V1OrganizationsNamespacesCreateResponse, V1OrganizationsNamespacesGetData, V1OrganizationsNamespacesGetError, V1OrganizationsNamespacesGetResponse, V1OrganizationTeamDeleteData, V1OrganizationTeamDeleteError, V1OrganizationTeamDeleteResponse, V1OrganizationTeamGetData, V1OrganizationTeamGetError, V1OrganizationTeamGetResponse, V1OrganizationTeamMemberRemoveData, V1OrganizationTeamMemberRemoveError, V1OrganizationTeamMemberRemoveResponse, V1OrganizationTeamMembersAddData, V1OrganizationTeamMembersAddError, V1OrganizationTeamMembersAddResponse, V1OrganizationTeamMembersGetData, V1OrganizationTeamMembersGetError, V1OrganizationTeamMembersGetResponse, V1OrganizationTeamsCreateData, V1OrganizationTeamsCreateError, V1OrganizationTeamsCreateResponse, V1OrganizationTeamsGetData, V1OrganizationTeamsGetError, V1OrganizationTeamsGetResponse, V1OrganizationTeamUpdateData, V1OrganizationTeamUpdateError, V1OrganizationTeamUpdateResponse, V1OrganizationUpdateData, V1OrganizationUpdateError, V1OrganizationUpdateResponse, V1PermissionDeleteData, V1PermissionDeleteError, V1PermissionDeleteResponse, V1PermissionGetData, V1PermissionGetError, V1PermissionGetResponse, V1PermissionResourceGetData, V1PermissionResourceGetError, V1PermissionResourceGetResponse, V1PermissionsCreateData, V1PermissionsCreateError, V1PermissionsCreateResponse, V1PluginConfigGetData, V1PluginConfigGetError, V1PluginConfigGetResponse, V1PluginConfigPatchData, V1PluginConfigPatchError, V1PluginConfigPatchResponse, V1PluginDeleteData, V1PluginDeleteError, V1PluginDeleteResponse, V1PluginDisableData, V1PluginDisableError, V1PluginDisableResponse, V1PluginEnableData, V1PluginEnableError, V1PluginEnableResponse, V1PluginGetData, V1PluginGetError, V1PluginGetResponse, V1PluginGraphNodeDeleteData, V1PluginGraphNodeDeleteError, V1PluginGraphNodeDeleteResponse, V1PluginGraphNodeGetData, V1PluginGraphNodeGetError, V1PluginGraphNodeGetResponse, V1PluginGraphNodeMoveData, V1PluginGraphNodeMoveError, V1PluginGraphNodeMoveResponse, V1PluginGraphNodesCreateData, V1PluginGraphNodesCreateError, V1PluginGraphNodesCreateResponse, V1PluginGraphNodesGetData, V1PluginGraphNodesGetError, V1PluginGraphNodesGetResponse, V1PluginGraphNodeUpdateData, V1PluginGraphNodeUpdateError, V1PluginGraphNodeUpdateResponse, V1PluginGraphRelationDeleteData, V1PluginGraphRelationDeleteError, V1PluginGraphRelationDeleteResponse, V1PluginGraphRelationsCreateData, V1PluginGraphRelationsCreateError, V1PluginGraphRelationsCreateResponse, V1PluginGraphRelationsGetData, V1PluginGraphRelationsGetError, V1PluginGraphRelationsGetResponse, V1PluginInvokeData, V1PluginInvokeError, V1PluginInvokeResponse, V1PluginsCreateData, V1PluginsCreateError, V1PluginsCreateResponse, V1PluginsFrontendGetData, V1PluginsFrontendGetError, V1PluginsFrontendGetResponse, V1PluginsGetData, V1PluginsGetError, V1PluginsGetResponse, V1PluginUpgradeData, V1PluginUpgradeError, V1PluginUpgradeResponse, V1ProjectDeleteData, V1ProjectDeleteError, V1ProjectDeleteResponse, V1ProjectGetData, V1ProjectGetError, V1ProjectGetResponse, V1ProjectsDocumentsCreateData, V1ProjectsDocumentsCreateError, V1ProjectsDocumentsCreateResponse, V1ProjectsDocumentsGetData, V1ProjectsDocumentsGetError, V1ProjectsDocumentsGetResponse, V1ProjectsDocumentsRelateData, V1ProjectsDocumentsRelateError, V1ProjectsDocumentsRelateResponse, V1ProjectsDocumentsUnrelateData, V1ProjectsDocumentsUnrelateError, V1ProjectsDocumentsUnrelateResponse, V1ProjectsIssuesCreateData, V1ProjectsIssuesCreateError, V1ProjectsIssuesCreateResponse, V1ProjectsIssuesGetData, V1ProjectsIssuesGetError, V1ProjectsIssuesGetResponse, V1ProjectUpdateData, V1ProjectUpdateError, V1ProjectUpdateResponse, V1ResourceCustomFieldsGetData, V1ResourceCustomFieldsGetError, V1ResourceCustomFieldsGetResponse, V1ResourceCustomFieldValueDeleteData, V1ResourceCustomFieldValueDeleteError, V1ResourceCustomFieldValueDeleteResponse, V1ResourceCustomFieldValuePutData, V1ResourceCustomFieldValuePutError, V1ResourceCustomFieldValuePutResponse, V1SearchGetData, V1SearchGetError, V1SearchGetResponse, V1SystemHealthData, V1SystemHealthError, V1SystemHealthResponse, V1SystemHeartbeatData, V1SystemHeartbeatError, V1SystemHeartbeatResponse, V1SystemLicenseData, V1SystemLicenseError, V1SystemLicenseResponse, V1SystemVersionData, V1SystemVersionError, V1SystemVersionResponse, V1TodoDeleteData, V1TodoDeleteError, V1TodoDeleteResponse, V1TodoGetData, V1TodoGetError, V1TodoGetResponse, V1TodosCreateData, V1TodosCreateError, V1TodosCreateResponse, V1TodosGetData, V1TodosGetError, V1TodosGetResponse, V1TodoUpdateData, V1TodoUpdateError, V1TodoUpdateResponse, V1UserDeleteData, V1UserDeleteError, V1UserDeleteResponse, V1UserGetData, V1UserGetError, V1UserGetResponse, V1UserRequestPasswordResetData, V1UserRequestPasswordResetError, V1UserResetPasswordData, V1UserResetPasswordError, V1UserResetPasswordResponse, V1UsersCreateData, V1UsersCreateError, V1UsersCreateResponse, V1UsersGetData, V1UsersGetError, V1UsersGetResponse, V1UsersIssuesGetData, V1UsersIssuesGetError, V1UsersIssuesGetResponse, V1UserUpdateData, V1UserUpdateError, V1UserUpdateResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -2006,6 +2006,370 @@ export const v1ResourceCustomFieldValuePutMutation = (options?: Partial<Options<
     const mutationOptions: UseMutationOptions<V1ResourceCustomFieldValuePutResponse, V1ResourceCustomFieldValuePutError, Options<V1ResourceCustomFieldValuePutData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await v1ResourceCustomFieldValuePut({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginsGetQueryKey = (options?: Options<V1PluginsGetData>) => createQueryKey('v1PluginsGet', options);
+
+/**
+ * List installed plugins
+ *
+ * List installed plugins. Without a scope this requires plugin.install (instance catalog). With scope_id and scope_type it requires plugin.manage on that scope and includes the scoped enabled flag.
+ *
+ */
+export const v1PluginsGetOptions = (options?: Options<V1PluginsGetData>) => queryOptions<V1PluginsGetResponse, V1PluginsGetError, V1PluginsGetResponse, ReturnType<typeof v1PluginsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginsGetQueryKey(options)
+});
+
+/**
+ * Install a plugin package
+ *
+ * Upload a plugin zip. The package is loaded but not enabled.
+ */
+export const v1PluginsCreateMutation = (options?: Partial<Options<V1PluginsCreateData>>): UseMutationOptions<V1PluginsCreateResponse, V1PluginsCreateError, Options<V1PluginsCreateData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginsCreateResponse, V1PluginsCreateError, Options<V1PluginsCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginsCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginsFrontendGetQueryKey = (options: Options<V1PluginsFrontendGetData>) => createQueryKey('v1PluginsFrontendGet', options);
+
+/**
+ * List active frontend plugins
+ *
+ * Return frontend modules for plugins enabled on the given scope or its IN_SCOPE_OF ancestors. Requires read on the scope, not plugin.manage.
+ *
+ */
+export const v1PluginsFrontendGetOptions = (options: Options<V1PluginsFrontendGetData>) => queryOptions<V1PluginsFrontendGetResponse, V1PluginsFrontendGetError, V1PluginsFrontendGetResponse, ReturnType<typeof v1PluginsFrontendGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginsFrontendGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginsFrontendGetQueryKey(options)
+});
+
+/**
+ * Uninstall a plugin
+ *
+ * Uninstall a plugin and delete its Extension graph nodes.
+ */
+export const v1PluginDeleteMutation = (options?: Partial<Options<V1PluginDeleteData>>): UseMutationOptions<V1PluginDeleteResponse, V1PluginDeleteError, Options<V1PluginDeleteData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginDeleteResponse, V1PluginDeleteError, Options<V1PluginDeleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginDelete({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginGetQueryKey = (options: Options<V1PluginGetData>) => createQueryKey('v1PluginGet', options);
+
+/**
+ * Get an installed plugin
+ */
+export const v1PluginGetOptions = (options: Options<V1PluginGetData>) => queryOptions<V1PluginGetResponse, V1PluginGetError, V1PluginGetResponse, ReturnType<typeof v1PluginGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginGetQueryKey(options)
+});
+
+/**
+ * Enable a plugin on a scope
+ */
+export const v1PluginEnableMutation = (options?: Partial<Options<V1PluginEnableData>>): UseMutationOptions<V1PluginEnableResponse, V1PluginEnableError, Options<V1PluginEnableData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginEnableResponse, V1PluginEnableError, Options<V1PluginEnableData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginEnable({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Disable a plugin on a scope
+ */
+export const v1PluginDisableMutation = (options?: Partial<Options<V1PluginDisableData>>): UseMutationOptions<V1PluginDisableResponse, V1PluginDisableError, Options<V1PluginDisableData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginDisableResponse, V1PluginDisableError, Options<V1PluginDisableData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginDisable({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginConfigGetQueryKey = (options: Options<V1PluginConfigGetData>) => createQueryKey('v1PluginConfigGet', options);
+
+/**
+ * Get plugin activation config
+ *
+ * Return the activation config for the given manage scope. Requires plugin.manage. Empty object when the plugin has no config on that scope.
+ *
+ */
+export const v1PluginConfigGetOptions = (options: Options<V1PluginConfigGetData>) => queryOptions<V1PluginConfigGetResponse, V1PluginConfigGetError, V1PluginConfigGetResponse, ReturnType<typeof v1PluginConfigGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginConfigGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginConfigGetQueryKey(options)
+});
+
+/**
+ * Update plugin activation config
+ *
+ * Write activation config on the given scope. Requires plugin.manage.
+ */
+export const v1PluginConfigPatchMutation = (options?: Partial<Options<V1PluginConfigPatchData>>): UseMutationOptions<V1PluginConfigPatchResponse, V1PluginConfigPatchError, Options<V1PluginConfigPatchData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginConfigPatchResponse, V1PluginConfigPatchError, Options<V1PluginConfigPatchData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginConfigPatch({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Upgrade a plugin package
+ */
+export const v1PluginUpgradeMutation = (options?: Partial<Options<V1PluginUpgradeData>>): UseMutationOptions<V1PluginUpgradeResponse, V1PluginUpgradeError, Options<V1PluginUpgradeData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginUpgradeResponse, V1PluginUpgradeError, Options<V1PluginUpgradeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginUpgrade({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Invoke a plugin function
+ *
+ * Dispatch a named function on an enabled plugin. Disabled plugins return 404.
+ */
+export const v1PluginInvokeMutation = (options?: Partial<Options<V1PluginInvokeData>>): UseMutationOptions<V1PluginInvokeResponse, V1PluginInvokeError, Options<V1PluginInvokeData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginInvokeResponse, V1PluginInvokeError, Options<V1PluginInvokeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginInvoke({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginGraphNodesGetQueryKey = (options: Options<V1PluginGraphNodesGetData>) => createQueryKey('v1PluginGraphNodesGet', options);
+
+/**
+ * List plugin graph nodes
+ */
+export const v1PluginGraphNodesGetOptions = (options: Options<V1PluginGraphNodesGetData>) => queryOptions<V1PluginGraphNodesGetResponse, V1PluginGraphNodesGetError, V1PluginGraphNodesGetResponse, ReturnType<typeof v1PluginGraphNodesGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginGraphNodesGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginGraphNodesGetQueryKey(options)
+});
+
+/**
+ * Create a plugin graph node
+ */
+export const v1PluginGraphNodesCreateMutation = (options?: Partial<Options<V1PluginGraphNodesCreateData>>): UseMutationOptions<V1PluginGraphNodesCreateResponse, V1PluginGraphNodesCreateError, Options<V1PluginGraphNodesCreateData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphNodesCreateResponse, V1PluginGraphNodesCreateError, Options<V1PluginGraphNodesCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphNodesCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a plugin graph node
+ */
+export const v1PluginGraphNodeDeleteMutation = (options?: Partial<Options<V1PluginGraphNodeDeleteData>>): UseMutationOptions<V1PluginGraphNodeDeleteResponse, V1PluginGraphNodeDeleteError, Options<V1PluginGraphNodeDeleteData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphNodeDeleteResponse, V1PluginGraphNodeDeleteError, Options<V1PluginGraphNodeDeleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphNodeDelete({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginGraphNodeGetQueryKey = (options: Options<V1PluginGraphNodeGetData>) => createQueryKey('v1PluginGraphNodeGet', options);
+
+/**
+ * Get a plugin graph node
+ */
+export const v1PluginGraphNodeGetOptions = (options: Options<V1PluginGraphNodeGetData>) => queryOptions<V1PluginGraphNodeGetResponse, V1PluginGraphNodeGetError, V1PluginGraphNodeGetResponse, ReturnType<typeof v1PluginGraphNodeGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginGraphNodeGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginGraphNodeGetQueryKey(options)
+});
+
+/**
+ * Update a plugin graph node
+ */
+export const v1PluginGraphNodeUpdateMutation = (options?: Partial<Options<V1PluginGraphNodeUpdateData>>): UseMutationOptions<V1PluginGraphNodeUpdateResponse, V1PluginGraphNodeUpdateError, Options<V1PluginGraphNodeUpdateData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphNodeUpdateResponse, V1PluginGraphNodeUpdateError, Options<V1PluginGraphNodeUpdateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphNodeUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Move a plugin graph node to a new parent
+ */
+export const v1PluginGraphNodeMoveMutation = (options?: Partial<Options<V1PluginGraphNodeMoveData>>): UseMutationOptions<V1PluginGraphNodeMoveResponse, V1PluginGraphNodeMoveError, Options<V1PluginGraphNodeMoveData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphNodeMoveResponse, V1PluginGraphNodeMoveError, Options<V1PluginGraphNodeMoveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphNodeMove({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const v1PluginGraphRelationsGetQueryKey = (options: Options<V1PluginGraphRelationsGetData>) => createQueryKey('v1PluginGraphRelationsGet', options);
+
+/**
+ * List plugin graph relations
+ */
+export const v1PluginGraphRelationsGetOptions = (options: Options<V1PluginGraphRelationsGetData>) => queryOptions<V1PluginGraphRelationsGetResponse, V1PluginGraphRelationsGetError, V1PluginGraphRelationsGetResponse, ReturnType<typeof v1PluginGraphRelationsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await v1PluginGraphRelationsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: v1PluginGraphRelationsGetQueryKey(options)
+});
+
+/**
+ * Create a plugin graph relation
+ */
+export const v1PluginGraphRelationsCreateMutation = (options?: Partial<Options<V1PluginGraphRelationsCreateData>>): UseMutationOptions<V1PluginGraphRelationsCreateResponse, V1PluginGraphRelationsCreateError, Options<V1PluginGraphRelationsCreateData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphRelationsCreateResponse, V1PluginGraphRelationsCreateError, Options<V1PluginGraphRelationsCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphRelationsCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a plugin graph relation
+ */
+export const v1PluginGraphRelationDeleteMutation = (options?: Partial<Options<V1PluginGraphRelationDeleteData>>): UseMutationOptions<V1PluginGraphRelationDeleteResponse, V1PluginGraphRelationDeleteError, Options<V1PluginGraphRelationDeleteData>> => {
+    const mutationOptions: UseMutationOptions<V1PluginGraphRelationDeleteResponse, V1PluginGraphRelationDeleteError, Options<V1PluginGraphRelationDeleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await v1PluginGraphRelationDelete({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

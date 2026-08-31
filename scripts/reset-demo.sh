@@ -13,7 +13,8 @@ readonly COMPOSE_FILE="${DOCKER_DEPLOY_DIR}/docker-compose.yml"
 
 function usage() {
   cat <<EOF
-Wipe demo data and reload the ACME seed without restarting services.
+Wipe demo data and reload the ACME seed without restarting data stores.
+The API server is restarted so the plugin registry is empty.
 
 Usage:
   $(basename "$0") --yes
@@ -63,7 +64,35 @@ function bootstrapDatabase() {
   compose exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo -v ON_ERROR_STOP=1 <<'SQL'
 TRUNCATE TABLE user_tokens, notifications RESTART IDENTITY CASCADE;
 TRUNCATE TABLE oauth2_tokens RESTART IDENTITY CASCADE;
+TRUNCATE TABLE plugin_storage, plugin_activations, plugin_installations;
 SQL
+}
+
+function wipePluginInstallations() {
+  log "wiping plugin installations"
+  shopt -s nullglob
+  local plugin_root
+  for plugin_root in "${PLUGINS_DIR}"/*/; do
+    # Source checkouts keep plugin.yaml at the plugin root; installs are
+    # {pluginId}/{version}/plugin.yaml.
+    if [ -f "${plugin_root}plugin.yaml" ]; then
+      continue
+    fi
+    rm -rf "${plugin_root}"
+  done
+  shopt -u nullglob
+
+  # Dockerized runs keep installs in a named volume instead of PLUGINS_DIR.
+  compose rm --stop --force elemo-server elemo-worker >/dev/null
+  docker volume rm --force elemo_plugin_data >/dev/null
+  compose up --detach elemo-server elemo-worker >/dev/null
+  waitAndPrint 5
+}
+
+function reloadPluginRuntime() {
+  log "reloading plugin runtime"
+  compose restart elemo-server
+  waitAndPrint 5
 }
 
 function loadDemoData() {
@@ -96,8 +125,10 @@ checkInstalled "go"
 wipeNeo4j
 emptyS3
 bootstrapDatabase
+wipePluginInstallations
 loadDemoData
 flushRedis
 reindexSearch
+reloadPluginRuntime
 
 success "demo data reset"

@@ -181,7 +181,7 @@ export async function grantOrganizationCreateToUser(
         email,
         installationId: INSTALLATION_ID,
         grantId: generateXid(),
-        actions: ["organization.create"],
+        actions: ["organization.create", "plugin.install"],
       });
     });
   } finally {

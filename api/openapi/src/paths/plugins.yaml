@@ -1,0 +1,653 @@
+"/v1/plugins":
+  get:
+    summary: List installed plugins
+    tags:
+      - Plugin
+    operationId: v1PluginsGet
+    description: >
+      List installed plugins. Without a scope this requires plugin.install
+      (instance catalog). With scope_id and scope_type it requires plugin.manage
+      on that scope and includes the scoped enabled flag.
+    security:
+      - oauth2:
+          - plugin.read
+    parameters:
+      - name: scope_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: scope_type
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Plugin"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "500":
+        $ref: "#/components/responses/500"
+  post:
+    summary: Install a plugin package
+    tags:
+      - Plugin
+    operationId: v1PluginsCreate
+    description: Upload a plugin zip. The package is loaded but not enabled.
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginPackage"
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Plugin"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/frontend":
+  get:
+    summary: List active frontend plugins
+    tags:
+      - Plugin
+    operationId: v1PluginsFrontendGet
+    description: >
+      Return frontend modules for plugins enabled on the given scope or its
+      IN_SCOPE_OF ancestors. Requires read on the scope, not plugin.manage.
+    security:
+      - oauth2:
+          - plugin.read
+    parameters:
+      - name: scope_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: scope_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/FrontendPlugin"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  get:
+    summary: Get an installed plugin
+    tags:
+      - Plugin
+    operationId: v1PluginGet
+    security:
+      - oauth2:
+          - plugin.read
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Plugin"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  delete:
+    summary: Uninstall a plugin
+    tags:
+      - Plugin
+    operationId: v1PluginDelete
+    description: Uninstall a plugin and delete its Extension graph nodes.
+    security:
+      - oauth2:
+          - plugin
+    responses:
+      "204":
+        description: No Content
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/enable":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  post:
+    summary: Enable a plugin on a scope
+    tags:
+      - Plugin
+    operationId: v1PluginEnable
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginEnable"
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/disable":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  post:
+    summary: Disable a plugin on a scope
+    tags:
+      - Plugin
+    operationId: v1PluginDisable
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginEnable"
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/config":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  get:
+    summary: Get plugin activation config
+    tags:
+      - Plugin
+    operationId: v1PluginConfigGet
+    description: >
+      Return the activation config for the given manage scope. Requires
+      plugin.manage. Empty object when the plugin has no config on that scope.
+    security:
+      - oauth2:
+          - plugin
+    parameters:
+      - name: scope_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: scope_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PluginConfig"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  patch:
+    summary: Update plugin activation config
+    tags:
+      - Plugin
+    operationId: v1PluginConfigPatch
+    description: Write activation config on the given scope. Requires plugin.manage.
+    security:
+      - oauth2:
+          - plugin
+    parameters:
+      - name: scope_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: scope_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+    requestBody:
+      $ref: "#/components/requestBodies/PluginConfigUpdate"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PluginConfig"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/upgrade":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  post:
+    summary: Upgrade a plugin package
+    tags:
+      - Plugin
+    operationId: v1PluginUpgrade
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginPackage"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Plugin"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/invoke":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  post:
+    summary: Invoke a plugin function
+    tags:
+      - Plugin
+    operationId: v1PluginInvoke
+    description: Dispatch a named function on an enabled plugin. Disabled plugins return 404.
+    security:
+      - oauth2:
+          - plugin.read
+    requestBody:
+      $ref: "#/components/requestBodies/PluginInvoke"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PluginInvokeResult"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/graph/nodes":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  get:
+    summary: List plugin graph nodes
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodesGet
+    security:
+      - oauth2:
+          - plugin.read
+    parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: scope_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: scope_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - name: equals
+        in: query
+        required: false
+        schema:
+          type: string
+          description: JSON object of property equality filters.
+      - name: owner_plugin_id
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Read nodes owned by another plugin when a foreign binding allows it.
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionNodePage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  post:
+    summary: Create a plugin graph node
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodesCreate
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginGraphNodeCreate"
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionNode"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/graph/nodes/{id}":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get a plugin graph node
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodeGet
+    security:
+      - oauth2:
+          - plugin.read
+    parameters:
+      - name: owner_plugin_id
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Read a node owned by another plugin when a foreign binding allows it.
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionNode"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  patch:
+    summary: Update a plugin graph node
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodeUpdate
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginGraphNodeUpdate"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionNode"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  delete:
+    summary: Delete a plugin graph node
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodeDelete
+    security:
+      - oauth2:
+          - plugin
+    responses:
+      "204":
+        description: No Content
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/graph/nodes/{id}/move":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+    - $ref: "#/components/parameters/id"
+  post:
+    summary: Move a plugin graph node to a new parent
+    tags:
+      - Plugin
+    operationId: v1PluginGraphNodeMove
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginGraphNodeMove"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionNode"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/graph/relations":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+  get:
+    summary: List plugin graph relations
+    tags:
+      - Plugin
+    operationId: v1PluginGraphRelationsGet
+    security:
+      - oauth2:
+          - plugin.read
+    parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: node_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: node_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - name: direction
+        in: query
+        required: false
+        schema:
+          $ref: "#/components/schemas/PluginGraphRelationDirection"
+        description: Relation list direction. Defaults to outgoing.
+      - $ref: "#/components/parameters/page_size"
+      - $ref: "#/components/parameters/page_token"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionRelationPage"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  post:
+    summary: Create a plugin graph relation
+    tags:
+      - Plugin
+    operationId: v1PluginGraphRelationsCreate
+    security:
+      - oauth2:
+          - plugin
+    requestBody:
+      $ref: "#/components/requestBodies/PluginGraphRelationCreate"
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionRelation"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/plugins/{pluginId}/graph/relations/{id}":
+  parameters:
+    - $ref: "#/components/parameters/pluginId"
+    - $ref: "#/components/parameters/id"
+  delete:
+    summary: Delete a plugin graph relation
+    tags:
+      - Plugin
+    operationId: v1PluginGraphRelationDelete
+    security:
+      - oauth2:
+          - plugin
+    responses:
+      "204":
+        description: No Content
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"

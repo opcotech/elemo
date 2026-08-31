@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
+
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
+	elemoplugin "github.com/opcotech/elemo/internal/plugin"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -58,6 +61,26 @@ func SetSearchServiceListByIDs(s SearchService, fn searchableRecordByIDsLister) 
 
 func SetSearchServiceListRecords(s SearchService, fn searchableRecordLister) {
 	s.(*searchService).listSearchableRecords = fn
+}
+
+func SetPluginRegistry(s PluginService, registry *elemoplugin.Registry) {
+	s.(*pluginService).registry = registry
+}
+
+func CallPluginHost(ctx context.Context, s PluginService, pluginID string, req elemoplugin.HostRequest) (elemoplugin.HostResponse, error) {
+	return s.(*pluginService).host.Call(ctx, pluginID, req)
+}
+
+func WaitPluginEvents(s PluginService) {
+	s.(*pluginService).eventWG.Wait()
+}
+
+func AssertAdditiveGraph(oldS, newS *model.PluginGraphSchema) error {
+	return assertAdditiveGraph(oldS, newS)
+}
+
+func ParseTypedID(raw, typ string) (model.ID, error) {
+	return parseTypedID(raw, typ)
 }
 
 var (

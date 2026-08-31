@@ -53,6 +53,8 @@ async function serializeResponse(
   };
 }
 
+const UPSTREAM_TIMEOUT_MS = 20_000;
+
 async function sendUpstream(
   request: ApiTransportRequest,
   accessToken?: string
@@ -63,14 +65,34 @@ async function sendUpstream(
     headers.set("authorization", `Bearer ${accessToken}`);
   }
 
-  // request.path is already a relative Go API path (e.g. "/v1/notifications").
-  return fetch(buildUpstreamUrl(apiBaseUrl, request.path), {
-    method: request.method,
-    headers,
-    body: request.body,
-    cache: "no-store",
-    redirect: "manual",
-  });
+  try {
+    // request.path is already a relative Go API path (e.g. "/v1/notifications").
+    return await fetch(buildUpstreamUrl(apiBaseUrl, request.path), {
+      method: request.method,
+      headers,
+      body: request.body,
+      cache: "no-store",
+      redirect: "manual",
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const timedOut =
+      error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
+    if (timedOut) {
+      return Response.json(
+        {
+          status: 504,
+          message: "The upstream service did not respond in time",
+        },
+        {
+          status: 504,
+          headers: { "cache-control": "private, no-store" },
+        }
+      );
+    }
+    throw error;
+  }
 }
 
 async function proxyProtectedRequest(

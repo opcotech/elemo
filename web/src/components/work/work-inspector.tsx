@@ -5,9 +5,11 @@ import {
 import { IssueRelationsPreview } from "./issue-relations";
 import { MarkdownContent } from "./markdown-content";
 import { workItemPath, workItemUrl } from "./utils";
+import { WorkItemActivity } from "./work-item-activity";
 import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
 import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader } from "@/components/shared/entity-header";
@@ -15,7 +17,7 @@ import { RelationList } from "@/components/shared/relation-list";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
-import { Section, SectionAccordion } from "@/components/ui/section";
+import { Section } from "@/components/ui/section";
 import { internalPath } from "@/lib/internal-url";
 import { selectActivity, selectRelations } from "@/lib/mock-data";
 import type { WorkItem } from "@/lib/work/model";
@@ -98,6 +100,18 @@ export function WorkInspector({ item }: { item: WorkItem }) {
           mode="readonly"
         />
       ) : null}
+      {isApi ? (
+        <PluginSlot
+          name="issue.sidebar"
+          context={{
+            issueId: item.id,
+            issueKey: item.key,
+            organizationSlug: item.organizationSlug,
+            namespaceSlug: item.namespaceSlug,
+            projectId: item.project?.id ?? item.projectId,
+          }}
+        />
+      ) : null}
       <Section title="Metadata" data-section="issue-metadata">
         <IssueMetadataProperties
           compact
@@ -131,7 +145,19 @@ export function WorkInspector({ item }: { item: WorkItem }) {
           illustrative examples.
         </MockDataAlert>
       )}
-      <SectionAccordion title="Activity" value="activity">
+      <WorkItemActivity
+        context={
+          isApi
+            ? {
+                issueId: item.id,
+                issueKey: item.key,
+                organizationSlug: item.organizationSlug,
+                namespaceSlug: item.namespaceSlug,
+                projectId: item.project?.id ?? item.projectId,
+              }
+            : undefined
+        }
+      >
         {activity.length > 0 ? (
           <ActivityFeed entries={activity} />
         ) : (
@@ -145,7 +171,7 @@ export function WorkInspector({ item }: { item: WorkItem }) {
             }
           />
         )}
-      </SectionAccordion>
+      </WorkItemActivity>
     </div>
   );
 }

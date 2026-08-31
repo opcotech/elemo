@@ -1,0 +1,4 @@
+backend/plugin.wasm
+backend/plugin.h
+frontend/index.js
+frontend/plugin-runtime/

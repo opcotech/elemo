@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 )
 
@@ -51,7 +53,47 @@ func wipe(ctx context.Context, d *deps, queriesDir string) error {
 	); err != nil {
 		return fmt.Errorf("truncate postgres tokens: %w", err)
 	}
+	if _, err := d.relDB.Pool().Exec(
+		ctx,
+		"TRUNCATE TABLE plugin_storage, plugin_activations, plugin_installations",
+	); err != nil {
+		return fmt.Errorf("truncate plugin installations: %w", err)
+	}
+	d.logger.Info(ctx, "wiping plugin packages")
+	if err := wipePluginPackages(d.cfg.Plugin.Directory); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func wipePluginPackages(dir string) error {
+	if dir == "" {
+		return nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read plugin directory: %w", err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		root := filepath.Join(dir, entry.Name())
+		_, err := os.Stat(filepath.Join(root, model.PluginManifestFileName))
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("stat plugin manifest: %w", err)
+		}
+		if err := os.RemoveAll(root); err != nil {
+			return fmt.Errorf("remove plugin install %s: %w", root, err)
+		}
+	}
 	return nil
 }
 

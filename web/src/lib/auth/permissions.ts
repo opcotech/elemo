@@ -31,10 +31,17 @@ export const Action = {
   TeamManage: "team.manage",
   PermissionManage: "permission.manage",
   CustomFieldManage: "custom_field.manage",
+  PluginInstall: "plugin.install",
+  PluginManage: "plugin.manage",
+  ExtensionCreate: "extension.create",
+  ExtensionRead: "extension.read",
+  ExtensionUpdate: "extension.update",
+  ExtensionDelete: "extension.delete",
 } as const;
 
 export const inspectableActions = Object.values(Action).filter(
-  (action) => action !== Action.OrganizationCreate
+  (action) =>
+    action !== Action.OrganizationCreate && action !== Action.PluginInstall
 );
 
 export enum ResourceType {
@@ -58,6 +65,7 @@ export enum ResourceType {
   User = "User",
   UserToken = "UserToken",
   CustomFieldDefinition = "CustomFieldDefinition",
+  Extension = "Extension",
 }
 
 export function withResourceType(

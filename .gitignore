@@ -27,3 +27,6 @@ bin/
 tmp/
 .pnpm-store/
 .DS_Store
+
+# Built plugin packages
+build/plugins/

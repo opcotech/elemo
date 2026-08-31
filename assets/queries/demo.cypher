@@ -8,7 +8,7 @@
 //   Nova Labs   — Delivery (INTEG); partner org collaborating on ACME PLAT
 //
 // Logins (password AppleTree123 for every account)
-//   demo@elemo.example    ACME org-admin; can create orgs
+//   demo@elemo.example    ACME org-admin; can create orgs and install plugins
 //   hector@elemo.example  ACME engineering; also Nova Labs member
 //   priya@elemo.example   ACME operations
 //   luis@elemo.example    ACME mobile
@@ -19,10 +19,10 @@
 //
 // Authorization
 //   Access is scoped ReBAC: Principal -[:GRANTED]-> scope, plus IN_SCOPE_OF.
-//   There are no system roles and no wildcard actions. organization.create is a
-//   direct grant on the Installation node for demo@elemo.example (not a role,
-//   not org membership). Nova Labs holds project-viewer on ACME's PLAT project;
-//   Nova members are not members of ACME.
+//   There are no system roles and no wildcard actions. organization.create and
+//   plugin.install are a direct grant on the Installation node for
+//   demo@elemo.example (not a role, not org membership). Nova Labs holds
+//   project-viewer on ACME's PLAT project; Nova members are not members of ACME.
 //
 // Covers: all issue kinds/statuses/priorities, common resolutions, parent
 // issues, relation kinds (except reserved "depends on"), comments,
@@ -1628,7 +1628,7 @@ MATCH (u:User {email: 'demo@elemo.example'})
 MATCH (i:Installation {id: '00000000000000000000'})
 SET u:Principal
 MERGE (u)-[g:GRANTED {id: 'd9tcjmf92rs8isait00'}]->(i)
-ON CREATE SET g.actions = ['organization.create'], g.created_at = datetime();
+ON CREATE SET g.actions = ['organization.create', 'plugin.install'], g.created_at = datetime();
 
 // Copy RoleTemplates onto each org. None include organization.create.
 UNWIND [
@@ -1641,24 +1641,27 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage'
+        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
-      {id: 'd9tcjmf92rs8isainr10', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
+      {id: 'd9tcjmf92rs8isainr10', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to, including plugin graph nodes.', actions: ['organization.read', 'extension.read']},
       {id: 'd9tcjmf92rs8isainr20', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
         'namespace.read', 'namespace.update', 'namespace.delete',
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage', 'custom_field.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
       {id: 'd9tcjmf92rs8isainr30', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
         'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage', 'custom_field.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
       {id: 'd9tcjmf92rs8isainr40', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
-        'project.read', 'issue.read', 'document.read'
+        'project.read', 'issue.read', 'document.read', 'extension.read'
       ]},
       {id: 'd9tcjmf92rs8isainr50', key: 'issue-maintainer', name: 'Issue maintainer', description: 'Update and assign an issue.', actions: [
         'issue.read', 'issue.update', 'issue.delete', 'issue.assign'
@@ -1677,24 +1680,27 @@ UNWIND [
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage'
+        'role.manage', 'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
-      {id: 'd9tcjmf92rs8isainr90', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to.', actions: ['organization.read']},
+      {id: 'd9tcjmf92rs8isainr90', key: 'org-member', name: 'Organization member', description: 'Read the organization they belong to, including plugin graph nodes.', actions: ['organization.read', 'extension.read']},
       {id: 'd9tcjmf92rs8isainra0', key: 'namespace-admin', name: 'Namespace admin', description: 'Administer a namespace and its descendants.', actions: [
         'namespace.read', 'namespace.update', 'namespace.delete',
         'project.create', 'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage', 'custom_field.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
       {id: 'd9tcjmf92rs8isainrb0', key: 'project-maintainer', name: 'Project maintainer', description: 'Maintain a project and its issues and documents.', actions: [
         'project.read', 'project.update', 'project.delete', 'project.members.manage',
         'issue.create', 'issue.read', 'issue.update', 'issue.delete', 'issue.assign',
         'document.create', 'document.read', 'document.update', 'document.delete', 'folder.create',
-        'team.manage', 'permission.manage', 'custom_field.manage'
+        'team.manage', 'permission.manage', 'custom_field.manage', 'plugin.manage',
+        'extension.create', 'extension.read', 'extension.update', 'extension.delete'
       ]},
       {id: 'd9tcjmf92rs8isainrc0', key: 'project-viewer', name: 'Project viewer', description: 'Read a project and its issues and documents.', actions: [
-        'project.read', 'issue.read', 'document.read'
+        'project.read', 'issue.read', 'document.read', 'extension.read'
       ]},
       {id: 'd9tcjmf92rs8isainrd0', key: 'issue-maintainer', name: 'Issue maintainer', description: 'Update and assign an issue.', actions: [
         'issue.read', 'issue.update', 'issue.delete', 'issue.assign'
@@ -1720,6 +1726,17 @@ MERGE (o)-[d:DEFINES_ROLE {id: tmpl.id}]->(r)
 ON CREATE SET d.created_at = datetime()
 MERGE (r)-[s:IN_SCOPE_OF]->(o)
 ON CREATE SET s.id = tmpl.id, s.created_at = datetime();
+
+// Additive: orgs created before extension.* existed keep template roles current.
+UNWIND [
+  {key: 'org-admin', extra: ['extension.create', 'extension.read', 'extension.update', 'extension.delete']},
+  {key: 'namespace-admin', extra: ['extension.create', 'extension.read', 'extension.update', 'extension.delete']},
+  {key: 'project-maintainer', extra: ['extension.create', 'extension.read', 'extension.update', 'extension.delete']},
+  {key: 'org-member', extra: ['extension.read']},
+  {key: 'project-viewer', extra: ['extension.read']}
+] AS patch
+MATCH (r:Role {key: patch.key})
+SET r.actions = r.actions + [a IN patch.extra WHERE NOT a IN r.actions];
 
 // Intra-org: demo is ACME org-admin; ACME members inherit org-member via the org principal.
 MATCH (u:User {id: '9bsv0s46s6s002p9ltq0'})

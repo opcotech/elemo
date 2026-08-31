@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
@@ -1221,6 +1222,156 @@ func (e OrganizationStatus) Valid() bool {
 	}
 }
 
+// Defines values for PluginCapability.
+const (
+	PluginCapabilityEventsPublish      PluginCapability = "events.publish"
+	PluginCapabilityGraphRead          PluginCapability = "graph.read"
+	PluginCapabilityGraphWrite         PluginCapability = "graph.write"
+	PluginCapabilityIssuesRead         PluginCapability = "issues.read"
+	PluginCapabilityIssuesUpdate       PluginCapability = "issues.update"
+	PluginCapabilityPermissionsCheck   PluginCapability = "permissions.check"
+	PluginCapabilityPluginStorageRead  PluginCapability = "plugin.storage.read"
+	PluginCapabilityPluginStorageWrite PluginCapability = "plugin.storage.write"
+	PluginCapabilityProjectsRead       PluginCapability = "projects.read"
+	PluginCapabilityUsersRead          PluginCapability = "users.read"
+)
+
+// Valid indicates whether the value is a known member of the PluginCapability enum.
+func (e PluginCapability) Valid() bool {
+	switch e {
+	case PluginCapabilityEventsPublish:
+		return true
+	case PluginCapabilityGraphRead:
+		return true
+	case PluginCapabilityGraphWrite:
+		return true
+	case PluginCapabilityIssuesRead:
+		return true
+	case PluginCapabilityIssuesUpdate:
+		return true
+	case PluginCapabilityPermissionsCheck:
+		return true
+	case PluginCapabilityPluginStorageRead:
+		return true
+	case PluginCapabilityPluginStorageWrite:
+		return true
+	case PluginCapabilityProjectsRead:
+		return true
+	case PluginCapabilityUsersRead:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PluginConfigFieldType.
+const (
+	PluginConfigFieldTypeBoolean      PluginConfigFieldType = "boolean"
+	PluginConfigFieldTypeGraphBinding PluginConfigFieldType = "graph_binding"
+	PluginConfigFieldTypeInteger      PluginConfigFieldType = "integer"
+	PluginConfigFieldTypeString       PluginConfigFieldType = "string"
+)
+
+// Valid indicates whether the value is a known member of the PluginConfigFieldType enum.
+func (e PluginConfigFieldType) Valid() bool {
+	switch e {
+	case PluginConfigFieldTypeBoolean:
+		return true
+	case PluginConfigFieldTypeGraphBinding:
+		return true
+	case PluginConfigFieldTypeInteger:
+		return true
+	case PluginConfigFieldTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PluginGraphRelationDirection.
+const (
+	PluginGraphRelationDirectionBoth     PluginGraphRelationDirection = "both"
+	PluginGraphRelationDirectionIncoming PluginGraphRelationDirection = "incoming"
+	PluginGraphRelationDirectionOutgoing PluginGraphRelationDirection = "outgoing"
+)
+
+// Valid indicates whether the value is a known member of the PluginGraphRelationDirection enum.
+func (e PluginGraphRelationDirection) Valid() bool {
+	switch e {
+	case PluginGraphRelationDirectionBoth:
+		return true
+	case PluginGraphRelationDirectionIncoming:
+		return true
+	case PluginGraphRelationDirectionOutgoing:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PluginStatus.
+const (
+	PluginStatusActive    PluginStatus = "active"
+	PluginStatusDisabled  PluginStatus = "disabled"
+	PluginStatusDisabling PluginStatus = "disabling"
+	PluginStatusFailed    PluginStatus = "failed"
+	PluginStatusInstalled PluginStatus = "installed"
+	PluginStatusStarting  PluginStatus = "starting"
+	PluginStatusUnknown   PluginStatus = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the PluginStatus enum.
+func (e PluginStatus) Valid() bool {
+	switch e {
+	case PluginStatusActive:
+		return true
+	case PluginStatusDisabled:
+		return true
+	case PluginStatusDisabling:
+		return true
+	case PluginStatusFailed:
+		return true
+	case PluginStatusInstalled:
+		return true
+	case PluginStatusStarting:
+		return true
+	case PluginStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PluginUISlot.
+const (
+	PluginUISlotIssueActions         PluginUISlot = "issue.actions"
+	PluginUISlotIssueActivity        PluginUISlot = "issue.activity"
+	PluginUISlotIssueSidebar         PluginUISlot = "issue.sidebar"
+	PluginUISlotOrganizationSettings PluginUISlot = "organization.settings"
+	PluginUISlotProjectSettings      PluginUISlot = "project.settings"
+	PluginUISlotProjectSidebar       PluginUISlot = "project.sidebar"
+)
+
+// Valid indicates whether the value is a known member of the PluginUISlot enum.
+func (e PluginUISlot) Valid() bool {
+	switch e {
+	case PluginUISlotIssueActions:
+		return true
+	case PluginUISlotIssueActivity:
+		return true
+	case PluginUISlotIssueSidebar:
+		return true
+	case PluginUISlotOrganizationSettings:
+		return true
+	case PluginUISlotProjectSettings:
+		return true
+	case PluginUISlotProjectSidebar:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectStatus.
 const (
 	ProjectStatusActive  ProjectStatus = "active"
@@ -1246,6 +1397,7 @@ const (
 	ResourceTypeComment               ResourceType = "Comment"
 	ResourceTypeCustomFieldDefinition ResourceType = "CustomFieldDefinition"
 	ResourceTypeDocument              ResourceType = "Document"
+	ResourceTypeExtension             ResourceType = "Extension"
 	ResourceTypeFolder                ResourceType = "Folder"
 	ResourceTypeInstallation          ResourceType = "Installation"
 	ResourceTypeIssue                 ResourceType = "Issue"
@@ -1276,6 +1428,8 @@ func (e ResourceType) Valid() bool {
 	case ResourceTypeCustomFieldDefinition:
 		return true
 	case ResourceTypeDocument:
+		return true
+	case ResourceTypeExtension:
 		return true
 	case ResourceTypeFolder:
 		return true
@@ -1861,7 +2015,7 @@ type AccessibleNamespacePage struct {
 
 // Action Fine-grained authorization action. Exact match only; wildcards are not supported.
 //
-// Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
+// Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage, plugin.install, plugin.manage, extension.create, extension.read, extension.update, extension.delete.
 type Action = string
 
 // CustomFieldBooleanSchema defines model for CustomFieldBooleanSchema.
@@ -2262,6 +2416,55 @@ type EffectiveActions struct {
 	Actions []Action `json:"actions"`
 }
 
+// ExtensionNode Plugin-defined Neo4j graph node (label Extension).
+type ExtensionNode struct {
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+
+	// Id Example: 9bsv0s46s6s002p9ltq0
+	Id string `json:"id"`
+
+	// Kind Example: TimeEntry
+	Kind string `json:"kind"`
+
+	// ParentId Direct IN_SCOPE_OF parent id.
+	ParentId   *string       `json:"parent_id,omitempty"`
+	ParentType *ResourceType `json:"parent_type,omitempty"`
+
+	// PluginId Example: com.elemo.timetracking
+	PluginId   string                 `json:"plugin_id"`
+	Properties map[string]interface{} `json:"properties"`
+	UpdatedAt  *time.Time             `json:"updated_at,omitempty"`
+}
+
+// ExtensionNodePage defines model for ExtensionNodePage.
+type ExtensionNodePage struct {
+	Items []ExtensionNode `json:"items"`
+
+	// PageInfo Cursor pagination metadata for a page of results.
+	PageInfo PageInfo `json:"page_info"`
+}
+
+// ExtensionRelation Namespaced plugin domain edge.
+type ExtensionRelation struct {
+	CreatedAt *time.Time   `json:"created_at,omitempty"`
+	From      string       `json:"from"`
+	FromType  ResourceType `json:"from_type"`
+	Id        string       `json:"id"`
+
+	// Kind Example: LOGGED_ON
+	Kind   string       `json:"kind"`
+	To     string       `json:"to"`
+	ToType ResourceType `json:"to_type"`
+}
+
+// ExtensionRelationPage defines model for ExtensionRelationPage.
+type ExtensionRelationPage struct {
+	Items []ExtensionRelation `json:"items"`
+
+	// PageInfo Cursor pagination metadata for a page of results.
+	PageInfo PageInfo `json:"page_info"`
+}
+
 // Folder A nested folder in an organization or namespace document library.
 type Folder struct {
 	// CreatedAt Date when the folder was created.
@@ -2294,6 +2497,20 @@ type FolderPage struct {
 
 	// PageInfo Cursor pagination metadata for a page of results.
 	PageInfo PageInfo `json:"page_info"`
+}
+
+// FrontendPlugin Active frontend plugin discovery payload for a workspace scope.
+type FrontendPlugin struct {
+	// Entrypoint Example: frontend/index.js
+	Entrypoint string `json:"entrypoint"`
+
+	// Id Example: com.elemo.timetracking
+	Id     string         `json:"id"`
+	Module *string        `json:"module,omitempty"`
+	Slots  []PluginUISlot `json:"slots"`
+
+	// Version Example: 1.0.0
+	Version string `json:"version"`
 }
 
 // Grant A scoped ReBAC grant that binds a principal to actions on a resource.
@@ -3002,6 +3219,112 @@ type PartialUser struct {
 	Picture *string `json:"picture,omitempty"`
 }
 
+// Plugin An installed plugin package and its runtime status.
+type Plugin struct {
+	Capabilities []PluginCapability `json:"capabilities"`
+
+	// Config Per-activation config when listing for a manage scope.
+	Config       *map[string]interface{} `json:"config,omitempty"`
+	ConfigSchema *[]PluginConfigField    `json:"config_schema,omitempty"`
+	CreatedAt    time.Time               `json:"created_at"`
+
+	// Enabled Scoped activation when listing for a manage scope.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Error Last runtime error, if the plugin failed to start.
+	Error *string `json:"error,omitempty"`
+
+	// Graph Local kinds and foreign aliases from the plugin manifest.
+	Graph *PluginGraphSummary `json:"graph,omitempty"`
+
+	// Id Installation row ID.
+	//
+	// Example: 9bsv0s46s6s002p9ltq0
+	Id string `json:"id"`
+
+	// Name Example: Time Tracking
+	Name string `json:"name"`
+
+	// PluginId Reverse-domain plugin identifier.
+	//
+	// Example: com.elemo.timetracking
+	PluginId string         `json:"plugin_id"`
+	Slots    []PluginUISlot `json:"slots"`
+
+	// Status Lifecycle state of a plugin installation or runtime instance.
+	Status    PluginStatus `json:"status"`
+	UpdatedAt *time.Time   `json:"updated_at,omitempty"`
+
+	// Version Example: 1.0.0
+	Version string `json:"version"`
+}
+
+// PluginCapability Closed host-API capability granted at install time.
+type PluginCapability string
+
+// PluginConfig Per-activation plugin configuration.
+type PluginConfig struct {
+	Config map[string]interface{} `json:"config"`
+}
+
+// PluginConfigField Declared per-activation config field from the plugin manifest.
+type PluginConfigField struct {
+	// Foreign Foreign graph alias when type is graph_binding.
+	Foreign  *string `json:"foreign,omitempty"`
+	Name     string  `json:"name"`
+	Required *bool   `json:"required,omitempty"`
+
+	// Type Closed activation config field type.
+	Type PluginConfigFieldType `json:"type"`
+}
+
+// PluginConfigFieldType Closed activation config field type.
+type PluginConfigFieldType string
+
+// PluginGraphForeignSummary Declared foreign graph alias resolved at activation.
+type PluginGraphForeignSummary struct {
+	Name       string                        `json:"name"`
+	Parent     string                        `json:"parent"`
+	Properties *[]PluginGraphPropertySummary `json:"properties,omitempty"`
+}
+
+// PluginGraphKindSummary Local graph kind advertised for host binding pickers.
+type PluginGraphKindSummary struct {
+	Kind       string                        `json:"kind"`
+	Parent     string                        `json:"parent"`
+	Properties *[]PluginGraphPropertySummary `json:"properties,omitempty"`
+}
+
+// PluginGraphPropertySummary defines model for PluginGraphPropertySummary.
+type PluginGraphPropertySummary struct {
+	Name     string `json:"name"`
+	Required *bool  `json:"required,omitempty"`
+	Type     string `json:"type"`
+}
+
+// PluginGraphRelationDirection Direction of listed plugin domain relations.
+type PluginGraphRelationDirection string
+
+// PluginGraphSummary Local kinds and foreign aliases from the plugin manifest.
+type PluginGraphSummary struct {
+	Foreign *[]PluginGraphForeignSummary `json:"foreign,omitempty"`
+	Nodes   *[]PluginGraphKindSummary    `json:"nodes,omitempty"`
+}
+
+// PluginInvokeResult Result of POST /v1/plugins/{pluginId}/invoke.
+type PluginInvokeResult struct {
+	// Data Plugin-defined JSON payload.
+	Data  interface{} `json:"data,omitempty"`
+	Error *string     `json:"error,omitempty"`
+	Ok    bool        `json:"ok"`
+}
+
+// PluginStatus Lifecycle state of a plugin installation or runtime instance.
+type PluginStatus string
+
+// PluginUISlot Host UI contribution point declared by a plugin.
+type PluginUISlot string
+
 // Project A project in a namespace.
 type Project struct {
 	// CreatedAt Date when the project was created.
@@ -3474,6 +3797,9 @@ type PageToken = string
 // ParentId Example: 9bsv0s46s6s002p9ltq0
 type ParentId = string
 
+// PluginId Example: com.elemo.timetracking
+type PluginId = string
+
 // ProjectId Example: 9bsv0s46s6s002p9ltq0
 type ProjectId = string
 
@@ -3919,6 +4245,75 @@ type OrganizationPatch struct {
 	//
 	// Example: https://example.com
 	Website Optional[string] `json:"website,omitempty"`
+}
+
+// PluginConfigUpdate defines model for PluginConfigUpdate.
+type PluginConfigUpdate struct {
+	Config map[string]interface{} `json:"config"`
+}
+
+// PluginEnable defines model for PluginEnable.
+type PluginEnable struct {
+	// Config Optional activation config applied when enabling.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId   string       `json:"scope_id"`
+	ScopeType ResourceType `json:"scope_type"`
+}
+
+// PluginGraphNodeCreate defines model for PluginGraphNodeCreate.
+type PluginGraphNodeCreate struct {
+	// Kind Example: TimeEntry
+	Kind string `json:"kind"`
+
+	// ParentId Example: 9bsv0s46s6s002p9ltq0
+	ParentId   string                  `json:"parent_id"`
+	ParentType ResourceType            `json:"parent_type"`
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Relation   *struct {
+		// Kind Example: LOGGED_ON
+		Kind   string       `json:"kind"`
+		ToId   string       `json:"to_id"`
+		ToType ResourceType `json:"to_type"`
+	} `json:"relation,omitempty"`
+}
+
+// PluginGraphNodeMove defines model for PluginGraphNodeMove.
+type PluginGraphNodeMove struct {
+	// ParentId Example: 9bsv0s46s6s002p9ltq0
+	ParentId   string       `json:"parent_id"`
+	ParentType ResourceType `json:"parent_type"`
+}
+
+// PluginGraphNodeUpdate defines model for PluginGraphNodeUpdate.
+type PluginGraphNodeUpdate struct {
+	Properties map[string]interface{} `json:"properties"`
+}
+
+// PluginGraphRelationCreate defines model for PluginGraphRelationCreate.
+type PluginGraphRelationCreate struct {
+	FromId   string       `json:"from_id"`
+	FromType ResourceType `json:"from_type"`
+
+	// Kind Example: LOGGED_ON
+	Kind   string       `json:"kind"`
+	ToId   string       `json:"to_id"`
+	ToType ResourceType `json:"to_type"`
+}
+
+// PluginInvoke defines model for PluginInvoke.
+type PluginInvoke struct {
+	// Function Example: startTimer
+	Function string `json:"function"`
+
+	// Payload Plugin-defined JSON payload.
+	Payload interface{} `json:"payload,omitempty"`
+
+	// ScopeId Composite or bare resource ID the call is scoped to.
+	//
+	// Example: Issue:9bsv0s46s6s002p9ltq0
+	ScopeId string `json:"scope_id"`
 }
 
 // ProjectCreate defines model for ProjectCreate.
@@ -4938,6 +5333,157 @@ type V1PermissionsCreateJSONBody struct {
 	} `json:"scope"`
 }
 
+// V1PluginsGetParams defines parameters for V1PluginsGet.
+type V1PluginsGetParams struct {
+	ScopeId   *string       `form:"scope_id,omitempty" json:"scope_id,omitempty"`
+	ScopeType *ResourceType `form:"scope_type,omitempty" json:"scope_type,omitempty"`
+}
+
+// V1PluginsCreateMultipartBody defines parameters for V1PluginsCreate.
+type V1PluginsCreateMultipartBody struct {
+	// Package Plugin zip archive. Maximum size is 32MB.
+	Package openapi_types.File `json:"package"`
+}
+
+// V1PluginsFrontendGetParams defines parameters for V1PluginsFrontendGet.
+type V1PluginsFrontendGetParams struct {
+	ScopeId   string       `form:"scope_id" json:"scope_id"`
+	ScopeType ResourceType `form:"scope_type" json:"scope_type"`
+}
+
+// V1PluginConfigGetParams defines parameters for V1PluginConfigGet.
+type V1PluginConfigGetParams struct {
+	ScopeId   string       `form:"scope_id" json:"scope_id"`
+	ScopeType ResourceType `form:"scope_type" json:"scope_type"`
+}
+
+// V1PluginConfigPatchJSONBody defines parameters for V1PluginConfigPatch.
+type V1PluginConfigPatchJSONBody struct {
+	Config map[string]interface{} `json:"config"`
+}
+
+// V1PluginConfigPatchParams defines parameters for V1PluginConfigPatch.
+type V1PluginConfigPatchParams struct {
+	ScopeId   string       `form:"scope_id" json:"scope_id"`
+	ScopeType ResourceType `form:"scope_type" json:"scope_type"`
+}
+
+// V1PluginDisableJSONBody defines parameters for V1PluginDisable.
+type V1PluginDisableJSONBody struct {
+	// Config Optional activation config applied when enabling.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId   string       `json:"scope_id"`
+	ScopeType ResourceType `json:"scope_type"`
+}
+
+// V1PluginEnableJSONBody defines parameters for V1PluginEnable.
+type V1PluginEnableJSONBody struct {
+	// Config Optional activation config applied when enabling.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// ScopeId Example: 9bsv0s46s6s002p9ltq0
+	ScopeId   string       `json:"scope_id"`
+	ScopeType ResourceType `json:"scope_type"`
+}
+
+// V1PluginGraphNodesGetParams defines parameters for V1PluginGraphNodesGet.
+type V1PluginGraphNodesGetParams struct {
+	Kind          string       `form:"kind" json:"kind"`
+	ScopeId       string       `form:"scope_id" json:"scope_id"`
+	ScopeType     ResourceType `form:"scope_type" json:"scope_type"`
+	Equals        *string      `form:"equals,omitempty" json:"equals,omitempty"`
+	OwnerPluginId *string      `form:"owner_plugin_id,omitempty" json:"owner_plugin_id,omitempty"`
+
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// V1PluginGraphNodesCreateJSONBody defines parameters for V1PluginGraphNodesCreate.
+type V1PluginGraphNodesCreateJSONBody struct {
+	// Kind Example: TimeEntry
+	Kind string `json:"kind"`
+
+	// ParentId Example: 9bsv0s46s6s002p9ltq0
+	ParentId   string                  `json:"parent_id"`
+	ParentType ResourceType            `json:"parent_type"`
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Relation   *struct {
+		// Kind Example: LOGGED_ON
+		Kind   string       `json:"kind"`
+		ToId   string       `json:"to_id"`
+		ToType ResourceType `json:"to_type"`
+	} `json:"relation,omitempty"`
+}
+
+// V1PluginGraphNodeGetParams defines parameters for V1PluginGraphNodeGet.
+type V1PluginGraphNodeGetParams struct {
+	OwnerPluginId *string `form:"owner_plugin_id,omitempty" json:"owner_plugin_id,omitempty"`
+}
+
+// V1PluginGraphNodeUpdateJSONBody defines parameters for V1PluginGraphNodeUpdate.
+type V1PluginGraphNodeUpdateJSONBody struct {
+	Properties map[string]interface{} `json:"properties"`
+}
+
+// V1PluginGraphNodeMoveJSONBody defines parameters for V1PluginGraphNodeMove.
+type V1PluginGraphNodeMoveJSONBody struct {
+	// ParentId Example: 9bsv0s46s6s002p9ltq0
+	ParentId   string       `json:"parent_id"`
+	ParentType ResourceType `json:"parent_type"`
+}
+
+// V1PluginGraphRelationsGetParams defines parameters for V1PluginGraphRelationsGet.
+type V1PluginGraphRelationsGetParams struct {
+	Kind     string       `form:"kind" json:"kind"`
+	NodeId   string       `form:"node_id" json:"node_id"`
+	NodeType ResourceType `form:"node_type" json:"node_type"`
+
+	// Direction Relation list direction. Defaults to outgoing.
+	Direction *PluginGraphRelationDirection `form:"direction,omitempty" json:"direction,omitempty"`
+
+	// PageSize Maximum number of items to return.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// PageToken Opaque continuation token from a previous page_info.next_page_token.
+	PageToken *PageToken `form:"page_token,omitempty" json:"page_token,omitempty"`
+}
+
+// V1PluginGraphRelationsCreateJSONBody defines parameters for V1PluginGraphRelationsCreate.
+type V1PluginGraphRelationsCreateJSONBody struct {
+	FromId   string       `json:"from_id"`
+	FromType ResourceType `json:"from_type"`
+
+	// Kind Example: LOGGED_ON
+	Kind   string       `json:"kind"`
+	ToId   string       `json:"to_id"`
+	ToType ResourceType `json:"to_type"`
+}
+
+// V1PluginInvokeJSONBody defines parameters for V1PluginInvoke.
+type V1PluginInvokeJSONBody struct {
+	// Function Example: startTimer
+	Function string `json:"function"`
+
+	// Payload Plugin-defined JSON payload.
+	Payload interface{} `json:"payload,omitempty"`
+
+	// ScopeId Composite or bare resource ID the call is scoped to.
+	//
+	// Example: Issue:9bsv0s46s6s002p9ltq0
+	ScopeId string `json:"scope_id"`
+}
+
+// V1PluginUpgradeMultipartBody defines parameters for V1PluginUpgrade.
+type V1PluginUpgradeMultipartBody struct {
+	// Package Plugin zip archive. Maximum size is 32MB.
+	Package openapi_types.File `json:"package"`
+}
+
 // V1ProjectUpdateJSONBody defines parameters for V1ProjectUpdate.
 type V1ProjectUpdateJSONBody struct {
 	// Description Description of the project.
@@ -5423,6 +5969,36 @@ type V1OrganizationTeamMembersAddJSONRequestBody V1OrganizationTeamMembersAddJSO
 
 // V1PermissionsCreateJSONRequestBody defines body for V1PermissionsCreate for application/json ContentType.
 type V1PermissionsCreateJSONRequestBody V1PermissionsCreateJSONBody
+
+// V1PluginsCreateMultipartRequestBody defines body for V1PluginsCreate for multipart/form-data ContentType.
+type V1PluginsCreateMultipartRequestBody V1PluginsCreateMultipartBody
+
+// V1PluginConfigPatchJSONRequestBody defines body for V1PluginConfigPatch for application/json ContentType.
+type V1PluginConfigPatchJSONRequestBody V1PluginConfigPatchJSONBody
+
+// V1PluginDisableJSONRequestBody defines body for V1PluginDisable for application/json ContentType.
+type V1PluginDisableJSONRequestBody V1PluginDisableJSONBody
+
+// V1PluginEnableJSONRequestBody defines body for V1PluginEnable for application/json ContentType.
+type V1PluginEnableJSONRequestBody V1PluginEnableJSONBody
+
+// V1PluginGraphNodesCreateJSONRequestBody defines body for V1PluginGraphNodesCreate for application/json ContentType.
+type V1PluginGraphNodesCreateJSONRequestBody V1PluginGraphNodesCreateJSONBody
+
+// V1PluginGraphNodeUpdateJSONRequestBody defines body for V1PluginGraphNodeUpdate for application/json ContentType.
+type V1PluginGraphNodeUpdateJSONRequestBody V1PluginGraphNodeUpdateJSONBody
+
+// V1PluginGraphNodeMoveJSONRequestBody defines body for V1PluginGraphNodeMove for application/json ContentType.
+type V1PluginGraphNodeMoveJSONRequestBody V1PluginGraphNodeMoveJSONBody
+
+// V1PluginGraphRelationsCreateJSONRequestBody defines body for V1PluginGraphRelationsCreate for application/json ContentType.
+type V1PluginGraphRelationsCreateJSONRequestBody V1PluginGraphRelationsCreateJSONBody
+
+// V1PluginInvokeJSONRequestBody defines body for V1PluginInvoke for application/json ContentType.
+type V1PluginInvokeJSONRequestBody V1PluginInvokeJSONBody
+
+// V1PluginUpgradeMultipartRequestBody defines body for V1PluginUpgrade for multipart/form-data ContentType.
+type V1PluginUpgradeMultipartRequestBody V1PluginUpgradeMultipartBody
 
 // V1ProjectUpdateJSONRequestBody defines body for V1ProjectUpdate for application/json ContentType.
 type V1ProjectUpdateJSONRequestBody V1ProjectUpdateJSONBody
@@ -6417,6 +6993,66 @@ type ServerInterface interface {
 	// V1PermissionGet Get grant
 	// (GET /v1/permissions/{id})
 	V1PermissionGet(w http.ResponseWriter, r *http.Request, id Id)
+	// V1PluginsGet List installed plugins
+	// (GET /v1/plugins)
+	V1PluginsGet(w http.ResponseWriter, r *http.Request, params V1PluginsGetParams)
+	// V1PluginsCreate Install a plugin package
+	// (POST /v1/plugins)
+	V1PluginsCreate(w http.ResponseWriter, r *http.Request)
+	// V1PluginsFrontendGet List active frontend plugins
+	// (GET /v1/plugins/frontend)
+	V1PluginsFrontendGet(w http.ResponseWriter, r *http.Request, params V1PluginsFrontendGetParams)
+	// V1PluginDelete Uninstall a plugin
+	// (DELETE /v1/plugins/{pluginId})
+	V1PluginDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginGet Get an installed plugin
+	// (GET /v1/plugins/{pluginId})
+	V1PluginGet(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginConfigGet Get plugin activation config
+	// (GET /v1/plugins/{pluginId}/config)
+	V1PluginConfigGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigGetParams)
+	// V1PluginConfigPatch Update plugin activation config
+	// (PATCH /v1/plugins/{pluginId}/config)
+	V1PluginConfigPatch(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigPatchParams)
+	// V1PluginDisable Disable a plugin on a scope
+	// (POST /v1/plugins/{pluginId}/disable)
+	V1PluginDisable(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginEnable Enable a plugin on a scope
+	// (POST /v1/plugins/{pluginId}/enable)
+	V1PluginEnable(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginGraphNodesGet List plugin graph nodes
+	// (GET /v1/plugins/{pluginId}/graph/nodes)
+	V1PluginGraphNodesGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphNodesGetParams)
+	// V1PluginGraphNodesCreate Create a plugin graph node
+	// (POST /v1/plugins/{pluginId}/graph/nodes)
+	V1PluginGraphNodesCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginGraphNodeDelete Delete a plugin graph node
+	// (DELETE /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id)
+	// V1PluginGraphNodeGet Get a plugin graph node
+	// (GET /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id, params V1PluginGraphNodeGetParams)
+	// V1PluginGraphNodeUpdate Update a plugin graph node
+	// (PATCH /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeUpdate(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id)
+	// V1PluginGraphNodeMove Move a plugin graph node to a new parent
+	// (POST /v1/plugins/{pluginId}/graph/nodes/{id}/move)
+	V1PluginGraphNodeMove(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id)
+	// V1PluginGraphRelationsGet List plugin graph relations
+	// (GET /v1/plugins/{pluginId}/graph/relations)
+	V1PluginGraphRelationsGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphRelationsGetParams)
+	// V1PluginGraphRelationsCreate Create a plugin graph relation
+	// (POST /v1/plugins/{pluginId}/graph/relations)
+	V1PluginGraphRelationsCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginGraphRelationDelete Delete a plugin graph relation
+	// (DELETE /v1/plugins/{pluginId}/graph/relations/{id})
+	V1PluginGraphRelationDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id)
+	// V1PluginInvoke Invoke a plugin function
+	// (POST /v1/plugins/{pluginId}/invoke)
+	V1PluginInvoke(w http.ResponseWriter, r *http.Request, pluginId PluginId)
+	// V1PluginUpgrade Upgrade a plugin package
+	// (POST /v1/plugins/{pluginId}/upgrade)
+	V1PluginUpgrade(w http.ResponseWriter, r *http.Request, pluginId PluginId)
 	// V1ProjectDelete Delete project
 	// (DELETE /v1/projects/{projectId})
 	V1ProjectDelete(w http.ResponseWriter, r *http.Request, projectId ProjectId)
@@ -6966,6 +7602,126 @@ func (_ Unimplemented) V1PermissionDelete(w http.ResponseWriter, r *http.Request
 // V1PermissionGet Get grant
 // (GET /v1/permissions/{id})
 func (_ Unimplemented) V1PermissionGet(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginsGet List installed plugins
+// (GET /v1/plugins)
+func (_ Unimplemented) V1PluginsGet(w http.ResponseWriter, r *http.Request, params V1PluginsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginsCreate Install a plugin package
+// (POST /v1/plugins)
+func (_ Unimplemented) V1PluginsCreate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginsFrontendGet List active frontend plugins
+// (GET /v1/plugins/frontend)
+func (_ Unimplemented) V1PluginsFrontendGet(w http.ResponseWriter, r *http.Request, params V1PluginsFrontendGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginDelete Uninstall a plugin
+// (DELETE /v1/plugins/{pluginId})
+func (_ Unimplemented) V1PluginDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGet Get an installed plugin
+// (GET /v1/plugins/{pluginId})
+func (_ Unimplemented) V1PluginGet(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginConfigGet Get plugin activation config
+// (GET /v1/plugins/{pluginId}/config)
+func (_ Unimplemented) V1PluginConfigGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginConfigPatch Update plugin activation config
+// (PATCH /v1/plugins/{pluginId}/config)
+func (_ Unimplemented) V1PluginConfigPatch(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigPatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginDisable Disable a plugin on a scope
+// (POST /v1/plugins/{pluginId}/disable)
+func (_ Unimplemented) V1PluginDisable(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginEnable Enable a plugin on a scope
+// (POST /v1/plugins/{pluginId}/enable)
+func (_ Unimplemented) V1PluginEnable(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodesGet List plugin graph nodes
+// (GET /v1/plugins/{pluginId}/graph/nodes)
+func (_ Unimplemented) V1PluginGraphNodesGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphNodesGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodesCreate Create a plugin graph node
+// (POST /v1/plugins/{pluginId}/graph/nodes)
+func (_ Unimplemented) V1PluginGraphNodesCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodeDelete Delete a plugin graph node
+// (DELETE /v1/plugins/{pluginId}/graph/nodes/{id})
+func (_ Unimplemented) V1PluginGraphNodeDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodeGet Get a plugin graph node
+// (GET /v1/plugins/{pluginId}/graph/nodes/{id})
+func (_ Unimplemented) V1PluginGraphNodeGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id, params V1PluginGraphNodeGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodeUpdate Update a plugin graph node
+// (PATCH /v1/plugins/{pluginId}/graph/nodes/{id})
+func (_ Unimplemented) V1PluginGraphNodeUpdate(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphNodeMove Move a plugin graph node to a new parent
+// (POST /v1/plugins/{pluginId}/graph/nodes/{id}/move)
+func (_ Unimplemented) V1PluginGraphNodeMove(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphRelationsGet List plugin graph relations
+// (GET /v1/plugins/{pluginId}/graph/relations)
+func (_ Unimplemented) V1PluginGraphRelationsGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphRelationsGetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphRelationsCreate Create a plugin graph relation
+// (POST /v1/plugins/{pluginId}/graph/relations)
+func (_ Unimplemented) V1PluginGraphRelationsCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginGraphRelationDelete Delete a plugin graph relation
+// (DELETE /v1/plugins/{pluginId}/graph/relations/{id})
+func (_ Unimplemented) V1PluginGraphRelationDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginInvoke Invoke a plugin function
+// (POST /v1/plugins/{pluginId}/invoke)
+func (_ Unimplemented) V1PluginInvoke(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// V1PluginUpgrade Upgrade a plugin package
+// (POST /v1/plugins/{pluginId}/upgrade)
+func (_ Unimplemented) V1PluginUpgrade(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -10005,6 +10761,848 @@ func (siw *ServerInterfaceWrapper) V1PermissionGet(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// V1PluginsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginsGetParams
+
+	// ------------- Optional query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginsGet(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginsCreate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginsCreate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginsFrontendGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginsFrontendGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginsFrontendGetParams
+
+	// ------------- Required query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginsFrontendGet(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginDelete(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGet(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginConfigGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginConfigGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginConfigGetParams
+
+	// ------------- Required query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginConfigGet(w, r, pluginId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginConfigPatch operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginConfigPatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginConfigPatchParams
+
+	// ------------- Required query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginConfigPatch(w, r, pluginId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginDisable operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginDisable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginDisable(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginEnable operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginEnable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginEnable(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodesGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodesGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginGraphNodesGetParams
+
+	// ------------- Required query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_id", r.URL.Query(), &params.ScopeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "scope_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope_type", r.URL.Query(), &params.ScopeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "equals" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "equals", r.URL.Query(), &params.Equals, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "equals"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "equals", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "owner_plugin_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_plugin_id", r.URL.Query(), &params.OwnerPluginId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "owner_plugin_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_plugin_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodesGet(w, r, pluginId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodesCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodesCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodesCreate(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodeDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodeDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodeDelete(w, r, pluginId, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodeGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodeGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginGraphNodeGetParams
+
+	// ------------- Optional query parameter "owner_plugin_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_plugin_id", r.URL.Query(), &params.OwnerPluginId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "owner_plugin_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_plugin_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodeGet(w, r, pluginId, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodeUpdate operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodeUpdate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodeUpdate(w, r, pluginId, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphNodeMove operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphNodeMove(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphNodeMove(w, r, pluginId, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphRelationsGet operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphRelationsGet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params V1PluginGraphRelationsGetParams
+
+	// ------------- Required query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "node_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "node_id", r.URL.Query(), &params.NodeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "node_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "node_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "node_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "node_type", r.URL.Query(), &params.NodeType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "node_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "node_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "direction" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "direction", r.URL.Query(), &params.Direction, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "direction"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "direction", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_token", r.URL.Query(), &params.PageToken, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_token", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphRelationsGet(w, r, pluginId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphRelationsCreate operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphRelationsCreate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphRelationsCreate(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginGraphRelationDelete operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginGraphRelationDelete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginGraphRelationDelete(w, r, pluginId, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginInvoke operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginInvoke(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginInvoke(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// V1PluginUpgrade operation middleware
+func (siw *ServerInterfaceWrapper) V1PluginUpgrade(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pluginId" -------------
+	var pluginId PluginId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pluginId", chi.URLParam(r, "pluginId"), &pluginId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pluginId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.V1PluginUpgrade(w, r, pluginId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // V1ProjectDelete operation middleware
 func (siw *ServerInterfaceWrapper) V1ProjectDelete(w http.ResponseWriter, r *http.Request) {
 
@@ -11534,6 +13132,66 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}", wrapper.V1ResourceCustomFieldValuePut)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins", wrapper.V1PluginsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins", wrapper.V1PluginsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/frontend", wrapper.V1PluginsFrontendGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/plugins/{pluginId}", wrapper.V1PluginDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/{pluginId}", wrapper.V1PluginGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/enable", wrapper.V1PluginEnable)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/disable", wrapper.V1PluginDisable)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/{pluginId}/config", wrapper.V1PluginConfigGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/plugins/{pluginId}/config", wrapper.V1PluginConfigPatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/upgrade", wrapper.V1PluginUpgrade)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/invoke", wrapper.V1PluginInvoke)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes", wrapper.V1PluginGraphNodesGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes", wrapper.V1PluginGraphNodesCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes/{id}", wrapper.V1PluginGraphNodeDelete)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes/{id}", wrapper.V1PluginGraphNodeGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes/{id}", wrapper.V1PluginGraphNodeUpdate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/graph/nodes/{id}/move", wrapper.V1PluginGraphNodeMove)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/plugins/{pluginId}/graph/relations", wrapper.V1PluginGraphRelationsGet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/plugins/{pluginId}/graph/relations", wrapper.V1PluginGraphRelationsCreate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/plugins/{pluginId}/graph/relations/{id}", wrapper.V1PluginGraphRelationDelete)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/system/health", wrapper.V1SystemHealth)
@@ -18450,6 +20108,1779 @@ func (response V1PermissionGet500JSONResponse) VisitV1PermissionGetResponse(w ht
 	return err
 }
 
+type V1PluginsGetRequestObject struct {
+	Params V1PluginsGetParams
+}
+
+type V1PluginsGetResponseObject interface {
+	VisitV1PluginsGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginsGet200JSONResponse []Plugin
+
+func (response V1PluginsGet200JSONResponse) VisitV1PluginsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginsGet400JSONResponse) VisitV1PluginsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginsGet401JSONResponse) VisitV1PluginsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginsGet403JSONResponse) VisitV1PluginsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginsGet500JSONResponse) VisitV1PluginsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreateRequestObject struct {
+	Body *multipart.Reader
+}
+
+type V1PluginsCreateResponseObject interface {
+	VisitV1PluginsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1PluginsCreate201JSONResponse Plugin
+
+func (response V1PluginsCreate201JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginsCreate400JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginsCreate401JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginsCreate403JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1PluginsCreate409JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginsCreate500JSONResponse) VisitV1PluginsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGetRequestObject struct {
+	Params V1PluginsFrontendGetParams
+}
+
+type V1PluginsFrontendGetResponseObject interface {
+	VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginsFrontendGet200JSONResponse []FrontendPlugin
+
+func (response V1PluginsFrontendGet200JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginsFrontendGet400JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginsFrontendGet401JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginsFrontendGet403JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginsFrontendGet404JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginsFrontendGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginsFrontendGet500JSONResponse) VisitV1PluginsFrontendGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDeleteRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+}
+
+type V1PluginDeleteResponseObject interface {
+	VisitV1PluginDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1PluginDelete204Response struct {
+}
+
+func (response V1PluginDelete204Response) VisitV1PluginDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1PluginDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginDelete401JSONResponse) VisitV1PluginDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginDelete403JSONResponse) VisitV1PluginDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginDelete404JSONResponse) VisitV1PluginDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginDelete500JSONResponse) VisitV1PluginDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGetRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+}
+
+type V1PluginGetResponseObject interface {
+	VisitV1PluginGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGet200JSONResponse Plugin
+
+func (response V1PluginGet200JSONResponse) VisitV1PluginGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGet401JSONResponse) VisitV1PluginGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGet403JSONResponse) VisitV1PluginGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGet404JSONResponse) VisitV1PluginGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGet500JSONResponse) VisitV1PluginGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGetRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Params   V1PluginConfigGetParams
+}
+
+type V1PluginConfigGetResponseObject interface {
+	VisitV1PluginConfigGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginConfigGet200JSONResponse PluginConfig
+
+func (response V1PluginConfigGet200JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginConfigGet400JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginConfigGet401JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginConfigGet403JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginConfigGet404JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginConfigGet500JSONResponse) VisitV1PluginConfigGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatchRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Params   V1PluginConfigPatchParams
+	Body     *V1PluginConfigPatchJSONRequestBody
+}
+
+type V1PluginConfigPatchResponseObject interface {
+	VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error
+}
+
+type V1PluginConfigPatch200JSONResponse PluginConfig
+
+func (response V1PluginConfigPatch200JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatch400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginConfigPatch400JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatch401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginConfigPatch401JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatch403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginConfigPatch403JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatch404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginConfigPatch404JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginConfigPatch500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginConfigPatch500JSONResponse) VisitV1PluginConfigPatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDisableRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *V1PluginDisableJSONRequestBody
+}
+
+type V1PluginDisableResponseObject interface {
+	VisitV1PluginDisableResponse(w http.ResponseWriter) error
+}
+
+type V1PluginDisable204Response struct {
+}
+
+func (response V1PluginDisable204Response) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1PluginDisable400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginDisable400JSONResponse) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDisable401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginDisable401JSONResponse) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDisable403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginDisable403JSONResponse) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDisable404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginDisable404JSONResponse) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginDisable500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginDisable500JSONResponse) VisitV1PluginDisableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginEnableRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *V1PluginEnableJSONRequestBody
+}
+
+type V1PluginEnableResponseObject interface {
+	VisitV1PluginEnableResponse(w http.ResponseWriter) error
+}
+
+type V1PluginEnable204Response struct {
+}
+
+func (response V1PluginEnable204Response) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1PluginEnable400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginEnable400JSONResponse) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginEnable401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginEnable401JSONResponse) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginEnable403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginEnable403JSONResponse) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginEnable404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginEnable404JSONResponse) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginEnable500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginEnable500JSONResponse) VisitV1PluginEnableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGetRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Params   V1PluginGraphNodesGetParams
+}
+
+type V1PluginGraphNodesGetResponseObject interface {
+	VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodesGet200JSONResponse ExtensionNodePage
+
+func (response V1PluginGraphNodesGet200JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphNodesGet400JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodesGet401JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodesGet403JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodesGet404JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodesGet500JSONResponse) VisitV1PluginGraphNodesGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreateRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *V1PluginGraphNodesCreateJSONRequestBody
+}
+
+type V1PluginGraphNodesCreateResponseObject interface {
+	VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodesCreate201JSONResponse ExtensionNode
+
+func (response V1PluginGraphNodesCreate201JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphNodesCreate400JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodesCreate401JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodesCreate403JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodesCreate404JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1PluginGraphNodesCreate409JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodesCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodesCreate500JSONResponse) VisitV1PluginGraphNodesCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeDeleteRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Id       Id       `json:"id"`
+}
+
+type V1PluginGraphNodeDeleteResponseObject interface {
+	VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodeDelete204Response struct {
+}
+
+func (response V1PluginGraphNodeDelete204Response) VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1PluginGraphNodeDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodeDelete401JSONResponse) VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodeDelete403JSONResponse) VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodeDelete404JSONResponse) VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodeDelete500JSONResponse) VisitV1PluginGraphNodeDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeGetRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Id       Id       `json:"id"`
+	Params   V1PluginGraphNodeGetParams
+}
+
+type V1PluginGraphNodeGetResponseObject interface {
+	VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodeGet200JSONResponse ExtensionNode
+
+func (response V1PluginGraphNodeGet200JSONResponse) VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodeGet401JSONResponse) VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodeGet403JSONResponse) VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodeGet404JSONResponse) VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodeGet500JSONResponse) VisitV1PluginGraphNodeGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdateRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Id       Id       `json:"id"`
+	Body     *V1PluginGraphNodeUpdateJSONRequestBody
+}
+
+type V1PluginGraphNodeUpdateResponseObject interface {
+	VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodeUpdate200JSONResponse ExtensionNode
+
+func (response V1PluginGraphNodeUpdate200JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphNodeUpdate400JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodeUpdate401JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodeUpdate403JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodeUpdate404JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeUpdate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodeUpdate500JSONResponse) VisitV1PluginGraphNodeUpdateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMoveRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Id       Id       `json:"id"`
+	Body     *V1PluginGraphNodeMoveJSONRequestBody
+}
+
+type V1PluginGraphNodeMoveResponseObject interface {
+	VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphNodeMove200JSONResponse ExtensionNode
+
+func (response V1PluginGraphNodeMove200JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMove400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphNodeMove400JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMove401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphNodeMove401JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMove403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphNodeMove403JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMove404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphNodeMove404JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphNodeMove500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphNodeMove500JSONResponse) VisitV1PluginGraphNodeMoveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGetRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Params   V1PluginGraphRelationsGetParams
+}
+
+type V1PluginGraphRelationsGetResponseObject interface {
+	VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphRelationsGet200JSONResponse ExtensionRelationPage
+
+func (response V1PluginGraphRelationsGet200JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGet400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphRelationsGet400JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGet401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphRelationsGet401JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGet403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphRelationsGet403JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGet404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphRelationsGet404JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsGet500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphRelationsGet500JSONResponse) VisitV1PluginGraphRelationsGetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreateRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *V1PluginGraphRelationsCreateJSONRequestBody
+}
+
+type V1PluginGraphRelationsCreateResponseObject interface {
+	VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphRelationsCreate201JSONResponse ExtensionRelation
+
+func (response V1PluginGraphRelationsCreate201JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginGraphRelationsCreate400JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphRelationsCreate401JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphRelationsCreate403JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphRelationsCreate404JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate409JSONResponse struct{ N409JSONResponse }
+
+func (response V1PluginGraphRelationsCreate409JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationsCreate500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphRelationsCreate500JSONResponse) VisitV1PluginGraphRelationsCreateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationDeleteRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Id       Id       `json:"id"`
+}
+
+type V1PluginGraphRelationDeleteResponseObject interface {
+	VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error
+}
+
+type V1PluginGraphRelationDelete204Response struct {
+}
+
+func (response V1PluginGraphRelationDelete204Response) VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type V1PluginGraphRelationDelete401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginGraphRelationDelete401JSONResponse) VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationDelete403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginGraphRelationDelete403JSONResponse) VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationDelete404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginGraphRelationDelete404JSONResponse) VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginGraphRelationDelete500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginGraphRelationDelete500JSONResponse) VisitV1PluginGraphRelationDeleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvokeRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *V1PluginInvokeJSONRequestBody
+}
+
+type V1PluginInvokeResponseObject interface {
+	VisitV1PluginInvokeResponse(w http.ResponseWriter) error
+}
+
+type V1PluginInvoke200JSONResponse PluginInvokeResult
+
+func (response V1PluginInvoke200JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvoke400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginInvoke400JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvoke401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginInvoke401JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvoke403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginInvoke403JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvoke404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginInvoke404JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginInvoke500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginInvoke500JSONResponse) VisitV1PluginInvokeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgradeRequestObject struct {
+	PluginId PluginId `json:"pluginId"`
+	Body     *multipart.Reader
+}
+
+type V1PluginUpgradeResponseObject interface {
+	VisitV1PluginUpgradeResponse(w http.ResponseWriter) error
+}
+
+type V1PluginUpgrade200JSONResponse Plugin
+
+func (response V1PluginUpgrade200JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgrade400JSONResponse struct{ N400JSONResponse }
+
+func (response V1PluginUpgrade400JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgrade401JSONResponse struct{ N401JSONResponse }
+
+func (response V1PluginUpgrade401JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgrade403JSONResponse struct{ N403JSONResponse }
+
+func (response V1PluginUpgrade403JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgrade404JSONResponse struct{ N404JSONResponse }
+
+func (response V1PluginUpgrade404JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type V1PluginUpgrade500JSONResponse struct{ N500JSONResponse }
+
+func (response V1PluginUpgrade500JSONResponse) VisitV1PluginUpgradeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type V1ProjectDeleteRequestObject struct {
 	ProjectId ProjectId `json:"projectId"`
 }
@@ -21068,6 +24499,66 @@ type StrictServerInterface interface {
 	// V1PermissionGet Get grant
 	// (GET /v1/permissions/{id})
 	V1PermissionGet(ctx context.Context, request V1PermissionGetRequestObject) (V1PermissionGetResponseObject, error)
+	// V1PluginsGet List installed plugins
+	// (GET /v1/plugins)
+	V1PluginsGet(ctx context.Context, request V1PluginsGetRequestObject) (V1PluginsGetResponseObject, error)
+	// V1PluginsCreate Install a plugin package
+	// (POST /v1/plugins)
+	V1PluginsCreate(ctx context.Context, request V1PluginsCreateRequestObject) (V1PluginsCreateResponseObject, error)
+	// V1PluginsFrontendGet List active frontend plugins
+	// (GET /v1/plugins/frontend)
+	V1PluginsFrontendGet(ctx context.Context, request V1PluginsFrontendGetRequestObject) (V1PluginsFrontendGetResponseObject, error)
+	// V1PluginDelete Uninstall a plugin
+	// (DELETE /v1/plugins/{pluginId})
+	V1PluginDelete(ctx context.Context, request V1PluginDeleteRequestObject) (V1PluginDeleteResponseObject, error)
+	// V1PluginGet Get an installed plugin
+	// (GET /v1/plugins/{pluginId})
+	V1PluginGet(ctx context.Context, request V1PluginGetRequestObject) (V1PluginGetResponseObject, error)
+	// V1PluginConfigGet Get plugin activation config
+	// (GET /v1/plugins/{pluginId}/config)
+	V1PluginConfigGet(ctx context.Context, request V1PluginConfigGetRequestObject) (V1PluginConfigGetResponseObject, error)
+	// V1PluginConfigPatch Update plugin activation config
+	// (PATCH /v1/plugins/{pluginId}/config)
+	V1PluginConfigPatch(ctx context.Context, request V1PluginConfigPatchRequestObject) (V1PluginConfigPatchResponseObject, error)
+	// V1PluginDisable Disable a plugin on a scope
+	// (POST /v1/plugins/{pluginId}/disable)
+	V1PluginDisable(ctx context.Context, request V1PluginDisableRequestObject) (V1PluginDisableResponseObject, error)
+	// V1PluginEnable Enable a plugin on a scope
+	// (POST /v1/plugins/{pluginId}/enable)
+	V1PluginEnable(ctx context.Context, request V1PluginEnableRequestObject) (V1PluginEnableResponseObject, error)
+	// V1PluginGraphNodesGet List plugin graph nodes
+	// (GET /v1/plugins/{pluginId}/graph/nodes)
+	V1PluginGraphNodesGet(ctx context.Context, request V1PluginGraphNodesGetRequestObject) (V1PluginGraphNodesGetResponseObject, error)
+	// V1PluginGraphNodesCreate Create a plugin graph node
+	// (POST /v1/plugins/{pluginId}/graph/nodes)
+	V1PluginGraphNodesCreate(ctx context.Context, request V1PluginGraphNodesCreateRequestObject) (V1PluginGraphNodesCreateResponseObject, error)
+	// V1PluginGraphNodeDelete Delete a plugin graph node
+	// (DELETE /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeDelete(ctx context.Context, request V1PluginGraphNodeDeleteRequestObject) (V1PluginGraphNodeDeleteResponseObject, error)
+	// V1PluginGraphNodeGet Get a plugin graph node
+	// (GET /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeGet(ctx context.Context, request V1PluginGraphNodeGetRequestObject) (V1PluginGraphNodeGetResponseObject, error)
+	// V1PluginGraphNodeUpdate Update a plugin graph node
+	// (PATCH /v1/plugins/{pluginId}/graph/nodes/{id})
+	V1PluginGraphNodeUpdate(ctx context.Context, request V1PluginGraphNodeUpdateRequestObject) (V1PluginGraphNodeUpdateResponseObject, error)
+	// V1PluginGraphNodeMove Move a plugin graph node to a new parent
+	// (POST /v1/plugins/{pluginId}/graph/nodes/{id}/move)
+	V1PluginGraphNodeMove(ctx context.Context, request V1PluginGraphNodeMoveRequestObject) (V1PluginGraphNodeMoveResponseObject, error)
+	// V1PluginGraphRelationsGet List plugin graph relations
+	// (GET /v1/plugins/{pluginId}/graph/relations)
+	V1PluginGraphRelationsGet(ctx context.Context, request V1PluginGraphRelationsGetRequestObject) (V1PluginGraphRelationsGetResponseObject, error)
+	// V1PluginGraphRelationsCreate Create a plugin graph relation
+	// (POST /v1/plugins/{pluginId}/graph/relations)
+	V1PluginGraphRelationsCreate(ctx context.Context, request V1PluginGraphRelationsCreateRequestObject) (V1PluginGraphRelationsCreateResponseObject, error)
+	// V1PluginGraphRelationDelete Delete a plugin graph relation
+	// (DELETE /v1/plugins/{pluginId}/graph/relations/{id})
+	V1PluginGraphRelationDelete(ctx context.Context, request V1PluginGraphRelationDeleteRequestObject) (V1PluginGraphRelationDeleteResponseObject, error)
+	// V1PluginInvoke Invoke a plugin function
+	// (POST /v1/plugins/{pluginId}/invoke)
+	V1PluginInvoke(ctx context.Context, request V1PluginInvokeRequestObject) (V1PluginInvokeResponseObject, error)
+	// V1PluginUpgrade Upgrade a plugin package
+	// (POST /v1/plugins/{pluginId}/upgrade)
+	V1PluginUpgrade(ctx context.Context, request V1PluginUpgradeRequestObject) (V1PluginUpgradeResponseObject, error)
 	// V1ProjectDelete Delete project
 	// (DELETE /v1/projects/{projectId})
 	V1ProjectDelete(ctx context.Context, request V1ProjectDeleteRequestObject) (V1ProjectDeleteResponseObject, error)
@@ -23491,6 +26982,628 @@ func (sh *strictHandler) V1PermissionGet(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// V1PluginsGet operation middleware
+func (sh *strictHandler) V1PluginsGet(w http.ResponseWriter, r *http.Request, params V1PluginsGetParams) {
+	var request V1PluginsGetRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginsGet(ctx, request.(V1PluginsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginsGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginsCreate operation middleware
+func (sh *strictHandler) V1PluginsCreate(w http.ResponseWriter, r *http.Request) {
+	var request V1PluginsCreateRequestObject
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginsCreate(ctx, request.(V1PluginsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginsCreateResponseObject); ok {
+		if err := validResponse.VisitV1PluginsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginsFrontendGet operation middleware
+func (sh *strictHandler) V1PluginsFrontendGet(w http.ResponseWriter, r *http.Request, params V1PluginsFrontendGetParams) {
+	var request V1PluginsFrontendGetRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginsFrontendGet(ctx, request.(V1PluginsFrontendGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginsFrontendGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginsFrontendGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginsFrontendGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginDelete operation middleware
+func (sh *strictHandler) V1PluginDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginDeleteRequestObject
+
+	request.PluginId = pluginId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginDelete(ctx, request.(V1PluginDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginDeleteResponseObject); ok {
+		if err := validResponse.VisitV1PluginDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGet operation middleware
+func (sh *strictHandler) V1PluginGet(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginGetRequestObject
+
+	request.PluginId = pluginId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGet(ctx, request.(V1PluginGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginConfigGet operation middleware
+func (sh *strictHandler) V1PluginConfigGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigGetParams) {
+	var request V1PluginConfigGetRequestObject
+
+	request.PluginId = pluginId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginConfigGet(ctx, request.(V1PluginConfigGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginConfigGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginConfigGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginConfigGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginConfigPatch operation middleware
+func (sh *strictHandler) V1PluginConfigPatch(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginConfigPatchParams) {
+	var request V1PluginConfigPatchRequestObject
+
+	request.PluginId = pluginId
+	request.Params = params
+
+	var body V1PluginConfigPatchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginConfigPatch(ctx, request.(V1PluginConfigPatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginConfigPatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginConfigPatchResponseObject); ok {
+		if err := validResponse.VisitV1PluginConfigPatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginDisable operation middleware
+func (sh *strictHandler) V1PluginDisable(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginDisableRequestObject
+
+	request.PluginId = pluginId
+
+	var body V1PluginDisableJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginDisable(ctx, request.(V1PluginDisableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginDisable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginDisableResponseObject); ok {
+		if err := validResponse.VisitV1PluginDisableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginEnable operation middleware
+func (sh *strictHandler) V1PluginEnable(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginEnableRequestObject
+
+	request.PluginId = pluginId
+
+	var body V1PluginEnableJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginEnable(ctx, request.(V1PluginEnableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginEnable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginEnableResponseObject); ok {
+		if err := validResponse.VisitV1PluginEnableResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodesGet operation middleware
+func (sh *strictHandler) V1PluginGraphNodesGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphNodesGetParams) {
+	var request V1PluginGraphNodesGetRequestObject
+
+	request.PluginId = pluginId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodesGet(ctx, request.(V1PluginGraphNodesGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodesGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodesGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodesGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodesCreate operation middleware
+func (sh *strictHandler) V1PluginGraphNodesCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginGraphNodesCreateRequestObject
+
+	request.PluginId = pluginId
+
+	var body V1PluginGraphNodesCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodesCreate(ctx, request.(V1PluginGraphNodesCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodesCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodesCreateResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodesCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodeDelete operation middleware
+func (sh *strictHandler) V1PluginGraphNodeDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	var request V1PluginGraphNodeDeleteRequestObject
+
+	request.PluginId = pluginId
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodeDelete(ctx, request.(V1PluginGraphNodeDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodeDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodeDeleteResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodeDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodeGet operation middleware
+func (sh *strictHandler) V1PluginGraphNodeGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id, params V1PluginGraphNodeGetParams) {
+	var request V1PluginGraphNodeGetRequestObject
+
+	request.PluginId = pluginId
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodeGet(ctx, request.(V1PluginGraphNodeGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodeGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodeGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodeGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodeUpdate operation middleware
+func (sh *strictHandler) V1PluginGraphNodeUpdate(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	var request V1PluginGraphNodeUpdateRequestObject
+
+	request.PluginId = pluginId
+	request.Id = id
+
+	var body V1PluginGraphNodeUpdateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodeUpdate(ctx, request.(V1PluginGraphNodeUpdateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodeUpdate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodeUpdateResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodeUpdateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphNodeMove operation middleware
+func (sh *strictHandler) V1PluginGraphNodeMove(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	var request V1PluginGraphNodeMoveRequestObject
+
+	request.PluginId = pluginId
+	request.Id = id
+
+	var body V1PluginGraphNodeMoveJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphNodeMove(ctx, request.(V1PluginGraphNodeMoveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphNodeMove")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphNodeMoveResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphNodeMoveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphRelationsGet operation middleware
+func (sh *strictHandler) V1PluginGraphRelationsGet(w http.ResponseWriter, r *http.Request, pluginId PluginId, params V1PluginGraphRelationsGetParams) {
+	var request V1PluginGraphRelationsGetRequestObject
+
+	request.PluginId = pluginId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphRelationsGet(ctx, request.(V1PluginGraphRelationsGetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphRelationsGet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphRelationsGetResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphRelationsGetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphRelationsCreate operation middleware
+func (sh *strictHandler) V1PluginGraphRelationsCreate(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginGraphRelationsCreateRequestObject
+
+	request.PluginId = pluginId
+
+	var body V1PluginGraphRelationsCreateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphRelationsCreate(ctx, request.(V1PluginGraphRelationsCreateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphRelationsCreate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphRelationsCreateResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphRelationsCreateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginGraphRelationDelete operation middleware
+func (sh *strictHandler) V1PluginGraphRelationDelete(w http.ResponseWriter, r *http.Request, pluginId PluginId, id Id) {
+	var request V1PluginGraphRelationDeleteRequestObject
+
+	request.PluginId = pluginId
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginGraphRelationDelete(ctx, request.(V1PluginGraphRelationDeleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginGraphRelationDelete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginGraphRelationDeleteResponseObject); ok {
+		if err := validResponse.VisitV1PluginGraphRelationDeleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginInvoke operation middleware
+func (sh *strictHandler) V1PluginInvoke(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginInvokeRequestObject
+
+	request.PluginId = pluginId
+
+	var body V1PluginInvokeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginInvoke(ctx, request.(V1PluginInvokeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginInvoke")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginInvokeResponseObject); ok {
+		if err := validResponse.VisitV1PluginInvokeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// V1PluginUpgrade operation middleware
+func (sh *strictHandler) V1PluginUpgrade(w http.ResponseWriter, r *http.Request, pluginId PluginId) {
+	var request V1PluginUpgradeRequestObject
+
+	request.PluginId = pluginId
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.V1PluginUpgrade(ctx, request.(V1PluginUpgradeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "V1PluginUpgrade")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(V1PluginUpgradeResponseObject); ok {
+		if err := validResponse.VisitV1PluginUpgradeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // V1ProjectDelete operation middleware
 func (sh *strictHandler) V1ProjectDelete(w http.ResponseWriter, r *http.Request, projectId ProjectId) {
 	var request V1ProjectDeleteRequestObject
@@ -24363,334 +28476,385 @@ func (sh *strictHandler) V1UsersIssuesGet(w http.ResponseWriter, r *http.Request
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"K3Vd8WvBKToqxRmq5B17d3H3fwcA",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

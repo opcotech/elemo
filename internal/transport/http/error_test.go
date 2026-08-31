@@ -14,6 +14,7 @@ import (
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
+	elemoplugin "github.com/opcotech/elemo/internal/plugin"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
 	testHttp "github.com/opcotech/elemo/internal/testutil/http"
@@ -167,6 +168,8 @@ func TestClassifyServiceError(t *testing.T) {
 		{name: "custom field key conflict", err: repository.ErrCustomFieldKeyConflict, status: http.StatusConflict},
 		{name: "invalid custom field details", err: model.ErrInvalidCustomFieldDetails, status: http.StatusBadRequest},
 		{name: "custom field required", err: model.ErrCustomFieldRequired, status: http.StatusBadRequest},
+		{name: "plugin wasm not a reactor", err: elemoplugin.ErrNotReactor, status: http.StatusBadRequest},
+		{name: "wrapped plugin enable not a reactor", err: errors.Join(service.ErrPluginEnable, elemoplugin.ErrNotReactor), status: http.StatusBadRequest},
 		{name: "wrapped slug conflict", err: errors.Join(service.ErrOrganizationCreate, repository.ErrSlugConflict), status: http.StatusConflict},
 		{name: "wrapped not found", err: errors.Join(service.ErrProjectGet, repository.ErrNotFound), status: http.StatusNotFound},
 		{name: "unknown", err: errors.New("boom"), status: http.StatusInternalServerError},

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit, ListTree } from "lucide-react";
+import { Edit, ListTree, Puzzle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,19 @@ export function OrganizationDetailInfo({
           >
             <ListTree className="size-4" />
             Custom fields
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link
+                to="/settings/organizations/$organizationSlug/plugins"
+                params={{ organizationSlug: organization.slug }}
+              />
+            }
+          >
+            <Puzzle className="size-4" />
+            Plugins
           </Button>
           {hasWritePermission ? (
             <Button

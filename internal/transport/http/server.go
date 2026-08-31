@@ -69,6 +69,7 @@ type server struct {
 	NotificationController
 	SearchController
 	CustomFieldController
+	PluginController
 }
 
 func (s *server) InternalErrorHandler(err error) *authErrors.Response {
@@ -112,6 +113,7 @@ type ServerDeps struct {
 	NotificationService service.NotificationService
 	SearchService       service.SearchService
 	CustomFieldService  service.CustomFieldService
+	PluginService       service.PluginService
 }
 
 // NewServer creates a new HTTP server.
@@ -192,6 +194,10 @@ func NewServer(deps ServerDeps, opts ...ControllerOption) (StrictServer, error) 
 	}
 
 	if s.CustomFieldController, err = NewCustomFieldController(deps.CustomFieldService, opts...); err != nil {
+		return nil, err
+	}
+
+	if s.PluginController, err = NewPluginController(deps.PluginService, opts...); err != nil {
 		return nil, err
 	}
 
@@ -284,6 +290,22 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	router.Handle(PathLogin, http.HandlerFunc(strictServer.LoginHandler))
 	router.Handle(PathOauthAuthorize, http.HandlerFunc(strictServer.Authorize))
 	router.Handle(PathOauthToken, http.HandlerFunc(strictServer.Token))
+
+	if assets, ok := strictServer.(PluginController); ok {
+		router.Group(func(r chi.Router) {
+			r.Use(
+				WithTracedMiddleware(tracer, WithUserID(strictServer.ValidateBearerToken)),
+				WithTracedMiddleware(tracer, WithOAuthClientID(strictServer.ValidateBearerToken)),
+			)
+			r.Get("/v1/plugins/{pluginId}/assets/{version}/*", func(w http.ResponseWriter, req *http.Request) {
+				if err := strictServer.ValidateTokenHandler(req); err != nil {
+					httpError(req.Context(), w, err, http.StatusUnauthorized)
+					return
+				}
+				assets.ServePluginAsset(w, req)
+			})
+		})
+	}
 
 	router.Handle(PathSwagger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, span := tracer.Start(r.Context(), "transport.http.handler/GetSwagger")

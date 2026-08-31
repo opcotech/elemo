@@ -65,6 +65,7 @@ type Neo4jContainerIntegrationTestSuite struct {
 	TeamRepo         *repository.Neo4jTeamRepository
 	TodoRepo         *repository.Neo4jTodoRepository
 	UserRepo         *repository.Neo4jUserRepository
+	ExtensionRepo    *repository.Neo4jExtensionRepository
 }
 
 func (s *Neo4jContainerIntegrationTestSuite) BootstrapNeo4jDatabase(ts *ContainerIntegrationTestSuite) {
@@ -127,6 +128,9 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 	s.UserRepo, err = repository.NewNeo4jUserRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
+	s.ExtensionRepo, err = repository.NewExtensionRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
+	ts.Require().NoError(err)
+
 	s.BootstrapNeo4jDatabase(ts)
 	s.CleanupNeo4j(ts)
 }
@@ -143,6 +147,7 @@ type PgContainerIntegrationTestSuite struct {
 	NotificationRepo    *repository.PGNotificationRepository
 	UserTokenRepository *repository.PGUserTokenRepository
 	CustomFieldRepo     *repository.PGCustomFieldRepository
+	PluginRepo          *repository.PGPluginRepository
 }
 
 func (s *PgContainerIntegrationTestSuite) BootstrapPgDatabase(ts *ContainerIntegrationTestSuite) {
@@ -164,6 +169,9 @@ func (s *PgContainerIntegrationTestSuite) SetupPg(ts *ContainerIntegrationTestSu
 	ts.Require().NoError(err)
 
 	s.CustomFieldRepo, err = repository.NewCustomFieldRepository(repository.WithPGDatabase(s.PostgresDB))
+	ts.Require().NoError(err)
+
+	s.PluginRepo, err = repository.NewPluginRepository(repository.WithPGDatabase(s.PostgresDB))
 	ts.Require().NoError(err)
 
 	s.BootstrapPgDatabase(ts)
