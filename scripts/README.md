@@ -79,6 +79,7 @@ ORT runner, policy overlay, and Go license curation generator. See [`scripts/ort
 ```sh
 ./scripts/ort/ort.sh           # prepare + analyze + scan + evaluate + advise + report
 make ort                       # same
+make ort.pr                    # prepare + analyze + evaluate (PR CI; no ScanCode)
 ./scripts/ort/ort.sh prepare   # clone pinned ort-config and overlay scripts/ort/
 ```
 
