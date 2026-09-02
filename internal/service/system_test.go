@@ -69,7 +69,6 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	ctx := context.Background()
 
@@ -98,7 +97,6 @@ func Test_systemService_GetVersion(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	ctx := context.Background()
 
@@ -172,7 +170,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
 					resource := mocksvc.NewMockPingable(ctrl)
-					resource.EXPECT().Ping(ctx).Return(nil).Times(4)
+					resource.EXPECT().Ping(ctx).Return(nil).MinTimes(4).MaxTimes(4)
 
 					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
@@ -219,7 +217,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
 					resource := mocksvc.NewMockPingable(ctrl)
-					resource.EXPECT().Ping(ctx).Return(assert.AnError).Times(4)
+					resource.EXPECT().Ping(ctx).Return(assert.AnError).MinTimes(4).MaxTimes(4)
 
 					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
@@ -246,7 +244,6 @@ func Test_systemService_GetHealth(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx)
 			service.SetSystemServiceState(s, tt.fields.versionInfo, tt.fields.resources(tt.args.ctx, ctrl))
 			got, err := s.GetHealth(tt.args.ctx)

@@ -191,7 +191,6 @@ func TestCachedProjectRepository_Create(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			repo := func() *repository.RedisCachedProjectRepository {
 				r, err := repository.NewCachedProjectRepository(
@@ -307,7 +306,6 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			want := testProject(tt.args.id, tt.args.proj)
 			key := mustProjectGetKey(t, tt.args.id, tt.args.proj)
@@ -394,7 +392,6 @@ func TestCachedProjectRepository_GetByKey(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			want := testProject(model.MustNewID(model.ResourceTypeProject), tt.args.proj)
 			want.Key = tt.args.key
@@ -494,7 +491,6 @@ func TestCachedProjectRepository_List(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			key := mustProjectListKey(t, tt.args.namespaceID, tt.args.page, tt.args.proj)
 
@@ -613,7 +609,6 @@ func TestCachedProjectRepository_Update(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			want := testProject(tt.args.id, repository.ProjectDetailProjection())
 			detailKey := mustProjectGetKey(t, tt.args.id, repository.ProjectDetailProjection())
@@ -706,7 +701,7 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 				},
 				projectRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.ProjectRepository {
 					repo := mockrepo.NewMockProjectRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -722,7 +717,6 @@ func TestCachedProjectRepository_Delete(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			repo := func() *repository.RedisCachedProjectRepository {
 				r, err := repository.NewCachedProjectRepository(

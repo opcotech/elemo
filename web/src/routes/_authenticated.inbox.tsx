@@ -1,7 +1,7 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, CheckCircle2Icon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { NotificationList } from "@/components/notification";
 import { MockDataAlert } from "@/components/shared/app-feedback";
@@ -38,6 +38,7 @@ export const Route = createFileRoute("/_authenticated/inbox")({
 });
 
 function InboxPage() {
+  const [mobileView, setMobileView] = useState<"work" | "alerts">("work");
   const { data: notificationsPage } = useSuspenseQuery(
     v1NotificationsGetOptions({
       query: cursorPageQuery(),
@@ -48,47 +49,57 @@ function InboxPage() {
   const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 
   return (
-    <div className="flex h-full">
-      <div className="w-full lg:hidden">
-        <Tabs defaultValue="inbox" className="h-full w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="inbox">Inbox</TabsTrigger>
-            <TabsTrigger value="notifications">
-              Notifications
-              {unreadCount > 0 && (
-                <Badge variant="primary" className="ml-2">
-                  {unreadCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+    <div className="flex h-full min-h-0 flex-col">
+      <nav
+        aria-label="Inbox views"
+        className="bg-muted grid grid-cols-2 gap-1 p-1 lg:hidden"
+      >
+        <button
+          aria-controls="inbox-work"
+          aria-pressed={mobileView === "work"}
+          className="aria-pressed:bg-background aria-pressed:text-foreground text-muted-foreground rounded-md px-3 py-1.5 text-sm font-medium"
+          onClick={() => setMobileView("work")}
+          type="button"
+        >
+          Inbox
+        </button>
+        <button
+          aria-controls="inbox-alerts"
+          aria-pressed={mobileView === "alerts"}
+          className="aria-pressed:bg-background aria-pressed:text-foreground text-muted-foreground flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium"
+          onClick={() => setMobileView("alerts")}
+          type="button"
+        >
+          Notifications
+          {unreadCount > 0 ? (
+            <Badge className="ml-2" variant="primary">
+              {unreadCount}
+            </Badge>
+          ) : null}
+        </button>
+      </nav>
 
-          <TabsContent value="inbox" className="h-full overflow-auto p-4">
-            <InboxContent />
-          </TabsContent>
-
-          <TabsContent value="notifications" className="h-full overflow-auto">
-            <NotificationsPanel unreadCount={unreadCount} />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <div className="hidden h-full w-full lg:flex">
-        <div className="flex-1 overflow-auto border-r">
-          <div className="p-6">
-            <InboxContent />
-          </div>
-        </div>
-
-        <div className="flex h-full w-96 flex-col">
-          <NotificationsPanel unreadCount={unreadCount} />
-        </div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <section
+          aria-label="Inbox work"
+          className={`${mobileView === "work" ? "block" : "hidden"} overflow-auto p-4 lg:block lg:border-r lg:p-6`}
+          id="inbox-work"
+        >
+          <InboxContent />
+        </section>
+        <section
+          aria-label="Notifications"
+          className={`${mobileView === "alerts" ? "flex" : "hidden"} min-h-0 flex-col lg:flex`}
+          id="inbox-alerts"
+        >
+          <NotificationFeed count={unreadCount} />
+        </section>
       </div>
     </div>
   );
 }
 
-function InboxContent() {
+const InboxContent = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const { data: accessibleWorkspace } = useAccessibleNamespaces();
@@ -142,7 +153,7 @@ function InboxContent() {
   );
 
   return (
-    <>
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
         <p className="text-muted-foreground">
@@ -183,19 +194,19 @@ function InboxContent() {
           />
         </TabsContent>
       </Tabs>
-    </>
+    </div>
   );
-}
+};
 
-function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
+const NotificationFeed = ({ count }: { count: number }) => {
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
             <h2 className="text-lg font-semibold">Notifications</h2>
-            {unreadCount > 0 && <Badge variant="primary">{unreadCount}</Badge>}
+            {count > 0 && <Badge variant="primary">{count}</Badge>}
           </div>
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -206,6 +217,6 @@ function NotificationsPanel({ unreadCount }: { unreadCount: number }) {
       <div className="flex-1 overflow-hidden p-4">
         <NotificationList />
       </div>
-    </>
+    </div>
   );
-}
+};

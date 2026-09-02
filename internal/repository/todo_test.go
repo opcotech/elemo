@@ -193,7 +193,6 @@ func TestCachedTodoRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedTodoRepository {
 				r, err := repository.NewCachedTodoRepository(
 					tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.todo),
@@ -261,7 +260,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *repository.Todo) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(todo, nil)
+					repo.EXPECT().Get(ctx, id).Return(todo, nil).Times(1)
 					return repo
 				},
 			},
@@ -443,7 +442,7 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, todo *repository.Todo) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(todo, nil)
+					repo.EXPECT().Get(ctx, id).Return(todo, nil).Times(1)
 					return repo
 				},
 			},
@@ -459,7 +458,6 @@ func TestCachedTodoRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Todo
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -762,7 +760,6 @@ func TestCachedTodoRepository_GetByOwner(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedTodoRepository {
 				r, err := repository.NewCachedTodoRepository(
 					tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.owner, tt.args.offset, testPageSize(tt.args.limit), tt.args.completed, tt.want),
@@ -839,7 +836,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch repository.UpdateTodoOpts, todo *repository.Todo) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil).Times(1)
 					return repo
 				},
 			},
@@ -937,7 +934,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch repository.UpdateTodoOpts, todo *repository.Todo) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil).Times(1)
 					return repo
 				},
 			},
@@ -1002,7 +999,7 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, patch repository.UpdateTodoOpts, todo *repository.Todo) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(todo, nil).Times(1)
 					return repo
 				},
 			},
@@ -1031,7 +1028,6 @@ func TestCachedTodoRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedTodoRepository {
 				r, err := repository.NewCachedTodoRepository(
@@ -1108,7 +1104,7 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 				},
 				todoRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.TodoRepository {
 					repo := mockrepo.NewMockTodoRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1267,7 +1263,6 @@ func TestCachedTodoRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedTodoRepository {
 				r, err := repository.NewCachedTodoRepository(
 					tt.fields.todoRepo(ctrl, tt.args.ctx, tt.args.id),

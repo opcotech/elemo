@@ -1,7 +1,6 @@
 package service
 
 //go:generate go tool mockgen -destination=mock/mock_system_gen.go -package=mocksvc . Pingable,SystemService
-
 import (
 	"context"
 	"errors"

@@ -6,7 +6,7 @@
   "type": "module",
   "keywords": [],
   "author": "",
-  "license": "AGPL-3.0-or-later",
+  "license": "FSL-1.1-ALv2",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "vite dev",

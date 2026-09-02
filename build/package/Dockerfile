@@ -38,6 +38,7 @@ ENV TZ=UTC
 
 WORKDIR /opt/opcotech/elemo
 
+COPY --chown=nonroot:nonroot LICENSE LICENSE-COMMERCIAL /opt/opcotech/elemo/
 COPY --chown=nonroot:nonroot assets/keys /opt/opcotech/elemo/assets/keys
 COPY --chown=nonroot:nonroot templates/email /opt/opcotech/elemo/templates/email
 COPY --chown=nonroot:nonroot --from=build /usr/bin/elemo /opt/opcotech/elemo/bin/elemo

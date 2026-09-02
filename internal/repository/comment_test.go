@@ -256,7 +256,6 @@ func TestCachedCommentRepository_Create(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedCommentRepository {
 				r, err := repository.NewCachedCommentRepository(
 					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -324,7 +323,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				},
 				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
 					repo := mockrepo.NewMockCommentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(comment, nil)
+					repo.EXPECT().Get(ctx, id).Return(comment, nil).Times(1)
 					return repo
 				},
 			},
@@ -498,7 +497,7 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 				},
 				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, comment *repository.Comment) repository.CommentRepository {
 					repo := mockrepo.NewMockCommentRepository(ctrl)
-					repo.EXPECT().Get(ctx, id).Return(comment, nil)
+					repo.EXPECT().Get(ctx, id).Return(comment, nil).Times(1)
 					return repo
 				},
 			},
@@ -515,7 +514,6 @@ func TestCachedCommentRepository_Get(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Comment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -792,7 +790,6 @@ func TestCachedCommentRepository_ListBelongsTo(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedCommentRepository {
 				r, err := repository.NewCachedCommentRepository(
 					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1017,7 +1014,6 @@ func TestCachedCommentRepository_Update(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedCommentRepository {
 				r, err := repository.NewCachedCommentRepository(
@@ -1104,7 +1100,7 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 				},
 				commentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.CommentRepository {
 					repo := mockrepo.NewMockCommentRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1392,7 +1388,6 @@ func TestCachedCommentRepository_Delete(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedCommentRepository {
 				r, err := repository.NewCachedCommentRepository(
 					tt.fields.commentRepo(ctrl, tt.args.ctx, tt.args.id),

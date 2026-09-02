@@ -10,9 +10,9 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/convert"
 )
 
-// LicenseRepository is the repository for retrieving license information.
-//
 //go:generate go tool mockgen -destination=mock/mock_license_gen.go -package=mockrepo . LicenseRepository
+
+// LicenseRepository is the repository for retrieving license information.
 type LicenseRepository interface {
 	ActiveUserCount(ctx context.Context) (int, error)
 	ActiveOrganizationCount(ctx context.Context) (int, error)

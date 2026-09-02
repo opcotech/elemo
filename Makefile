@@ -210,6 +210,41 @@ test.k6.work-item-latency: ## Run authenticated issue-list latency benchmark
 		-e BASE_URL=$${BASE_URL:-http://127.0.0.1:35478} \
 		'$(ROOT_DIR)/tests/main.js'
 
+.PHONY: ort
+ort: ## Run ORT analyzer, scanner, evaluator, advisor, and reporter
+	$(call log, run ORT compliance pipeline)
+	@$(SCRIPTS_DIR)/ort/ort.sh run
+
+.PHONY: ort.prepare
+ort.prepare: ## Fetch pinned ORT config and overlay Elemo policy
+	$(call log, prepare ORT config)
+	@$(SCRIPTS_DIR)/ort/ort.sh prepare
+
+.PHONY: ort.analyze
+ort.analyze: ## Run the ORT analyzer
+	$(call log, run ORT analyzer)
+	@$(SCRIPTS_DIR)/ort/ort.sh analyze
+
+.PHONY: ort.scan
+ort.scan: ## Run ScanCode on Elemo projects (CI default)
+	$(call log, run ORT scanner)
+	@$(SCRIPTS_DIR)/ort/ort.sh scan
+
+.PHONY: ort.scan.packages
+ort.scan.packages: ## Run ScanCode on all dependencies (slow; not used in CI)
+	$(call log, run ORT scanner on all packages)
+	@ORT_SCAN_PACKAGE_TYPES=PACKAGE,PROJECT $(SCRIPTS_DIR)/ort/ort.sh scan
+
+.PHONY: ort.evaluate
+ort.evaluate: ## Run the ORT evaluator
+	$(call log, run ORT evaluator)
+	@$(SCRIPTS_DIR)/ort/ort.sh evaluate
+
+.PHONY: ort.report
+ort.report: ## Generate ORT SPDX, CycloneDX, WebApp, NOTICE, and legal/ bundle
+	$(call log, run ORT reporter)
+	@$(SCRIPTS_DIR)/ort/ort.sh report
+
 .PHONY: lint
 lint: lint.backend lint.frontend ## Run linters for the backend and front-end
 

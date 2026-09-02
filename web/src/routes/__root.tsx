@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { NotFound } from "@/components/shared/not-found";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { TopProgressBar } from "@/components/ui/top-progress-bar";
+import { NavigationProgress } from "@/components/ui/top-progress-bar";
 import type { Theme } from "@/lib/theme";
 import type { RouterContext } from "@/router";
 import appCss from "@/styles/app.css?url";
@@ -58,7 +58,7 @@ function RootComponent() {
   return (
     <RootDocument theme={theme}>
       <ThemeProvider initialTheme={theme}>
-        <TopProgressBar />
+        <NavigationProgress />
         <Outlet />
         <Toaster position="top-center" duration={3000} richColors />
       </ThemeProvider>

@@ -1,0 +1,73 @@
+ort:
+  forceOverwrite: true
+  enableRepositoryPackageConfigurations: true
+  enableRepositoryPackageCurations: true
+  severeIssueThreshold: ERROR
+  severeRuleViolationThreshold: ERROR
+
+  # DefaultFile reads $ORT_CONFIG_DIR/curations.yml (written by scripts/ort/ort.sh curate).
+  # File(GoLicenses) keeps the same list under .ort/ for clarity when debugging.
+  # OrtConfig clones oss-review-toolkit/ort-config into ~/.ort/cache; Elemo already
+  # vendors that repo in prepare() and does not use community package curations.
+  packageCurationProviders:
+    - type: DefaultFile
+    - type: DefaultDir
+    - type: File
+      id: GoLicenses
+      options:
+        path: /home/ort/.ort/go-license-curations.yml
+        mustExist: false
+    - type: OrtConfig
+      enabled: false
+    - type: Spring
+      enabled: false
+
+  analyzer:
+    enabledPackageManagers:
+      - GoMod
+      - PNPM
+    skipExcluded: true
+
+  downloader:
+    skipExcluded: true
+    sourceCodeOrigins: [ARTIFACT, VCS]
+
+  scanner:
+    skipConcluded: false
+    skipExcluded: true
+    archive:
+      enabled: false
+    detectedLicenseMapping:
+      LicenseRef-scancode-generic-cla: "NOASSERTION"
+    config:
+      ScanCode:
+        options:
+          commandLine: "--copyright,--license,--info,--strip-root,--timeout,120"
+          commandLineNonConfig: "--processes,4"
+    storages:
+      local:
+        backend:
+          localFileStorage:
+            directory: /home/ort/.ort/scanner/results
+            compression: true
+    storageReaders: [local]
+    storageWriters: [local]
+    ignorePatterns:
+      - "**/node_modules/**"
+      - "**/.git/**"
+      - "**/.ort/**"
+      - "**/vendor/**"
+      - "**/.output/**"
+      - "**/dist/**"
+      - "**/storybook-static/**"
+      - "**/META-INF/DEPENDENCIES"
+      - "**/*.map"
+      - "**/*.wasm"
+      - "**/*.png"
+      - "**/*.jpg"
+      - "**/*.jpeg"
+      - "**/*.webp"
+      - "**/*.gif"
+
+  advisor:
+    skipExcluded: true

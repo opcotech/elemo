@@ -1,39 +1,36 @@
 labelPRBasedOnFilePath:
-  "component: api":
-    - api/**/*
-    - internal/transport/http/**/*
-  "component: auth":
-    - internal/transport/http/auth.go
-  "component: build":
-    - .github/**/*
-    - build/**/*
-    - Makefile
-  "component: configs":
-    - configs/**/*
-    - internal/config/**/*
-  "component: deployments":
-    - deploy/**/*
-  "component: front-end":
-    - web/**/*
-  "type: legal":
-    - LICENSE
-  "component: license":
-    - internal/license/**/*
-    - tool/key-generator/**/*
-    - tool/license-generator/**/*
-    - tool/license-validator/**/*
+  "component: api": ["api/**/*", "internal/transport/http/**/*"]
+  "component: auth": ["internal/transport/http/auth.go"]
+  "component: build": [".github/**/*", "build/**/*", "Makefile"]
+  "component: configs": ["configs/**/*", "internal/config/**/*"]
+  "component: deployments": ["deploy/**/*"]
+  "component: front-end": ["web/**/*"]
+  "type: legal": # Legal and compliance-related files.
+    [
+      "LICENSE",
+      "LICENSE-COMMERCIAL",
+      "CLA.md",
+      ".github/cla.json",
+      ".ort.yml",
+      "scripts/ort/**/*",
+    ]
+  "component: license": # License implementation and supporting tools.
+    [
+      "internal/license/**/*",
+      "tools/key-generator/**/*",
+      "tools/license-generator/**/*",
+      "tools/license-validator/**/*",
+      ".ort.yml",
+      "scripts/ort/**/*",
+    ]
 firstPRWelcomeComment: |
-  Thanks for opening this pull request! 🥳
-  Please check out our [contributing guide](https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md).
-  If you have any questions, please ask in the #development channel in our
-  [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
-  [Discord](https://discord.gg/sx9FPyXAdP).
-  Happy coding! 🚀
+  Thanks for opening this pull request.
+  Please check out our contributing guide: https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md
+  Questions are welcome in the #development Slack channel or on Discord.
 firstPRMergeComment: |
-  Awesome work, congrats on your first merged pull request! 🎉 🥳
-  Don't forget to join our
-  [Slack](https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA) or
-  [Discord](https://discord.gg/sx9FPyXAdP) to stay in the loop!
+  Congratulations on your first merged pull request.
+  Join Slack or Discord to stay in the loop:
+  https://join.slack.com/t/elemo-workspace/shared_invite/zt-3a6w9jb46-4uGjtkcqBN9BqBD50xl8eA
+  https://discord.gg/sx9FPyXAdP
 firstIssueWelcomeComment: |
-  Thanks for opening your first issue here! 🎉 We will triage it soon.
-
+  Thanks for opening your first issue. We will triage it soon.

@@ -103,7 +103,6 @@ func TestNewUserService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			got, err := tt.build(ctrl)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
@@ -348,7 +347,6 @@ func TestUserService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.opts)
 			_, err := s.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -476,7 +474,6 @@ func TestUserService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			u := testModel.NewUser()
 			if tt.want != nil {
 				tt.want = repoUserToService(u)
@@ -609,7 +606,6 @@ func TestUserService_GetByEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			u := testModel.NewUser()
 			if tt.want != nil {
 				tt.want = repoUserToService(u)
@@ -803,7 +799,6 @@ func TestUserService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			users := []*repository.User{testModel.NewUser(), testModel.NewUser()}
 			if tt.wantErr == nil {
 				tt.want = service.Page[*service.User]{Items: repoUsersToService(users)}
@@ -1151,7 +1146,6 @@ func TestUserService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			u := testModel.NewUser()
 			if tt.want != nil {
 				tt.want = repoUserToService(u)
@@ -1229,7 +1223,7 @@ func TestUserService_Delete(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Delete(ctx, id).Return(nil)
+					userRepo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 
 					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1483,7 +1477,7 @@ func TestUserService_Delete(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
+					userRepo.EXPECT().Delete(ctx, id).Return(assert.AnError).Times(1)
 
 					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
@@ -1586,7 +1580,6 @@ func TestUserService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id)
 			err := s.Delete(tt.args.ctx, tt.args.id, tt.args.force)
 			require.ErrorIs(t, err, tt.wantErr)

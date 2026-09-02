@@ -371,7 +371,6 @@ func TestCachedUserRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedUserRepository {
 				r, err := repository.NewCachedUserRepository(
 					tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -653,7 +652,6 @@ func TestCachedUserRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.User
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -941,7 +939,6 @@ func TestCachedUserRepository_GetByEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.User
 			if tt.want != nil {
 				want = tt.want(tt.args.email)
@@ -1269,7 +1266,6 @@ func TestCachedUserRepository_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedUserRepository {
 				r, err := repository.NewCachedUserRepository(
 					tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1624,7 +1620,6 @@ func TestCachedUserRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedUserRepository {
 				r, err := repository.NewCachedUserRepository(
@@ -1725,7 +1720,7 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 				},
 				userRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.UserRepository {
 					repo := mockrepo.NewMockUserRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -2091,7 +2086,6 @@ func TestCachedUserRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedUserRepository {
 				r, err := repository.NewCachedUserRepository(
 					tt.fields.userRepo(ctrl, tt.args.ctx, tt.args.id),

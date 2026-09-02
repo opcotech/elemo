@@ -60,3 +60,27 @@ ELEMO_KEEP_BACKEND=true \
 PLAYWRIGHT_BROWSERS=chromium \
 ./scripts/setup.sh
 ```
+
+## cla-sync-signatures.py
+
+Imports CLA sign-off comments from a pull request into `.github/cla.json` on **that PR's
+branch**. The CLA Action only records PR committers; this backfills anyone else who posted
+`I have read the CLA Document and I hereby sign the CLA`.
+
+```sh
+./scripts/cla-sync-signatures.py 425           # print merged JSON; do not push
+./scripts/cla-sync-signatures.py 425 --push    # commit new signers onto the PR branch
+```
+
+## ort/
+
+ORT runner, policy overlay, and Go license curation generator. See [`scripts/ort/ort.sh`](ort/ort.sh).
+
+```sh
+./scripts/ort/ort.sh           # prepare + analyze + scan + evaluate + advise + report
+make ort                       # same
+./scripts/ort/ort.sh prepare   # clone pinned ort-config and overlay scripts/ort/
+```
+
+Results (evaluation JSON, SPDX, CycloneDX, WebApp HTML, NOTICE) go to `.ort/results/`, which is gitignored. The
+`legal/` subdirectory (`LICENSE`, `LICENSE-COMMERCIAL`, `NOTICE`, SBOMs) is what GitHub Releases attach.

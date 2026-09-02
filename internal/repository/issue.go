@@ -1217,8 +1217,11 @@ func (r *Neo4jIssueRepository) AddWatcher(ctx context.Context, issue model.ID, u
 	defer span.End()
 
 	cypher := `
-	MATCH (i:` + issue.Label() + ` {id: $issue_id})
-	MATCH (u:` + user.Label() + ` {id: $user_id})
+	MATCH (i:` + issue.Label() + `)
+	WHERE i.id = $issue_id
+	WITH i
+	MATCH (u:` + user.Label() + `)
+	WHERE u.id = $user_id
 	CREATE (u)-[:` + EdgeKindWatches.String() + ` {id: $rel_id, created_at: datetime($created_at)}]->(i)`
 
 	params := map[string]any{
@@ -1308,8 +1311,11 @@ func (r *Neo4jIssueRepository) AddRelation(ctx context.Context, opts CreateIssue
 	}
 
 	cypher := `
-	MATCH (s:` + relation.Source.Label() + ` {id: $source_id})
-	MATCH (t:` + relation.Target.Label() + ` {id: $target_id})
+	MATCH (s:` + relation.Source.Label() + `)
+	WHERE s.id = $source_id
+	WITH s
+	MATCH (t:` + relation.Target.Label() + `)
+	WHERE t.id = $target_id
 	MERGE (s)-[r:` + EdgeKindRelatedTo.String() + ` {kind: $kind}]->(t)
 	ON CREATE SET r.id = $id, r.created_at = datetime($created_at)
 	`
@@ -1463,7 +1469,8 @@ func (r *Neo4jIssueRepository) Update(ctx context.Context, id model.ID, opts Upd
 
 	cypher := `
 	MATCH (i:` + id.Label() + ` {id: $id})
-	SET i += $patch, i.updated_at = datetime()
+	SET i += $patch
+	SET i.updated_at = datetime.statement()
 	RETURN i.id AS id`
 
 	params := map[string]any{

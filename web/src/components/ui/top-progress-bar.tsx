@@ -1,62 +1,96 @@
-import { useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useRouter as useAppRouter } from "@tanstack/react-router";
+import * as React from "react";
 
-import { Progress } from "@/components/ui/progress";
+const INITIAL_POSITION = 12;
+const MAX_WAITING_POSITION = 92;
+const ADVANCE_INTERVAL_MS = 240;
+const COMPLETION_PAUSE_MS = 180;
 
-export function TopProgressBar() {
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const router = useRouter();
+function nextPosition(position: number) {
+  const remaining = MAX_WAITING_POSITION - position;
+  return Math.min(
+    MAX_WAITING_POSITION,
+    position + Math.max(1, remaining * 0.08)
+  );
+}
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
+export function NavigationProgress() {
+  const navigationRouter = useAppRouter();
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined
+  );
+  const hideTimeoutRef = React.useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
+  const [position, setPosition] = React.useState<number | null>(null);
 
-    const start = () => {
-      setIsVisible(true);
-      setProgress(10);
-      timer = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(timer);
-            return prev;
-          }
-          if (prev < 20) return prev + 10;
-          if (prev < 50) return prev + 4;
-          return prev + 2;
-        });
-      }, 300);
-    };
-
-    const complete = () => {
-      if (timer) {
-        clearInterval(timer);
-      }
-      setProgress(100);
-      setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => setProgress(0), 500);
-      }, 500);
-    };
-
-    const unsubBefore = router.subscribe("onBeforeNavigate", start);
-    const unsubResolved = router.subscribe("onResolved", complete);
-
-    return () => {
-      unsubBefore();
-      unsubResolved();
-      if (timer) {
-        clearInterval(timer);
+  React.useEffect(() => {
+    const stopInterval = () => {
+      if (intervalRef.current !== undefined) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
       }
     };
-  }, [router]);
+    const stopHideTimeout = () => {
+      if (hideTimeoutRef.current !== undefined) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = undefined;
+      }
+    };
+    const beginNavigation = () => {
+      stopInterval();
+      stopHideTimeout();
+      setPosition(INITIAL_POSITION);
+      intervalRef.current = setInterval(() => {
+        setPosition((current) =>
+          current === null ? INITIAL_POSITION : nextPosition(current)
+        );
+      }, ADVANCE_INTERVAL_MS);
+    };
+    const finishNavigation = () => {
+      stopInterval();
+      setPosition(100);
+      hideTimeoutRef.current = setTimeout(() => {
+        setPosition(null);
+        hideTimeoutRef.current = undefined;
+      }, COMPLETION_PAUSE_MS);
+    };
 
-  if (!isVisible) {
-    return null;
-  }
+    const removeBeforeListener = navigationRouter.subscribe(
+      "onBeforeNavigate",
+      beginNavigation
+    );
+    const removeResolvedListener = navigationRouter.subscribe(
+      "onResolved",
+      finishNavigation
+    );
 
-  return (
-    <div className="fixed top-0 left-0 z-50 w-full">
-      <Progress value={progress} className="h-1" />
+    const disconnect = () => {
+      removeBeforeListener();
+      removeResolvedListener();
+      stopInterval();
+      stopHideTimeout();
+    };
+    return disconnect;
+  }, [navigationRouter]);
+
+  if (position === null) return null;
+
+  const indicator = (
+    <div
+      aria-label="Page navigation"
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={Math.round(position)}
+      className="bg-primary/20 pointer-events-none fixed inset-x-0 top-0 z-50 h-1 overflow-hidden"
+      role="progressbar"
+    >
+      <div
+        className="bg-primary h-full transition-[width] duration-200 ease-out"
+        style={{ width: `${position}%` }}
+      />
     </div>
   );
+
+  return indicator;
 }

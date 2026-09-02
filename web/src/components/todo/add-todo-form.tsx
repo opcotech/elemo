@@ -9,9 +9,8 @@ import {
 } from "./todo-form-fields";
 import type { TodoCreateFormValues } from "./todo-form-fields";
 
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox as ContinueCreatingCheckbox } from "@/components/ui/checkbox";
 import { DialogForm } from "@/components/ui/dialog-form";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { v1TodosCreate } from "@/lib/api/sdk";
@@ -30,7 +29,7 @@ export function AddTodoForm({
   onSuccess,
 }: AddTodoFormProps) {
   const { user } = useAuth();
-  const [createMore, setCreateMore] = useState(false);
+  const [shouldContinueCreating, setShouldContinueCreating] = useState(false);
 
   const form = useForm<TodoCreateFormValues>({
     resolver: zodResolver(todoCreateFormSchema),
@@ -66,7 +65,7 @@ export function AddTodoForm({
       };
     },
     onSuccess: () => {
-      if (!createMore) {
+      if (!shouldContinueCreating) {
         onOpenChange(false);
       }
       onSuccess?.();
@@ -76,7 +75,7 @@ export function AddTodoForm({
 
   const handleReset = () => {
     form.reset(todoFormDefaultValues);
-    setCreateMore(false);
+    setShouldContinueCreating(false);
   };
 
   return (
@@ -94,16 +93,19 @@ export function AddTodoForm({
       className="sm:max-w-xl"
     >
       <TodoFormFields control={form.control} />
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="createMore"
-          checked={createMore}
-          onCheckedChange={(checked) => setCreateMore(!!checked)}
-        />
-        <Label htmlFor="createMore" className="font-normal">
+      <fieldset
+        aria-label="Creation options"
+        className="flex items-center gap-2"
+      >
+        <ContinueCreatingCheckbox
+          checked={shouldContinueCreating}
+          id="continue-creating"
+          onCheckedChange={(value) => setShouldContinueCreating(value === true)}
+        ></ContinueCreatingCheckbox>
+        <label className="text-sm font-normal" htmlFor="continue-creating">
           Create more
-        </Label>
-      </div>
+        </label>
+      </fieldset>
     </DialogForm>
   );
 }

@@ -530,7 +530,6 @@ func TestCachedDocumentRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedDocumentRepository {
 				r, err := repository.NewCachedDocumentRepository(
 					tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -802,7 +801,6 @@ func TestCachedDocumentRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Document
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -1098,7 +1096,6 @@ func TestCachedDocumentRepository_ListByCreator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedDocumentRepository {
 				r, err := repository.NewCachedDocumentRepository(
 					tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.createdBy, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1389,7 +1386,6 @@ func TestCachedDocumentRepository_ListLibrary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedDocumentRepository {
 				r, err := repository.NewCachedDocumentRepository(
 					tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.libraryID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1421,7 +1417,6 @@ func TestCachedDocumentRepository_ListRelated(t *testing.T) {
 	t.Run("get uncached documents", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		ctx := context.Background()
 		key := composeCacheKey(model.ResourceTypeDocument.String(), "ListRelated", relatedTo.String(), model.MustNewNilID(model.ResourceTypeUser).String(), projectionCacheValue(repository.DocumentListProjection()), "", limit)
@@ -1767,7 +1762,6 @@ func TestCachedDocumentRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedDocumentRepository {
 				r, err := repository.NewCachedDocumentRepository(
@@ -1892,7 +1886,7 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 				},
 				documentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.DocumentRepository {
 					repo := mockrepo.NewMockDocumentRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -2378,7 +2372,6 @@ func TestCachedDocumentRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedDocumentRepository {
 				r, err := repository.NewCachedDocumentRepository(
 					tt.fields.documentRepo(ctrl, tt.args.ctx, tt.args.id),

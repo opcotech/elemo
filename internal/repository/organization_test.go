@@ -32,9 +32,6 @@ func mustOrganizationListForUserKey(t *testing.T, userID model.ID, page reposito
 }
 
 func TestCachedOrganizationRepository_Create(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	type fields struct {
 		cacheRepo        func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) []repository.RedisRepositoryOption
 		organizationRepo func(ctrl *gomock.Controller, ctx context.Context, opts repository.CreateOrganizationOpts) repository.OrganizationRepository
@@ -221,7 +218,6 @@ func TestCachedOrganizationRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -491,7 +487,6 @@ func TestCachedOrganizationRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Organization
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -881,7 +876,6 @@ func TestCachedOrganizationRepository_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1144,7 +1138,6 @@ func TestCachedOrganizationRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
@@ -1224,7 +1217,7 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 				},
 				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
 					repo := mockrepo.NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().AddMember(ctx, id, memberID).Return(nil)
+					repo.EXPECT().AddMember(ctx, id, memberID).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1387,7 +1380,6 @@ func TestCachedOrganizationRepository_AddMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
@@ -1461,7 +1453,7 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 				},
 				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, memberID model.ID) repository.OrganizationRepository {
 					repo := mockrepo.NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(nil)
+					repo.EXPECT().RemoveMember(ctx, id, memberID).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1624,7 +1616,6 @@ func TestCachedOrganizationRepository_RemoveMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.memberID),
@@ -1703,7 +1694,7 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 				},
 				organizationRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.OrganizationRepository {
 					repo := mockrepo.NewMockOrganizationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1868,7 +1859,6 @@ func TestCachedOrganizationRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.id),
@@ -2104,7 +2094,6 @@ func TestCachedOrganizationRepository_AddInvitation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
@@ -2340,7 +2329,6 @@ func TestCachedOrganizationRepository_RemoveInvitation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID),
@@ -2441,7 +2429,6 @@ func TestCachedOrganizationRepository_GetInvitations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedOrganizationRepository {
 				r, err := repository.NewCachedOrganizationRepository(
 					tt.fields.organizationRepo(ctrl, tt.args.ctx, tt.args.orgID, tt.want),

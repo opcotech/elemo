@@ -242,7 +242,6 @@ func TestCachedIssueRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -527,7 +526,6 @@ func TestCachedIssueRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Issue
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -675,7 +673,6 @@ func TestCachedIssueRepository_GetByKey(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
@@ -838,7 +835,6 @@ func TestCachedIssueRepository_ListForProject(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			baseKey := mustPlanCacheKey(t, tt.args.query, model.ResourceTypeIssue.String(), "ListForProject", tt.args.query.ProjectID.String())
 			key := baseKey + ":g:0:ae:0:pe:0"
@@ -1004,7 +1000,6 @@ func TestCachedIssueRepository_ListForNamespace(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			baseKey := mustPlanCacheKey(t, tt.args.query, model.ResourceTypeIssue.String(), "ListForNamespace", tt.args.query.NamespaceID.String())
 			key := baseKey + ":g:0:ae:0:pe:0"
@@ -1170,7 +1165,6 @@ func TestCachedIssueRepository_ListForUser(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			baseKey := mustPlanCacheKey(t, tt.args.query, model.ResourceTypeIssue.String(), "ListForUser", tt.args.query.UserID.String())
 			key := baseKey + ":g:0:ae:0:pe:0"
@@ -1500,7 +1494,6 @@ func TestCachedIssueRepository_ListForIssue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.issue, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1545,7 +1538,7 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(nil)
+					repo.EXPECT().AddWatcher(ctx, id, watcher).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1620,7 +1613,6 @@ func TestCachedIssueRepository_AddWatcher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
@@ -1688,7 +1680,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*repository.User) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil).Times(1)
 					return repo
 				},
 			},
@@ -1837,7 +1829,7 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, watchers []*repository.User) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil)
+					repo.EXPECT().GetWatchers(ctx, id).Return(watchers, nil).Times(1)
 					return repo
 				},
 			},
@@ -1913,7 +1905,6 @@ func TestCachedIssueRepository_GetWatchers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
@@ -1960,7 +1951,7 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id, watcher model.ID) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(nil)
+					repo.EXPECT().RemoveWatcher(ctx, id, watcher).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -2035,7 +2026,6 @@ func TestCachedIssueRepository_RemoveWatcher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.watcher),
@@ -2135,7 +2125,6 @@ func TestCachedIssueRepository_AddRelation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -2160,7 +2149,6 @@ func TestCachedIssueRepository_GetRelation(t *testing.T) {
 	want := &repository.IssueRelation{ID: relationID, Kind: model.IssueRelationKindBlocks}
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	repo := mockrepo.NewMockIssueRepository(ctrl)
 	repo.EXPECT().GetRelation(ctx, relationID).Return(want, nil)
@@ -2190,7 +2178,6 @@ func TestCachedIssueRepository_ListRelations(t *testing.T) {
 	t.Run("get uncached relation page", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0)).Times(2)
@@ -2235,7 +2222,6 @@ func TestCachedIssueRepository_ListRelations(t *testing.T) {
 	t.Run("get cached relation page", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
@@ -2323,7 +2309,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*repository.IssueRelation) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil).Times(1)
 					return repo
 				},
 			},
@@ -2474,7 +2460,7 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, relations []*repository.IssueRelation) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil)
+					repo.EXPECT().GetRelations(ctx, id).Return(relations, nil).Times(1)
 					return repo
 				},
 			},
@@ -2554,7 +2540,6 @@ func TestCachedIssueRepository_GetRelations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.want),
@@ -2599,7 +2584,7 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 				},
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, source, target model.ID, kind model.IssueRelationKind) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
-					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil)
+					repo.EXPECT().RemoveRelation(ctx, source, target, kind).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -2653,7 +2638,6 @@ func TestCachedIssueRepository_RemoveRelation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.source, tt.args.target, tt.args.kind),
@@ -2680,7 +2664,6 @@ func TestCachedIssueRepository_RemoveRelationByID(t *testing.T) {
 	t.Run("remove relation by id", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
 		issueRepo.EXPECT().GetRelation(ctx, relationID).Return(rel, nil)
@@ -2702,7 +2685,6 @@ func TestCachedIssueRepository_RemoveRelationByID(t *testing.T) {
 	t.Run("get relation error", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
 		issueRepo.EXPECT().GetRelation(ctx, relationID).Return(nil, repository.ErrNotFound)
@@ -2871,7 +2853,6 @@ func TestCachedIssueRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedIssueRepository {
 				r, err := repository.NewCachedIssueRepository(
 					tt.fields.issueRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want),
@@ -2959,7 +2940,7 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 				issueRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, issue *repository.Issue) repository.IssueRepository {
 					repo := mockrepo.NewMockIssueRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, repository.IssueProjection{Assignments: true}).Return(issue, nil)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -3020,7 +3001,6 @@ func TestCachedIssueRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			issue := &repository.Issue{
 				Project: &repository.PartialProject{ID: model.MustNewID(model.ResourceTypeProject)},

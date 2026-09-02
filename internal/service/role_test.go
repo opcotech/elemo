@@ -70,7 +70,6 @@ func TestNewRoleService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			got, err := tt.build(ctrl)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
@@ -371,7 +370,6 @@ func TestRoleService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.owner, tt.args.belongsTo, tt.args.opts)
 			_, err := s.Create(tt.args.ctx, tt.args.owner, tt.args.belongsTo, tt.args.opts)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -589,7 +587,6 @@ func TestRoleService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.belongsTo, tt.repoRole)
 			got, err := s.Get(tt.args.ctx, tt.args.id, tt.args.belongsTo)
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -846,7 +843,6 @@ func TestRoleService_ListBelongsTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.page, tt.repoRoles)
 			got, err := s.ListBelongsTo(tt.args.ctx, tt.args.belongsTo, tt.args.page)
 			assert.ErrorIs(t, err, tt.wantErr)

@@ -27,10 +27,9 @@ Please provide detailed step-by-step instructions for testing this change.
 
 ## Checklist
 
-- [ ] I have read and understood the [Developer's Certificate of Origin] and
-  added `Signed-off-by: <YOUR NAME>` to the commit trail where `<YOUR NAME>` is
-  my name.
+- [ ] I have read and agree to the [Contributor License Agreement] and will
+  follow the CLA bot prompt on this pull request.
 
 <!-- Links -->
 
-[Developer's Certificate of Origin]: https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md#developers-certificate-of-origin
+[Contributor License Agreement]: https://github.com/opcotech/elemo/blob/main/CLA.md

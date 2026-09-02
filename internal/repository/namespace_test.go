@@ -311,7 +311,6 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedNamespaceRepository {
 				r, err := repository.NewCachedNamespaceRepository(
 					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.opts),
@@ -329,9 +328,6 @@ func TestCachedNamespaceRepository_Create(t *testing.T) {
 }
 
 func TestCachedNamespaceRepository_Get(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	type fields struct {
 		cacheRepo     func(ctrl *gomock.Controller, ctx context.Context, id model.ID, namespace *repository.Namespace) []repository.RedisRepositoryOption
 		namespaceRepo func(ctx context.Context, ctrl *gomock.Controller, id model.ID, namespace *repository.Namespace) repository.NamespaceRepository
@@ -576,7 +572,6 @@ func TestCachedNamespaceRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Namespace
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -912,7 +907,6 @@ func TestCachedNamespaceRepository_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedNamespaceRepository {
 				r, err := repository.NewCachedNamespaceRepository(
 					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.organization, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1188,7 +1182,6 @@ func TestCachedNamespaceRepository_ListAccessible(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedNamespaceRepository {
 				r, err := repository.NewCachedNamespaceRepository(
 					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.actor, testPageSize(tt.args.limit), tt.want),
@@ -1283,7 +1276,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 				},
 				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
 					repo := mockrepo.NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil).Times(1)
 					return repo
 				},
 			},
@@ -1370,7 +1363,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 				},
 				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
 					repo := mockrepo.NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil).Times(1)
 					return repo
 				},
 			},
@@ -1427,7 +1420,7 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 				},
 				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID, patch repository.UpdateNamespaceOpts, namespace *repository.Namespace) repository.NamespaceRepository {
 					repo := mockrepo.NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil)
+					repo.EXPECT().Update(ctx, id, patch).Return(namespace, nil).Times(1)
 					return repo
 				},
 			},
@@ -1447,7 +1440,6 @@ func TestCachedNamespaceRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedNamespaceRepository {
 				r, err := repository.NewCachedNamespaceRepository(
@@ -1546,7 +1538,7 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 				},
 				namespaceRepo: func(ctx context.Context, ctrl *gomock.Controller, id model.ID) repository.NamespaceRepository {
 					repo := mockrepo.NewMockNamespaceRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1794,7 +1786,6 @@ func TestCachedNamespaceRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedNamespaceRepository {
 				r, err := repository.NewCachedNamespaceRepository(
 					tt.fields.namespaceRepo(tt.args.ctx, ctrl, tt.args.id),

@@ -1,37 +1,72 @@
 Elemo Commercial License Agreement
 
-This Elemo software (the “Software”) is licensed under a commercial license agreement (the “Agreement”) between you (“Licensee”) and Open Code Technologies FZC (“Licensor”).
+This Elemo Commercial License Agreement (the “Agreement”) is between you
+(“Licensee”) and Open Code Technologies FZC (“Licensor”).
 
-By using the Software under this commercial license, you agree to the following terms:
+The public Elemo source tree is licensed under FSL-1.1-ALv2, which permits
+internal use and forbids Competing Use (including offering Elemo, or
+substantially similar functionality, to others as a commercial hosted product
+or service). This Agreement is an additional grant for Licensees who purchase
+it. It does not replace FSL-1.1-ALv2 for anyone who has not accepted this
+Agreement.
+
+By using the Software under this Agreement, Licensee agrees to the following
+terms.
 
 1. LICENSE GRANT
-Licensor grants Licensee a non-exclusive, non-transferable, non-sublicensable license to use the Software in source or binary form strictly for internal or commercial use, subject to the terms of this Agreement.
+Licensor grants Licensee a non-exclusive, non-transferable, non-sublicensable
+license to use the Software in source or binary form, including Competing Use
+that FSL-1.1-ALv2 otherwise forbids: hosting or providing Elemo (or a
+substantially similar product) as a service to third parties, OEM or
+white-label distribution, and other uses described in the order form. Feature
+gates, quotas, and license keys supplied by Licensor may further limit the
+scope of this grant.
 
 2. RESTRICTIONS
 Licensee may not, without explicit written permission:
-- Copy, modify, distribute, or sublicense the Software;
-- Host or provide the Software as a service (SaaS or otherwise) to third parties;
-- Remove or alter proprietary notices;
-- Use the Software without a valid license key issued by the Licensor.
+- sublicense the Software except as allowed in the order form;
+- remove or alter proprietary notices;
+- use Licensor trademarks except as allowed in section 3;
+- use the Software without a valid license key when the licensed edition
+  requires one.
 
-3. INTELLECTUAL PROPERTY
-All rights, title, and interest in and to the Software remain with the Licensor. This Agreement does not transfer any ownership rights.
+Internal self-hosting remains available under FSL-1.1-ALv2 without this
+Agreement.
 
-4. TERM AND TERMINATION
-This license is effective upon activation and remains in effect until terminated. It will terminate automatically if Licensee breaches any term. Upon termination, Licensee must cease use of the Software and destroy all copies.
+3. TRADEMARKS AND BRANDING
+This Agreement does not grant rights in the “Elemo” name or other Licensor
+marks except to identify the origin of the Software. Use of marks in a hosted
+or OEM offering requires a separate written brand license.
 
-5. WARRANTY DISCLAIMER
-The Software is provided “AS IS”, without warranties of any kind, express or implied, including but not limited to fitness for a particular purpose.
+4. INTELLECTUAL PROPERTY
+All rights, title, and interest in and to the Software remain with Licensor.
+This Agreement does not transfer ownership.
 
-6. LIMITATION OF LIABILITY
-Licensor shall not be liable for any direct, indirect, incidental, or consequential damages arising from use of or inability to use the Software.
+5. TERM AND TERMINATION
+This license is effective upon activation and remains in effect until
+terminated. It terminates automatically if Licensee breaches any term. Upon
+termination, Licensee must cease Competing Use granted only by this Agreement
+and destroy keys issued under it. Rights independently available under
+FSL-1.1-ALv2 are unaffected.
 
-7. GOVERNING LAW
-This Agreement is governed by and construed in accordance with the laws of the United Arab Emirates, without regard to conflict of law principles.
+6. WARRANTY DISCLAIMER
+The Software is provided “AS IS”, without warranties of any kind, express or
+implied, including but not limited to fitness for a particular purpose.
 
-8. ENTIRE AGREEMENT
-This Agreement constitutes the entire agreement between the parties and supersedes all prior or contemporaneous agreements regarding the Software.
+7. LIMITATION OF LIABILITY
+Licensor shall not be liable for any direct, indirect, incidental, or
+consequential damages arising from use of or inability to use the Software,
+except to the extent an order form expressly provides otherwise.
 
----
+8. GOVERNING LAW
+This Agreement is governed by and construed in accordance with the laws of the
+United Arab Emirates, without regard to conflict of law principles.
+
+9. ENTIRE AGREEMENT
+This Agreement and the applicable order form constitute the entire agreement
+between the parties regarding the commercial grant and supersede all prior or
+contemporaneous agreements on that subject.
 
 © 2024–present Open Code Technologies FZC. All rights reserved.
+
+Contact: info@opcotech.com

@@ -314,7 +314,6 @@ func TestCachedLabelRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
 					tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -568,7 +567,6 @@ func TestCachedLabelRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Label
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -848,7 +846,6 @@ func TestCachedLabelRepository_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
 					tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1073,7 +1070,6 @@ func TestCachedLabelRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
@@ -1161,7 +1157,7 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, attachTo model.ID) repository.LabelRepository {
 					repo := mockrepo.NewMockLabelRepository(ctrl)
-					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(nil)
+					repo.EXPECT().AttachTo(ctx, id, attachTo).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1453,7 +1449,6 @@ func TestCachedLabelRepository_AttachTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
 					tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.attachTo),
@@ -1539,7 +1534,7 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id, detachFrom model.ID) repository.LabelRepository {
 					repo := mockrepo.NewMockLabelRepository(ctrl)
-					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(nil)
+					repo.EXPECT().DetachFrom(ctx, id, detachFrom).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1831,7 +1826,6 @@ func TestCachedLabelRepository_DetachFrom(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
 					tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.detachFrom),
@@ -1916,7 +1910,7 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 				},
 				labelRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.LabelRepository {
 					repo := mockrepo.NewMockLabelRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -2202,7 +2196,6 @@ func TestCachedLabelRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedLabelRepository {
 				r, err := repository.NewCachedLabelRepository(
 					tt.fields.labelRepo(ctrl, tt.args.ctx, tt.args.id),

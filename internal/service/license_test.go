@@ -206,7 +206,6 @@ func TestLicenseService_Expired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.licenseRepo, tt.fields.license)
 			got, err := s.Expired(tt.args.ctx)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -302,7 +301,6 @@ func TestLicenseService_HasFeature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.licenseRepo, tt.fields.license)
 			got, err := s.HasFeature(tt.args.ctx, tt.args.feature)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -317,9 +315,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 		quota license.Quota
 	}
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context) licenseServiceDeps
-		licenseRepo func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository
-		license     *license.License
+		baseService    func(ctrl *gomock.Controller, ctx context.Context) licenseServiceDeps
+		newLicenseRepo func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository
+		license        *license.License
 	}
 	tests := []struct {
 		name    string
@@ -348,9 +346,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().DocumentCount(ctx).Return(1, nil)
+					repo.EXPECT().DocumentCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -384,9 +382,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().NamespaceCount(ctx).Return(1, nil)
+					repo.EXPECT().NamespaceCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -420,9 +418,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().ActiveOrganizationCount(ctx).Return(1, nil)
+					repo.EXPECT().ActiveOrganizationCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -456,9 +454,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().ProjectCount(ctx).Return(1, nil)
+					repo.EXPECT().ProjectCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -492,9 +490,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().RoleCount(ctx).Return(1, nil)
+					repo.EXPECT().RoleCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -528,9 +526,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil)
+					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -564,7 +562,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(_ *gomock.Controller, _ context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(_ *gomock.Controller, _ context.Context) repository.LicenseRepository {
 					return mockrepo.NewMockLicenseRepository(nil)
 				},
 				license: &license.License{
@@ -599,9 +597,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil)
+					repo.EXPECT().ActiveUserCount(ctx).Return(1, nil).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -637,9 +635,9 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 						permissionService: mocksvc.NewMockPermissionService(nil),
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
-					repo.EXPECT().ActiveUserCount(ctx).Return(0, assert.AnError)
+					repo.EXPECT().ActiveUserCount(ctx).Return(0, assert.AnError).Times(1)
 					return repo
 				},
 				license: &license.License{
@@ -662,8 +660,7 @@ func TestLicenseService_WithinThreshold(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.licenseRepo(ctrl, tt.args.ctx), tt.fields.license)
+			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.newLicenseRepo(ctrl, tt.args.ctx), tt.fields.license)
 			got, err := s.WithinThreshold(tt.args.ctx, tt.args.quota)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
@@ -684,9 +681,9 @@ func TestLicenseService_GetLicense(t *testing.T) {
 	}
 
 	type fields struct {
-		baseService func(ctrl *gomock.Controller, ctx context.Context) licenseServiceDeps
-		licenseRepo func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository
-		license     *license.License
+		baseService    func(ctrl *gomock.Controller, ctx context.Context) licenseServiceDeps
+		newLicenseRepo func(ctrl *gomock.Controller, ctx context.Context) repository.LicenseRepository
+		license        *license.License
 	}
 	type args struct {
 		ctx context.Context
@@ -720,7 +717,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
 					repo := mockrepo.NewMockLicenseRepository(ctrl)
 					return repo
 				},
@@ -750,7 +747,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
 					return mockrepo.NewMockLicenseRepository(ctrl)
 				},
 				license: nil,
@@ -780,7 +777,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 						permissionService: permissionSvc,
 					}
 				},
-				licenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
+				newLicenseRepo: func(ctrl *gomock.Controller, _ context.Context) repository.LicenseRepository {
 					return mockrepo.NewMockLicenseRepository(ctrl)
 				},
 				license: nil,
@@ -794,8 +791,7 @@ func TestLicenseService_GetLicense(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.licenseRepo(ctrl, tt.args.ctx), tt.fields.license)
+			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.newLicenseRepo(ctrl, tt.args.ctx), tt.fields.license)
 			got, err := s.GetLicense(tt.args.ctx)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
@@ -887,7 +883,6 @@ func TestLicenseService_Ping(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := newLicenseServiceForTest(tt.fields.baseService(ctrl, tt.args.ctx), tt.fields.licenseRepo, tt.fields.license)
 			err := s.Ping(tt.args.ctx)
 			require.ErrorIs(t, err, tt.wantErr)

@@ -50,7 +50,6 @@ func TestWithMetricsExporter(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	ctx := context.Background()
 
@@ -75,27 +74,18 @@ func TestWithMetricsExporter(t *testing.T) {
 }
 
 func TestWithRateLimiter(t *testing.T) {
-	type fields struct {
-		limiter func(ctrl *gomock.Controller) RateLimiter
-	}
 	type args struct {
 		tracer func(ctrl *gomock.Controller) tracing.Tracer
 	}
 	tests := []struct {
 		name    string
-		fields  fields
+		allowed bool
 		args    args
 		wantErr error
 	}{
 		{
-			name: "return handler if rate limiter is allowed",
-			fields: fields{
-				limiter: func(ctrl *gomock.Controller) RateLimiter {
-					limiter := mockasync.NewMockRateLimiter(ctrl)
-					limiter.EXPECT().Allow().Return(true)
-					return limiter
-				},
-			},
+			name:    "return handler if rate limiter is allowed",
+			allowed: true,
 			args: args{
 				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
 					span := mocktrace.NewMockSpan(ctrl)
@@ -111,13 +101,6 @@ func TestWithRateLimiter(t *testing.T) {
 		},
 		{
 			name: "return error if rate limiter is not allowed",
-			fields: fields{
-				limiter: func(ctrl *gomock.Controller) RateLimiter {
-					limiter := mockasync.NewMockRateLimiter(ctrl)
-					limiter.EXPECT().Allow().Return(false)
-					return limiter
-				},
-			},
 			args: args{
 				tracer: func(ctrl *gomock.Controller) tracing.Tracer {
 					span := mocktrace.NewMockSpan(ctrl)
@@ -137,13 +120,15 @@ func TestWithRateLimiter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return nil
 			})
 
-			wrapped := WithRateLimiter(tt.args.tracer(ctrl), tt.fields.limiter(ctrl))(handler)
+			limiter := mockasync.NewMockRateLimiter(ctrl)
+			limiter.EXPECT().Allow().Return(tt.allowed)
+
+			wrapped := WithRateLimiter(tt.args.tracer(ctrl), limiter)(handler)
 			err := wrapped.ProcessTask(context.Background(), new(asynq.Task))
 
 			assert.ErrorIs(t, err, tt.wantErr)
@@ -217,7 +202,6 @@ func TestWithErrorLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			handler := asynq.HandlerFunc(func(_ context.Context, _ *asynq.Task) error {
 				return tt.wantErr

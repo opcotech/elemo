@@ -178,7 +178,8 @@ func (r *Neo4jAttachmentRepository) Update(ctx context.Context, id model.ID, opt
 
 	cypher := `
 	MATCH (a:` + id.Label() + ` {id: $id})
-	SET a.name = $name, a.updated_at = datetime()
+	SET a.name = $name
+	SET a.updated_at = datetime.statement()
 	RETURN a.id AS id`
 
 	params := map[string]any{

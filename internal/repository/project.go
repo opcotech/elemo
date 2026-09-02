@@ -364,7 +364,8 @@ func (r *Neo4jProjectRepository) Update(ctx context.Context, id model.ID, opts U
 
 	cypher := `
 	MATCH (p:` + id.Label() + ` {id: $id})
-	SET p += $patch, p.updated_at = datetime()
+	SET p += $patch
+	SET p.updated_at = datetime.statement()
 	RETURN p.id AS id`
 
 	params := map[string]any{
