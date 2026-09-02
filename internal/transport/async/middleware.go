@@ -41,9 +41,9 @@ var (
 	)
 )
 
-// RateLimiter is an interface for rate limiter.
-//
 //go:generate go tool mockgen -destination=mock/mock_middleware_gen.go -package=mockasync . RateLimiter
+
+// RateLimiter is an interface for rate limiter.
 type RateLimiter interface {
 	Limit() rate.Limit
 	Burst() int

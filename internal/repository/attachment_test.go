@@ -263,7 +263,6 @@ func TestCachedAttachmentRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAttachmentRepository {
 				r, err := repository.NewCachedAttachmentRepository(
 					tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -522,7 +521,6 @@ func TestCachedAttachmentRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Attachment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -801,7 +799,6 @@ func TestCachedAttachmentRepository_ListBelongsTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedAttachmentRepository {
 				r, err := repository.NewCachedAttachmentRepository(
@@ -1026,7 +1023,6 @@ func TestCachedAttachmentRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			r := func() *repository.RedisCachedAttachmentRepository {
 				r, err := repository.NewCachedAttachmentRepository(
@@ -1113,7 +1109,7 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 				},
 				attachmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AttachmentRepository {
 					repo := mockrepo.NewMockAttachmentRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1398,7 +1394,6 @@ func TestCachedAttachmentRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAttachmentRepository {
 				r, err := repository.NewCachedAttachmentRepository(
 					tt.fields.attachmentRepo(ctrl, tt.args.ctx, tt.args.id),

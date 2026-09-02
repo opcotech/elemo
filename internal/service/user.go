@@ -57,8 +57,8 @@ type CreateUserOpts struct {
 	Email     string           `json:"email" validate:"required,email"`
 	Password  string           `json:"password" validate:"required,min=8,max=64"`
 	Status    model.UserStatus `json:"status" validate:"omitempty,min=1,max=4"`
-	FirstName string           `json:"first_name" validate:"required,min=1,max=50"`
-	LastName  string           `json:"last_name" validate:"required,min=1,max=50"`
+	FirstName string           `json:"first_name" validate:"required,max=50,min=1"`
+	LastName  string           `json:"last_name" validate:"required,max=50,min=1"`
 	Picture   string           `json:"picture" validate:"omitempty,url"`
 	Title     string           `json:"title" validate:"omitempty,min=3,max=50"`
 	Bio       string           `json:"bio" validate:"omitempty,min=10,max=500"`

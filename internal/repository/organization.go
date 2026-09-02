@@ -525,8 +525,11 @@ func (r *Neo4jOrganizationRepository) AddMember(ctx context.Context, orgID, memb
 	defer span.End()
 
 	cypher := `
-	MATCH (o:` + orgID.Label() + ` {id: $org_id})
-	MATCH (u:` + memberID.Label() + ` {id: $member_id})
+	MATCH (o:` + orgID.Label() + `)
+	WHERE o.id = $org_id
+	WITH o
+	MATCH (u:` + memberID.Label() + `)
+	WHERE u.id = $member_id
 	MERGE (u)-[m:` + EdgeKindMemberOf.String() + `]->(o)
 	ON CREATE SET m.created_at = datetime($now), m.id = $membership_id
 	ON MATCH SET m.updated_at = datetime($now)`
@@ -570,7 +573,9 @@ func (r *Neo4jOrganizationRepository) AddInvitation(ctx context.Context, orgID, 
 	defer span.End()
 
 	cypher := `
-	MATCH (o:` + orgID.Label() + ` {id: $org_id})
+	MATCH (o:` + orgID.Label() + `)
+	WHERE o.id = $org_id
+	WITH o
 	MATCH (u:` + userID.Label() + ` {id: $user_id})
 	MERGE (u)-[i:` + EdgeKindInvitedTo.String() + `]->(o)
 	ON CREATE SET i.created_at = datetime($now), i.id = $invitation_id

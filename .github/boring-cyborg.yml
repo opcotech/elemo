@@ -1,34 +1,28 @@
 labelPRBasedOnFilePath:
-  "component: api":
-    - api/**/*
-    - internal/transport/http/**/*
-  "component: auth":
-    - internal/transport/http/auth.go
-  "component: build":
-    - .github/**/*
-    - build/**/*
-    - Makefile
-  "component: configs":
-    - configs/**/*
-    - internal/config/**/*
-  "component: deployments":
-    - deploy/**/*
-  "component: front-end":
-    - web/**/*
-  "type: legal":
-    - LICENSE
-    - LICENSE-COMMERCIAL
-    - CLA.md
-    - .github/cla.json
-    - .ort.yml
-    - scripts/ort/**/*
-  "component: license":
-    - internal/license/**/*
-    - tools/key-generator/**/*
-    - tools/license-generator/**/*
-    - tools/license-validator/**/*
-    - .ort.yml
-    - scripts/ort/**/*
+  "component: api": ["api/**/*", "internal/transport/http/**/*"]
+  "component: auth": ["internal/transport/http/auth.go"]
+  "component: build": [".github/**/*", "build/**/*", "Makefile"]
+  "component: configs": ["configs/**/*", "internal/config/**/*"]
+  "component: deployments": ["deploy/**/*"]
+  "component: front-end": ["web/**/*"]
+  "type: legal": # Legal and compliance-related files.
+    [
+      "LICENSE",
+      "LICENSE-COMMERCIAL",
+      "CLA.md",
+      ".github/cla.json",
+      ".ort.yml",
+      "scripts/ort/**/*",
+    ]
+  "component: license": # License implementation and supporting tools.
+    [
+      "internal/license/**/*",
+      "tools/key-generator/**/*",
+      "tools/license-generator/**/*",
+      "tools/license-validator/**/*",
+      ".ort.yml",
+      "scripts/ort/**/*",
+    ]
 firstPRWelcomeComment: |
   Thanks for opening this pull request.
   Please check out our contributing guide: https://github.com/opcotech/elemo/blob/main/CONTRIBUTING.md

@@ -249,7 +249,6 @@ func TestCachedAssignmentRepository_Create(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAssignmentRepository {
 				r, err := repository.NewCachedAssignmentRepository(
 					tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.opts),
@@ -510,7 +509,6 @@ func TestCachedAssignmentRepository_Get(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var want *repository.Assignment
 			if tt.want != nil {
 				want = tt.want(tt.args.id)
@@ -791,7 +789,6 @@ func TestCachedAssignmentRepository_GetByUser(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAssignmentRepository {
 				r, err := repository.NewCachedAssignmentRepository(
 					tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1067,7 +1064,6 @@ func TestCachedAssignmentRepository_GetByResource(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAssignmentRepository {
 				r, err := repository.NewCachedAssignmentRepository(
 					tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.userID, tt.args.offset, testPageSize(tt.args.limit), tt.want),
@@ -1153,7 +1149,7 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 				},
 				assignmentRepo: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) repository.AssignmentRepository {
 					repo := mockrepo.NewMockAssignmentRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id).Return(nil)
+					repo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1439,7 +1435,6 @@ func TestCachedAssignmentRepository_Delete(t *testing.T) {
 			t.Parallel()
 			tt := tt
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedAssignmentRepository {
 				r, err := repository.NewCachedAssignmentRepository(
 					tt.fields.assignmentRepo(ctrl, tt.args.ctx, tt.args.id),

@@ -171,7 +171,8 @@ func (r *Neo4jCommentRepository) Update(ctx context.Context, id model.ID, opts U
 
 	cypher := `
 	MATCH (c:` + id.Label() + ` {id: $id})
-	SET c.content = $content, c.updated_at = datetime()
+	SET c.content = $content
+	SET c.updated_at = datetime.statement()
 	RETURN c.id AS id`
 
 	params := map[string]any{

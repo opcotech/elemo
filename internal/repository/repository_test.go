@@ -793,7 +793,6 @@ func TestPGDatabase_Close(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 	pool := mockrepo.NewMockPGPool(ctrl)
 	pool.EXPECT().Close()
 
@@ -833,7 +832,7 @@ func TestPGDatabase_Ping(t *testing.T) {
 			fields: fields{
 				pool: func(ctx context.Context, ctrl *gomock.Controller) repository.PGPool {
 					p := mockrepo.NewMockPGPool(ctrl)
-					p.EXPECT().Ping(ctx).Return(nil)
+					p.EXPECT().Ping(ctx).Return(nil).Times(1)
 					return p
 				},
 			},
@@ -846,7 +845,7 @@ func TestPGDatabase_Ping(t *testing.T) {
 			fields: fields{
 				pool: func(ctx context.Context, ctrl *gomock.Controller) repository.PGPool {
 					p := mockrepo.NewMockPGPool(ctrl)
-					p.EXPECT().Ping(ctx).Return(assert.AnError)
+					p.EXPECT().Ping(ctx).Return(assert.AnError).Times(1)
 					return p
 				},
 			},
@@ -858,7 +857,6 @@ func TestPGDatabase_Ping(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			db := mustPGDatabase(t, tt.fields.pool(tt.args.ctx, ctrl))
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
@@ -933,13 +931,11 @@ func TestWithDatabaseClient(t *testing.T) {
 			args: args{
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
 					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 			},
 			want: func() redis.UniversalClient {
 				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
 				return mockrepo.NewMockUniversalClient(ctrl)
 			}(),
 		},
@@ -1060,7 +1056,6 @@ func TestNewRedisDatabase(t *testing.T) {
 			args: args{
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
 					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 				logger: mocklog.NewMockLogger(nil),
@@ -1081,7 +1076,6 @@ func TestNewRedisDatabase(t *testing.T) {
 			args: args{
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
 					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 				logger: nil,
@@ -1094,7 +1088,6 @@ func TestNewRedisDatabase(t *testing.T) {
 			args: args{
 				client: func() redis.UniversalClient {
 					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
 					return mockrepo.NewMockUniversalClient(ctrl)
 				}(),
 				logger: mocklog.NewMockLogger(nil),
@@ -1124,7 +1117,6 @@ func TestDatabase_Client(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	client := mockrepo.NewMockUniversalClient(ctrl)
 
@@ -1137,7 +1129,6 @@ func TestRedisDatabase_Close(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	client := mockrepo.NewMockUniversalClient(ctrl)
 	client.EXPECT().Close().Return(nil)
@@ -1179,7 +1170,6 @@ func TestRedisDatabase_Ping(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			db := mustRedisDatabase(t, tt.fields.client(ctrl, tt.args.ctx))
 			err := db.Ping(tt.args.ctx)
 			if !tt.wantErr && err != nil {
@@ -1504,7 +1494,7 @@ func TestStorage_Ping(t *testing.T) {
 			fields: fields{
 				client: func(ctx context.Context, ctrl *gomock.Controller) repository.S3Client {
 					c := mockrepo.NewMockS3Client(ctrl)
-					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, nil)
+					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, nil).Times(1)
 					return c
 				},
 				bucket: "test-bucket",
@@ -1518,7 +1508,7 @@ func TestStorage_Ping(t *testing.T) {
 			fields: fields{
 				client: func(ctx context.Context, ctrl *gomock.Controller) repository.S3Client {
 					c := mockrepo.NewMockS3Client(ctrl)
-					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, assert.AnError)
+					c.EXPECT().HeadBucket(ctx, &awsS3.HeadBucketInput{Bucket: aws.String("test-bucket")}, gomock.Any()).Return(&awsS3.HeadBucketOutput{}, assert.AnError).Times(1)
 					return c
 				},
 				bucket: "test-bucket",
@@ -1531,7 +1521,6 @@ func TestStorage_Ping(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			storage := mustS3Storage(t, tt.fields.client(tt.args.ctx, ctrl), tt.fields.bucket)
 			err := storage.Ping(tt.args.ctx)
 			if tt.wantErr {

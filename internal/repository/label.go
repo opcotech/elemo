@@ -182,7 +182,8 @@ func (r *Neo4jLabelRepository) Update(ctx context.Context, id model.ID, opts Upd
 
 	cypher := `
 	MATCH (l:` + id.Label() + ` {id: $id})
-	SET l += $patch, l.updated_at = datetime()
+	SET l += $patch
+	SET l.updated_at = datetime.statement()
 	RETURN l.id AS id`
 
 	params := map[string]any{
@@ -204,8 +205,11 @@ func (r *Neo4jLabelRepository) AttachTo(ctx context.Context, labelID, attachTo m
 	defer span.End()
 
 	cypher := `
-	MATCH (l:` + labelID.Label() + ` {id: $label_id})
-	MATCH (n:` + attachTo.Label() + ` {id: $node_id})
+	MATCH (l:` + labelID.Label() + `)
+	WHERE l.id = $label_id
+	WITH l
+	MATCH (n:` + attachTo.Label() + `)
+	WHERE n.id = $node_id
 	CREATE (n)-[:` + EdgeKindHasLabel.String() + `]->(l)`
 
 	params := map[string]any{

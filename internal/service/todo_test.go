@@ -81,7 +81,6 @@ func TestNewTodoService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			got, err := tt.build(ctrl)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
@@ -429,7 +428,6 @@ func TestTodoService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.todo)
 			_, err := s.Create(tt.args.ctx, tt.args.todo)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -471,7 +469,7 @@ func TestTodoService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := mockrepo.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil)
+					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil).Times(1)
 
 					return func() service.TodoService {
 						svc, err := service.NewTodoService(
@@ -568,7 +566,7 @@ func TestTodoService_Get(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.todoService/Get", gomock.Len(0)).Return(ctx, span)
 
 					todoRepo := mockrepo.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError)
+					todoRepo.EXPECT().Get(ctx, id).Return(nil, assert.AnError).Times(1)
 
 					return func() service.TodoService {
 						svc, err := service.NewTodoService(
@@ -622,7 +620,6 @@ func TestTodoService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var repoT *repository.Todo
 			if tt.want != nil {
 				repoT = &repository.Todo{
@@ -840,7 +837,6 @@ func TestTodoService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			repoTodos := make([]*repository.Todo, len(tt.want.Items))
 			for i, w := range tt.want.Items {
 				repoTodos[i] = &repository.Todo{
@@ -899,7 +895,7 @@ func TestTodoService_Update(t *testing.T) {
 					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					todoRepo := mockrepo.NewMockTodoRepository(ctrl)
-					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil)
+					todoRepo.EXPECT().Get(ctx, id).Return(todo, nil).Times(1)
 					todoRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(todo, nil)
 
 					return func() service.TodoService {
@@ -1148,7 +1144,6 @@ func TestTodoService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			var repoT *repository.Todo
 			if tt.want != nil {
 				repoT = &repository.Todo{
@@ -1203,7 +1198,7 @@ func TestTodoService_Delete(t *testing.T) {
 
 					todoRepo := mockrepo.NewMockTodoRepository(ctrl)
 					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(userID, userID), nil)
-					todoRepo.EXPECT().Delete(ctx, id).Return(nil)
+					todoRepo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 
 					return func() service.TodoService {
 						svc, err := service.NewTodoService(
@@ -1310,7 +1305,7 @@ func TestTodoService_Delete(t *testing.T) {
 
 					todoRepo := mockrepo.NewMockTodoRepository(ctrl)
 					todoRepo.EXPECT().Get(ctx, id).Return(testModel.NewRepositoryTodo(userID, userID), nil)
-					todoRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
+					todoRepo.EXPECT().Delete(ctx, id).Return(assert.AnError).Times(1)
 
 					return func() service.TodoService {
 						svc, err := service.NewTodoService(
@@ -1433,7 +1428,6 @@ func TestTodoService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id)
 			err := s.Delete(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)

@@ -22,6 +22,31 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
 
+func scanNotification(notification *repository.Notification) func(destinations ...any) error {
+	return func(destinations ...any) error {
+		*destinations[0].(*model.ID) = notification.ID
+		*destinations[1].(*string) = notification.Title
+		*destinations[2].(*string) = notification.Description
+		*destinations[3].(*model.ID) = notification.Recipient
+		*destinations[4].(*bool) = notification.Read
+		*destinations[5].(**time.Time) = notification.CreatedAt
+		*destinations[6].(**time.Time) = notification.UpdatedAt
+		return nil
+	}
+}
+
+func notificationScanMatchers() []any {
+	return []any{
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+		gomock.Any(),
+	}
+}
+
 func TestNewNotificationRepository(t *testing.T) {
 	type args struct {
 		opts []repository.PGRepositoryOption
@@ -93,11 +118,11 @@ func TestNotificationRepository_Create(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Create").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Exec(ctx,
+					dbPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
 						gomock.Any(), opts.Title, opts.Description, opts.Recipient,
 						false, gomock.Any(),
@@ -129,11 +154,11 @@ func TestNotificationRepository_Create(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Create").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Exec(ctx,
+					dbPool.EXPECT().Exec(ctx,
 						"INSERT INTO notifications (id, title, description, recipient, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
 						gomock.Any(), opts.Title, opts.Description, opts.Recipient,
 						false, gomock.Any(),
@@ -162,7 +187,6 @@ func TestNotificationRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.opts)...)
 			require.NoError(t, err)
 			got, err := notificationRepo.Create(tt.args.ctx, tt.args.opts)
@@ -208,28 +232,19 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(dest ...any) error {
-							*(dest[0].(*model.ID)) = notification.ID
-							*(dest[1].(*string)) = notification.Title
-							*(dest[2].(*string)) = notification.Description
-							*(dest[3].(*model.ID)) = notification.Recipient
-							*(dest[4].(*bool)) = notification.Read
-							*(dest[5].(**time.Time)) = notification.CreatedAt
-							*(dest[6].(**time.Time)) = notification.UpdatedAt
-							return nil
-						})
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().
+						Scan(notificationScanMatchers()...).
+						DoAndReturn(scanNotification(notification))
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -261,19 +276,17 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any()).
-						Return(pgx.ErrNoRows)
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().Scan(gomock.Any()).Return(pgx.ErrNoRows)
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -299,19 +312,17 @@ func TestNotificationRepository_Get(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Get").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any()).
-						Return(assert.AnError)
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().Scan(gomock.Any()).Return(assert.AnError)
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"SELECT * FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -333,7 +344,6 @@ func TestNotificationRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.want)...)
 			require.NoError(t, err)
 			got, err := notificationRepo.Get(tt.args.ctx, tt.args.id, tt.args.recipient, repository.NotificationDetailProjection())
@@ -372,36 +382,26 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRows := mockrepo.NewMockRows(ctrl)
-					mockRows.EXPECT().Close().Return()
-					mockRows.EXPECT().Next().Return(true).Times(limit)
-					mockRows.EXPECT().Next().Return(false)
-					mockRows.EXPECT().Err().Return(nil)
+					rows := mockrepo.NewMockRows(ctrl)
+					rows.EXPECT().Close().Return()
+					rows.EXPECT().Next().Return(true).Times(limit)
+					rows.EXPECT().Next().Return(false)
+					rows.EXPECT().Err().Return(nil)
 
 					for _, notification := range notifications[offset:] {
-						mockRows.EXPECT().
-							Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-							DoAndReturn(func(dest ...any) error {
-								*(dest[0].(*model.ID)) = notification.ID
-								*(dest[1].(*string)) = notification.Title
-								*(dest[2].(*string)) = notification.Description
-								*(dest[3].(*model.ID)) = notification.Recipient
-								*(dest[4].(*bool)) = notification.Read
-								*(dest[5].(**time.Time)) = notification.CreatedAt
-								*(dest[6].(**time.Time)) = notification.UpdatedAt
-								return nil
-							}).
-							Times(1)
+						rows.EXPECT().
+							Scan(notificationScanMatchers()...).
+							DoAndReturn(scanNotification(notification))
 					}
 
-					mockDBPool.EXPECT().Query(ctx,
+					dbPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
 						recipient, limit+1,
-					).Return(mockRows, nil)
+					).Return(rows, nil)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -447,11 +447,11 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Query(ctx,
+					dbPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
 						recipient, limit+1,
 					).Return(mockrepo.NewMockRows(nil), assert.AnError)
@@ -481,21 +481,19 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/ListByRecipient").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRows := mockrepo.NewMockRows(ctrl)
-					mockRows.EXPECT().Close().Return()
-					mockRows.EXPECT().Next().Return(true).Times(1)
-					mockRows.EXPECT().
-						Scan(gomock.Any()).
-						Return(assert.AnError)
+					rows := mockrepo.NewMockRows(ctrl)
+					rows.EXPECT().Close().Return()
+					rows.EXPECT().Next().Return(true).Times(1)
+					rows.EXPECT().Scan(gomock.Any()).Return(assert.AnError)
 
-					mockDBPool.EXPECT().Query(ctx,
+					dbPool.EXPECT().Query(ctx,
 						"SELECT * FROM notifications WHERE recipient = $1 ORDER BY id DESC LIMIT $2",
 						recipient, limit+1,
-					).Return(mockRows, nil)
+					).Return(rows, nil)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -518,7 +516,6 @@ func TestNotificationRepository_ListByRecipient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.recipient, tt.args.offset, testPageSize(tt.args.limit), tt.want)...)
 			require.NoError(t, err)
 			got, err := notificationRepo.ListByRecipient(tt.args.ctx, tt.args.recipient, repository.CursorPage{Size: testPageSize(tt.args.limit)}, repository.NotificationListProjection())
@@ -560,28 +557,19 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-						DoAndReturn(func(dest ...any) error {
-							*(dest[0].(*model.ID)) = notification.ID
-							*(dest[1].(*string)) = notification.Title
-							*(dest[2].(*string)) = notification.Description
-							*(dest[3].(*model.ID)) = notification.Recipient
-							*(dest[4].(*bool)) = notification.Read
-							*(dest[5].(**time.Time)) = notification.CreatedAt
-							*(dest[6].(**time.Time)) = notification.UpdatedAt
-							return nil
-						})
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().
+						Scan(notificationScanMatchers()...).
+						DoAndReturn(scanNotification(notification))
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
 						id, recipient, opts.Read,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -616,19 +604,17 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any()).
-						Return(pgx.ErrNoRows)
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().Scan(gomock.Any()).Return(pgx.ErrNoRows)
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
 						id, recipient, opts.Read,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -655,19 +641,17 @@ func TestNotificationRepository_Update(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Update").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockRow := mockrepo.NewMockRow(ctrl)
-					mockRow.EXPECT().
-						Scan(gomock.Any()).
-						Return(assert.AnError)
+					row := mockrepo.NewMockRow(ctrl)
+					row.EXPECT().Scan(gomock.Any()).Return(assert.AnError)
 
-					mockDBPool.EXPECT().QueryRow(ctx,
+					dbPool.EXPECT().QueryRow(ctx,
 						"UPDATE notifications SET read = $3, updated_at = timezone('utc', now()) WHERE id = $1 AND recipient = $2 RETURNING *",
 						id, recipient, opts.Read,
-					).Return(mockRow)
+					).Return(row)
 
 					return []repository.PGRepositoryOption{
 						repository.WithPGDatabase(mockDB),
@@ -690,7 +674,6 @@ func TestNotificationRepository_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient, tt.args.opts, tt.want)...)
 			require.NoError(t, err)
 			got, err := notificationRepo.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts)
@@ -725,11 +708,11 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Exec(ctx,
+					dbPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
 					).Return(pgconn.CommandTag{}, nil)
@@ -757,11 +740,11 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Exec(ctx,
+					dbPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
 					).Return(pgconn.CommandTag{}, pgx.ErrNoRows)
@@ -790,11 +773,11 @@ func TestNotificationRepository_Delete(t *testing.T) {
 					tracer := mocktrace.NewMockTracer(ctrl)
 					tracer.EXPECT().Start(ctx, "repository.pg.NotificationRepository/Delete").Return(ctx, span)
 
-					mockDBPool := mockrepo.NewMockPGPool(ctrl)
-					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(mockDBPool))
+					dbPool := mockrepo.NewMockPGPool(ctrl)
+					mockDB, err := repository.NewPGDatabase(repository.WithDatabasePool(dbPool))
 					require.NoError(t, err)
 
-					mockDBPool.EXPECT().Exec(ctx,
+					dbPool.EXPECT().Exec(ctx,
 						"DELETE FROM notifications WHERE id = $1 AND recipient = $2",
 						id, recipient,
 					).Return(pgconn.CommandTag{}, assert.AnError)
@@ -819,7 +802,6 @@ func TestNotificationRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			notificationRepo, err := repository.NewNotificationRepository(tt.fields.pgBaseRepository(tt.args.ctx, ctrl, tt.args.id, tt.args.recipient)...)
 			require.NoError(t, err)
 			err = notificationRepo.Delete(tt.args.ctx, tt.args.id, tt.args.recipient)

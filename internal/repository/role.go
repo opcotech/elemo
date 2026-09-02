@@ -424,9 +424,14 @@ func (r *Neo4jRoleRepository) AddMember(ctx context.Context, roleID, memberID, b
 	defer span.End()
 
 	cypher := `
-	MATCH (r:` + roleID.Label() + ` {id: $role_id})
-	MATCH (u:` + memberID.Label() + ` {id: $member_id})
-	MATCH (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
+	MATCH (r:` + roleID.Label() + `)
+	WHERE r.id = $role_id
+	WITH r
+	MATCH (u:` + memberID.Label() + `)
+	WHERE u.id = $member_id
+	WITH r, u
+	MATCH (b:` + belongsToID.Label() + `)
+	WHERE b.id = $belongs_to_id
 	MERGE (u)-[m:` + EdgeKindMemberOf.String() + `]->(r)
 	ON CREATE SET m.created_at = datetime($now), m.id = $membership_id
 	ON MATCH SET m.updated_at = datetime($now)`
@@ -452,8 +457,11 @@ func (r *Neo4jRoleRepository) RemoveMember(ctx context.Context, roleID, memberID
 	defer span.End()
 
 	cypher := `
-	MATCH (:` + roleID.Label() + ` {id: $role_id})<-[r:` + EdgeKindMemberOf.String() + `]-(:` + memberID.Label() + ` {id: $member_id})
-	MATCH (b:` + belongsToID.Label() + ` {id: $belongs_to_id})
+	MATCH (role:` + roleID.Label() + `)<-[r:` + EdgeKindMemberOf.String() + `]-(member:` + memberID.Label() + `)
+	WHERE role.id = $role_id AND member.id = $member_id
+	WITH r
+	MATCH (b:` + belongsToID.Label() + `)
+	WHERE b.id = $belongs_to_id
 	DELETE r`
 
 	params := map[string]any{
@@ -475,8 +483,9 @@ func (r *Neo4jRoleRepository) Delete(ctx context.Context, id, belongsTo model.ID
 	defer span.End()
 
 	cypher := `
-	MATCH (:` + belongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindDefinesRole.String() + `]->(r:` + id.Label() + ` {id: $id})
-	DETACH DELETE r`
+	MATCH (:` + belongsTo.Label() + ` {id: $belongs_to_id})-[:` + EdgeKindDefinesRole.String() + `]->(role:` + id.Label() + ` {id: $id})
+	WITH role
+	DETACH DELETE role`
 	params := map[string]any{
 		"id":            id.String(),
 		"belongs_to_id": belongsTo.String(),

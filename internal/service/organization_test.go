@@ -99,7 +99,6 @@ func TestNewOrganizationService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			got, err := tt.build(ctrl)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
@@ -486,7 +485,6 @@ func TestOrganizationService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.opts)
 			_, err := s.Create(tt.args.ctx, tt.args.owner, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -678,7 +676,6 @@ func TestOrganizationService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.want)
 			got, err := s.Get(tt.args.ctx, tt.args.id)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1006,7 +1003,6 @@ func TestOrganizationService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.offset, tt.args.limit, tt.want)
 			got, err := s.List(tt.args.ctx, service.CursorPage{Size: 10})
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1417,7 +1413,6 @@ func TestOrganizationService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.opts, tt.want)
 			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1504,7 +1499,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Delete(ctx, id).Return(nil)
+					organizationRepo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
@@ -1812,7 +1807,7 @@ func TestOrganizationService_Delete(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().Delete(ctx, id).Return(assert.AnError)
+					organizationRepo.EXPECT().Delete(ctx, id).Return(assert.AnError).Times(1)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
@@ -1854,7 +1849,6 @@ func TestOrganizationService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id)
 			err := s.Delete(tt.args.ctx, tt.args.id, tt.args.force)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -1890,7 +1884,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/AddMember", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(nil)
+					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(nil).Times(1)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, organization, gomock.Any()).Return(true, nil)
@@ -2106,7 +2100,7 @@ func TestOrganizationService_AddMember(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/AddMember", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(assert.AnError)
+					organizationRepo.EXPECT().AddMember(ctx, organization, userID).Return(assert.AnError).Times(1)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, model.MustNewNilID(model.ResourceTypeOrganization), gomock.Any()).Return(true, nil)
@@ -2189,7 +2183,6 @@ func TestOrganizationService_AddMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization)
 			err := s.AddMember(tt.args.ctx, tt.args.organization, tt.args.member)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -2404,7 +2397,6 @@ func TestOrganizationService_ListMembers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			// Helper function to extract actual roles from expected roles.
 			// Virtual roles ("Owner", "Admin", "Member") are computed from permissions.
@@ -2492,7 +2484,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/RemoveMember", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(nil)
+					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(nil).Times(1)
 					organizationRepo.EXPECT().Get(ctx, organization, repository.OrganizationDetailProjection()).Return(&repository.Organization{Name: "org"}, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
@@ -2713,7 +2705,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					tracer.EXPECT().Start(ctx, "service.organizationService/RemoveMember", gomock.Len(0)).Return(ctx, span)
 
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
-					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(assert.AnError)
+					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(assert.AnError).Times(1)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, organization, gomock.Any()).Return(true, nil)
@@ -2797,7 +2789,6 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.organization)
 			err := s.RemoveMember(tt.args.ctx, tt.args.organization, tt.args.member)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -3402,7 +3393,6 @@ func TestOrganizationService_InviteMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID, tt.args.email, func() model.ID {
 				if len(tt.args.roleID) > 0 {
 					return tt.args.roleID[0]
@@ -3868,7 +3858,6 @@ func TestOrganizationService_RevokeInvitation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.orgID, tt.args.userID)
 			err := s.RevokeInvitation(tt.args.ctx, tt.args.orgID, tt.args.userID)
 			require.ErrorIs(t, err, tt.wantErr)
@@ -4727,7 +4716,6 @@ func TestOrganizationService_AcceptInvitation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			// Generate token if needed for args - this must happen before baseService is called
 			// so the token can be used in both the args and the baseService mocks

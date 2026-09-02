@@ -37,7 +37,6 @@ func TestCachedTeamRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			ctx := context.Background()
 			opts := repository.CreateTeamOpts{
@@ -277,7 +276,6 @@ func TestCachedTeamRepository_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			team := &repository.Team{}
 			if tt.want != nil {
@@ -459,7 +457,6 @@ func TestCachedTeamRepository_ListBelongsTo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			r := func() *repository.RedisCachedTeamRepository {
 				r, err := repository.NewCachedTeamRepository(
 					tt.fields.teamRepo(ctrl, tt.args.ctx, tt.args.belongsTo, tt.args.limit, tt.want),
@@ -491,7 +488,6 @@ func TestCachedTeamRepository_ListMembers(t *testing.T) {
 	t.Run("passthrough without cache", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().ListMembers(ctx, teamID, belongsTo, page).Return(members, nil)
@@ -514,7 +510,6 @@ func TestCachedTeamRepository_ListMembers(t *testing.T) {
 	t.Run("passthrough error", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 
 		repo := mockrepo.NewMockTeamRepository(ctrl)
 		repo.EXPECT().ListMembers(ctx, teamID, belongsTo, page).Return(repository.Page[*repository.User]{}, repository.ErrNotFound)
@@ -546,7 +541,6 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 	t.Run("update team", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		ctx := context.Background()
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
@@ -572,7 +566,6 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 	t.Run("update team with error", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		ctx := context.Background()
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
@@ -602,7 +595,6 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 	t.Run("update team set cache error", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		ctx := context.Background()
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
@@ -627,7 +619,6 @@ func TestCachedTeamRepository_Update(t *testing.T) {
 	t.Run("update team delete list cache error", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
 		ctx := context.Background()
 		id := model.MustNewID(model.ResourceTypeTeam)
 		belongsTo := model.MustNewID(model.ResourceTypeOrganization)
@@ -667,7 +658,6 @@ func TestCachedTeamRepository_AddMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			ctx := context.Background()
 			id := model.MustNewID(model.ResourceTypeTeam)
 			memberID := model.MustNewID(model.ResourceTypeUser)
@@ -713,7 +703,6 @@ func TestCachedTeamRepository_RemoveMember(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			ctx := context.Background()
 			id := model.MustNewID(model.ResourceTypeTeam)
 			memberID := model.MustNewID(model.ResourceTypeUser)
@@ -761,7 +750,6 @@ func TestCachedTeamRepository_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			ctx := context.Background()
 			id := model.MustNewID(model.ResourceTypeTeam)
 			belongsTo := model.MustNewID(model.ResourceTypeOrganization)

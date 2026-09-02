@@ -374,10 +374,10 @@ func NewUserController(
 }
 
 func createUserJSONRequestBodyToCreateUserOpts(body *api.V1UsersCreateJSONRequestBody) (service.CreateUserOpts, error) {
-	if body.FirstName == "" {
+	if len(body.FirstName) == 0 {
 		return service.CreateUserOpts{}, errors.New("FirstName is required")
 	}
-	if body.LastName == "" {
+	if len(body.LastName) == 0 {
 		return service.CreateUserOpts{}, errors.New("LastName is required")
 	}
 

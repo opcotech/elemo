@@ -144,8 +144,8 @@ func TestNotificationService_Create(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) service.NotificationService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository
+		baseService         func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) service.NotificationService
+		newNotificationRepo func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository
 	}
 	type args struct {
 		ctx  context.Context
@@ -179,7 +179,7 @@ func TestNotificationService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
 						Title:       opts.Title,
@@ -216,7 +216,7 @@ func TestNotificationService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
 						Title:       opts.Title,
@@ -254,7 +254,7 @@ func TestNotificationService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ service.CreateNotificationOpts) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ service.CreateNotificationOpts) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -272,9 +272,8 @@ func TestNotificationService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.opts)
-			service.SetNotificationServiceRepo(s, tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.opts))
+			service.SetNotificationServiceRepo(s, tt.fields.newNotificationRepo(ctrl, tt.args.ctx, tt.args.opts))
 			_, err := s.Create(tt.args.ctx, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
@@ -286,8 +285,8 @@ func TestNotificationService_Get(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) service.NotificationService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository
+		baseService         func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) service.NotificationService
+		newNotificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -324,7 +323,7 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(notification, nil)
 					return repo
@@ -370,7 +369,7 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(nil, assert.AnError)
 					return repo
@@ -405,7 +404,7 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -438,7 +437,7 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -471,7 +470,7 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -488,9 +487,8 @@ func TestNotificationService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.repoN)
-			service.SetNotificationServiceRepo(s, tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.repoN))
+			service.SetNotificationServiceRepo(s, tt.fields.newNotificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.repoN))
 			got, err := s.Get(tt.args.ctx, tt.args.id, tt.args.recipient)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -502,8 +500,8 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) service.NotificationService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository
+		baseService         func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) service.NotificationService
+		newNotificationRepo func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -540,7 +538,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{Items: notifications}, nil)
 					return repo
@@ -602,7 +600,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{}, assert.AnError)
 					return repo
@@ -637,7 +635,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -670,7 +668,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -703,7 +701,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _ model.ID, _ service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -720,7 +718,6 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			// Align want IDs with repo fixtures when both are set with matching length.
 			if len(tt.repoN) > 0 && len(tt.want.Items) == len(tt.repoN) {
@@ -730,7 +727,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 			}
 
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.recipient, tt.args.page, tt.repoN)
-			service.SetNotificationServiceRepo(s, tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.page, tt.repoN))
+			service.SetNotificationServiceRepo(s, tt.fields.newNotificationRepo(ctrl, tt.args.ctx, tt.args.recipient, tt.args.page, tt.repoN))
 			got, err := s.ListByRecipient(tt.args.ctx, tt.args.recipient, tt.args.page)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -743,8 +740,8 @@ func TestNotificationService_Update(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) service.NotificationService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository
+		baseService         func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) service.NotificationService
+		newNotificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -782,7 +779,7 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(notification, nil)
 					return repo
@@ -831,7 +828,7 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
 					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(nil, assert.AnError)
 					return repo
@@ -867,7 +864,7 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -901,7 +898,7 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -935,7 +932,7 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID, _ service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -953,9 +950,8 @@ func TestNotificationService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts, tt.repoN)
-			service.SetNotificationServiceRepo(s, tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts, tt.repoN))
+			service.SetNotificationServiceRepo(s, tt.fields.newNotificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts, tt.repoN))
 			got, err := s.Update(tt.args.ctx, tt.args.id, tt.args.recipient, tt.args.opts)
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Equal(t, tt.want, got)
@@ -968,8 +964,8 @@ func TestNotificationService_Delete(t *testing.T) {
 	recipientID := model.MustNewID(model.ResourceTypeUser)
 
 	type fields struct {
-		baseService      func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) service.NotificationService
-		notificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository
+		baseService         func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) service.NotificationService
+		newNotificationRepo func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository
 	}
 	type args struct {
 		ctx       context.Context
@@ -1004,9 +1000,9 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, recipient).Return(nil)
+					repo.EXPECT().Delete(ctx, id, recipient).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1038,9 +1034,9 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, recipient).Return(assert.AnError)
+					repo.EXPECT().Delete(ctx, id, recipient).Return(assert.AnError).Times(1)
 					return repo
 				},
 			},
@@ -1073,7 +1069,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -1106,7 +1102,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -1139,7 +1135,7 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				notificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, _, _ model.ID) repository.NotificationRepository {
 					return mockrepo.NewMockNotificationRepository(ctrl)
 				},
 			},
@@ -1156,9 +1152,8 @@ func TestNotificationService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 			s := tt.fields.baseService(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient)
-			service.SetNotificationServiceRepo(s, tt.fields.notificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient))
+			service.SetNotificationServiceRepo(s, tt.fields.newNotificationRepo(ctrl, tt.args.ctx, tt.args.id, tt.args.recipient))
 			err := s.Delete(tt.args.ctx, tt.args.id, tt.args.recipient)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
