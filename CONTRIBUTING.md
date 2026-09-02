@@ -211,11 +211,13 @@ The project ensures code quality and code coverage in multiple ways. Besides thi
 completeness, `gofmt` `go-imports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `eslint` are used to keep up with
 industry standards.
 
-License and dependency policy is enforced with [ORT](https://oss-review-toolkit.org/ort/) (`make ort`). CI analyzes
-Go modules and pnpm packages, ScanCodes **Elemo source** (not every dependency), concludes Go licenses from
-`go-licenses`, and evaluates against Apache-2.0 (the future license of FSL-1.1-ALv2). It fails on copyleft in
-project source, strong copyleft inbound, and restrictive, unknown, or unlicensed dependencies. Reports land in
-`.ort/results/` (gitignored), including `.ort/results/legal/` for GitHub Release assets.
+License and dependency policy is enforced with [ORT](https://oss-review-toolkit.org/ort/). Pull request CI runs
+`make ort.pr` (analyzer + evaluator) so dependency-license policy is gated quickly. Pushes to `main`, nightly
+runs, and releases run `make ort`, which ScanCodes **Elemo source** (not every dependency), concludes Go licenses
+from `go-licenses`, and produces reports. Evaluation is against Apache-2.0 (the future license of FSL-1.1-ALv2).
+It fails on strong copyleft inbound and restrictive, unknown, or unlicensed dependencies. Full runs also fail on
+copyleft in project source. Reports land in `.ort/results/` (gitignored), including `.ort/results/legal/` for
+GitHub Release assets.
 
 Although front-end unit tests exist (`make test.frontend.unit`), linters and
 end-to-end tests are also available. In order to run end-to-end tests, you have
@@ -234,10 +236,11 @@ make lint.backend   # Run linters for the backend, or
 make lint.frontend  # Run linters for the front-end
 
 # License / dependency policy (requires Docker)
+make ort.pr         # Analyze and evaluate (PR CI policy gate; no ScanCode)
 make ort            # Analyze, scan Elemo source, evaluate, advise, and report
 make ort.prepare    # Fetch pinned ORT config (needed once, or after pin bumps)
 make ort.analyze    # Dependency analysis only
-make ort.scan       # ScanCode on Elemo projects (CI default)
+make ort.scan       # ScanCode on Elemo projects (full CI default)
 make ort.scan.packages  # ScanCode on every dependency (slow; not CI)
 make ort.evaluate   # Policy evaluation (fails on ERROR violations)
 make ort.report     # SPDX, CycloneDX, WebApp, NOTICE, and legal/ bundle

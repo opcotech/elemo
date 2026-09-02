@@ -1,0 +1,94 @@
+# Shared change filters for dorny/paths-filter.
+# Docs-only, website-only, and k6-only diffs should not match backend/frontend/e2e
+# (website and k6 are not in build.yml). E2E is a union: Playwright boots Compose
+# and a server image, so web-only and backend-only PRs still run E2E.
+
+backend:
+  - ".github/path-filters.yml"
+  - ".github/workflows/build.yml"
+  - "cmd/**"
+  - "internal/**"
+  - "tools/**"
+  - "go.mod"
+  - "go.sum"
+  - ".golangci.yml"
+  - "Makefile"
+  - "configs/test/**"
+  - "api/openapi/**"
+  - "codecov.yaml"
+
+frontend:
+  - ".github/path-filters.yml"
+  - ".github/workflows/build.yml"
+  - "web/**"
+
+e2e:
+  - ".github/path-filters.yml"
+  - ".github/workflows/build.yml"
+  - "web/**"
+  - "cmd/**"
+  - "internal/**"
+  - "tools/**"
+  - "go.mod"
+  - "go.sum"
+  - "Makefile"
+  - "configs/test/**"
+  - "api/openapi/**"
+  - "build/package/**"
+  - ".dockerignore"
+  - "assets/keys/**"
+  - "assets/queries/**"
+  - "templates/email/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+  - "deploy/docker/**"
+  - "scripts/setup.sh"
+  - "scripts/common.sh"
+  - "scripts/generate-dev-config.sh"
+
+go:
+  - ".github/path-filters.yml"
+  - ".github/workflows/codeql.yml"
+  - "**/*.go"
+  - "go.mod"
+  - "go.sum"
+
+javascript:
+  - ".github/path-filters.yml"
+  - ".github/workflows/codeql.yml"
+  - "web/**"
+  - "website/**"
+  - "build/email/**"
+
+licenses_pr:
+  - ".github/path-filters.yml"
+  - ".github/workflows/license-check.yml"
+  - "go.mod"
+  - "go.sum"
+  - "tools/**/go.mod"
+  - "tools/**/go.sum"
+  - "**/package.json"
+  - "**/pnpm-lock.yaml"
+  - ".ort.yml"
+  - "scripts/ort/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+
+licenses_full:
+  - ".github/path-filters.yml"
+  - ".github/workflows/license-check.yml"
+  - "go.mod"
+  - "go.sum"
+  - "tools/**/go.mod"
+  - "tools/**/go.sum"
+  - "**/package.json"
+  - "**/pnpm-lock.yaml"
+  - ".ort.yml"
+  - "scripts/ort/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+  - "**/*.go"
+  - "cmd/**"
+  - "internal/**"
+  - "web/src/**"
+  - "templates/**"

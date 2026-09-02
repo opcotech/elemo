@@ -215,6 +215,11 @@ ort: ## Run ORT analyzer, scanner, evaluator, advisor, and reporter
 	$(call log, run ORT compliance pipeline)
 	@$(SCRIPTS_DIR)/ort/ort.sh run
 
+.PHONY: ort.pr
+ort.pr: ## Run ORT analyzer and evaluator only (PR CI policy gate)
+	$(call log, run ORT PR policy gate)
+	@$(SCRIPTS_DIR)/ort/ort.sh pr
+
 .PHONY: ort.prepare
 ort.prepare: ## Fetch pinned ORT config and overlay Elemo policy
 	$(call log, prepare ORT config)
@@ -226,7 +231,7 @@ ort.analyze: ## Run the ORT analyzer
 	@$(SCRIPTS_DIR)/ort/ort.sh analyze
 
 .PHONY: ort.scan
-ort.scan: ## Run ScanCode on Elemo projects (CI default)
+ort.scan: ## Run ScanCode on Elemo projects (full CI)
 	$(call log, run ORT scanner)
 	@$(SCRIPTS_DIR)/ort/ort.sh scan
 

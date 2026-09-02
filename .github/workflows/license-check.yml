@@ -5,19 +5,42 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch: { }
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: license-check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      licenses_pr: ${{ steps.filter.outputs.licenses_pr }}
+      licenses_full: ${{ steps.filter.outputs.licenses_full }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: .github/path-filters.yml
+
   check-licenses:
     name: ORT
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    needs:
+      - changes
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.changes.outputs.licenses_pr == 'true') || (github.event_name == 'push' && needs.changes.outputs.licenses_full == 'true') }}
+    env:
+      GO_LICENSES_VERSION: v1.6.0
+      GOPROXY: https://proxy.golang.org,direct
     steps:
       - name: Use HTTPS instead of SSH for Git cloning
         run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
@@ -25,21 +48,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go
+        id: setup-go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "^1.26"
+          cache-dependency-path: |
+            go.sum
+            tools/openapi-assemble/go.sum
+            tools/pre-mailer/go.sum
+
+      - name: Cache go-licenses
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .ort/bin
+          key: go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-${{ steps.setup-go.outputs.go-version }}
+          restore-keys: |
+            go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-
 
       - name: Cache ORT ScanCode results
+        if: ${{ github.event_name != 'pull_request' }}
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ort/scanner
-          key: ort-scancode-projects-92.4.0-${{ hashFiles('go.mod', 'web/package.json', 'website/package.json', 'build/email/package.json') }}
+          key: ort-scancode-projects-92.4.0-${{ github.sha }}
           restore-keys: |
             ort-scancode-projects-92.4.0-
 
-      - name: Run ORT
-        env:
-          GOPROXY: https://proxy.golang.org,direct
+      - name: Run ORT (PR policy gate)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: make ort.pr
+
+      - name: Run ORT (full pipeline)
+        if: ${{ github.event_name != 'pull_request' }}
         run: make ort
 
       - name: Upload ORT results

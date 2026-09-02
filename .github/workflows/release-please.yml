@@ -45,6 +45,9 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+    env:
+      GO_LICENSES_VERSION: v1.6.0
+      GOPROXY: https://proxy.golang.org,direct
     steps:
       - name: Use HTTPS instead of SSH for Git cloning
         run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
@@ -54,21 +57,33 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go
+        id: setup-go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "^1.26"
+          cache-dependency-path: |
+            go.sum
+            tools/openapi-assemble/go.sum
+            tools/pre-mailer/go.sum
+
+      - name: Cache go-licenses
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .ort/bin
+          key: go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-${{ steps.setup-go.outputs.go-version }}
+          restore-keys: |
+            go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-
 
       - name: Cache ORT ScanCode results
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .ort/scanner
-          key: ort-scancode-projects-92.4.0-${{ hashFiles('go.mod', 'web/package.json', 'website/package.json', 'build/email/package.json') }}
+          key: ort-scancode-projects-92.4.0-${{ github.sha }}
           restore-keys: |
             ort-scancode-projects-92.4.0-
 
       - name: Run ORT
-        env:
-          GOPROXY: https://proxy.golang.org,direct
         run: make ort
 
       - name: Upload legal bundle to the draft release

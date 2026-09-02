@@ -6,13 +6,14 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]:-$0}")/../common.sh"
 
 # Pin image and ort-config together. Update both when bumping ORT.
-# Full image (ScanCode). Digest for 92.4.0: sha256:748afc9d459f6d2bb1dde90fe4bc378d8ea2c756f8c5e19607290ae42446a1d1
-ORT_IMAGE="${ORT_IMAGE:-ghcr.io/oss-review-toolkit/ort:92.4.0}"
+# Minimal image includes Go, PNPM, and ScanCode. Digest for 92.4.0:
+# sha256:770bdd803a77c6754ccf59baa78954754f71590fb27dcf7d5e5992f85ac445b3
+ORT_IMAGE="${ORT_IMAGE:-ghcr.io/oss-review-toolkit/ort-minimal:92.4.0@sha256:770bdd803a77c6754ccf59baa78954754f71590fb27dcf7d5e5992f85ac445b3}"
 ORT_CONFIG_REPO="${ORT_CONFIG_REPO:-https://github.com/oss-review-toolkit/ort-config.git}"
 ORT_CONFIG_REVISION="${ORT_CONFIG_REVISION:-ec122d3426571afe84344a83d5e16c99cda20325}"
 ORT_JAVA_OPTIONS="${ORT_JAVA_OPTIONS:--Xmx8192m}"
 GO_LICENSES_VERSION="${GO_LICENSES_VERSION:-v1.6.0}"
-# CI scans Elemo source only. Full dependency ScanCode is opt-in (too slow for PR CI).
+# Full CI scans Elemo source only. Full dependency ScanCode is opt-in (too slow for CI).
 ORT_SCAN_PACKAGE_TYPES="${ORT_SCAN_PACKAGE_TYPES:-PROJECT}"
 
 ORT_DIR="${ROOT_DIR}/.ort"
@@ -38,7 +39,7 @@ overlay_policy() {
 
 usage() {
   cat <<'EOF'
-Usage: scripts/ort/ort.sh [prepare|analyze|scan|evaluate|advise|report|run]
+Usage: scripts/ort/ort.sh [prepare|analyze|scan|evaluate|advise|report|pr|run]
 
   prepare   Fetch pinned ort-config and overlay Elemo policy files
   analyze   Run the ORT analyzer
@@ -46,6 +47,7 @@ Usage: scripts/ort/ort.sh [prepare|analyze|scan|evaluate|advise|report|run]
   evaluate  Run the ORT evaluator (policy rules)
   advise    Run the ORT advisor (OSV; reported, not a gate)
   report    Generate SPDX, CycloneDX, WebApp, NOTICE, and the legal/ bundle
+  pr        prepare + analyze + evaluate (PR policy gate; no ScanCode)
   run       prepare + analyze + scan + evaluate + advise + report (default)
 
 ScanCode on every dependency is too slow for CI. Default scan is --package-types PROJECT.
@@ -85,13 +87,27 @@ EOF
   success "ORT config ready"
 }
 
+host_go_cache_dirs() {
+  local gomodcache gocache
+  if command -v go >/dev/null 2>&1; then
+    gomodcache="$(go env GOMODCACHE)"
+    gocache="$(go env GOCACHE)"
+  fi
+  HOST_GOMODCACHE="${gomodcache:-${ORT_DIR}/gomodcache}"
+  HOST_GOCACHE="${gocache:-${ORT_DIR}/gocache}"
+}
+
 run_ort() {
   checkInstalled docker
 
-  # Caches live on the host-owned .ort mount so the container can run as the
-  # invoking user (PNPM stash + go list write to the project / module cache).
+  host_go_cache_dirs
+
+  # Caches live on host-owned mounts so the container can run as the invoking
+  # user (PNPM stash + go list write to the project / module cache). Reuse the
+  # host Go module cache when available so analyze does not re-download what
+  # setup-go and go-licenses already populated.
   mkdir -p "${ORT_CONFIG_DIR}" "${ORT_RESULTS_DIR}" \
-    "${ORT_DIR}/gopath" "${ORT_DIR}/gomodcache" "${ORT_DIR}/gocache"
+    "${ORT_DIR}/gopath" "${HOST_GOMODCACHE}" "${HOST_GOCACHE}"
 
   # Image user `ort` is uid 1000; CI (and local) often run as another uid.
   # Bind-mount a writable home so that uid can traverse /home/ort to reach
@@ -118,6 +134,8 @@ run_ort() {
     -e GOCACHE="${ORT_CONTAINER_DATA_DIR}/gocache" \
     -v "${container_home}:${ORT_CONTAINER_HOME}" \
     -v "${ORT_DIR}:${ORT_CONTAINER_DATA_DIR}" \
+    -v "${HOST_GOMODCACHE}:${ORT_CONTAINER_DATA_DIR}/gomodcache" \
+    -v "${HOST_GOCACHE}:${ORT_CONTAINER_DATA_DIR}/gocache" \
     -v "${ROOT_DIR}:${ORT_CONTAINER_PROJECT_DIR}" \
     -w "${ORT_CONTAINER_PROJECT_DIR}" \
     "${ORT_IMAGE}" \
@@ -158,7 +176,8 @@ restore_workspace_files() {
 }
 
 analyze() {
-  log "running ORT analyzer"
+  host_go_cache_dirs
+  log "running ORT analyzer (GOMODCACHE=${HOST_GOMODCACHE})"
   local exit_code=0
   local snapshot_dir
   snapshot_dir="$(mktemp -d "${TMPDIR:-/tmp}/ort-workspace.XXXXXX")"
@@ -290,11 +309,17 @@ ort_eval_input() {
 }
 
 evaluate() {
-  log "running ORT evaluator"
   overlay_policy
-  local input
+  local input="${1:-}"
   local curations_args=()
-  input="$(ort_eval_input)"
+  if [[ -n "${input}" ]]; then
+    if [[ ! -f "${ORT_RESULTS_DIR}/${input}" ]]; then
+      error "${input} not found; run analyze first"
+    fi
+  else
+    input="$(ort_eval_input)"
+  fi
+  log "running ORT evaluator (${input})"
   if [[ -f "${ORT_DIR}/go-license-curations.yml" ]]; then
     curations_args+=(--package-curations-file "${ORT_CONTAINER_DATA_DIR}/go-license-curations.yml")
   fi
@@ -399,6 +424,21 @@ report() {
   success "reporter finished; results in ${ORT_RESULTS_DIR} (legal bundle in ${ORT_RESULTS_DIR}/legal)"
 }
 
+run_pr() {
+  prepare
+  curate_go_licenses
+  analyze
+
+  local evaluate_exit=0
+  # Force analyzer-result.json so a leftover local scan-result.json cannot
+  # change the PR policy-gate input.
+  evaluate analyzer-result.json || evaluate_exit=$?
+
+  if [[ "${evaluate_exit}" -ne 0 ]]; then
+    exit "${evaluate_exit}"
+  fi
+}
+
 run_all() {
   prepare
   curate_go_licenses
@@ -441,6 +481,9 @@ case "${command}" in
     ;;
   report)
     report
+    ;;
+  pr)
+    run_pr
     ;;
   run)
     run_all
