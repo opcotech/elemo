@@ -26,7 +26,7 @@ const accountingZip = path.join(
 test.describe("@plugins.accounting Accounting plugin", () => {
   test.skip(
     !existsSync(timeTrackingZip) || !existsSync(accountingZip),
-    "plugin zips missing; run make plugins.timetracking plugins.accounting"
+    "plugin zips missing; run make plugins"
   );
 
   let workspace: OwnerWorkspace;

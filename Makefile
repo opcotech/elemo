@@ -3,6 +3,7 @@
 ROOT_DIR:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(ROOT_DIR)/build
 SCRIPTS_DIR:=$(ROOT_DIR)/scripts
+PLUGINS_DIR:=$(ROOT_DIR)/plugins
 TEMPLATES_DIR:=$(ROOT_DIR)/templates
 API_DIR:=$(ROOT_DIR)/api/openapi
 API_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/api
@@ -95,27 +96,12 @@ build.frontend: ## Build front-end app
 	$(call log, build front-end app)
 	@$(PNPM_RUN) build
 
-.PHONY: plugins.timetracking
-plugins.timetracking: ## Build the Time Tracking reference plugin zip
-	$(call log, build com.elemo.timetracking plugin)
-	@mkdir -p '$(BUILD_DIR)/plugins' '$(ROOT_DIR)/plugins/timetracking/backend'
-	@CGO_ENABLED=0 GOOS=wasip1 GOARCH=wasm $(GO_EXEC) -C '$(ROOT_DIR)/plugins/timetracking' build -buildmode=c-shared -o backend/plugin.wasm .
-	@rm -f '$(ROOT_DIR)/plugins/timetracking/backend/plugin.h'
-	@cd '$(ROOT_DIR)/web' && NODE_ENV=production $(PNPM_EXEC) exec vite build --config '../plugins/timetracking/frontend/vite.config.ts'
-	@rm -f '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip'
-	@cd '$(ROOT_DIR)/plugins/timetracking' && zip -q '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip' plugin.yaml backend/plugin.wasm frontend/index.js
-	@echo '$(BUILD_DIR)/plugins/com.elemo.timetracking.zip'
-
-.PHONY: plugins.accounting
-plugins.accounting: ## Build the Accounting reference plugin zip
-	$(call log, build com.elemo.accounting plugin)
-	@mkdir -p '$(BUILD_DIR)/plugins' '$(ROOT_DIR)/plugins/accounting/backend'
-	@CGO_ENABLED=0 GOOS=wasip1 GOARCH=wasm $(GO_EXEC) -C '$(ROOT_DIR)/plugins/accounting' build -buildmode=c-shared -o backend/plugin.wasm .
-	@rm -f '$(ROOT_DIR)/plugins/accounting/backend/plugin.h'
-	@cd '$(ROOT_DIR)/web' && NODE_ENV=production $(PNPM_EXEC) exec vite build --config '../plugins/accounting/frontend/vite.config.ts'
-	@rm -f '$(BUILD_DIR)/plugins/com.elemo.accounting.zip'
-	@cd '$(ROOT_DIR)/plugins/accounting' && zip -q '$(BUILD_DIR)/plugins/com.elemo.accounting.zip' plugin.yaml backend/plugin.wasm frontend/index.js
-	@echo '$(BUILD_DIR)/plugins/com.elemo.accounting.zip'
+.PHONY: plugins
+plugins: ## Build all plugin zips
+	@find '$(PLUGINS_DIR)' -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r plugin_dir; do \
+		if [ ! -f "$$plugin_dir/Makefile" ]; then continue; fi; \
+		$(MAKE) -C "$$plugin_dir" GO_EXEC='$(GO_EXEC)' PNPM_EXEC='$(PNPM_EXEC)' BUILD_DIR='$(BUILD_DIR)' || exit 1; \
+	done
 
 .PHONY: dev
 dev: start.backend dev.frontend ## Start backend and front-end for development
@@ -139,7 +125,7 @@ start.monitoring: ## Start Jaeger/Prometheus/Grafana monitoring stack
 	@docker compose -f deploy/docker/docker-compose.monitoring.yml up -d --force-recreate
 
 .PHONY: start.frontend
-start.frontend: build.frontend ## Start front-end app
+start.frontend: ## Start front-end app
 	$(call log, starting front-end app)
 	@$(PNPM_RUN) start
 

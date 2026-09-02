@@ -76,7 +76,7 @@ feedback. To get started with contributing:
 
 Configuration for codespaces/dev containers are available. For more information check out the related [documentation](https://github.com/opcotech/elemo/blob/main/docs/guides/01-devcontainer.md).
 
-Plugin authors should start with the [plugin developer guide](docs/guides/plugins.md).
+Plugin authors should start with the [plugin developer guide](docs/guides/02-plugins.md).
 
 ## License
 

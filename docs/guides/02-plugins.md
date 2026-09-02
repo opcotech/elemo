@@ -208,13 +208,20 @@ allows only administrator-installed packages. Iframe sandbox is not built.
 
 ## Reference plugins
 
-Build the Time Tracking zip:
+Build the reference plugin zips (one archive per plugin under `build/plugins/`):
 
 ```bash
-make plugins.timetracking
+make plugins
 ```
 
-The archive is written to `build/plugins/com.elemo.timetracking.zip`.
+Each plugin has its own Makefile. To build a single plugin:
+
+```bash
+make -C plugins/timetracking
+make -C plugins/accounting
+```
+
+Time Tracking is written to `build/plugins/com.elemo.timetracking.zip`.
 Install it from **Settings → Plugins**, then enable it on an organization.
 Open a work item: the sidebar timer (per user) writes a `TimeEntry` with
 `seconds`, optional `note` (description), and host-stamped `user_id`. Stop
@@ -231,13 +238,7 @@ entries sit in bordered sections under that. The sidebar timer card does
 not link to the report; per-user totals sit in a headerless table under
 the card.
 
-Build the Accounting zip:
-
-```bash
-make plugins.accounting
-```
-
-The archive is written to `build/plugins/com.elemo.accounting.zip`. Enable
+Accounting is written to `build/plugins/com.elemo.accounting.zip`. Enable
 it on an organization, then bind **Time source** on the activation page to
 `com.elemo.timetracking` / `TimeEntry` (or another plugin kind that
 matches the `LoggedTime` foreign shape). Chart of accounts and hour

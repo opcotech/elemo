@@ -18,7 +18,7 @@ const pluginZip = path.resolve(
 test.describe("@plugins.timetracking Time Tracking plugin", () => {
   test.skip(
     !existsSync(pluginZip),
-    "build/plugins/com.elemo.timetracking.zip is missing; run make plugins.timetracking"
+    "build/plugins/com.elemo.timetracking.zip is missing; run make plugins"
   );
 
   let workspace: OwnerWorkspace;
