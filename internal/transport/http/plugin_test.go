@@ -934,8 +934,11 @@ func TestPluginController_ServePluginAsset(t *testing.T) {
 		path := filepath.Join(dir, "index.js")
 		require.NoError(t, os.WriteFile(path, []byte("export default {}"), 0o600))
 
+		f, err := os.Open(path)
+		require.NoError(t, err)
+
 		svc := mocksvc.NewMockPluginService(ctrl)
-		svc.EXPECT().AssetPath(gomock.Any(), "com.elemo.timetracking", "1.0.0", "frontend/index.js").Return(path, nil)
+		svc.EXPECT().OpenAsset(gomock.Any(), "com.elemo.timetracking", "1.0.0", "frontend/index.js").Return(f, nil)
 		c := newTestPluginController(t, svc)
 
 		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/plugins/com.elemo.timetracking/assets/1.0.0/frontend/index.js", nil)
@@ -967,7 +970,7 @@ func TestPluginController_ServePluginAsset(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		svc := mocksvc.NewMockPluginService(ctrl)
-		svc.EXPECT().AssetPath(gomock.Any(), "com.elemo.timetracking", "1.0.0", "missing.js").Return("", repository.ErrNotFound)
+		svc.EXPECT().OpenAsset(gomock.Any(), "com.elemo.timetracking", "1.0.0", "missing.js").Return(nil, repository.ErrNotFound)
 		c := newTestPluginController(t, svc)
 		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 		rctx := chi.NewRouteContext()

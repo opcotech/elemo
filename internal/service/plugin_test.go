@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -234,6 +236,18 @@ func writeFrontendAsset(t *testing.T) string {
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
 	require.NoError(t, os.WriteFile(path, []byte("export default {}"), 0o600))
 	return root
+}
+
+func assertInsideRoot(t *testing.T, root, path string) {
+	t.Helper()
+	absRoot, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err)
+	absPath, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+	rel, err := filepath.Rel(absRoot, absPath)
+	require.NoError(t, err)
+	assert.NotEqual(t, "..", rel)
+	assert.False(t, strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 func TestNewPluginService(t *testing.T) {
@@ -541,6 +555,9 @@ func TestPluginService_AssetPath(t *testing.T) {
 		{name: "failed", status: model.PluginStatusFailed, version: manifest.Version, rel: "frontend/index.js"},
 		{name: "disabled", status: model.PluginStatusDisabled, version: manifest.Version, rel: "frontend/index.js", wantErr: repository.ErrNotFound},
 		{name: "version mismatch", status: model.PluginStatusActive, version: "9.9.9", rel: "frontend/index.js", wantErr: repository.ErrNotFound},
+		{name: "missing file", status: model.PluginStatusInstalled, version: manifest.Version, rel: "frontend/missing.js", wantErr: repository.ErrNotFound},
+		{name: "directory", status: model.PluginStatusInstalled, version: manifest.Version, rel: "frontend", wantErr: repository.ErrNotFound},
+		{name: "path traversal", status: model.PluginStatusInstalled, version: manifest.Version, rel: "../secret", wantErr: repository.ErrNotFound},
 	}
 
 	for _, tt := range tests {
@@ -563,8 +580,46 @@ func TestPluginService_AssetPath(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.FileExists(t, path)
+			assertInsideRoot(t, root, path)
 		})
 	}
+}
+
+func TestPluginService_OpenAsset(t *testing.T) {
+	t.Parallel()
+
+	manifest := frontendPluginManifest()
+	require.NoError(t, manifest.Validate())
+
+	t.Run("reads confined file", func(t *testing.T) {
+		t.Parallel()
+		ctx, _, _, _, _, svc := newPluginServiceHarness(t)
+		root := writeFrontendAsset(t)
+		putRegistryPlugin(t, svc, nil, manifest, root, model.PluginStatusInstalled)
+
+		f, err := svc.OpenAsset(ctx, manifest.ID, manifest.Version, "frontend/index.js")
+		require.NoError(t, err)
+		defer f.Close()
+
+		data, err := io.ReadAll(f)
+		require.NoError(t, err)
+		assert.Equal(t, "export default {}", string(data))
+
+		assertInsideRoot(t, root, f.Name())
+	})
+
+	t.Run("rejects traversal", func(t *testing.T) {
+		t.Parallel()
+		ctx, _, _, _, _, svc := newPluginServiceHarness(t)
+		root := writeFrontendAsset(t)
+		putRegistryPlugin(t, svc, nil, manifest, root, model.PluginStatusInstalled)
+
+		f, err := svc.OpenAsset(ctx, manifest.ID, manifest.Version, "../secret")
+		require.Error(t, err)
+		assert.Nil(t, f)
+		assert.ErrorIs(t, err, service.ErrPluginAsset)
+		assert.ErrorIs(t, err, repository.ErrNotFound)
+	})
 }
 
 func TestPluginService_Enable(t *testing.T) {

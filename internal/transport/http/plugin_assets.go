@@ -22,7 +22,7 @@ func (c *pluginController) ServePluginAsset(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	path, err := c.pluginService.AssetPath(ctx, pluginID, version, rel)
+	f, err := c.pluginService.OpenAsset(ctx, pluginID, version, rel)
 	if err != nil {
 		switch classifyServiceError(err) {
 		case http.StatusNotFound, http.StatusBadRequest, http.StatusForbidden:
@@ -33,12 +33,24 @@ func (c *pluginController) ServePluginAsset(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			c.logger.Error(ctx, "failed to close plugin asset", log.WithError(cerr))
+		}
+	}()
+
+	info, err := f.Stat()
+	if err != nil {
+		c.logger.Error(ctx, "failed to stat plugin asset", log.WithError(err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	setCommonHeaders(w)
-	w.Header().Set("Content-Type", pluginAssetContentType(path))
+	w.Header().Set("Content-Type", pluginAssetContentType(rel))
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	http.ServeFile(w, r, path) //nolint:gosec // path is confined by safepath.Normalize in AssetPath
+	http.ServeContent(w, r, filepath.Base(rel), info.ModTime(), f)
 }
 
 func pluginAssetContentType(path string) string {

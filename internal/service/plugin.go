@@ -9,6 +9,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -84,6 +85,7 @@ type PluginService interface {
 	SetConfig(ctx context.Context, pluginID string, scope model.ID, config json.RawMessage) error
 	Invoke(ctx context.Context, pluginID string, req elemoplugin.InvokeRequest) (elemoplugin.InvokeResponse, error)
 	AssetPath(ctx context.Context, pluginID, version, rel string) (string, error)
+	OpenAsset(ctx context.Context, pluginID, version, rel string) (*os.File, error)
 	Restore(ctx context.Context) error
 
 	CreateNode(ctx context.Context, pluginID string, opts CreateExtensionNodeOpts) (*model.Extension, error)
@@ -611,29 +613,59 @@ func (s *pluginService) Invoke(
 	return resp, nil
 }
 
-func (s *pluginService) AssetPath(ctx context.Context, pluginID, version, rel string) (string, error) {
+func (s *pluginService) AssetPath(ctx context.Context, pluginID, version, rel string) (path string, err error) {
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/AssetPath")
 	defer span.End()
+
+	f, err := s.OpenAsset(ctx, pluginID, version, rel)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+	}()
+	return f.Name(), nil
+}
+
+func (s *pluginService) OpenAsset(ctx context.Context, pluginID, version, rel string) (*os.File, error) {
+	ctx, span := s.tracer.Start(ctx, "service.pluginService/OpenAsset")
+	defer span.End()
 	if err := ctx.Err(); err != nil {
-		return "", errors.Join(ErrPluginAsset, err)
+		return nil, errors.Join(ErrPluginAsset, err)
 	}
 
 	loaded, ok := s.registry.Get(pluginID)
 	if !ok || loaded.Version != version {
-		return "", errors.Join(ErrPluginAsset, repository.ErrNotFound)
+		return nil, errors.Join(ErrPluginAsset, repository.ErrNotFound)
 	}
 	if !loaded.Status.ServesFrontend() {
-		return "", errors.Join(ErrPluginAsset, repository.ErrNotFound)
+		return nil, errors.Join(ErrPluginAsset, repository.ErrNotFound)
 	}
-	path, err := safepath.Normalize(loaded.Root, rel)
+
+	rel = strings.ReplaceAll(rel, "\\", "/")
+	rel = strings.TrimPrefix(rel, "./")
+	if rel == "" || strings.HasSuffix(rel, "/") || !filepath.IsLocal(rel) {
+		return nil, errors.Join(ErrPluginAsset, safepath.ErrPathTraversal, repository.ErrNotFound)
+	}
+
+	root, err := os.OpenRoot(loaded.Root)
 	if err != nil {
-		return "", errors.Join(ErrPluginAsset, err)
+		return nil, errors.Join(ErrPluginAsset, err)
 	}
-	info, err := os.Stat(path)
+	defer root.Close()
+
+	name := filepath.FromSlash(rel)
+	info, err := root.Stat(name)
 	if err != nil || info.IsDir() {
-		return "", errors.Join(ErrPluginAsset, repository.ErrNotFound)
+		return nil, errors.Join(ErrPluginAsset, repository.ErrNotFound)
 	}
-	return path, nil
+	f, err := root.Open(name)
+	if err != nil {
+		return nil, errors.Join(ErrPluginAsset, repository.ErrNotFound)
+	}
+	return f, nil
 }
 
 func (s *pluginService) Restore(ctx context.Context) error {

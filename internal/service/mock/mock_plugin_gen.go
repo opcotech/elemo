@@ -12,6 +12,7 @@ package mocksvc
 import (
 	context "context"
 	json "encoding/json"
+	os "os"
 	reflect "reflect"
 
 	model "github.com/opcotech/elemo/internal/model"
@@ -324,6 +325,21 @@ func (m *MockPluginService) MoveNode(ctx context.Context, pluginID string, id, p
 func (mr *MockPluginServiceMockRecorder) MoveNode(ctx, pluginID, id, parent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveNode", reflect.TypeOf((*MockPluginService)(nil).MoveNode), ctx, pluginID, id, parent)
+}
+
+// OpenAsset mocks base method.
+func (m *MockPluginService) OpenAsset(ctx context.Context, pluginID, version, rel string) (*os.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OpenAsset", ctx, pluginID, version, rel)
+	ret0, _ := ret[0].(*os.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OpenAsset indicates an expected call of OpenAsset.
+func (mr *MockPluginServiceMockRecorder) OpenAsset(ctx, pluginID, version, rel any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenAsset", reflect.TypeOf((*MockPluginService)(nil).OpenAsset), ctx, pluginID, version, rel)
 }
 
 // Restore mocks base method.

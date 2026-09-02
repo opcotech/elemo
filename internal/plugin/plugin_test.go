@@ -95,6 +95,58 @@ func TestExtractZip_RejectsTraversal(t *testing.T) {
 	dir := t.TempDir()
 	_, err = plugin.ExtractZip(buf.Bytes(), dir)
 	require.Error(t, err)
+	assert.ErrorIs(t, err, plugin.ErrPackageInvalid)
+	assert.NoFileExists(t, filepath.Join(filepath.Dir(dir), "evil.yaml"))
+}
+
+func TestExtractZip_RejectsAbsolutePath(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create("/tmp/evil.yaml")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("nope"))
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+
+	_, err = plugin.ExtractZip(buf.Bytes(), t.TempDir())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, plugin.ErrPackageInvalid)
+}
+
+func TestExtractZip_RejectsSymlink(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	header := &zip.FileHeader{Name: "link"}
+	header.SetMode(os.ModeSymlink | 0o644)
+	w, err := zw.CreateHeader(header)
+	require.NoError(t, err)
+	_, err = w.Write([]byte("/etc/passwd"))
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+
+	_, err = plugin.ExtractZip(buf.Bytes(), t.TempDir())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, plugin.ErrPackageInvalid)
+}
+
+func TestExtractZip_RejectsOversizedFile(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create("plugin.yaml")
+	require.NoError(t, err)
+	_, err = w.Write(make([]byte, 24<<20+1))
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+
+	_, err = plugin.ExtractZip(buf.Bytes(), t.TempDir())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, plugin.ErrPackageTooLarge)
 }
 
 func TestExtractZip_Valid(t *testing.T) {

@@ -127,7 +127,7 @@ describe("plugin host", () => {
   });
 
   it("reads default or plugin module exports", () => {
-    const def = { activate: () => undefined };
+    const def = { id: "com.example", activate: () => undefined };
     expect(pluginDefinitionFromModule({ default: def })).toBe(def);
     expect(pluginDefinitionFromModule({ plugin: def })).toBe(def);
     expect(pluginDefinitionFromModule({})).toBeUndefined();

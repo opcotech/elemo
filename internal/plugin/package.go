@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/opcotech/elemo/internal/model"
-	"github.com/opcotech/elemo/internal/pkg/safepath"
 )
 
 const (
@@ -57,6 +56,11 @@ func ExtractZip(zipBytes []byte, dest string) (ExtractedPackage, error) {
 	if err := os.MkdirAll(dest, 0o750); err != nil {
 		return ExtractedPackage{}, err
 	}
+	root, err := os.OpenRoot(dest)
+	if err != nil {
+		return ExtractedPackage{}, err
+	}
+	defer root.Close()
 
 	var foundManifest bool
 	for _, file := range reader.File {
@@ -68,15 +72,16 @@ func ExtractZip(zipBytes []byte, dest string) (ExtractedPackage, error) {
 		if strings.HasPrefix(filepath.Base(name), ".") {
 			continue
 		}
-
-		target, err := safepath.Normalize(dest, name)
-		if err != nil {
-			return ExtractedPackage{}, errors.Join(ErrPackageInvalid, err)
+		if !filepath.IsLocal(name) {
+			return ExtractedPackage{}, ErrPackageInvalid
+		}
+		if !file.Mode().IsRegular() {
+			return ExtractedPackage{}, ErrPackageInvalid
 		}
 		if file.UncompressedSize64 > maxFileBytes {
 			return ExtractedPackage{}, ErrPackageTooLarge
 		}
-		if err := writeZipFile(file, target); err != nil {
+		if err := writeZipFile(root, file, filepath.FromSlash(name)); err != nil {
 			return ExtractedPackage{}, errors.Join(ErrPackageInvalid, err)
 		}
 		if filepath.Base(name) == model.PluginManifestFileName {
@@ -108,27 +113,39 @@ func ExtractZip(zipBytes []byte, dest string) (ExtractedPackage, error) {
 	return ExtractedPackage{Root: dest, Manifest: manifest}, nil
 }
 
-func writeZipFile(file *zip.File, target string) error {
-	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
-		return err
+func writeZipFile(root *os.Root, file *zip.File, name string) (err error) {
+	dir := filepath.Dir(name)
+	if dir != "." {
+		if err := root.MkdirAll(dir, 0o750); err != nil {
+			return err
+		}
 	}
+
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o640)
+	dst, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o640)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func() {
+		if cerr := dst.Close(); err == nil {
+			err = cerr
+		}
+	}()
 
 	if file.UncompressedSize64 > uint64(math.MaxInt64)-1 {
 		return ErrPackageTooLarge
 	}
-	if _, err := io.CopyN(dst, src, int64(file.UncompressedSize64)+1); err != nil && !errors.Is(err, io.EOF) { //nolint:gosec // UncompressedSize64 is capped below MaxInt64
-		return err
+	n, copyErr := io.CopyN(dst, src, int64(file.UncompressedSize64)+1) //nolint:gosec // UncompressedSize64 is capped below MaxInt64
+	if copyErr != nil && !errors.Is(copyErr, io.EOF) {
+		return copyErr
+	}
+	if n > int64(file.UncompressedSize64) {
+		return ErrPackageTooLarge
 	}
 	return nil
 }
