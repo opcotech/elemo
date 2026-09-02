@@ -82,6 +82,21 @@ func (s *IssueRepositoryIntegrationTestSuite) TestCreate() {
 	s.Assert().Equal(int64(1), *issue.WatcherCount)
 }
 
+func (s *IssueRepositoryIntegrationTestSuite) TestCreateWithProvidedID() {
+	id := model.MustNewID(model.ResourceTypeIssue)
+	opts := s.createOpts
+	opts.ID = &id
+
+	created, err := s.IssueRepo.Create(context.Background(), opts)
+	s.Require().NoError(err)
+	s.Assert().Equal(id, created.ID)
+
+	again, err := s.IssueRepo.Create(context.Background(), opts)
+	s.Require().NoError(err)
+	s.Assert().Equal(created.ID, again.ID)
+	s.Assert().Equal(created.NumericID, again.NumericID)
+}
+
 func (s *IssueRepositoryIntegrationTestSuite) TestCreateSequentialNumericIDs() {
 	first, err := s.IssueRepo.Create(context.Background(), s.createOpts)
 	s.Require().NoError(err)

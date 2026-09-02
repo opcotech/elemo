@@ -152,6 +152,34 @@ func TestReadActionFor(t *testing.T) {
 	}
 }
 
+func TestUpdateActionFor(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		resource  ResourceType
+		want      Action
+		wantFound bool
+	}{
+		{"organization", ResourceTypeOrganization, ActionOrganizationUpdate, true},
+		{"namespace", ResourceTypeNamespace, ActionNamespaceUpdate, true},
+		{"project", ResourceTypeProject, ActionProjectUpdate, true},
+		{"issue", ResourceTypeIssue, ActionIssueUpdate, true},
+		{"document", ResourceTypeDocument, ActionDocumentUpdate, true},
+		{"folder", ResourceTypeFolder, ActionDocumentUpdate, true},
+		{"user", ResourceTypeUser, "", false},
+		{"custom field", ResourceTypeCustomFieldDefinition, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := UpdateActionFor(tt.resource)
+			assert.Equal(t, tt.wantFound, ok)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestRoleTemplateByKey_KnownTemplates(t *testing.T) {
 	t.Parallel()
 

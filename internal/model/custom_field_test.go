@@ -74,6 +74,36 @@ func TestNewCustomFieldDefinition(t *testing.T) {
 			wantErr: ErrInvalidCustomFieldDetails,
 		},
 		{
+			name:  "boolean field",
+			key:   "is_blocked",
+			fname: "Is blocked",
+			kind:  CustomFieldKindBoolean,
+		},
+		{
+			name:  "date field",
+			key:   "due_date",
+			fname: "Due date",
+			kind:  CustomFieldKindDate,
+		},
+		{
+			name:  "datetime field",
+			key:   "reviewed_at",
+			fname: "Reviewed at",
+			kind:  CustomFieldKindDatetime,
+		},
+		{
+			name:  "url field",
+			key:   "docs_url",
+			fname: "Docs URL",
+			kind:  CustomFieldKindURL,
+		},
+		{
+			name:  "user reference",
+			key:   "reviewer",
+			fname: "Reviewer",
+			kind:  CustomFieldKindUserReference,
+		},
+		{
 			name:  "resource reference to team",
 			key:   "sprint_team",
 			fname: "Sprint team",
@@ -182,6 +212,104 @@ func TestCustomFieldDefinition_Validate(t *testing.T) {
 		def.TargetType = ResourceTypeLabel
 		require.ErrorIs(t, def.Validate(), ErrInvalidCustomFieldDetails)
 	})
+
+	t.Run("text min exceeds max", func(t *testing.T) {
+		t.Parallel()
+		minLen, maxLen := 10, 3
+		_, err := NewCustomFieldDefinition(
+			"notes",
+			"Notes",
+			CustomFieldKindText,
+			testScope(),
+			testOwner(),
+			ResourceTypeIssue,
+			CustomFieldSchema{Text: &CustomFieldTextSchema{MinLength: &minLen, MaxLength: &maxLen}},
+		)
+		require.ErrorIs(t, err, ErrInvalidCustomFieldDetails)
+	})
+
+	t.Run("decimal scale too large", func(t *testing.T) {
+		t.Parallel()
+		scale := 40
+		_, err := NewCustomFieldDefinition(
+			"estimate",
+			"Estimate",
+			CustomFieldKindDecimal,
+			testScope(),
+			testOwner(),
+			ResourceTypeIssue,
+			CustomFieldSchema{Decimal: &CustomFieldDecimalSchema{Scale: &scale}},
+		)
+		require.ErrorIs(t, err, ErrInvalidCustomFieldDetails)
+	})
+
+	t.Run("duplicate select keys", func(t *testing.T) {
+		t.Parallel()
+		_, err := NewCustomFieldDefinition(
+			"env",
+			"Environment",
+			CustomFieldKindSingleSelect,
+			testScope(),
+			testOwner(),
+			ResourceTypeIssue,
+			CustomFieldSchema{Select: &CustomFieldSelectSchema{
+				Options: []CustomFieldOption{
+					{Key: "prod", Label: "Production"},
+					{Key: "prod", Label: "Prod"},
+				},
+			}},
+		)
+		require.ErrorIs(t, err, ErrInvalidCustomFieldDetails)
+	})
+
+	t.Run("all select options disabled", func(t *testing.T) {
+		t.Parallel()
+		_, err := NewCustomFieldDefinition(
+			"env",
+			"Environment",
+			CustomFieldKindSingleSelect,
+			testScope(),
+			testOwner(),
+			ResourceTypeIssue,
+			CustomFieldSchema{Select: &CustomFieldSelectSchema{
+				Options: []CustomFieldOption{
+					{Key: "legacy", Label: "Legacy", Disabled: true},
+				},
+			}},
+		)
+		require.ErrorIs(t, err, ErrInvalidCustomFieldDetails)
+	})
+
+	t.Run("empty url schemes", func(t *testing.T) {
+		t.Parallel()
+		_, err := NewCustomFieldDefinition(
+			"docs_url",
+			"Docs URL",
+			CustomFieldKindURL,
+			testScope(),
+			testOwner(),
+			ResourceTypeIssue,
+			CustomFieldSchema{URL: &CustomFieldURLSchema{AllowedSchemes: []string{}}},
+		)
+		require.ErrorIs(t, err, ErrInvalidCustomFieldDetails)
+	})
+}
+
+func TestCustomFieldKind_IsMultiValued(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, CustomFieldKindMultiSelect.IsMultiValued(CustomFieldSchema{}))
+	assert.False(t, CustomFieldKindSingleSelect.IsMultiValued(CustomFieldSchema{}))
+	assert.False(t, CustomFieldKindUserReference.IsMultiValued(CustomFieldSchema{
+		UserReference: &CustomFieldUserReferenceSchema{},
+	}))
+	assert.True(t, CustomFieldKindUserReference.IsMultiValued(CustomFieldSchema{
+		UserReference: &CustomFieldUserReferenceSchema{Multiple: true},
+	}))
+	assert.True(t, CustomFieldKindResourceReference.IsMultiValued(CustomFieldSchema{
+		ResourceReference: &CustomFieldResourceReferenceSchema{Multiple: true},
+	}))
+	assert.False(t, CustomFieldKindText.IsMultiValued(CustomFieldSchema{}))
 }
 
 func TestCustomFieldDefinition_ArchiveAndDelete(t *testing.T) {
@@ -335,17 +463,7 @@ func TestCustomFieldDefinition_IdentityEquals(t *testing.T) {
 	assert.True(t, a.IdentityEquals(&b))
 	b.Key = "points"
 	assert.False(t, a.IdentityEquals(&b))
-}
-
-func TestUpdateActionFor(t *testing.T) {
-	t.Parallel()
-
-	got, ok := UpdateActionFor(ResourceTypeIssue)
-	assert.True(t, ok)
-	assert.Equal(t, ActionIssueUpdate, got)
-
-	_, ok = UpdateActionFor(ResourceTypeCustomFieldDefinition)
-	assert.False(t, ok)
+	assert.False(t, a.IdentityEquals(nil))
 }
 
 func TestIsCustomFieldScopeAndTarget(t *testing.T) {

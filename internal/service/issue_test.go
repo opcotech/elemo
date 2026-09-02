@@ -751,6 +751,77 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		_, err := s.Create(ctx, projectID, opts)
 		require.NoError(t, err)
 	})
+
+	t.Run("stage error does not create issue", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(assert.AnError)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mocksvc.NewMockSearchService(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          mockrepo.NewMockIssueRepository(ctrl),
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.ErrorIs(t, err, service.ErrIssueCreate)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("joins abort error when graph create fails", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrNotFound)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().AbortForResource(ctx, gomock.Any()).Return(assert.AnError)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mocksvc.NewMockSearchService(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          issueRepo,
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.ErrorIs(t, err, service.ErrIssueCreate)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func TestIssueService_Get(t *testing.T) {
@@ -2573,6 +2644,48 @@ func TestIssueService_Delete(t *testing.T) {
 				id:  issueID,
 			},
 			wantErr: repository.ErrIssueDelete,
+		},
+		{
+			name: "warns when custom field delete fails",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) issueServiceDeps {
+					span := mocktrace.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mocktrace.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+
+					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+					issueRepo.EXPECT().Delete(ctx, id).Return(nil)
+
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+					cfSvc.EXPECT().DeleteForResource(ctx, id).Return(assert.AnError)
+
+					logger := mocklog.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return issueServiceDeps{
+						searchService:      mockSearchDelete(ctrl),
+						logger:             logger,
+						tracer:             tracer,
+						issueRepo:          issueRepo,
+						permissionService:  permSvc,
+						licenseService:     licenseSvc,
+						customFieldService: cfSvc,
+					}
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  issueID,
+			},
 		},
 	}
 	for _, tt := range tests {

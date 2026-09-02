@@ -9,6 +9,8 @@ import (
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
+	"github.com/opcotech/elemo/internal/service"
+	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 )
 
 func TestWithTaskLogger(t *testing.T) {
@@ -81,6 +83,43 @@ func TestWithTaskTracer(t *testing.T) {
 			err := WithTaskTracer(tt.args.tracer)(handler)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, handler.tracer)
+		})
+	}
+}
+
+func TestWithTaskCustomFieldService(t *testing.T) {
+	type args struct {
+		customFieldService service.CustomFieldService
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    service.CustomFieldService
+		wantErr error
+	}{
+		{
+			name: "create new option with custom field service",
+			args: args{
+				customFieldService: mocksvc.NewMockCustomFieldService(nil),
+			},
+			want: mocksvc.NewMockCustomFieldService(nil),
+		},
+		{
+			name: "create new option with nil custom field service",
+			args: args{
+				customFieldService: nil,
+			},
+			wantErr: ErrNoCustomFieldService,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := new(baseTaskHandler)
+			err := WithTaskCustomFieldService(tt.args.customFieldService)(handler)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, handler.customFieldService)
 		})
 	}
 }

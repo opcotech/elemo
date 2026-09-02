@@ -17,6 +17,7 @@ func TestTaskType_String(t *testing.T) {
 		{"search index task", TaskTypeSearchIndex, "search:index"},
 		{"search reindex task", TaskTypeSearchReindex, "search:reindex"},
 		{"search reindex batch task", TaskTypeSearchReindexBatch, "search:reindex_batch"},
+		{"custom field reconcile task", TaskTypeCustomFieldReconcile, "custom_field:reconcile"},
 	}
 	for _, tt := range tests {
 		tt := tt

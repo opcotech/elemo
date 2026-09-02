@@ -558,7 +558,7 @@ export function CustomFieldEditor({
           placeholder={emptyPlaceholder}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => commitIntegerDraft(draft)}
+          onBlur={(event) => commitIntegerDraft(event.currentTarget.value)}
         />
       );
     }
@@ -587,7 +587,7 @@ export function CustomFieldEditor({
           placeholder={emptyPlaceholder}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => commitDraft(draft)}
+          onBlur={(event) => commitDraft(event.currentTarget.value)}
         />
       );
     }
@@ -600,7 +600,7 @@ export function CustomFieldEditor({
           placeholder={emptyPlaceholder}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => commitDraft(draft)}
+          onBlur={(event) => commitDraft(event.currentTarget.value)}
         />
       );
   }

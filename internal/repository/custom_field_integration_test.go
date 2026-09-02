@@ -336,6 +336,68 @@ func (s *CustomFieldRepositoryIntegrationTestSuite) TestPendingOperations() {
 	s.NotEmpty(ops)
 }
 
+func (s *CustomFieldRepositoryIntegrationTestSuite) TestStageValues() {
+	ctx := context.Background()
+	def, err := s.CustomFieldRepo.CreateDefinition(ctx, testModel.NewCustomFieldDefinition(s.scope, s.owner))
+	s.Require().NoError(err)
+	resource := model.MustNewID(model.ResourceTypeIssue)
+	text := "staged-tx"
+
+	err = s.CustomFieldRepo.StageValues(ctx, resource, []repository.CustomFieldStagedWrite{{
+		Definition: def,
+		Values:     []model.CustomFieldAtomicValue{{Text: &text}},
+	}}, repository.CustomFieldOperation{
+		Kind:       repository.CustomFieldOpStageValues,
+		ResourceID: resource,
+	})
+	s.Require().NoError(err)
+
+	hidden, err := s.CustomFieldRepo.ListValues(ctx, resource, false)
+	s.Require().NoError(err)
+	s.Empty(hidden)
+
+	staged, err := s.CustomFieldRepo.ListValues(ctx, resource, true)
+	s.Require().NoError(err)
+	s.Require().Len(staged, 1)
+	s.False(staged[0].Committed)
+	s.Equal(text, *staged[0].Value.Text)
+
+	ops, err := s.CustomFieldRepo.ListPendingOperations(ctx, time.Now().UTC().Add(time.Second), 10)
+	s.Require().NoError(err)
+	s.NotEmpty(ops)
+}
+
+func (s *CustomFieldRepositoryIntegrationTestSuite) TestDeleteValues() {
+	ctx := context.Background()
+	def, err := s.CustomFieldRepo.CreateDefinition(ctx, testModel.NewCustomFieldDefinition(s.scope, s.owner))
+	s.Require().NoError(err)
+	resource := model.MustNewID(model.ResourceTypeIssue)
+	text := "remove-me"
+	s.Require().NoError(s.CustomFieldRepo.ReplaceValues(ctx, def, resource, []model.CustomFieldAtomicValue{{Text: &text}}, true))
+
+	s.Require().NoError(s.CustomFieldRepo.DeleteValues(ctx, def.ID, resource))
+	values, err := s.CustomFieldRepo.ListValues(ctx, resource, true)
+	s.Require().NoError(err)
+	s.Empty(values)
+}
+
+func (s *CustomFieldRepositoryIntegrationTestSuite) TestUpdatePendingOperations() {
+	ctx := context.Background()
+	resource := model.MustNewID(model.ResourceTypeIssue)
+	_, err := s.CustomFieldRepo.CreateOperation(ctx, repository.CustomFieldOperation{
+		Kind:       repository.CustomFieldOpStageValues,
+		ResourceID: resource,
+	})
+	s.Require().NoError(err)
+
+	s.Require().NoError(s.CustomFieldRepo.UpdatePendingOperations(ctx, resource, repository.CustomFieldOpCommitted))
+	ops, err := s.CustomFieldRepo.ListPendingOperations(ctx, time.Now().UTC().Add(time.Second), 10)
+	s.Require().NoError(err)
+	for _, op := range ops {
+		s.NotEqual(resource, op.ResourceID)
+	}
+}
+
 func TestCustomFieldRepositoryIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(CustomFieldRepositoryIntegrationTestSuite))
 }
