@@ -11,16 +11,33 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: license-check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      licenses_pr: ${{ steps.filter.outputs.licenses_pr }}
+      licenses_full: ${{ steps.filter.outputs.licenses_full }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: .github/path-filters.yml
+
   check-licenses:
     name: ORT
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    needs:
+      - changes
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.changes.outputs.licenses_pr == 'true') || (github.event_name == 'push' && needs.changes.outputs.licenses_full == 'true') }}
     env:
       GO_LICENSES_VERSION: v1.6.0
       GOPROXY: https://proxy.golang.org,direct
