@@ -1,0 +1,309 @@
+"/v1/custom-fields":
+  get:
+    summary: List custom field definitions
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldsGet
+    description: List custom-field definitions that apply at a scope, including inherited ancestors.
+    security:
+      - oauth2:
+          - custom_field.read
+    parameters:
+      - name: scope_id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Organization, namespace, or project ID that owns or inherits definitions.
+      - name: scope_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - name: target_type
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ResourceType"
+      - name: include_archived
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/CustomFieldDefinition"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  post:
+    summary: Create custom field definition
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldsCreate
+    description: Create a typed custom-field definition. The definition is immediately usable.
+    security:
+      - oauth2:
+          - custom_field
+    requestBody:
+      $ref: "#/components/requestBodies/CustomFieldCreate"
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomFieldDefinition"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/custom-fields/search":
+  post:
+    summary: Search resources by custom field
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldsSearch
+    description: Return permission-filtered resource IDs matching an indexed custom-field predicate.
+    security:
+      - oauth2:
+          - custom_field.read
+    requestBody:
+      $ref: "#/components/requestBodies/CustomFieldSearch"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomFieldSearchResult"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/custom-fields/{id}":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: Get custom field definition
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldGet
+    security:
+      - oauth2:
+          - custom_field.read
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomFieldDefinition"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  patch:
+    summary: Update custom field definition
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldUpdate
+    description: Apply constrained schema evolution. Identity fields cannot change.
+    security:
+      - oauth2:
+          - custom_field
+    requestBody:
+      $ref: "#/components/requestBodies/CustomFieldPatch"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomFieldDefinition"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  delete:
+    summary: Delete custom field definition
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldDelete
+    description: Hard-delete a definition that has no stored values.
+    security:
+      - oauth2:
+          - custom_field
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/custom-fields/{id}/archive":
+  parameters:
+    - $ref: "#/components/parameters/id"
+  post:
+    summary: Archive custom field definition
+    tags:
+      - Custom Field
+    operationId: v1CustomFieldArchive
+    description: Retire a definition. Stored values remain readable; new writes are rejected.
+    security:
+      - oauth2:
+          - custom_field
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomFieldDefinition"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/resources/{resourceType}/{id}/custom-fields":
+  parameters:
+    - name: resourceType
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/ResourceType"
+    - $ref: "#/components/parameters/id"
+  get:
+    summary: List effective custom fields
+    tags:
+      - Custom Field
+    operationId: v1ResourceCustomFieldsGet
+    description: Return inherited definitions and stored values for a resource.
+    security:
+      - oauth2:
+          - custom_field.read
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/CustomFieldEntry"
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+"/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}":
+  parameters:
+    - name: resourceType
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/ResourceType"
+    - $ref: "#/components/parameters/id"
+    - name: definitionId
+      in: path
+      required: true
+      schema:
+        type: string
+  put:
+    summary: Set custom field value
+    tags:
+      - Custom Field
+    operationId: v1ResourceCustomFieldValuePut
+    security:
+      - oauth2:
+          - custom_field
+    requestBody:
+      $ref: "#/components/requestBodies/CustomFieldValuePut"
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"
+  delete:
+    summary: Clear custom field value
+    tags:
+      - Custom Field
+    operationId: v1ResourceCustomFieldValueDelete
+    security:
+      - oauth2:
+          - custom_field
+    responses:
+      "204":
+        description: No Content
+      "400":
+        $ref: "#/components/responses/400"
+      "401":
+        $ref: "#/components/responses/401"
+      "403":
+        $ref: "#/components/responses/403"
+      "404":
+        $ref: "#/components/responses/404"
+      "500":
+        $ref: "#/components/responses/500"

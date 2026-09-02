@@ -68,6 +68,7 @@ type server struct {
 	PermissionController
 	NotificationController
 	SearchController
+	CustomFieldController
 }
 
 func (s *server) InternalErrorHandler(err error) *authErrors.Response {
@@ -110,6 +111,7 @@ type ServerDeps struct {
 	PermissionService   service.PermissionService
 	NotificationService service.NotificationService
 	SearchService       service.SearchService
+	CustomFieldService  service.CustomFieldService
 }
 
 // NewServer creates a new HTTP server.
@@ -189,6 +191,10 @@ func NewServer(deps ServerDeps, opts ...ControllerOption) (StrictServer, error) 
 		return nil, err
 	}
 
+	if s.CustomFieldController, err = NewCustomFieldController(deps.CustomFieldService, opts...); err != nil {
+		return nil, err
+	}
+
 	return s, nil
 }
 
@@ -253,6 +259,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 	router.Group(func(r chi.Router) {
 		r.Use(
 			WithTracedMiddleware(tracer, WithUserID(strictServer.ValidateBearerToken)),
+			WithTracedMiddleware(tracer, WithOAuthClientID(strictServer.ValidateBearerToken)),
 			WithTracedMiddleware(tracer, netHTTPMiddleware.OapiRequestValidatorWithOptions(swagger, &netHTTPMiddleware.Options{
 				Options: openapi3filter.Options{
 					AuthenticationFunc: func(_ context.Context, input *openapi3filter.AuthenticationInput) error {

@@ -5,8 +5,11 @@ import {
   namespacePath,
   organizationPath,
   projectPath,
+  settingsNamespaceCustomFieldsPath,
   settingsNamespacePath,
+  settingsOrganizationCustomFieldsPath,
   settingsOrganizationPath,
+  settingsProjectCustomFieldsPath,
   settingsProjectPath,
   workItemPath,
 } from "./paths";
@@ -43,11 +46,20 @@ describe("canonical browser paths", () => {
       "/settings/organizations/acme"
     );
     expect(
+      settingsOrganizationCustomFieldsPath({ organizationSlug: "acme" })
+    ).toBe("/settings/organizations/acme/custom-fields");
+    expect(
       settingsNamespacePath({
         organizationSlug: "acme",
         namespaceSlug: "platform",
       })
     ).toBe("/settings/organizations/acme/namespaces/platform");
+    expect(
+      settingsNamespaceCustomFieldsPath({
+        organizationSlug: "acme",
+        namespaceSlug: "platform",
+      })
+    ).toBe("/settings/organizations/acme/namespaces/platform/custom-fields");
     expect(
       settingsProjectPath({
         organizationSlug: "acme",
@@ -55,5 +67,14 @@ describe("canonical browser paths", () => {
         projectKey: "PLAT",
       })
     ).toBe("/settings/organizations/acme/namespaces/platform/projects/PLAT");
+    expect(
+      settingsProjectCustomFieldsPath({
+        organizationSlug: "acme",
+        namespaceSlug: "platform",
+        projectKey: "PLAT",
+      })
+    ).toBe(
+      "/settings/organizations/acme/namespaces/platform/projects/PLAT/custom-fields"
+    );
   });
 });

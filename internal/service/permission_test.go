@@ -1137,3 +1137,31 @@ func Test_permissionService_CtxUserHas_RepoErrors(t *testing.T) {
 		require.False(t, allowed)
 	})
 }
+
+func TestPermissionService_ListScopeAncestry(t *testing.T) {
+	t.Parallel()
+
+	resourceID := model.MustNewID(model.ResourceTypeIssue)
+	ctx := context.Background()
+
+	t.Run("empty ancestry is not found", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		base, repo := newPermissionTestBase(ctrl, ctx)
+		repo.EXPECT().ListScopeAncestry(gomock.Any(), resourceID).Return([]model.ID{}, nil)
+		s := func() service.PermissionService {
+			svc, err := service.NewPermissionService(
+				repo,
+				nil,
+				service.WithLogger(service.RuntimeLogger(base)),
+				service.WithTracer(service.RuntimeTracer(base)),
+			)
+			if err != nil {
+				panic(err)
+			}
+			return svc
+		}()
+		_, err := s.ListScopeAncestry(ctx, resourceID)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+	})
+}

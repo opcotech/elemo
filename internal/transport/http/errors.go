@@ -7,6 +7,7 @@ var (
 	ErrAuthNoPermission      = errors.New("no permission")                    // no permission
 	ErrInvalidSwagger        = errors.New("invalid swagger provided")         // invalid swagger provided
 	ErrNoAuthProvider        = errors.New("no auth provider provided")        // no auth provider provided
+	ErrNoCustomFieldService  = errors.New("no custom field service provided") // no custom field service provided
 	ErrNoDocumentService     = errors.New("no document service provided")     // no document service provided
 	ErrNoEmailService        = errors.New("no email service provided")        // no email service provided
 	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided

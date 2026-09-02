@@ -62,3 +62,10 @@ func newTestNamespaceController(t *testing.T, ctrl *gomock.Controller, nsSvc ser
 	require.NoError(t, err)
 	return c, os
 }
+
+func newTestCustomFieldController(t *testing.T, svc service.CustomFieldService) CustomFieldController {
+	t.Helper()
+	c, err := NewCustomFieldController(svc)
+	require.NoError(t, err)
+	return c
+}

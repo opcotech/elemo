@@ -1,6 +1,11 @@
 package model
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -135,11 +140,40 @@ func TestReadActionFor(t *testing.T) {
 		{"user", ResourceTypeUser, "", false},
 		{"team", ResourceTypeTeam, "", false},
 		{"role", ResourceTypeRole, "", false},
+		{"custom field", ResourceTypeCustomFieldDefinition, "", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, ok := ReadActionFor(tt.resource)
+			assert.Equal(t, tt.wantFound, ok)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestUpdateActionFor(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		resource  ResourceType
+		want      Action
+		wantFound bool
+	}{
+		{"organization", ResourceTypeOrganization, ActionOrganizationUpdate, true},
+		{"namespace", ResourceTypeNamespace, ActionNamespaceUpdate, true},
+		{"project", ResourceTypeProject, ActionProjectUpdate, true},
+		{"issue", ResourceTypeIssue, ActionIssueUpdate, true},
+		{"document", ResourceTypeDocument, ActionDocumentUpdate, true},
+		{"folder", ResourceTypeFolder, ActionDocumentUpdate, true},
+		{"user", ResourceTypeUser, "", false},
+		{"custom field", ResourceTypeCustomFieldDefinition, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := UpdateActionFor(tt.resource)
 			assert.Equal(t, tt.wantFound, ok)
 			assert.Equal(t, tt.want, got)
 		})
@@ -166,7 +200,52 @@ func TestRoleTemplateByKey_KnownTemplates(t *testing.T) {
 			assert.Equal(t, key, tmpl.Key)
 			assert.NotEmpty(t, tmpl.Actions)
 			assert.NotContains(t, tmpl.Actions, ActionOrganizationCreate)
+			switch key {
+			case RoleKeyOrgAdmin, RoleKeyNamespaceAdmin, RoleKeyProjectMaintainer:
+				assert.Contains(t, tmpl.Actions, ActionCustomFieldManage)
+			default:
+				assert.NotContains(t, tmpl.Actions, ActionCustomFieldManage)
+			}
 		})
+	}
+}
+
+func TestDemoCypherRoleTemplatesMatch(t *testing.T) {
+	t.Parallel()
+
+	_, file, _, ok := runtime.Caller(0)
+	require.True(t, ok)
+	path := filepath.Join(filepath.Dir(file), "..", "..", "assets", "queries", "demo.cypher")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	re := regexp.MustCompile(`key: '([^']+)', name: '[^']+', description: '[^']+', actions: \[([^\]]+)\]`)
+	matches := re.FindAllStringSubmatch(string(data), -1)
+	require.NotEmpty(t, matches)
+
+	byKey := make(map[string][]string)
+	for _, match := range matches {
+		key := match[1]
+		var actions []string
+		for _, part := range strings.Split(match[2], ",") {
+			action := strings.Trim(strings.TrimSpace(part), "'")
+			if action == "" {
+				continue
+			}
+			actions = append(actions, action)
+		}
+		if existing, found := byKey[key]; found {
+			assert.Equal(t, existing, actions, "demo.cypher role %s differs across organizations", key)
+			continue
+		}
+		byKey[key] = actions
+	}
+
+	require.Len(t, byKey, len(RoleTemplates))
+	for _, tmpl := range RoleTemplates {
+		got, found := byKey[tmpl.Key]
+		require.True(t, found, "demo.cypher missing role template %s", tmpl.Key)
+		assert.Equal(t, tmpl.ActionStrings(), got, tmpl.Key)
 	}
 }
 

@@ -12,11 +12,12 @@ const (
 )
 
 const (
-	TaskTypeSystemHealthCheck   TaskType = iota + 1 // system:health_check
-	TaskTypeSystemLicenseExpiry                     // system:license_expiry
-	TaskTypeSearchIndex                             // search:index
-	TaskTypeSearchReindex                           // search:reindex
-	TaskTypeSearchReindexBatch                      // search:reindex_batch
+	TaskTypeSystemHealthCheck    TaskType = iota + 1 // system:health_check
+	TaskTypeSystemLicenseExpiry                      // system:license_expiry
+	TaskTypeSearchIndex                              // search:index
+	TaskTypeSearchReindex                            // search:reindex
+	TaskTypeSearchReindexBatch                       // search:reindex_batch
+	TaskTypeCustomFieldReconcile                     // custom_field:reconcile
 )
 
 // TaskType is the type for system tasks.

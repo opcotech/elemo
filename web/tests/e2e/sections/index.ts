@@ -30,6 +30,7 @@ export { QuickCreateSection } from "./quick-create-section";
 export { DocumentEditorSection } from "./document-editor-section";
 export { DocumentListSection } from "./document-list-section";
 export { IssueDocumentsSection } from "./issue-documents-section";
+export { IssueCustomFieldsSection } from "./issue-custom-fields-section";
 export type {
   WorkLayoutName,
   WorkGroupName,

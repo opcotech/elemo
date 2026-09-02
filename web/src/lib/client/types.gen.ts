@@ -1099,7 +1099,7 @@ export type NotificationPage = {
  *
  * Fine-grained authorization action. Exact match only; wildcards are not supported.
  *
- * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
  *
  */
 export type Action = string;
@@ -1201,7 +1201,7 @@ export type Role = {
 /**
  * ResourceType
  */
-export type ResourceType = 'Assignment' | 'Attachment' | 'Comment' | 'Document' | 'Issue' | 'IssueRelation' | 'Label' | 'Namespace' | 'Notification' | 'Organization' | 'Permission' | 'Project' | 'ResourceType' | 'Role' | 'Team' | 'Todo' | 'User' | 'UserToken' | 'Folder' | 'Installation';
+export type ResourceType = 'Assignment' | 'Attachment' | 'Comment' | 'Document' | 'Issue' | 'IssueRelation' | 'Label' | 'Namespace' | 'Notification' | 'Organization' | 'Permission' | 'Project' | 'ResourceType' | 'Role' | 'Team' | 'Todo' | 'User' | 'UserToken' | 'Folder' | 'Installation' | 'CustomFieldDefinition';
 
 /**
  * RolePage
@@ -1293,6 +1293,304 @@ export type SearchPage = {
     items: Array<SearchResult>;
     page_info: PageInfo;
 };
+
+/**
+ * CustomFieldKind
+ */
+export type CustomFieldKind = 'text' | 'integer' | 'decimal' | 'boolean' | 'date' | 'datetime' | 'url' | 'single_select' | 'multi_select' | 'user_reference' | 'resource_reference';
+
+/**
+ * CustomFieldOption
+ */
+export type CustomFieldOption = {
+    key: string;
+    label: string;
+    color?: string;
+    disabled: boolean;
+    order?: number;
+};
+
+/**
+ * CustomFieldTextSchema
+ */
+export type CustomFieldTextSchema = {
+    kind: 'text';
+    min_length?: number;
+    max_length?: number;
+    pattern?: string;
+};
+
+/**
+ * CustomFieldIntegerSchema
+ */
+export type CustomFieldIntegerSchema = {
+    kind: 'integer';
+    min?: number;
+    max?: number;
+};
+
+/**
+ * CustomFieldDecimalSchema
+ */
+export type CustomFieldDecimalSchema = {
+    kind: 'decimal';
+    min?: string;
+    max?: string;
+    scale?: number;
+};
+
+/**
+ * CustomFieldBooleanSchema
+ */
+export type CustomFieldBooleanSchema = {
+    kind: 'boolean';
+};
+
+/**
+ * CustomFieldDateSchema
+ */
+export type CustomFieldDateSchema = {
+    kind: 'date';
+    min?: string;
+    max?: string;
+};
+
+/**
+ * CustomFieldDateTimeSchema
+ */
+export type CustomFieldDateTimeSchema = {
+    kind: 'datetime';
+    min?: string;
+    max?: string;
+};
+
+/**
+ * CustomFieldURLSchema
+ */
+export type CustomFieldUrlSchema = {
+    kind: 'url';
+    allowed_schemes: Array<string>;
+};
+
+/**
+ * CustomFieldSelectSchema
+ */
+export type CustomFieldSelectSchema = {
+    kind: 'single_select' | 'multi_select';
+    options: Array<CustomFieldOption>;
+};
+
+/**
+ * CustomFieldUserReferenceSchema
+ */
+export type CustomFieldUserReferenceSchema = {
+    kind: 'user_reference';
+    multiple?: boolean;
+};
+
+/**
+ * CustomFieldResourceReferenceSchema
+ */
+export type CustomFieldResourceReferenceSchema = {
+    kind: 'resource_reference';
+    allowed_types: Array<ResourceType>;
+    multiple?: boolean;
+};
+
+/**
+ * CustomFieldSchema
+ */
+export type CustomFieldSchema = ({
+    kind: 'text';
+} & CustomFieldTextSchema) | ({
+    kind: 'integer';
+} & CustomFieldIntegerSchema) | ({
+    kind: 'decimal';
+} & CustomFieldDecimalSchema) | ({
+    kind: 'boolean';
+} & CustomFieldBooleanSchema) | ({
+    kind: 'date';
+} & CustomFieldDateSchema) | ({
+    kind: 'datetime';
+} & CustomFieldDateTimeSchema) | ({
+    kind: 'url';
+} & CustomFieldUrlSchema) | ({
+    kind: 'single_select' | 'multi_select';
+} & CustomFieldSelectSchema) | ({
+    kind: 'user_reference';
+} & CustomFieldUserReferenceSchema) | ({
+    kind: 'resource_reference';
+} & CustomFieldResourceReferenceSchema);
+
+/**
+ * CustomFieldDefinition
+ */
+export type CustomFieldDefinition = {
+    id: string;
+    key: string;
+    name: string;
+    description?: string;
+    kind: CustomFieldKind;
+    scope_id: string;
+    scope_type: ResourceType;
+    target_type: ResourceType;
+    required: boolean;
+    archived: boolean;
+    index_exact: boolean;
+    index_range: boolean;
+    index_fulltext: boolean;
+    order: number;
+    owner_user_id: string;
+    registrar_client_id?: string;
+    schema: CustomFieldSchema;
+    created_at?: string;
+    updated_at?: string | null;
+};
+
+/**
+ * CustomFieldTextValue
+ */
+export type CustomFieldTextValue = {
+    kind: 'text';
+    text: string;
+};
+
+/**
+ * CustomFieldIntegerValue
+ */
+export type CustomFieldIntegerValue = {
+    kind: 'integer';
+    integer: number;
+};
+
+/**
+ * CustomFieldDecimalValue
+ */
+export type CustomFieldDecimalValue = {
+    kind: 'decimal';
+    decimal: string;
+};
+
+/**
+ * CustomFieldBooleanValue
+ */
+export type CustomFieldBooleanValue = {
+    kind: 'boolean';
+    boolean: boolean;
+};
+
+/**
+ * CustomFieldDateValue
+ */
+export type CustomFieldDateValue = {
+    kind: 'date';
+    date: string;
+};
+
+/**
+ * CustomFieldDateTimeValue
+ */
+export type CustomFieldDateTimeValue = {
+    kind: 'datetime';
+    datetime: string;
+};
+
+/**
+ * CustomFieldURLValue
+ */
+export type CustomFieldUrlValue = {
+    kind: 'url';
+    url: string;
+};
+
+/**
+ * CustomFieldSingleSelectValue
+ */
+export type CustomFieldSingleSelectValue = {
+    kind: 'single_select';
+    option_key: string;
+};
+
+/**
+ * CustomFieldMultiSelectValue
+ */
+export type CustomFieldMultiSelectValue = {
+    kind: 'multi_select';
+    option_keys: Array<string>;
+};
+
+/**
+ * CustomFieldUserReferenceValue
+ */
+export type CustomFieldUserReferenceValue = {
+    kind: 'user_reference';
+    user_id?: string;
+    user_ids?: Array<string>;
+};
+
+/**
+ * CustomFieldResourceReferenceValue
+ */
+export type CustomFieldResourceReferenceValue = {
+    kind: 'resource_reference';
+    resource_id?: string;
+    resource_ids?: Array<string>;
+};
+
+/**
+ * CustomFieldValue
+ */
+export type CustomFieldValue = ({
+    kind: 'text';
+} & CustomFieldTextValue) | ({
+    kind: 'integer';
+} & CustomFieldIntegerValue) | ({
+    kind: 'decimal';
+} & CustomFieldDecimalValue) | ({
+    kind: 'boolean';
+} & CustomFieldBooleanValue) | ({
+    kind: 'date';
+} & CustomFieldDateValue) | ({
+    kind: 'datetime';
+} & CustomFieldDateTimeValue) | ({
+    kind: 'url';
+} & CustomFieldUrlValue) | ({
+    kind: 'single_select';
+} & CustomFieldSingleSelectValue) | ({
+    kind: 'multi_select';
+} & CustomFieldMultiSelectValue) | ({
+    kind: 'user_reference';
+} & CustomFieldUserReferenceValue) | ({
+    kind: 'resource_reference';
+} & CustomFieldResourceReferenceValue);
+
+/**
+ * CustomFieldEntry
+ */
+export type CustomFieldEntry = {
+    definition: CustomFieldDefinition;
+    value?: CustomFieldValue;
+};
+
+/**
+ * CustomFieldWrite
+ */
+export type CustomFieldWrite = {
+    definition_id: string;
+    value: CustomFieldValue;
+};
+
+/**
+ * CustomFieldSearchResult
+ */
+export type CustomFieldSearchResult = {
+    resource_ids: Array<string>;
+};
+
+/**
+ * CustomFieldPredicateOp
+ */
+export type CustomFieldPredicateOp = 'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'match';
 
 /**
  * SystemHealth
@@ -1816,6 +2114,10 @@ export type IssueCreate = {
      * Start date of the issue.
      */
     start_date?: string | null;
+    /**
+     * Typed initial custom-field values for the created issue.
+     */
+    custom_fields?: Array<CustomFieldWrite>;
 };
 
 export type IssuePatch = {
@@ -2066,6 +2368,52 @@ export type TeamPatch = {
      * Description of the team.
      */
     description?: string | null;
+};
+
+export type CustomFieldCreate = {
+    key: string;
+    name: string;
+    description?: string;
+    kind: CustomFieldKind;
+    scope_id: string;
+    scope_type: ResourceType;
+    target_type: ResourceType;
+    required?: boolean;
+    index_exact?: boolean;
+    index_range?: boolean;
+    index_fulltext?: boolean;
+    order?: number;
+    schema: CustomFieldSchema;
+};
+
+export type CustomFieldPatch = {
+    name?: string;
+    description?: string;
+    required?: boolean;
+    archived?: boolean;
+    index_exact?: boolean;
+    index_range?: boolean;
+    index_fulltext?: boolean;
+    order?: number;
+    schema?: CustomFieldSchema;
+};
+
+export type CustomFieldValuePut = CustomFieldValue;
+
+export type CustomFieldSearch = {
+    definition_id: string;
+    op: CustomFieldPredicateOp;
+    text?: string;
+    integer?: number;
+    decimal?: string;
+    boolean?: boolean;
+    date?: string;
+    datetime?: string;
+    url?: string;
+    option_key?: string;
+    user_id?: string;
+    resource_id?: string;
+    limit?: number;
 };
 
 export type V1UsersGetData = {
@@ -6758,6 +7106,464 @@ export type V1SearchGetResponses = {
 };
 
 export type V1SearchGetResponse = V1SearchGetResponses[keyof V1SearchGetResponses];
+
+export type V1CustomFieldsGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Organization, namespace, or project ID that owns or inherits definitions.
+         */
+        scope_id: string;
+        scope_type: ResourceType;
+        target_type: ResourceType;
+        include_archived?: boolean;
+    };
+    url: '/v1/custom-fields';
+};
+
+export type V1CustomFieldsGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldsGetError = V1CustomFieldsGetErrors[keyof V1CustomFieldsGetErrors];
+
+export type V1CustomFieldsGetResponses = {
+    /**
+     * OK
+     */
+    200: Array<CustomFieldDefinition>;
+};
+
+export type V1CustomFieldsGetResponse = V1CustomFieldsGetResponses[keyof V1CustomFieldsGetResponses];
+
+export type V1CustomFieldsCreateData = {
+    body?: CustomFieldCreate;
+    path?: never;
+    query?: never;
+    url: '/v1/custom-fields';
+};
+
+export type V1CustomFieldsCreateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * Conflict
+     */
+    409: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldsCreateError = V1CustomFieldsCreateErrors[keyof V1CustomFieldsCreateErrors];
+
+export type V1CustomFieldsCreateResponses = {
+    /**
+     * Created
+     */
+    201: CustomFieldDefinition;
+};
+
+export type V1CustomFieldsCreateResponse = V1CustomFieldsCreateResponses[keyof V1CustomFieldsCreateResponses];
+
+export type V1CustomFieldsSearchData = {
+    body?: CustomFieldSearch;
+    path?: never;
+    query?: never;
+    url: '/v1/custom-fields/search';
+};
+
+export type V1CustomFieldsSearchErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldsSearchError = V1CustomFieldsSearchErrors[keyof V1CustomFieldsSearchErrors];
+
+export type V1CustomFieldsSearchResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldSearchResult;
+};
+
+export type V1CustomFieldsSearchResponse = V1CustomFieldsSearchResponses[keyof V1CustomFieldsSearchResponses];
+
+export type V1CustomFieldDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/custom-fields/{id}';
+};
+
+export type V1CustomFieldDeleteErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldDeleteError = V1CustomFieldDeleteErrors[keyof V1CustomFieldDeleteErrors];
+
+export type V1CustomFieldDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1CustomFieldDeleteResponse = V1CustomFieldDeleteResponses[keyof V1CustomFieldDeleteResponses];
+
+export type V1CustomFieldGetData = {
+    body?: never;
+    path: {
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/custom-fields/{id}';
+};
+
+export type V1CustomFieldGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldGetError = V1CustomFieldGetErrors[keyof V1CustomFieldGetErrors];
+
+export type V1CustomFieldGetResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldDefinition;
+};
+
+export type V1CustomFieldGetResponse = V1CustomFieldGetResponses[keyof V1CustomFieldGetResponses];
+
+export type V1CustomFieldUpdateData = {
+    body?: CustomFieldPatch;
+    path: {
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/custom-fields/{id}';
+};
+
+export type V1CustomFieldUpdateErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldUpdateError = V1CustomFieldUpdateErrors[keyof V1CustomFieldUpdateErrors];
+
+export type V1CustomFieldUpdateResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldDefinition;
+};
+
+export type V1CustomFieldUpdateResponse = V1CustomFieldUpdateResponses[keyof V1CustomFieldUpdateResponses];
+
+export type V1CustomFieldArchiveData = {
+    body?: never;
+    path: {
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/custom-fields/{id}/archive';
+};
+
+export type V1CustomFieldArchiveErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1CustomFieldArchiveError = V1CustomFieldArchiveErrors[keyof V1CustomFieldArchiveErrors];
+
+export type V1CustomFieldArchiveResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldDefinition;
+};
+
+export type V1CustomFieldArchiveResponse = V1CustomFieldArchiveResponses[keyof V1CustomFieldArchiveResponses];
+
+export type V1ResourceCustomFieldsGetData = {
+    body?: never;
+    path: {
+        resourceType: ResourceType;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/v1/resources/{resourceType}/{id}/custom-fields';
+};
+
+export type V1ResourceCustomFieldsGetErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1ResourceCustomFieldsGetError = V1ResourceCustomFieldsGetErrors[keyof V1ResourceCustomFieldsGetErrors];
+
+export type V1ResourceCustomFieldsGetResponses = {
+    /**
+     * OK
+     */
+    200: Array<CustomFieldEntry>;
+};
+
+export type V1ResourceCustomFieldsGetResponse = V1ResourceCustomFieldsGetResponses[keyof V1ResourceCustomFieldsGetResponses];
+
+export type V1ResourceCustomFieldValueDeleteData = {
+    body?: never;
+    path: {
+        resourceType: ResourceType;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+        definitionId: string;
+    };
+    query?: never;
+    url: '/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}';
+};
+
+export type V1ResourceCustomFieldValueDeleteErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1ResourceCustomFieldValueDeleteError = V1ResourceCustomFieldValueDeleteErrors[keyof V1ResourceCustomFieldValueDeleteErrors];
+
+export type V1ResourceCustomFieldValueDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1ResourceCustomFieldValueDeleteResponse = V1ResourceCustomFieldValueDeleteResponses[keyof V1ResourceCustomFieldValueDeleteResponses];
+
+export type V1ResourceCustomFieldValuePutData = {
+    body?: CustomFieldValuePut;
+    path: {
+        resourceType: ResourceType;
+        /**
+         * ID of the resource.
+         */
+        id: string;
+        definitionId: string;
+    };
+    query?: never;
+    url: '/v1/resources/{resourceType}/{id}/custom-fields/{definitionId}';
+};
+
+export type V1ResourceCustomFieldValuePutErrors = {
+    /**
+     * Bad request
+     */
+    400: HttpError;
+    /**
+     * Unauthorized request
+     */
+    401: HttpError;
+    /**
+     * Forbidden
+     */
+    403: HttpError;
+    /**
+     * The requested resource not found
+     */
+    404: HttpError;
+    /**
+     * Internal Server Error
+     */
+    500: HttpError;
+};
+
+export type V1ResourceCustomFieldValuePutError = V1ResourceCustomFieldValuePutErrors[keyof V1ResourceCustomFieldValuePutErrors];
+
+export type V1ResourceCustomFieldValuePutResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type V1ResourceCustomFieldValuePutResponse = V1ResourceCustomFieldValuePutResponses[keyof V1ResourceCustomFieldValuePutResponses];
 
 export type V1SystemHealthData = {
     body?: never;

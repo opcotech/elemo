@@ -816,7 +816,7 @@ export const zNotificationPage = z.object({
  *
  * Fine-grained authorization action. Exact match only; wildcards are not supported.
  *
- * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
  *
  */
 export const zAction = z.string();
@@ -880,7 +880,8 @@ export const zResourceType = z.enum([
     'User',
     'UserToken',
     'Folder',
-    'Installation'
+    'Installation',
+    'CustomFieldDefinition'
 ]);
 
 /**
@@ -963,6 +964,305 @@ export const zSearchPage = z.object({
     items: z.array(zSearchResult),
     page_info: zPageInfo
 });
+
+/**
+ * CustomFieldKind
+ */
+export const zCustomFieldKind = z.enum([
+    'text',
+    'integer',
+    'decimal',
+    'boolean',
+    'date',
+    'datetime',
+    'url',
+    'single_select',
+    'multi_select',
+    'user_reference',
+    'resource_reference'
+]);
+
+/**
+ * CustomFieldOption
+ */
+export const zCustomFieldOption = z.object({
+    key: z.string().regex(/^[a-z][a-z0-9_]{1,62}$/),
+    label: z.string().min(1).max(120),
+    color: z.string().max(32).optional(),
+    disabled: z.boolean(),
+    order: z.int().optional()
+});
+
+/**
+ * CustomFieldTextSchema
+ */
+export const zCustomFieldTextSchema = z.object({
+    kind: z.enum(['text']),
+    min_length: z.int().gte(0).optional(),
+    max_length: z.int().gte(0).lte(8000).optional(),
+    pattern: z.string().optional()
+});
+
+/**
+ * CustomFieldIntegerSchema
+ */
+export const zCustomFieldIntegerSchema = z.object({
+    kind: z.enum(['integer']),
+    min: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    max: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
+});
+
+/**
+ * CustomFieldDecimalSchema
+ */
+export const zCustomFieldDecimalSchema = z.object({
+    kind: z.enum(['decimal']),
+    min: z.string().optional(),
+    max: z.string().optional(),
+    scale: z.int().gte(0).lte(38).optional()
+});
+
+/**
+ * CustomFieldBooleanSchema
+ */
+export const zCustomFieldBooleanSchema = z.object({
+    kind: z.enum(['boolean'])
+});
+
+/**
+ * CustomFieldDateSchema
+ */
+export const zCustomFieldDateSchema = z.object({
+    kind: z.enum(['date']),
+    min: z.iso.date().optional(),
+    max: z.iso.date().optional()
+});
+
+/**
+ * CustomFieldDateTimeSchema
+ */
+export const zCustomFieldDateTimeSchema = z.object({
+    kind: z.enum(['datetime']),
+    min: z.iso.datetime().optional(),
+    max: z.iso.datetime().optional()
+});
+
+/**
+ * CustomFieldURLSchema
+ */
+export const zCustomFieldUrlSchema = z.object({
+    kind: z.enum(['url']),
+    allowed_schemes: z.array(z.string()).min(1)
+});
+
+/**
+ * CustomFieldSelectSchema
+ */
+export const zCustomFieldSelectSchema = z.object({
+    kind: z.enum(['single_select', 'multi_select']),
+    options: z.array(zCustomFieldOption).min(1)
+});
+
+/**
+ * CustomFieldUserReferenceSchema
+ */
+export const zCustomFieldUserReferenceSchema = z.object({
+    kind: z.enum(['user_reference']),
+    multiple: z.boolean().optional()
+});
+
+/**
+ * CustomFieldResourceReferenceSchema
+ */
+export const zCustomFieldResourceReferenceSchema = z.object({
+    kind: z.enum(['resource_reference']),
+    allowed_types: z.array(zResourceType).min(1),
+    multiple: z.boolean().optional()
+});
+
+/**
+ * CustomFieldSchema
+ */
+export const zCustomFieldSchema = z.discriminatedUnion('kind', [
+    zCustomFieldTextSchema.extend({ kind: z.literal('text') }),
+    zCustomFieldIntegerSchema.extend({ kind: z.literal('integer') }),
+    zCustomFieldDecimalSchema.extend({ kind: z.literal('decimal') }),
+    zCustomFieldBooleanSchema.extend({ kind: z.literal('boolean') }),
+    zCustomFieldDateSchema.extend({ kind: z.literal('date') }),
+    zCustomFieldDateTimeSchema.extend({ kind: z.literal('datetime') }),
+    zCustomFieldUrlSchema.extend({ kind: z.literal('url') }),
+    zCustomFieldSelectSchema.extend({ kind: z.literal('single_select') }),
+    zCustomFieldSelectSchema.extend({ kind: z.literal('multi_select') }),
+    zCustomFieldUserReferenceSchema.extend({ kind: z.literal('user_reference') }),
+    zCustomFieldResourceReferenceSchema.extend({ kind: z.literal('resource_reference') })
+]);
+
+/**
+ * CustomFieldDefinition
+ */
+export const zCustomFieldDefinition = z.object({
+    id: z.string(),
+    key: z.string().regex(/^[a-z][a-z0-9_]{1,62}$/),
+    name: z.string().min(3).max(120),
+    description: z.string().max(500).optional(),
+    kind: zCustomFieldKind,
+    scope_id: z.string(),
+    scope_type: zResourceType,
+    target_type: zResourceType,
+    required: z.boolean(),
+    archived: z.boolean(),
+    index_exact: z.boolean(),
+    index_range: z.boolean(),
+    index_fulltext: z.boolean(),
+    order: z.int(),
+    owner_user_id: z.string(),
+    registrar_client_id: z.string().optional(),
+    schema: zCustomFieldSchema,
+    created_at: z.iso.datetime().optional(),
+    updated_at: z.iso.datetime().nullish()
+});
+
+/**
+ * CustomFieldTextValue
+ */
+export const zCustomFieldTextValue = z.object({
+    kind: z.enum(['text']),
+    text: z.string()
+});
+
+/**
+ * CustomFieldIntegerValue
+ */
+export const zCustomFieldIntegerValue = z.object({
+    kind: z.enum(['integer']),
+    integer: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+/**
+ * CustomFieldDecimalValue
+ */
+export const zCustomFieldDecimalValue = z.object({
+    kind: z.enum(['decimal']),
+    decimal: z.string()
+});
+
+/**
+ * CustomFieldBooleanValue
+ */
+export const zCustomFieldBooleanValue = z.object({
+    kind: z.enum(['boolean']),
+    boolean: z.boolean()
+});
+
+/**
+ * CustomFieldDateValue
+ */
+export const zCustomFieldDateValue = z.object({
+    kind: z.enum(['date']),
+    date: z.iso.date()
+});
+
+/**
+ * CustomFieldDateTimeValue
+ */
+export const zCustomFieldDateTimeValue = z.object({
+    kind: z.enum(['datetime']),
+    datetime: z.iso.datetime()
+});
+
+/**
+ * CustomFieldURLValue
+ */
+export const zCustomFieldUrlValue = z.object({
+    kind: z.enum(['url']),
+    url: z.url()
+});
+
+/**
+ * CustomFieldSingleSelectValue
+ */
+export const zCustomFieldSingleSelectValue = z.object({
+    kind: z.enum(['single_select']),
+    option_key: z.string()
+});
+
+/**
+ * CustomFieldMultiSelectValue
+ */
+export const zCustomFieldMultiSelectValue = z.object({
+    kind: z.enum(['multi_select']),
+    option_keys: z.array(z.string()).min(1)
+});
+
+/**
+ * CustomFieldUserReferenceValue
+ */
+export const zCustomFieldUserReferenceValue = z.object({
+    kind: z.enum(['user_reference']),
+    user_id: z.string().optional(),
+    user_ids: z.array(z.string()).optional()
+});
+
+/**
+ * CustomFieldResourceReferenceValue
+ */
+export const zCustomFieldResourceReferenceValue = z.object({
+    kind: z.enum(['resource_reference']),
+    resource_id: z.string().optional(),
+    resource_ids: z.array(z.string()).optional()
+});
+
+/**
+ * CustomFieldValue
+ */
+export const zCustomFieldValue = z.discriminatedUnion('kind', [
+    zCustomFieldTextValue.extend({ kind: z.literal('text') }),
+    zCustomFieldIntegerValue.extend({ kind: z.literal('integer') }),
+    zCustomFieldDecimalValue.extend({ kind: z.literal('decimal') }),
+    zCustomFieldBooleanValue.extend({ kind: z.literal('boolean') }),
+    zCustomFieldDateValue.extend({ kind: z.literal('date') }),
+    zCustomFieldDateTimeValue.extend({ kind: z.literal('datetime') }),
+    zCustomFieldUrlValue.extend({ kind: z.literal('url') }),
+    zCustomFieldSingleSelectValue.extend({ kind: z.literal('single_select') }),
+    zCustomFieldMultiSelectValue.extend({ kind: z.literal('multi_select') }),
+    zCustomFieldUserReferenceValue.extend({ kind: z.literal('user_reference') }),
+    zCustomFieldResourceReferenceValue.extend({ kind: z.literal('resource_reference') })
+]);
+
+/**
+ * CustomFieldEntry
+ */
+export const zCustomFieldEntry = z.object({
+    definition: zCustomFieldDefinition,
+    value: zCustomFieldValue.optional()
+});
+
+/**
+ * CustomFieldWrite
+ */
+export const zCustomFieldWrite = z.object({
+    definition_id: z.string(),
+    value: zCustomFieldValue
+});
+
+/**
+ * CustomFieldSearchResult
+ */
+export const zCustomFieldSearchResult = z.object({
+    resource_ids: z.array(z.string())
+});
+
+/**
+ * CustomFieldPredicateOp
+ */
+export const zCustomFieldPredicateOp = z.enum([
+    'eq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'match'
+]);
 
 /**
  * SystemHealth
@@ -1304,7 +1604,8 @@ export const zIssueCreate = z.object({
     resolution: zIssueResolution.optional(),
     links: z.array(zIssueLink).optional(),
     due_date: z.iso.datetime().nullish(),
-    start_date: z.iso.datetime().nullish()
+    start_date: z.iso.datetime().nullish(),
+    custom_fields: z.array(zCustomFieldWrite).optional()
 });
 
 export const zIssuePatch = z.object({
@@ -1414,6 +1715,52 @@ export const zTeamCreate = z.object({
 export const zTeamPatch = z.object({
     name: z.string().min(3).max(120).optional(),
     description: z.string().min(5).max(500).nullish()
+});
+
+export const zCustomFieldCreate = z.object({
+    key: z.string().regex(/^[a-z][a-z0-9_]{1,62}$/),
+    name: z.string().min(3).max(120),
+    description: z.string().max(500).optional(),
+    kind: zCustomFieldKind,
+    scope_id: z.string(),
+    scope_type: zResourceType,
+    target_type: zResourceType,
+    required: z.boolean().optional(),
+    index_exact: z.boolean().optional(),
+    index_range: z.boolean().optional(),
+    index_fulltext: z.boolean().optional(),
+    order: z.int().optional(),
+    schema: zCustomFieldSchema
+});
+
+export const zCustomFieldPatch = z.object({
+    name: z.string().min(3).max(120).optional(),
+    description: z.string().max(500).optional(),
+    required: z.boolean().optional(),
+    archived: z.boolean().optional(),
+    index_exact: z.boolean().optional(),
+    index_range: z.boolean().optional(),
+    index_fulltext: z.boolean().optional(),
+    order: z.int().optional(),
+    schema: zCustomFieldSchema.optional()
+});
+
+export const zCustomFieldValuePut = zCustomFieldValue;
+
+export const zCustomFieldSearch = z.object({
+    definition_id: z.string(),
+    op: zCustomFieldPredicateOp,
+    text: z.string().optional(),
+    integer: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    decimal: z.string().optional(),
+    boolean: z.boolean().optional(),
+    date: z.iso.date().optional(),
+    datetime: z.iso.datetime().optional(),
+    url: z.string().optional(),
+    option_key: z.string().optional(),
+    user_id: z.string().optional(),
+    resource_id: z.string().optional(),
+    limit: z.int().gte(1).lte(1000).optional().default(100)
 });
 
 export const zV1UsersGetQuery = z.object({
@@ -2527,6 +2874,104 @@ export const zV1SearchGetQuery = z.object({
  * OK
  */
 export const zV1SearchGetResponse = zSearchPage;
+
+export const zV1CustomFieldsGetQuery = z.object({
+    scope_id: z.string(),
+    scope_type: zResourceType,
+    target_type: zResourceType,
+    include_archived: z.boolean().optional().default(false)
+});
+
+/**
+ * OK
+ */
+export const zV1CustomFieldsGetResponse = z.array(zCustomFieldDefinition);
+
+export const zV1CustomFieldsCreateBody = zCustomFieldCreate;
+
+/**
+ * Created
+ */
+export const zV1CustomFieldsCreateResponse = zCustomFieldDefinition;
+
+export const zV1CustomFieldsSearchBody = zCustomFieldSearch;
+
+/**
+ * OK
+ */
+export const zV1CustomFieldsSearchResponse = zCustomFieldSearchResult;
+
+export const zV1CustomFieldDeletePath = z.object({
+    id: z.string()
+});
+
+/**
+ * No Content
+ */
+export const zV1CustomFieldDeleteResponse = z.void();
+
+export const zV1CustomFieldGetPath = z.object({
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1CustomFieldGetResponse = zCustomFieldDefinition;
+
+export const zV1CustomFieldUpdateBody = zCustomFieldPatch;
+
+export const zV1CustomFieldUpdatePath = z.object({
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1CustomFieldUpdateResponse = zCustomFieldDefinition;
+
+export const zV1CustomFieldArchivePath = z.object({
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1CustomFieldArchiveResponse = zCustomFieldDefinition;
+
+export const zV1ResourceCustomFieldsGetPath = z.object({
+    resourceType: zResourceType,
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1ResourceCustomFieldsGetResponse = z.array(zCustomFieldEntry);
+
+export const zV1ResourceCustomFieldValueDeletePath = z.object({
+    resourceType: zResourceType,
+    id: z.string(),
+    definitionId: z.string()
+});
+
+/**
+ * No Content
+ */
+export const zV1ResourceCustomFieldValueDeleteResponse = z.void();
+
+export const zV1ResourceCustomFieldValuePutBody = zCustomFieldValuePut;
+
+export const zV1ResourceCustomFieldValuePutPath = z.object({
+    resourceType: zResourceType,
+    id: z.string(),
+    definitionId: z.string()
+});
+
+/**
+ * No Content
+ */
+export const zV1ResourceCustomFieldValuePutResponse = z.void();
 
 /**
  * OK

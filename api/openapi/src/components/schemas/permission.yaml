@@ -4,11 +4,12 @@ Action:
   description: |
     Fine-grained authorization action. Exact match only; wildcards are not supported.
 
-    Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage.
+    Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
   examples:
     - organization.read
     - project.update
     - permission.manage
+    - custom_field.manage
 Grant:
   title: Grant
   type: object
@@ -183,6 +184,7 @@ ResourceType:
     - UserToken
     - Folder
     - Installation
+    - CustomFieldDefinition
 RolePage:
   title: RolePage
   type: object

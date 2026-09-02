@@ -32,6 +32,7 @@ const (
 	ActionRoleManage                Action = "role.manage"
 	ActionTeamManage                Action = "team.manage"
 	ActionPermissionManage          Action = "permission.manage"
+	ActionCustomFieldManage         Action = "custom_field.manage"
 )
 
 const (
@@ -111,6 +112,7 @@ var Actions = []Action{
 	ActionRoleManage,
 	ActionTeamManage,
 	ActionPermissionManage,
+	ActionCustomFieldManage,
 }
 
 var actionSet = func() map[Action]struct{} {
@@ -165,6 +167,7 @@ var orgScopedActions = []Action{
 	ActionRoleManage,
 	ActionTeamManage,
 	ActionPermissionManage,
+	ActionCustomFieldManage,
 }
 
 var namespaceScopedActions = []Action{
@@ -188,6 +191,7 @@ var namespaceScopedActions = []Action{
 	ActionFolderCreate,
 	ActionTeamManage,
 	ActionPermissionManage,
+	ActionCustomFieldManage,
 }
 
 var projectMaintainerActions = []Action{
@@ -207,6 +211,7 @@ var projectMaintainerActions = []Action{
 	ActionFolderCreate,
 	ActionTeamManage,
 	ActionPermissionManage,
+	ActionCustomFieldManage,
 }
 
 var projectViewerActions = []Action{
@@ -359,4 +364,59 @@ func ReadActionFor(rt ResourceType) (Action, bool) {
 	default:
 		return "", false
 	}
+}
+
+// UpdateActionFor returns the action that authorizes updating rt.
+// The second result is false when rt has no update action.
+func UpdateActionFor(rt ResourceType) (Action, bool) {
+	switch rt {
+	case ResourceTypeOrganization:
+		return ActionOrganizationUpdate, true
+	case ResourceTypeNamespace:
+		return ActionNamespaceUpdate, true
+	case ResourceTypeProject:
+		return ActionProjectUpdate, true
+	case ResourceTypeIssue:
+		return ActionIssueUpdate, true
+	case ResourceTypeDocument, ResourceTypeFolder:
+		return ActionDocumentUpdate, true
+	default:
+		return "", false
+	}
+}
+
+// IsCustomFieldScopeType reports whether rt may own a custom-field definition.
+func IsCustomFieldScopeType(rt ResourceType) bool {
+	switch rt {
+	case ResourceTypeOrganization, ResourceTypeNamespace, ResourceTypeProject:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsCustomFieldTargetType reports whether rt may carry custom-field values.
+func IsCustomFieldTargetType(rt ResourceType) bool {
+	switch rt {
+	case ResourceTypeIssue,
+		ResourceTypeDocument,
+		ResourceTypeFolder,
+		ResourceTypeProject,
+		ResourceTypeNamespace,
+		ResourceTypeOrganization:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsCustomFieldReferenceType reports whether rt may be selected as a
+// resource_reference allowed type. Permission and the meta ResourceType
+// sentinel are excluded. Plugin-registered node types should be accepted
+// here when they exist.
+func IsCustomFieldReferenceType(rt ResourceType) bool {
+	if !rt.IsAResourceType() {
+		return false
+	}
+	return rt != ResourceTypeKind && rt != ResourceTypePermission
 }

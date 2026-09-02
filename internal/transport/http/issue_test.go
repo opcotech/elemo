@@ -224,6 +224,77 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		_, ok := resp.(api.V1ProjectsIssuesCreate400JSONResponse)
 		assert.True(t, ok)
 	})
+
+	t.Run("with custom fields", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		definitionID := model.MustNewID(model.ResourceTypeCustomFieldDefinition)
+		n := int64(8)
+		var value api.CustomFieldValue
+		require.NoError(t, value.FromCustomFieldIntegerValue(api.CustomFieldIntegerValue{
+			Kind:    api.CustomFieldIntegerValueKindInteger,
+			Integer: n,
+		}))
+		writes := []api.CustomFieldWrite{{
+			DefinitionId: definitionID.String(),
+			Value:        value,
+		}}
+
+		is := mocksvc.NewMockIssueService(ctrl)
+		is.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).DoAndReturn(
+			func(_ context.Context, _ model.ID, opts service.CreateIssueOpts) (*service.Issue, error) {
+				require.Len(t, opts.CustomFields, 1)
+				assert.Equal(t, definitionID, opts.CustomFields[0].DefinitionID)
+				require.NotNil(t, opts.CustomFields[0].Value.Integer)
+				assert.Equal(t, n, *opts.CustomFields[0].Value.Integer)
+				return issue, nil
+			},
+		)
+
+		c, _, _ := newTestIssueController(t, ctrl, is)
+		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
+			ProjectId: projectID.String(),
+			Body: &api.V1ProjectsIssuesCreateJSONRequestBody{
+				Kind:         api.IssueKindStory,
+				Title:        "Implement authentication",
+				CustomFields: &writes,
+			},
+		})
+		require.NoError(t, err)
+		_, ok := resp.(api.V1ProjectsIssuesCreate201JSONResponse)
+		assert.True(t, ok)
+	})
+
+	t.Run("invalid custom field definition id", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		var value api.CustomFieldValue
+		require.NoError(t, value.FromCustomFieldIntegerValue(api.CustomFieldIntegerValue{
+			Kind:    api.CustomFieldIntegerValueKindInteger,
+			Integer: 8,
+		}))
+		writes := []api.CustomFieldWrite{{
+			DefinitionId: "not-an-id",
+			Value:        value,
+		}}
+
+		c, _, _ := newTestIssueController(t, ctrl, mocksvc.NewMockIssueService(ctrl))
+		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
+			ProjectId: projectID.String(),
+			Body: &api.V1ProjectsIssuesCreateJSONRequestBody{
+				Kind:         api.IssueKindStory,
+				Title:        "Implement authentication",
+				CustomFields: &writes,
+			},
+		})
+		require.NoError(t, err)
+		_, ok := resp.(api.V1ProjectsIssuesCreate400JSONResponse)
+		assert.True(t, ok)
+	})
 }
 
 func TestIssueController_V1ProjectsIssuesGet(t *testing.T) {

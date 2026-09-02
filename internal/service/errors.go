@@ -3,6 +3,20 @@ package service
 import "errors"
 
 var (
+	ErrCustomFieldArchive      = errors.New("failed to archive custom field")      // failed to archive custom field
+	ErrCustomFieldCreate       = errors.New("failed to create custom field")       // failed to create custom field
+	ErrCustomFieldDelete       = errors.New("failed to delete custom field")       // failed to delete custom field
+	ErrCustomFieldGet          = errors.New("failed to get custom field")          // failed to get custom field
+	ErrCustomFieldList         = errors.New("failed to list custom fields")        // failed to list custom fields
+	ErrCustomFieldReconcile    = errors.New("failed to reconcile custom fields")   // failed to reconcile custom fields
+	ErrCustomFieldSearch       = errors.New("failed to search custom fields")      // failed to search custom fields
+	ErrCustomFieldUpdate       = errors.New("failed to update custom field")       // failed to update custom field
+	ErrCustomFieldValueDelete  = errors.New("failed to delete custom field value") // failed to delete custom field value
+	ErrCustomFieldValueGet     = errors.New("failed to get custom field values")   // failed to get custom field values
+	ErrCustomFieldValueSet     = errors.New("failed to set custom field value")    // failed to set custom field value
+	ErrNoCustomFieldRepository = errors.New("no custom field repository provided") // no custom field repository provided
+	ErrNoCustomFieldService    = errors.New("no custom field service provided")    // no custom field service provided
+
 	ErrDocumentCreate   = errors.New("failed to create document")   // failed to create document
 	ErrDocumentDelete   = errors.New("failed to delete document")   // failed to delete document
 	ErrDocumentGet      = errors.New("failed to get document")      // failed to get document
@@ -103,6 +117,7 @@ var (
 	ErrProjectGet                      = errors.New("failed to get project")                        // failed to get project
 	ErrProjectList                     = errors.New("failed to list projects")                      // failed to list projects
 	ErrProjectUpdate                   = errors.New("failed to update project")                     // failed to update project
+	ErrFeatureDisabled                 = errors.New("feature is not enabled")                       // license feature is not enabled
 	ErrQuotaExceeded                   = errors.New("quota exceeded")                               // quota exceeded
 	ErrQuotaInvalid                    = errors.New("invalid quota")                                // invalid quota
 	ErrQuotaUsageGet                   = errors.New("failed to get usage of quota")                 // failed to get usage of quota

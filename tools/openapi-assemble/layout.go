@@ -28,6 +28,7 @@ func elemoLayout() Layout {
 			"paths/folders.yaml",
 			"paths/permissions.yaml",
 			"paths/search.yaml",
+			"paths/custom_fields.yaml",
 			"paths/system.yaml",
 		},
 		SchemaFiles: []string{
@@ -45,6 +46,7 @@ func elemoLayout() Layout {
 			"components/schemas/permission.yaml",
 			"components/schemas/team.yaml",
 			"components/schemas/search.yaml",
+			"components/schemas/custom_field.yaml",
 			"components/schemas/system.yaml",
 		},
 		RequestBodyFiles: []string{
@@ -59,6 +61,7 @@ func elemoLayout() Layout {
 			"components/request-bodies/notification.yaml",
 			"components/request-bodies/permission.yaml",
 			"components/request-bodies/team.yaml",
+			"components/request-bodies/custom_field.yaml",
 		},
 		ParametersFile:      "components/parameters.yaml",
 		ResponsesFile:       "components/responses.yaml",

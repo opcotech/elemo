@@ -36,14 +36,15 @@ func newCreateIssueOpts() service.CreateIssueOpts {
 }
 
 type issueServiceDeps struct {
-	logger            log.Logger
-	tracer            tracing.Tracer
-	issueRepo         repository.IssueRepository
-	assignmentRepo    repository.AssignmentRepository
-	labelRepo         repository.LabelRepository
-	permissionService service.PermissionService
-	licenseService    service.LicenseService
-	searchService     service.SearchService
+	logger             log.Logger
+	tracer             tracing.Tracer
+	issueRepo          repository.IssueRepository
+	assignmentRepo     repository.AssignmentRepository
+	labelRepo          repository.LabelRepository
+	permissionService  service.PermissionService
+	licenseService     service.LicenseService
+	searchService      service.SearchService
+	customFieldService service.CustomFieldService
 }
 
 func newIssueServiceForTest(deps issueServiceDeps) service.IssueService {
@@ -65,6 +66,9 @@ func newIssueServiceForTest(deps issueServiceDeps) service.IssueService {
 	if deps.searchService == nil {
 		deps.searchService = mocksvc.NewMockSearchService(nil)
 	}
+	if deps.customFieldService == nil {
+		deps.customFieldService = nopCustomFieldService{}
+	}
 	var opts []service.Option
 	if deps.logger != nil {
 		opts = append(opts, service.WithLogger(deps.logger))
@@ -79,6 +83,7 @@ func newIssueServiceForTest(deps issueServiceDeps) service.IssueService {
 		deps.permissionService,
 		deps.licenseService,
 		deps.searchService,
+		deps.customFieldService,
 		opts...,
 	)
 	if err != nil {
@@ -103,6 +108,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					mocksvc.NewMockCustomFieldService(nil),
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -118,6 +124,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(nil),
 				)
 			},
@@ -133,6 +140,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -149,6 +157,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -165,6 +174,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -181,6 +191,7 @@ func TestNewIssueService(t *testing.T) {
 					nil,
 					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -197,6 +208,7 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					nil,
 					mocksvc.NewMockSearchService(nil),
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
@@ -213,11 +225,29 @@ func TestNewIssueService(t *testing.T) {
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockLicenseService(nil),
 					nil,
+					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 				)
 			},
 			wantErr: service.ErrNoSearchService,
+		},
+		{
+			name: "new issue service with no custom field service",
+			build: func(ctrl *gomock.Controller) (service.IssueService, error) {
+				return service.NewIssueService(
+					mockrepo.NewMockIssueRepository(nil),
+					mockrepo.NewMockAssignmentRepository(nil),
+					mockrepo.NewMockLabelRepository(nil),
+					mocksvc.NewMockPermissionService(nil),
+					mocksvc.NewMockLicenseService(nil),
+					mocksvc.NewMockSearchService(nil),
+					nil,
+					service.WithLogger(mocklog.NewMockLogger(ctrl)),
+					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
+				)
+			},
+			wantErr: service.ErrNoCustomFieldService,
 		},
 	}
 
@@ -598,6 +628,200 @@ func TestIssueService_Create(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIssueService_CreateCustomFields(t *testing.T) {
+	t.Parallel()
+
+	projectID := model.MustNewID(model.ResourceTypeProject)
+	userID := model.MustNewID(model.ResourceTypeUser)
+	repoIssue := testModel.NewRepositoryIssue(userID)
+	opts := newCreateIssueOpts()
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
+
+	t.Run("stages and commits custom fields", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(repoIssue, nil)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().CommitForResource(ctx, gomock.Any()).Return(nil)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mockSearchIndex(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          issueRepo,
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.NoError(t, err)
+	})
+
+	t.Run("aborts staged values when graph create fails", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrNotFound)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().AbortForResource(ctx, gomock.Any()).Return(nil)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mocksvc.NewMockSearchService(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          issueRepo,
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+	})
+
+	t.Run("bootstraps even if commit fails", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(repoIssue, nil)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().CommitForResource(ctx, gomock.Any()).Return(assert.AnError)
+
+		logger := mocklog.NewMockLogger(ctrl)
+		logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mockSearchIndex(ctrl),
+			logger:             logger,
+			tracer:             tracer,
+			issueRepo:          issueRepo,
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.NoError(t, err)
+	})
+
+	t.Run("stage error does not create issue", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(assert.AnError)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mocksvc.NewMockSearchService(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          mockrepo.NewMockIssueRepository(ctrl),
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.ErrorIs(t, err, service.ErrIssueCreate)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("joins abort error when graph create fails", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		span := mocktrace.NewMockSpan(ctrl)
+		span.EXPECT().End(gomock.Len(0))
+		tracer := mocktrace.NewMockTracer(ctrl)
+		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+
+		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrNotFound)
+
+		permSvc := mocksvc.NewMockPermissionService(ctrl)
+		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+
+		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().AbortForResource(ctx, gomock.Any()).Return(assert.AnError)
+
+		s := newIssueServiceForTest(issueServiceDeps{
+			searchService:      mocksvc.NewMockSearchService(ctrl),
+			logger:             mocklog.NewMockLogger(ctrl),
+			tracer:             tracer,
+			issueRepo:          issueRepo,
+			permissionService:  permSvc,
+			licenseService:     licenseSvc,
+			customFieldService: cfSvc,
+		})
+		_, err := s.Create(ctx, projectID, opts)
+		require.ErrorIs(t, err, service.ErrIssueCreate)
+		require.ErrorIs(t, err, repository.ErrNotFound)
+		require.ErrorIs(t, err, assert.AnError)
+	})
 }
 
 func TestIssueService_Get(t *testing.T) {
@@ -2420,6 +2644,48 @@ func TestIssueService_Delete(t *testing.T) {
 				id:  issueID,
 			},
 			wantErr: repository.ErrIssueDelete,
+		},
+		{
+			name: "warns when custom field delete fails",
+			fields: fields{
+				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) issueServiceDeps {
+					span := mocktrace.NewMockSpan(ctrl)
+					span.EXPECT().End(gomock.Len(0))
+
+					tracer := mocktrace.NewMockTracer(ctrl)
+					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+
+					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
+					issueRepo.EXPECT().Delete(ctx, id).Return(nil)
+
+					permSvc := mocksvc.NewMockPermissionService(ctrl)
+					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+
+					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+					cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
+					cfSvc.EXPECT().DeleteForResource(ctx, id).Return(assert.AnError)
+
+					logger := mocklog.NewMockLogger(ctrl)
+					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
+					return issueServiceDeps{
+						searchService:      mockSearchDelete(ctrl),
+						logger:             logger,
+						tracer:             tracer,
+						issueRepo:          issueRepo,
+						permissionService:  permSvc,
+						licenseService:     licenseSvc,
+						customFieldService: cfSvc,
+					}
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  issueID,
+			},
 		},
 	}
 	for _, tt := range tests {

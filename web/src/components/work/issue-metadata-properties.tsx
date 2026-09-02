@@ -25,7 +25,7 @@ export function IssueParentLink({
   namespaceSlug?: string | null;
 }) {
   if (!parent) {
-    return <span className="px-2">None</span>;
+    return <span className="px-2">—</span>;
   }
 
   const parentOrganizationSlug = parent.organizationSlug ?? organizationSlug;
@@ -125,7 +125,7 @@ export function IssueMetadataProperties({
         },
         {
           label: "Parent",
-          value: parent ?? <span className="px-2">None</span>,
+          value: parent ?? <span className="px-2">—</span>,
         },
         {
           label: "Reported by",

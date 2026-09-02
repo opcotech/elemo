@@ -66,6 +66,7 @@ export interface SearchableEntitySelectProps extends Pick<
   appearance?: "field" | "button";
   triggerClassName?: string;
   contentClassName?: string;
+  emptyOption?: string;
   onValueChange?: (value: string) => void;
 }
 
@@ -82,11 +83,36 @@ export interface EntityMultiSelectProps extends Pick<
   size?: "sm" | "default";
   triggerClassName?: string;
   contentClassName?: string;
+  emptyOption?: string;
   onValueChange?: (value: string[]) => void;
   onOpenChange?: (open: boolean) => void;
 }
 
 const MAX_VISIBLE_CHIPS = 2;
+const emptyOptionCommandValue = "__empty__";
+
+function EmptyOptionItem({
+  label,
+  size = "default",
+  checked,
+  onSelect,
+}: {
+  label: string;
+  size?: "sm" | "default";
+  checked?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <CommandItem
+      value={`${emptyOptionCommandValue} ${label}`}
+      data-checked={checked || undefined}
+      onSelect={onSelect}
+      className={size === "sm" ? "py-1.5" : "py-2"}
+    >
+      <span className="text-muted-foreground truncate">{label}</span>
+    </CommandItem>
+  );
+}
 
 function optionHasAvatar(option: EntitySelectOption): boolean {
   return (
@@ -185,9 +211,7 @@ function SelectedEntitiesSummary({
 }) {
   if (options.length === 0) {
     return (
-      <span className="text-muted-foreground truncate font-normal">
-        {placeholder}
-      </span>
+      <span className="text-muted-foreground truncate">{placeholder}</span>
     );
   }
 
@@ -388,6 +412,7 @@ export function SearchableEntitySelect({
   appearance = "field",
   triggerClassName,
   contentClassName,
+  emptyOption,
   onValueChange,
   id,
   "aria-describedby": ariaDescribedBy,
@@ -421,9 +446,7 @@ export function SearchableEntitySelect({
             className="min-w-0 flex-1 justify-start"
           />
         ) : (
-          <span className="text-muted-foreground truncate font-normal">
-            {placeholder}
-          </span>
+          <span className="text-muted-foreground truncate">{placeholder}</span>
         )
       }
       id={id}
@@ -431,6 +454,17 @@ export function SearchableEntitySelect({
       aria-invalid={ariaInvalid}
       aria-label={ariaLabel}
     >
+      {emptyOption ? (
+        <EmptyOptionItem
+          label={emptyOption}
+          size={optionSize}
+          checked={!value}
+          onSelect={() => {
+            onValueChange?.("");
+            setOpen(false);
+          }}
+        />
+      ) : null}
       {options.map((option) => (
         <CommandItem
           key={option.value}
@@ -460,6 +494,7 @@ export function EntityMultiSelect({
   size = "default",
   triggerClassName,
   contentClassName,
+  emptyOption,
   onValueChange,
   onOpenChange,
   id,
@@ -507,6 +542,17 @@ export function EntityMultiSelect({
       aria-invalid={ariaInvalid}
       aria-label={ariaLabel}
     >
+      {emptyOption ? (
+        <EmptyOptionItem
+          label={emptyOption}
+          size={size}
+          checked={value.length === 0}
+          onSelect={() => {
+            onValueChange?.([]);
+            setOpen(false);
+          }}
+        />
+      ) : null}
       {options.map((option) => {
         const isSelected = selectedSet.has(option.value);
         return (

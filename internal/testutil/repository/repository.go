@@ -100,6 +100,22 @@ func BootstrapPgDatabase(ctx context.Context, t *testing.T, db *repository.PGDat
 
 func CleanupPgStore(ctx context.Context, t *testing.T, db *repository.PGDatabase) {
 	_, err := db.Pool().Exec(ctx, `
+	TRUNCATE TABLE
+		custom_field_values,
+		custom_field_options,
+		custom_field_schema_text,
+		custom_field_schema_integer,
+		custom_field_schema_decimal,
+		custom_field_schema_boolean,
+		custom_field_schema_date,
+		custom_field_schema_datetime,
+		custom_field_schema_url,
+		custom_field_schema_select,
+		custom_field_schema_user_reference,
+		custom_field_schema_resource_reference,
+		custom_field_definitions,
+		custom_field_operations
+	CASCADE;
 	DO $$ DECLARE table_name text;
 	BEGIN
 		FOR table_name IN (SELECT tablename FROM pg_tables WHERE schemaname='etl') LOOP

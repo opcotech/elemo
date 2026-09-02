@@ -1,4 +1,13 @@
 export type {
+  CustomFieldCreate,
+  CustomFieldDefinition,
+  CustomFieldEntry,
+  CustomFieldKind,
+  CustomFieldOption,
+  CustomFieldPatch,
+  CustomFieldSchema,
+  CustomFieldValue,
+  CustomFieldWrite,
   Document,
   DocumentCreate,
   DocumentFolder,

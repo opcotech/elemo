@@ -3,6 +3,7 @@ import "@/lib/api/client";
 import { keepPreviousData } from "@tanstack/react-query";
 
 import {
+  v1CustomFieldsGetOptions as generatedCustomFieldsGetOptions,
   v1DocumentGetOptions as generatedDocumentGetOptions,
   v1IssueGetOptions as generatedIssueGetOptions,
   v1IssueRelationsGetOptions as generatedIssueRelationsGetOptions,
@@ -13,6 +14,7 @@ import {
   v1OrganizationsGetOptions as generatedOrganizationsGetOptions,
   v1PermissionResourceGetOptions as generatedPermissionResourceGetOptions,
   v1ProjectsIssuesGetOptions as generatedProjectsIssuesGetOptions,
+  v1ResourceCustomFieldsGetOptions as generatedResourceCustomFieldsGetOptions,
   v1SearchGetOptions as generatedSearchGetOptions,
   v1TodosGetOptions as generatedTodosGetOptions,
   v1UsersIssuesGetOptions as generatedUsersIssuesGetOptions,
@@ -20,6 +22,7 @@ import {
 import { cacheProfiles } from "@/lib/query-client";
 
 export {
+  v1CustomFieldGetOptions,
   v1IssuesDocumentsGetOptions,
   v1NamespaceGetOptions,
   v1NamespacesDocumentsGetOptions,
@@ -158,5 +161,23 @@ export function v1SearchGetOptions(
     ...generatedSearchGetOptions(...args),
     ...cacheProfiles.volatile,
     placeholderData: keepPreviousData,
+  };
+}
+
+export function v1CustomFieldsGetOptions(
+  ...args: Parameters<typeof generatedCustomFieldsGetOptions>
+) {
+  return {
+    ...generatedCustomFieldsGetOptions(...args),
+    ...cacheProfiles.entity,
+  };
+}
+
+export function v1ResourceCustomFieldsGetOptions(
+  ...args: Parameters<typeof generatedResourceCustomFieldsGetOptions>
+) {
+  return {
+    ...generatedResourceCustomFieldsGetOptions(...args),
+    ...cacheProfiles.volatile,
   };
 }

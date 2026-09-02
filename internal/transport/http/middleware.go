@@ -170,3 +170,13 @@ func WithUserID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) 
 		return model.MustNewNilID(model.ResourceTypeUser)
 	})
 }
+
+// WithOAuthClientID returns a middleware that stores the token's client ID.
+func WithOAuthClientID(tokenValidator func(r *http.Request) (oauth2.TokenInfo, error)) func(next http.Handler) http.Handler {
+	return withContextObject(pkg.CtxKeyOAuthClientID, func(_ http.ResponseWriter, r *http.Request) any {
+		if info, _ := tokenValidator(r); info != nil {
+			return info.GetClientID()
+		}
+		return ""
+	})
+}

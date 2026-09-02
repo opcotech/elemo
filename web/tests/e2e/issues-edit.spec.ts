@@ -183,6 +183,6 @@ test.describe("@issues.edit Issue Edit E2E Tests", () => {
 
     await workItem.details.clearParent();
     await waitForSuccessToast(page, "Parent cleared");
-    await expect(workItem.details.getParentSelect()).toContainText("None");
+    await expect(workItem.details.getParentSelect()).toContainText("—");
   });
 });

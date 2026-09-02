@@ -212,6 +212,9 @@ func (s *permissionService) ListScopeAncestry(ctx context.Context, resource mode
 	if err != nil {
 		return nil, errors.Join(ErrPermissionListScopeAncestry, err)
 	}
+	if len(ids) == 0 {
+		return nil, errors.Join(ErrPermissionListScopeAncestry, repository.ErrNotFound)
+	}
 	return ids, nil
 }
 

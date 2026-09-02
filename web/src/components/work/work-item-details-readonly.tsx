@@ -37,9 +37,7 @@ export function WorkItemDetailsReadonly({
         },
         {
           label: "Resolution",
-          value: item.resolution
-            ? issueResolutionLabels[item.resolution]
-            : "None",
+          value: item.resolution ? issueResolutionLabels[item.resolution] : "—",
         },
         {
           label: "Priority",
@@ -63,7 +61,7 @@ export function WorkItemDetailsReadonly({
               people={reviewers}
               size="sm"
               showNames
-              emptyLabel="None"
+              emptyLabel="—"
             />
           ),
         },
@@ -86,7 +84,7 @@ export function WorkItemDetailsReadonly({
                 truncate={false}
               />
             ) : (
-              "None"
+              "—"
             ),
         },
       ]}

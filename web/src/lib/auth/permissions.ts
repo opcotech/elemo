@@ -30,6 +30,7 @@ export const Action = {
   RoleManage: "role.manage",
   TeamManage: "team.manage",
   PermissionManage: "permission.manage",
+  CustomFieldManage: "custom_field.manage",
 } as const;
 
 export const inspectableActions = Object.values(Action).filter(
@@ -56,6 +57,7 @@ export enum ResourceType {
   Todo = "Todo",
   User = "User",
   UserToken = "UserToken",
+  CustomFieldDefinition = "CustomFieldDefinition",
 }
 
 export function withResourceType(

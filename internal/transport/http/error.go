@@ -105,6 +105,14 @@ func isClientValidationError(err error) bool {
 		errors.Is(err, model.ErrInvalidTodoDetails) ||
 		errors.Is(err, model.ErrInvalidUserDetails) ||
 		errors.Is(err, model.ErrInvalidGrant) ||
+		errors.Is(err, model.ErrInvalidCustomFieldDetails) ||
+		errors.Is(err, model.ErrInvalidCustomFieldKind) ||
+		errors.Is(err, model.ErrInvalidCustomFieldValue) ||
+		errors.Is(err, model.ErrCustomFieldArchived) ||
+		errors.Is(err, model.ErrCustomFieldInUse) ||
+		errors.Is(err, model.ErrCustomFieldIdentityImmutable) ||
+		errors.Is(err, model.ErrCustomFieldOptionInUse) ||
+		errors.Is(err, model.ErrCustomFieldRequired) ||
 		errors.Is(err, model.ErrInvalidAction) ||
 		errors.Is(err, model.ErrNotAPrincipal) ||
 		errors.Is(err, validate.ErrInvalidSlug) ||
@@ -117,12 +125,14 @@ func isClientValidationError(err error) bool {
 
 func isConflictError(err error) bool {
 	return errors.Is(err, repository.ErrSlugConflict) ||
-		errors.Is(err, repository.ErrProjectKeyConflict)
+		errors.Is(err, repository.ErrProjectKeyConflict) ||
+		errors.Is(err, repository.ErrCustomFieldKeyConflict)
 }
 
 func isForbiddenError(err error) bool {
 	return errors.Is(err, service.ErrNoPermission) ||
 		errors.Is(err, license.ErrLicenseExpired) ||
+		errors.Is(err, service.ErrFeatureDisabled) ||
 		errors.Is(err, service.ErrQuotaExceeded) ||
 		errors.Is(err, model.ErrPrivilegeEscalation)
 }

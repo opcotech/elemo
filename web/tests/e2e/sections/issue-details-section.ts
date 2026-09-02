@@ -113,7 +113,7 @@ export class IssueDetailsSection extends SectionContainerMixin(BaseComponent) {
   }
 
   async clearParent(): Promise<void> {
-    await this.selectParent("None");
+    await this.selectParent("—");
   }
 
   async openStartDatePicker(): Promise<void> {

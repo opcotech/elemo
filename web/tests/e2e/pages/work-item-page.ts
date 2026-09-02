@@ -7,6 +7,7 @@ import {
   navigateAndWait,
   waitForElementVisible,
 } from "../helpers";
+import { IssueCustomFieldsSection } from "../sections/issue-custom-fields-section";
 import { IssueDetailsSection } from "../sections/issue-details-section";
 import { IssueDocumentsSection } from "../sections/issue-documents-section";
 import { IssueLinksSection } from "../sections/issue-links-section";
@@ -17,6 +18,7 @@ import { IssueRelationsSection } from "../sections/issue-relations-section";
  */
 export class WorkItemPage extends BaseComponent {
   public readonly details: IssueDetailsSection;
+  public readonly customFields: IssueCustomFieldsSection;
   public readonly links: IssueLinksSection;
   public readonly relations: IssueRelationsSection;
   public readonly documents: IssueDocumentsSection;
@@ -24,6 +26,7 @@ export class WorkItemPage extends BaseComponent {
   constructor(page: Page) {
     super(page);
     this.details = new IssueDetailsSection(page);
+    this.customFields = new IssueCustomFieldsSection(page);
     this.links = new IssueLinksSection(page);
     this.relations = new IssueRelationsSection(page);
     this.documents = new IssueDocumentsSection(page);

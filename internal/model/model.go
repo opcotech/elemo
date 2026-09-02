@@ -16,7 +16,7 @@ type ID struct {
 }
 
 func (id ID) Validate() error {
-	if id.Type < 1 || id.Type > ResourceTypeTeam {
+	if !id.Type.IsAResourceType() {
 		return ErrInvalidID
 	}
 	return nil
@@ -27,12 +27,27 @@ func (id ID) Value() (driver.Value, error) {
 }
 
 func (id *ID) Scan(value any) error {
-	parsed, err := ParseCompositeID(value.(string))
+	raw, err := scanString(value)
+	if err != nil {
+		return err
+	}
+	parsed, err := ParseCompositeID(raw)
 	if err != nil {
 		return err
 	}
 	*id = parsed
 	return nil
+}
+
+func scanString(value any) (string, error) {
+	switch v := value.(type) {
+	case string:
+		return v, nil
+	case []byte:
+		return string(v), nil
+	default:
+		return "", ErrInvalidID
+	}
 }
 
 // String returns the string representation of the ID. The type is not part of

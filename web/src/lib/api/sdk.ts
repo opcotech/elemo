@@ -1,6 +1,12 @@
 import "@/lib/api/client";
 
 export {
+  v1CustomFieldArchive,
+  v1CustomFieldDelete,
+  v1CustomFieldGet,
+  v1CustomFieldsCreate,
+  v1CustomFieldsGet,
+  v1CustomFieldUpdate,
   v1DocumentDelete,
   v1DocumentGet,
   v1DocumentUpdate,
@@ -62,6 +68,9 @@ export {
   v1ProjectsDocumentsUnrelate,
   v1ProjectsIssuesCreate,
   v1ProjectsIssuesGet,
+  v1ResourceCustomFieldsGet,
+  v1ResourceCustomFieldValueDelete,
+  v1ResourceCustomFieldValuePut,
   v1SearchGet,
   v1TodoGet,
   v1TodosCreate,

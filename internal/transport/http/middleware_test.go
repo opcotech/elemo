@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-oauth2/oauth2/v4"
+	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -27,6 +29,34 @@ func TestWithContextObject(t *testing.T) {
 	})
 
 	WithContextObject("test", testObj)(wrappedFunc).ServeHTTP(httptest.NewRecorder(), request)
+}
+
+func TestWithOAuthClientID(t *testing.T) {
+	t.Run("stores client id from token", func(t *testing.T) {
+		request, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
+		require.NoError(t, err)
+
+		wrappedFunc := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "client-1", r.Context().Value(pkg.CtxKeyOAuthClientID))
+		})
+
+		WithOAuthClientID(func(_ *http.Request) (oauth2.TokenInfo, error) {
+			return &models.Token{ClientID: "client-1"}, nil
+		})(wrappedFunc).ServeHTTP(httptest.NewRecorder(), request)
+	})
+
+	t.Run("stores empty string when token is missing", func(t *testing.T) {
+		request, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
+		require.NoError(t, err)
+
+		wrappedFunc := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "", r.Context().Value(pkg.CtxKeyOAuthClientID))
+		})
+
+		WithOAuthClientID(func(_ *http.Request) (oauth2.TokenInfo, error) {
+			return nil, nil
+		})(wrappedFunc).ServeHTTP(httptest.NewRecorder(), request)
+	})
 }
 
 func TestWithRequestLogger(t *testing.T) {

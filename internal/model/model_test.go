@@ -136,6 +136,20 @@ func TestID_Scan(t *testing.T) {
 		err := scanned.Scan("not-a-composite")
 		assert.ErrorIs(t, err, ErrInvalidID)
 	})
+
+	t.Run("bytes", func(t *testing.T) {
+		t.Parallel()
+		var scanned ID
+		require.NoError(t, scanned.Scan([]byte(id.Composite())))
+		assert.Equal(t, id, scanned)
+	})
+
+	t.Run("unsupported type", func(t *testing.T) {
+		t.Parallel()
+		var scanned ID
+		err := scanned.Scan(12)
+		assert.ErrorIs(t, err, ErrInvalidID)
+	})
 }
 
 func TestNewID(t *testing.T) {

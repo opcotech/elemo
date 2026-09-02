@@ -65,7 +65,8 @@ export function DatePicker({
             aria-label={ariaLabel}
             variant="outline"
             className={cn(
-              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border font-normal shadow-none",
+              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border shadow-none",
+              !className && "font-normal",
               !date && "text-muted-foreground",
               clearable &&
                 "group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive h-full min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
