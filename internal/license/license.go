@@ -16,6 +16,7 @@ const (
 	FeatureComponents        Feature = "components"         // allow components
 	FeatureCustomStatuses    Feature = "custom_statuses"    // allow custom statuses
 	FeatureCustomFields      Feature = "custom_fields"      // allow custom fields
+	FeaturePlugins           Feature = "plugins"            // allow runtime plugins
 	FeatureMultipleAssignees Feature = "multiple_assignees" // allow multiple assignees per task
 	FeatureReleases          Feature = "releases"           // allow releases
 
@@ -38,6 +39,7 @@ var (
 		FeatureComponents,
 		FeatureCustomStatuses,
 		FeatureCustomFields,
+		FeaturePlugins,
 		FeatureMultipleAssignees,
 		FeatureReleases,
 	}

@@ -1,5 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, Building2, Folder, Shield, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  Folder,
+  Puzzle,
+  Shield,
+  User,
+} from "lucide-react";
 import React from "react";
 import type { ReactNode } from "react";
 
@@ -27,7 +34,8 @@ interface SettingsNavigationItem {
     | "/settings"
     | "/settings/organizations"
     | "/settings/namespaces"
-    | "/settings/security";
+    | "/settings/security"
+    | "/settings/plugins";
   icon: React.ElementType;
   description?: string;
 }
@@ -58,6 +66,12 @@ export const settingsNavigation: SettingsNavigationGroup[] = [
         href: "/settings/namespaces",
         icon: Folder,
         description: "View and manage namespaces",
+      },
+      {
+        label: "Plugins",
+        href: "/settings/plugins",
+        icon: Puzzle,
+        description: "Install and manage instance plugins",
       },
     ],
   },

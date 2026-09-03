@@ -19,6 +19,7 @@ var (
 	ErrNoNotificationService = errors.New("no notification service provided") // no notification service provided
 	ErrNoOrganizationService = errors.New("no organization service provided") // no organization service provided
 	ErrNoPermissionService   = errors.New("no permission service provided")   // no permission service provided
+	ErrNoPluginService       = errors.New("no plugin service provided")       // no plugin service provided
 	ErrNoProjectService      = errors.New("no project service provided")      // no project service provided
 	ErrNoRoleService         = errors.New("no role service provided")         // no role service provided
 	ErrNoSearchService       = errors.New("no search service provided")       // no search service provided

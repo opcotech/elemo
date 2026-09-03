@@ -1,0 +1,152 @@
+PluginEnable:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - scope_id
+          - scope_type
+        properties:
+          scope_id:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+          scope_type:
+            $ref: "#/components/schemas/ResourceType"
+          config:
+            type: object
+            additionalProperties: true
+            description: Optional activation config applied when enabling.
+PluginInvoke:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - function
+          - scope_id
+        properties:
+          function:
+            type: string
+            minLength: 1
+            maxLength: 128
+            example: startTimer
+          scope_id:
+            type: string
+            description: Composite or bare resource ID the call is scoped to.
+            example: Issue:9bsv0s46s6s002p9ltq0
+          payload:
+            description: Plugin-defined JSON payload.
+PluginGraphNodeCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - kind
+          - parent_id
+          - parent_type
+        properties:
+          kind:
+            type: string
+            example: TimeEntry
+          parent_id:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+          parent_type:
+            $ref: "#/components/schemas/ResourceType"
+          properties:
+            type: object
+            additionalProperties: true
+          relation:
+            type: object
+            additionalProperties: false
+            required:
+              - kind
+              - to_id
+              - to_type
+            properties:
+              kind:
+                type: string
+                example: LOGGED_ON
+              to_id:
+                type: string
+              to_type:
+                $ref: "#/components/schemas/ResourceType"
+PluginGraphNodeUpdate:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - properties
+        properties:
+          properties:
+            type: object
+            additionalProperties: true
+PluginGraphNodeMove:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - parent_id
+          - parent_type
+        properties:
+          parent_id:
+            type: string
+            example: 9bsv0s46s6s002p9ltq0
+          parent_type:
+            $ref: "#/components/schemas/ResourceType"
+PluginGraphRelationCreate:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - kind
+          - from_id
+          - from_type
+          - to_id
+          - to_type
+        properties:
+          kind:
+            type: string
+            example: LOGGED_ON
+          from_id:
+            type: string
+          from_type:
+            $ref: "#/components/schemas/ResourceType"
+          to_id:
+            type: string
+          to_type:
+            $ref: "#/components/schemas/ResourceType"
+PluginPackage:
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        required:
+          - package
+        properties:
+          package:
+            type: string
+            format: binary
+            description: Plugin zip archive. Maximum size is 32MB.
+PluginConfigUpdate:
+  content:
+    application/json:
+      schema:
+        type: object
+        additionalProperties: false
+        required:
+          - config
+        properties:
+          config:
+            type: object
+            additionalProperties: true

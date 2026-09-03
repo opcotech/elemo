@@ -17,6 +17,22 @@ var (
 	ErrNoCustomFieldRepository = errors.New("no custom field repository provided") // no custom field repository provided
 	ErrNoCustomFieldService    = errors.New("no custom field service provided")    // no custom field service provided
 
+	ErrPluginInstall           = errors.New("failed to install plugin")              // failed to install plugin
+	ErrPluginUpgrade           = errors.New("failed to upgrade plugin")              // failed to upgrade plugin
+	ErrPluginUninstall         = errors.New("failed to uninstall plugin")            // failed to uninstall plugin
+	ErrPluginEnable            = errors.New("failed to enable plugin")               // failed to enable plugin
+	ErrPluginDisable           = errors.New("failed to disable plugin")              // failed to disable plugin
+	ErrPluginGet               = errors.New("failed to get plugin")                  // failed to get plugin
+	ErrPluginList              = errors.New("failed to list plugins")                // failed to list plugins
+	ErrPluginInvoke            = errors.New("failed to invoke plugin")               // failed to invoke plugin
+	ErrPluginAsset             = errors.New("failed to read plugin asset")           // failed to read plugin asset
+	ErrPluginGraph             = errors.New("failed to access plugin graph")         // failed to access plugin graph
+	ErrNoPluginRepository      = errors.New("no plugin repository provided")         // no plugin repository provided
+	ErrNoExtensionRepository   = errors.New("no extension repository provided")      // no extension repository provided
+	ErrNoPluginService         = errors.New("no plugin service provided")            // no plugin service provided
+	ErrPluginSchemaNotAdditive = errors.New("plugin schema upgrade is not additive") // upgrade would remove graph kinds
+	ErrPluginConfig            = errors.New("failed to update plugin config")        // failed to update plugin config
+
 	ErrDocumentCreate   = errors.New("failed to create document")   // failed to create document
 	ErrDocumentDelete   = errors.New("failed to delete document")   // failed to delete document
 	ErrDocumentGet      = errors.New("failed to get document")      // failed to get document

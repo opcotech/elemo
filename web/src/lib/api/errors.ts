@@ -91,6 +91,9 @@ export function throwIfApiFailed<T>(result: {
     result.response && typeof result.response.status === "number"
       ? result.response.status
       : undefined;
+  if (status !== undefined && status >= 200 && status < 300) {
+    return result.data as T;
+  }
   if (result.error || (status !== undefined && status >= 400)) {
     if (result.error instanceof Error) {
       throw result.error;

@@ -1,0 +1,42 @@
+schemaVersion: 1
+id: com.elemo.timetracking
+name: Time Tracking
+version: 1.1.0
+requires:
+  pluginApi: "^1"
+backend:
+  entry: backend/plugin.wasm
+frontend:
+  entry: frontend/index.js
+capabilities:
+  - issues.read
+  - users.read
+  - graph.read
+  - graph.write
+  - plugin.storage.read
+  - plugin.storage.write
+slots:
+  - issue.sidebar
+  - issue.activity
+graph:
+  nodes:
+    - kind: TimeEntry
+      scope:
+        parent: Issue
+      properties:
+        - name: seconds
+          type: integer
+          required: true
+        - name: note
+          type: string
+        - name: user_id
+          type: string
+  relations:
+    - kind: LOGGED_ON
+      from: TimeEntry
+      to: Issue
+      cardinality: many-to-one
+    - kind: LOGGED_BY
+      from: TimeEntry
+      to: User
+      cardinality: many-to-one

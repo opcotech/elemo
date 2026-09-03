@@ -32,6 +32,7 @@ func TestResourceType_String(t *testing.T) {
 		{"Installation", ResourceTypeInstallation, "Installation"},
 		{"Team", ResourceTypeTeam, "Team"},
 		{"CustomFieldDefinition", ResourceTypeCustomFieldDefinition, "CustomFieldDefinition"},
+		{"Extension", ResourceTypeExtension, "Extension"},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -69,6 +70,7 @@ func TestResourceType_MarshalText(t *testing.T) {
 		{"Installation", ResourceTypeInstallation, []byte("Installation"), nil},
 		{"Team", ResourceTypeTeam, []byte("Team"), nil},
 		{"CustomFieldDefinition", ResourceTypeCustomFieldDefinition, []byte("CustomFieldDefinition"), nil},
+		{"Extension", ResourceTypeExtension, []byte("Extension"), nil},
 		{"type high", ResourceType(100), []byte("ResourceType(100)"), nil},
 		{"type low", ResourceType(0), []byte("ResourceType(0)"), nil},
 	}
@@ -110,6 +112,7 @@ func TestResourceType_UnmarshalText(t *testing.T) {
 		{"Installation", []byte("Installation"), ResourceTypeInstallation, false},
 		{"Team", []byte("Team"), ResourceTypeTeam, false},
 		{"CustomFieldDefinition", []byte("CustomFieldDefinition"), ResourceTypeCustomFieldDefinition, false},
+		{"Extension", []byte("Extension"), ResourceTypeExtension, false},
 		{"invalid", []byte("invalid"), 0, true},
 	}
 	for _, tt := range tests {

@@ -18,10 +18,12 @@ import { IssueRelations } from "./issue-relations";
 import { MarkdownContent } from "./markdown-content";
 import { useIssueUpdate } from "./use-issue-update";
 import { workItemPath, workItemUrl } from "./utils";
+import { WorkItemActivity } from "./work-item-activity";
 import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
 import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
 import { ContentWidth } from "@/components/layout/content-width";
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader, PageActions } from "@/components/shared/entity-header";
@@ -178,7 +180,7 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
               />
             )}
           </SectionAccordion>
-          <SectionAccordion title="Activity" value="activity">
+          <WorkItemActivity>
             {activity.length > 0 ? (
               <ActivityFeed entries={activity} />
             ) : (
@@ -189,7 +191,7 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
                 description="Activity for this fixture will appear here when present."
               />
             )}
-          </SectionAccordion>
+          </WorkItemActivity>
           <Section title="Comment">
             <div className="space-y-3 rounded-xl border p-4">
               <Textarea
@@ -444,14 +446,24 @@ function LiveWorkItemPage({
             documentCount={issue.document_count}
             canCreate={!isPending && !deleteMutation.isPending}
           />
-          <SectionAccordion title="Activity" value="activity">
+          <WorkItemActivity
+            context={{
+              issueId: issue.id,
+              issueKey: issue.key,
+              organizationId,
+              organizationSlug,
+              namespaceId,
+              namespaceSlug,
+              projectId: project?.id,
+            }}
+          >
             <EmptyState
               compact
               icon={<MessageSquareIcon />}
               title="No activity yet"
               description="Issue activity is not available from the API yet."
             />
-          </SectionAccordion>
+          </WorkItemActivity>
           <Section title="Comment">
             <div className="space-y-3 rounded-xl border p-4">
               <Textarea
@@ -480,6 +492,27 @@ function LiveWorkItemPage({
             namespaceId={namespaceId}
             disabled={isPending || deleteMutation.isPending}
             mode="edit"
+          />
+          <PluginSlot
+            name="issue.sidebar"
+            context={{
+              issueId: issue.id,
+              issueKey: issue.key,
+              organizationId,
+              organizationSlug,
+              namespaceId,
+              namespaceSlug,
+              projectId: project?.id,
+            }}
+          />
+          <PluginSlot
+            name="issue.actions"
+            context={{
+              issueId: issue.id,
+              issueKey: issue.key,
+              organizationId,
+              organizationSlug,
+            }}
           />
           <Section title="Metadata" data-section="issue-metadata">
             <IssueMetadataProperties

@@ -257,3 +257,44 @@ CREATE INDEX IF NOT EXISTS custom_field_operations_pending
 CREATE INDEX IF NOT EXISTS custom_field_operations_resource
   ON custom_field_operations (resource_id, status);
 
+CREATE TABLE IF NOT EXISTS plugin_installations (
+  id VARCHAR(64) PRIMARY KEY,
+  plugin_id VARCHAR(128) NOT NULL,
+  version VARCHAR(64) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  manifest JSONB NOT NULL,
+  error_message TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ,
+  CONSTRAINT plugin_installations_status_known CHECK (status IN (
+    'unknown', 'installed', 'starting', 'active', 'disabling', 'disabled', 'failed'
+  ))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS plugin_installations_plugin_id
+  ON plugin_installations (plugin_id);
+
+CREATE TABLE IF NOT EXISTS plugin_activations (
+  plugin_id VARCHAR(128) NOT NULL,
+  scope_id VARCHAR(64) NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ,
+  PRIMARY KEY (plugin_id, scope_id)
+);
+
+CREATE INDEX IF NOT EXISTS plugin_activations_scope
+  ON plugin_activations (scope_id, enabled);
+
+CREATE TABLE IF NOT EXISTS plugin_storage (
+  plugin_id VARCHAR(128) NOT NULL,
+  scope_id VARCHAR(64) NOT NULL,
+  storage_key VARCHAR(256) NOT NULL,
+  value JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ,
+  PRIMARY KEY (plugin_id, scope_id, storage_key)
+);
+
+

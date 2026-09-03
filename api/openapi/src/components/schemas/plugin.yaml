@@ -1,0 +1,331 @@
+PluginStatus:
+  title: PluginStatus
+  type: string
+  description: Lifecycle state of a plugin installation or runtime instance.
+  enum:
+    - unknown
+    - installed
+    - starting
+    - active
+    - disabling
+    - disabled
+    - failed
+PluginCapability:
+  title: PluginCapability
+  type: string
+  description: Closed host-API capability granted at install time.
+  enum:
+    - issues.read
+    - issues.update
+    - projects.read
+    - users.read
+    - permissions.check
+    - plugin.storage.read
+    - plugin.storage.write
+    - graph.read
+    - graph.write
+    - events.publish
+PluginUISlot:
+  title: PluginUISlot
+  type: string
+  description: Host UI contribution point declared by a plugin.
+  enum:
+    - issue.sidebar
+    - issue.actions
+    - issue.activity
+    - organization.settings
+    - project.settings
+    - project.sidebar
+PluginConfigFieldType:
+  title: PluginConfigFieldType
+  type: string
+  description: Closed activation config field type.
+  enum:
+    - string
+    - integer
+    - boolean
+    - graph_binding
+PluginGraphRelationDirection:
+  title: PluginGraphRelationDirection
+  type: string
+  description: Direction of listed plugin domain relations.
+  enum:
+    - outgoing
+    - incoming
+    - both
+PluginConfigField:
+  title: PluginConfigField
+  type: object
+  description: Declared per-activation config field from the plugin manifest.
+  properties:
+    name:
+      type: string
+    type:
+      $ref: "#/components/schemas/PluginConfigFieldType"
+    foreign:
+      type: string
+      description: Foreign graph alias when type is graph_binding.
+    required:
+      type: boolean
+  required:
+    - name
+    - type
+PluginGraphPropertySummary:
+  title: PluginGraphPropertySummary
+  type: object
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+    required:
+      type: boolean
+  required:
+    - name
+    - type
+PluginGraphKindSummary:
+  title: PluginGraphKindSummary
+  type: object
+  description: Local graph kind advertised for host binding pickers.
+  properties:
+    kind:
+      type: string
+    parent:
+      type: string
+    properties:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginGraphPropertySummary"
+  required:
+    - kind
+    - parent
+PluginGraphForeignSummary:
+  title: PluginGraphForeignSummary
+  type: object
+  description: Declared foreign graph alias resolved at activation.
+  properties:
+    name:
+      type: string
+    parent:
+      type: string
+    properties:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginGraphPropertySummary"
+  required:
+    - name
+    - parent
+PluginGraphSummary:
+  title: PluginGraphSummary
+  type: object
+  description: Local kinds and foreign aliases from the plugin manifest.
+  properties:
+    nodes:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginGraphKindSummary"
+    foreign:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginGraphForeignSummary"
+PluginConfig:
+  title: PluginConfig
+  type: object
+  description: Per-activation plugin configuration.
+  properties:
+    config:
+      type: object
+      additionalProperties: true
+  required:
+    - config
+Plugin:
+  title: Plugin
+  type: object
+  description: An installed plugin package and its runtime status.
+  properties:
+    id:
+      type: string
+      description: Installation row ID.
+      example: 9bsv0s46s6s002p9ltq0
+    plugin_id:
+      type: string
+      description: Reverse-domain plugin identifier.
+      example: com.elemo.timetracking
+    name:
+      type: string
+      example: Time Tracking
+    version:
+      type: string
+      example: 1.0.0
+    status:
+      $ref: "#/components/schemas/PluginStatus"
+    capabilities:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginCapability"
+    slots:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginUISlot"
+    error:
+      type: string
+      description: Last runtime error, if the plugin failed to start.
+    enabled:
+      type: boolean
+      nullable: true
+      description: Scoped activation when listing for a manage scope.
+    config:
+      type: object
+      additionalProperties: true
+      description: Per-activation config when listing for a manage scope.
+    config_schema:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginConfigField"
+    graph:
+      $ref: "#/components/schemas/PluginGraphSummary"
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+      nullable: true
+  required:
+    - id
+    - plugin_id
+    - name
+    - version
+    - status
+    - capabilities
+    - slots
+    - created_at
+FrontendPlugin:
+  title: FrontendPlugin
+  type: object
+  description: Active frontend plugin discovery payload for a workspace scope.
+  properties:
+    id:
+      type: string
+      example: com.elemo.timetracking
+    version:
+      type: string
+      example: 1.0.0
+    entrypoint:
+      type: string
+      example: frontend/index.js
+    module:
+      type: string
+    slots:
+      type: array
+      items:
+        $ref: "#/components/schemas/PluginUISlot"
+  required:
+    - id
+    - version
+    - entrypoint
+    - slots
+PluginInvokeResult:
+  title: PluginInvokeResult
+  type: object
+  description: Result of POST /v1/plugins/{pluginId}/invoke.
+  properties:
+    ok:
+      type: boolean
+    error:
+      type: string
+    data:
+      description: Plugin-defined JSON payload.
+  required:
+    - ok
+ExtensionNode:
+  title: ExtensionNode
+  type: object
+  description: Plugin-defined Neo4j graph node (label Extension).
+  properties:
+    id:
+      type: string
+      example: 9bsv0s46s6s002p9ltq0
+    plugin_id:
+      type: string
+      example: com.elemo.timetracking
+    kind:
+      type: string
+      example: TimeEntry
+    properties:
+      type: object
+      additionalProperties: true
+    parent_id:
+      type: string
+      nullable: true
+      description: Direct IN_SCOPE_OF parent id.
+    parent_type:
+      $ref: "#/components/schemas/ResourceType"
+    created_at:
+      type: string
+      format: date-time
+      nullable: true
+    updated_at:
+      type: string
+      format: date-time
+      nullable: true
+  required:
+    - id
+    - plugin_id
+    - kind
+    - properties
+ExtensionNodePage:
+  title: ExtensionNodePage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/ExtensionNode"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info
+ExtensionRelation:
+  title: ExtensionRelation
+  type: object
+  description: Namespaced plugin domain edge.
+  properties:
+    id:
+      type: string
+    kind:
+      type: string
+      example: LOGGED_ON
+    from:
+      type: string
+    from_type:
+      $ref: "#/components/schemas/ResourceType"
+    to:
+      type: string
+    to_type:
+      $ref: "#/components/schemas/ResourceType"
+    created_at:
+      type: string
+      format: date-time
+      nullable: true
+  required:
+    - id
+    - kind
+    - from
+    - from_type
+    - to
+    - to_type
+ExtensionRelationPage:
+  title: ExtensionRelationPage
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        $ref: "#/components/schemas/ExtensionRelation"
+    page_info:
+      $ref: "#/components/schemas/PageInfo"
+  required:
+    - items
+    - page_info

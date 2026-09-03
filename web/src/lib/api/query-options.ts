@@ -13,6 +13,8 @@ import {
   v1NotificationsGetOptions as generatedNotificationsGetOptions,
   v1OrganizationsGetOptions as generatedOrganizationsGetOptions,
   v1PermissionResourceGetOptions as generatedPermissionResourceGetOptions,
+  v1PluginsFrontendGetOptions as generatedPluginsFrontendGetOptions,
+  v1PluginsGetOptions as generatedPluginsGetOptions,
   v1ProjectsIssuesGetOptions as generatedProjectsIssuesGetOptions,
   v1ResourceCustomFieldsGetOptions as generatedResourceCustomFieldsGetOptions,
   v1SearchGetOptions as generatedSearchGetOptions,
@@ -179,5 +181,24 @@ export function v1ResourceCustomFieldsGetOptions(
   return {
     ...generatedResourceCustomFieldsGetOptions(...args),
     ...cacheProfiles.volatile,
+  };
+}
+
+export function v1PluginsGetOptions(
+  ...args: Parameters<typeof generatedPluginsGetOptions>
+) {
+  return {
+    ...generatedPluginsGetOptions(...args),
+    ...cacheProfiles.volatile,
+  };
+}
+
+export function v1PluginsFrontendGetOptions(
+  ...args: Parameters<typeof generatedPluginsFrontendGetOptions>
+) {
+  return {
+    ...generatedPluginsFrontendGetOptions(...args),
+    ...cacheProfiles.volatile,
+    refetchOnWindowFocus: true,
   };
 }

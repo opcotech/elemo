@@ -45,4 +45,9 @@ export {
   v1TodoUpdateMutation,
   v1UserResetPasswordMutation,
   v1UserUpdateMutation,
+  v1PluginDeleteMutation,
+  v1PluginDisableMutation,
+  v1PluginEnableMutation,
+  v1PluginConfigPatchMutation,
+  v1PluginInvokeMutation,
 } from "@/lib/client/@tanstack/react-query.gen";

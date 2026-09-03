@@ -65,19 +65,22 @@ export function DatePicker({
             aria-label={ariaLabel}
             variant="outline"
             className={cn(
-              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border shadow-none",
-              !className && "font-normal",
+              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border px-0! font-normal shadow-none",
               !date && "text-muted-foreground",
               clearable &&
-                "group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive h-full min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
+                "group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive h-full min-w-0 flex-1 border-0 bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
               !clearable && className
             )}
             disabled={disabled}
           />
         }
       >
-        <CalendarIcon className="size-4" />
-        {date ? format(date, "PPP") : placeholder}
+        <span className="flex min-w-0 items-center gap-2 px-3">
+          <CalendarIcon className="size-4 shrink-0" />
+          <span className="min-w-0 truncate">
+            {date ? format(date, "PPP") : placeholder}
+          </span>
+        </span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         {open ? (
@@ -110,7 +113,6 @@ export function DatePicker({
       {picker}
       {date ? (
         <RemovableInputGroupRemove
-          addonClassName="pr-0.5"
           disabled={disabled}
           aria-label={clearAriaLabel}
           title={clearAriaLabel}

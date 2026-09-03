@@ -69,3 +69,10 @@ func newTestCustomFieldController(t *testing.T, svc service.CustomFieldService) 
 	require.NoError(t, err)
 	return c
 }
+
+func newTestPluginController(t *testing.T, svc service.PluginService) PluginController {
+	t.Helper()
+	c, err := NewPluginController(svc)
+	require.NoError(t, err)
+	return c
+}

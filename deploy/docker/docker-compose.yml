@@ -5,6 +5,7 @@ volumes:
   pg_data: { }
   localstack_data: { }
   meili_data: { }
+  plugin_data: {}
 
 networks:
   default:
@@ -140,6 +141,7 @@ services:
         condition: service_started
     volumes:
       - ../../configs:/opt/opcotech/elemo/configs:ro
+      - plugin_data:/opt/opcotech/elemo/plugins
     environment:
       ELEMO_CONFIG: /opt/opcotech/elemo/configs/development/config.gen.yml
     ports:
@@ -173,6 +175,7 @@ services:
         condition: service_started
     volumes:
       - ../../configs:/opt/opcotech/elemo/configs:ro
+      - plugin_data:/opt/opcotech/elemo/plugins
     environment:
       ELEMO_CONFIG: /opt/opcotech/elemo/configs/development/config.gen.yml
     ports:

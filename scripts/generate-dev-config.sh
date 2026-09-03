@@ -53,6 +53,7 @@ function generateConfigFile() {
     local meilisearch_host="meilisearch"
     local otel_collector_host="otelcollector"
     local smtp_host="smtp"
+    local plugin_directory="/opt/opcotech/elemo/plugins"
   else
     local suffix=".local"
     local redis_host="${host}"
@@ -62,6 +63,7 @@ function generateConfigFile() {
     local meilisearch_host="${host}"
     local otel_collector_host="${host}"
     local smtp_host="${host}"
+    local plugin_directory="${PLUGINS_DIR}"
   fi
 
 
@@ -212,6 +214,10 @@ tracing:
   service_name: elemo
   collector_endpoint: ${otel_collector_host}:4318
   trace_ratio: 0.75
+
+plugin:
+  directory: ${plugin_directory}
+  execution_timeout: 5s
 EOF
 }
 
@@ -221,6 +227,8 @@ checkInstalled "openssl"
 
 # Generate necessary resources
 mkdir -p "${CONFIG_DIR}"
+mkdir -p "${PLUGINS_DIR}"
+chmod 0777 "${PLUGINS_DIR}"
 generateSigningKey
 generateLicenseKey
 generateConfigFile "docker"

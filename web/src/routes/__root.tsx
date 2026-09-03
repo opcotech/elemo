@@ -12,6 +12,7 @@ import { NotFound } from "@/components/shared/not-found";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/ui/top-progress-bar";
+import { PLUGIN_IMPORT_MAP } from "@/lib/plugins/runtime";
 import type { Theme } from "@/lib/theme";
 import type { RouterContext } from "@/router";
 import appCss from "@/styles/app.css?url";
@@ -93,6 +94,12 @@ function RootDocument({
       suppressHydrationWarning
     >
       <head>
+        <script
+          type="importmap"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(PLUGIN_IMPORT_MAP),
+          }}
+        />
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>

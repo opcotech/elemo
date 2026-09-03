@@ -3,6 +3,7 @@
 ROOT_DIR:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR:=$(ROOT_DIR)/build
 SCRIPTS_DIR:=$(ROOT_DIR)/scripts
+PLUGINS_DIR:=$(ROOT_DIR)/plugins
 TEMPLATES_DIR:=$(ROOT_DIR)/templates
 API_DIR:=$(ROOT_DIR)/api/openapi
 API_SERVER_DIR:=$(ROOT_DIR)/internal/transport/http/api
@@ -95,6 +96,13 @@ build.frontend: ## Build front-end app
 	$(call log, build front-end app)
 	@$(PNPM_RUN) build
 
+.PHONY: plugins
+plugins: ## Build all plugin zips
+	@find '$(PLUGINS_DIR)' -mindepth 1 -maxdepth 1 -type d | sort | while IFS= read -r plugin_dir; do \
+		if [ ! -f "$$plugin_dir/Makefile" ]; then continue; fi; \
+		$(MAKE) -C "$$plugin_dir" GO_EXEC='$(GO_EXEC)' PNPM_EXEC='$(PNPM_EXEC)' BUILD_DIR='$(BUILD_DIR)' || exit 1; \
+	done
+
 .PHONY: dev
 dev: start.backend dev.frontend ## Start backend and front-end for development
 
@@ -117,7 +125,7 @@ start.monitoring: ## Start Jaeger/Prometheus/Grafana monitoring stack
 	@docker compose -f deploy/docker/docker-compose.monitoring.yml up -d --force-recreate
 
 .PHONY: start.frontend
-start.frontend: build.frontend ## Start front-end app
+start.frontend: ## Start front-end app
 	$(call log, starting front-end app)
 	@$(PNPM_RUN) start
 

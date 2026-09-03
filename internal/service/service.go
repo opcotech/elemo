@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+
+	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 )
@@ -33,8 +36,22 @@ func WithTracer(tracer tracing.Tracer) Option {
 }
 
 type runtime struct {
-	logger log.Logger
-	tracer tracing.Tracer
+	logger   log.Logger
+	tracer   tracing.Tracer
+	eventBus EventPublisher
+}
+
+// EventPublisher is the subset of the in-process bus used by domain services.
+type EventPublisher interface {
+	Publish(ctx context.Context, event event.Event) error
+}
+
+// WithEventBus sets the in-process event publisher. A nil bus is a no-op.
+func WithEventBus(bus EventPublisher) Option {
+	return func(r *runtime) error {
+		r.eventBus = bus
+		return nil
+	}
 }
 
 func newRuntime(opts ...Option) (runtime, error) {

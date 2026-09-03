@@ -39,6 +39,8 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import { PluginHost } from "@/lib/plugins/host";
+import { ensurePluginRuntime } from "@/lib/plugins/runtime";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
 
 const QuickCreate = lazy(() =>
@@ -86,6 +88,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
   useLayoutEffect(() => {
     uiActions.hydrateNavigation();
+    ensurePluginRuntime();
   }, []);
 
   useEffect(() => {
@@ -207,6 +210,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
           />
         </Suspense>
       ) : null}
+      <PluginHost />
     </SidebarProvider>
   );
 }

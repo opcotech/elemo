@@ -6,6 +6,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@elemo/plugin-sdk": fileURLToPath(
+        new URL("./packages/plugin-sdk/src/index.ts", import.meta.url)
+      ),
+      "@elemo/plugin-ui": fileURLToPath(
+        new URL("./packages/plugin-ui/src/index.ts", import.meta.url)
+      ),
     },
   },
   test: {

@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { ProjectDangerZone } from "@/components/projects/project-danger-zone";
 import { ProjectDetailInfo } from "@/components/projects/project-detail-info";
 import {
@@ -68,6 +69,18 @@ function ProjectDetailPage() {
         organizationSlug={organization.slug}
         namespaceSlug={namespace.slug}
         namespaceName={namespace.name}
+      />
+
+      <PluginSlot
+        name="project.settings"
+        context={{
+          organizationId: organization.id,
+          organizationSlug: organization.slug,
+          namespaceId: namespace.id,
+          namespaceSlug: namespace.slug,
+          projectId: project.id,
+          projectKey: project.key,
+        }}
       />
 
       <ProjectDangerZone

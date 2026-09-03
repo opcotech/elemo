@@ -55,4 +55,17 @@ var (
 	ErrInvalidUserToken                 = errors.New("invalid user token")                      // the user token is invalid
 	ErrInvalidUserTokenContext          = errors.New("invalid user token context")              // the provided user token context is invalid
 	ErrPermissionSubjectTargetEqual     = errors.New("permission subject and target are equal") // the permission subject and target are equal
+	ErrInvalidPluginManifest            = errors.New("invalid plugin manifest")                 // the plugin manifest is invalid
+	ErrInvalidPluginID                  = errors.New("invalid plugin id")                       // the plugin id is invalid
+	ErrInvalidPluginCapability          = errors.New("invalid plugin capability")               // the capability is unknown
+	ErrInvalidPluginEvent               = errors.New("invalid plugin event")                    // the event topic is unknown
+	ErrInvalidPluginSlot                = errors.New("invalid plugin slot")                     // the ui slot is unknown
+	ErrPluginSchemaVersion              = errors.New("unsupported plugin schema version")       // schemaVersion is not supported
+	ErrPluginAPIIncompatible            = errors.New("incompatible plugin api")                 // requires.pluginApi is not ^1
+	ErrInvalidExtensionDetails          = errors.New("invalid extension details")               // the extension node is invalid
+	ErrPluginGraphSchema                = errors.New("invalid plugin graph schema")             // declared graph schema is invalid
+	ErrPluginNotActive                  = errors.New("plugin is not active")                    // the plugin is disabled or missing
+	ErrPluginConfigInvalid              = errors.New("invalid plugin config")                   // activation config failed schema validation
+	ErrPluginGraphBinding               = errors.New("invalid plugin graph binding")            // foreign kind binding is missing or incompatible
+	ErrPluginRelationCardinality        = errors.New("plugin relation cardinality violated")    // declared cardinality would be exceeded
 )

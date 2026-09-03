@@ -816,7 +816,7 @@ export const zNotificationPage = z.object({
  *
  * Fine-grained authorization action. Exact match only; wildcards are not supported.
  *
- * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage.
+ * Registry: organization.create, organization.read, organization.update, organization.delete, organization.members.manage, namespace.create, namespace.read, namespace.update, namespace.delete, project.create, project.read, project.update, project.delete, project.members.manage, issue.create, issue.read, issue.update, issue.delete, issue.assign, document.create, document.read, document.update, document.delete, folder.create, role.manage, team.manage, permission.manage, custom_field.manage, plugin.install, plugin.manage, extension.create, extension.read, extension.update, extension.delete.
  *
  */
 export const zAction = z.string();
@@ -881,7 +881,8 @@ export const zResourceType = z.enum([
     'UserToken',
     'Folder',
     'Installation',
-    'CustomFieldDefinition'
+    'CustomFieldDefinition',
+    'Extension'
 ]);
 
 /**
@@ -1265,6 +1266,231 @@ export const zCustomFieldPredicateOp = z.enum([
 ]);
 
 /**
+ * PluginStatus
+ *
+ * Lifecycle state of a plugin installation or runtime instance.
+ */
+export const zPluginStatus = z.enum([
+    'unknown',
+    'installed',
+    'starting',
+    'active',
+    'disabling',
+    'disabled',
+    'failed'
+]);
+
+/**
+ * PluginCapability
+ *
+ * Closed host-API capability granted at install time.
+ */
+export const zPluginCapability = z.enum([
+    'issues.read',
+    'issues.update',
+    'projects.read',
+    'users.read',
+    'permissions.check',
+    'plugin.storage.read',
+    'plugin.storage.write',
+    'graph.read',
+    'graph.write',
+    'events.publish'
+]);
+
+/**
+ * PluginUISlot
+ *
+ * Host UI contribution point declared by a plugin.
+ */
+export const zPluginUiSlot = z.enum([
+    'issue.sidebar',
+    'issue.actions',
+    'issue.activity',
+    'organization.settings',
+    'project.settings',
+    'project.sidebar'
+]);
+
+/**
+ * PluginConfigFieldType
+ *
+ * Closed activation config field type.
+ */
+export const zPluginConfigFieldType = z.enum([
+    'string',
+    'integer',
+    'boolean',
+    'graph_binding'
+]);
+
+/**
+ * PluginGraphRelationDirection
+ *
+ * Direction of listed plugin domain relations.
+ */
+export const zPluginGraphRelationDirection = z.enum([
+    'outgoing',
+    'incoming',
+    'both'
+]);
+
+/**
+ * PluginConfigField
+ *
+ * Declared per-activation config field from the plugin manifest.
+ */
+export const zPluginConfigField = z.object({
+    name: z.string(),
+    type: zPluginConfigFieldType,
+    foreign: z.string().optional(),
+    required: z.boolean().optional()
+});
+
+/**
+ * PluginGraphPropertySummary
+ */
+export const zPluginGraphPropertySummary = z.object({
+    name: z.string(),
+    type: z.string(),
+    required: z.boolean().optional()
+});
+
+/**
+ * PluginGraphKindSummary
+ *
+ * Local graph kind advertised for host binding pickers.
+ */
+export const zPluginGraphKindSummary = z.object({
+    kind: z.string(),
+    parent: z.string(),
+    properties: z.array(zPluginGraphPropertySummary).optional()
+});
+
+/**
+ * PluginGraphForeignSummary
+ *
+ * Declared foreign graph alias resolved at activation.
+ */
+export const zPluginGraphForeignSummary = z.object({
+    name: z.string(),
+    parent: z.string(),
+    properties: z.array(zPluginGraphPropertySummary).optional()
+});
+
+/**
+ * PluginGraphSummary
+ *
+ * Local kinds and foreign aliases from the plugin manifest.
+ */
+export const zPluginGraphSummary = z.object({
+    nodes: z.array(zPluginGraphKindSummary).optional(),
+    foreign: z.array(zPluginGraphForeignSummary).optional()
+});
+
+/**
+ * PluginConfig
+ *
+ * Per-activation plugin configuration.
+ */
+export const zPluginConfig = z.object({
+    config: z.record(z.string(), z.unknown())
+});
+
+/**
+ * Plugin
+ *
+ * An installed plugin package and its runtime status.
+ */
+export const zPlugin = z.object({
+    id: z.string(),
+    plugin_id: z.string(),
+    name: z.string(),
+    version: z.string(),
+    status: zPluginStatus,
+    capabilities: z.array(zPluginCapability),
+    slots: z.array(zPluginUiSlot),
+    error: z.string().optional(),
+    enabled: z.boolean().nullish(),
+    config: z.record(z.string(), z.unknown()).optional(),
+    config_schema: z.array(zPluginConfigField).optional(),
+    graph: zPluginGraphSummary.optional(),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime().nullish()
+});
+
+/**
+ * FrontendPlugin
+ *
+ * Active frontend plugin discovery payload for a workspace scope.
+ */
+export const zFrontendPlugin = z.object({
+    id: z.string(),
+    version: z.string(),
+    entrypoint: z.string(),
+    module: z.string().optional(),
+    slots: z.array(zPluginUiSlot)
+});
+
+/**
+ * PluginInvokeResult
+ *
+ * Result of POST /v1/plugins/{pluginId}/invoke.
+ */
+export const zPluginInvokeResult = z.object({
+    ok: z.boolean(),
+    error: z.string().optional(),
+    data: z.unknown().optional()
+});
+
+/**
+ * ExtensionNode
+ *
+ * Plugin-defined Neo4j graph node (label Extension).
+ */
+export const zExtensionNode = z.object({
+    id: z.string(),
+    plugin_id: z.string(),
+    kind: z.string(),
+    properties: z.record(z.string(), z.unknown()),
+    parent_id: z.string().nullish(),
+    parent_type: zResourceType.optional(),
+    created_at: z.iso.datetime().nullish(),
+    updated_at: z.iso.datetime().nullish()
+});
+
+/**
+ * ExtensionNodePage
+ */
+export const zExtensionNodePage = z.object({
+    items: z.array(zExtensionNode),
+    page_info: zPageInfo
+});
+
+/**
+ * ExtensionRelation
+ *
+ * Namespaced plugin domain edge.
+ */
+export const zExtensionRelation = z.object({
+    id: z.string(),
+    kind: z.string(),
+    from: z.string(),
+    from_type: zResourceType,
+    to: z.string(),
+    to_type: zResourceType,
+    created_at: z.iso.datetime().nullish()
+});
+
+/**
+ * ExtensionRelationPage
+ */
+export const zExtensionRelationPage = z.object({
+    items: z.array(zExtensionRelation),
+    page_info: zPageInfo
+});
+
+/**
  * SystemHealth
  */
 export const zSystemHealth = z.object({
@@ -1503,6 +1729,11 @@ export const zUserEmail = z.email();
  * Irreversibly delete the user.
  */
 export const zForce = z.boolean();
+
+/**
+ * Reverse-domain plugin identifier.
+ */
+export const zPluginId = z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/);
 
 export const zUserPatch = z.object({
     username: z.string().min(3).max(50).regex(/^[a-z0-9-_]{3,50}$/).optional(),
@@ -1761,6 +1992,55 @@ export const zCustomFieldSearch = z.object({
     user_id: z.string().optional(),
     resource_id: z.string().optional(),
     limit: z.int().gte(1).lte(1000).optional().default(100)
+});
+
+export const zPluginEnable = z.object({
+    scope_id: z.string(),
+    scope_type: zResourceType,
+    config: z.record(z.string(), z.unknown()).optional()
+});
+
+export const zPluginInvoke = z.object({
+    function: z.string().min(1).max(128),
+    scope_id: z.string(),
+    payload: z.unknown().optional()
+});
+
+export const zPluginGraphNodeCreate = z.object({
+    kind: z.string(),
+    parent_id: z.string(),
+    parent_type: zResourceType,
+    properties: z.record(z.string(), z.unknown()).optional(),
+    relation: z.object({
+        kind: z.string(),
+        to_id: z.string(),
+        to_type: zResourceType
+    }).optional()
+});
+
+export const zPluginGraphNodeUpdate = z.object({
+    properties: z.record(z.string(), z.unknown())
+});
+
+export const zPluginGraphNodeMove = z.object({
+    parent_id: z.string(),
+    parent_type: zResourceType
+});
+
+export const zPluginGraphRelationCreate = z.object({
+    kind: z.string(),
+    from_id: z.string(),
+    from_type: zResourceType,
+    to_id: z.string(),
+    to_type: zResourceType
+});
+
+export const zPluginPackage = z.object({
+    package: z.string()
+});
+
+export const zPluginConfigUpdate = z.object({
+    config: z.record(z.string(), z.unknown())
 });
 
 export const zV1UsersGetQuery = z.object({
@@ -2972,6 +3252,242 @@ export const zV1ResourceCustomFieldValuePutPath = z.object({
  * No Content
  */
 export const zV1ResourceCustomFieldValuePutResponse = z.void();
+
+export const zV1PluginsGetQuery = z.object({
+    scope_id: z.string().optional(),
+    scope_type: zResourceType.optional()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginsGetResponse = z.array(zPlugin);
+
+export const zV1PluginsCreateBody = zPluginPackage;
+
+/**
+ * Created
+ */
+export const zV1PluginsCreateResponse = zPlugin;
+
+export const zV1PluginsFrontendGetQuery = z.object({
+    scope_id: z.string(),
+    scope_type: zResourceType
+});
+
+/**
+ * OK
+ */
+export const zV1PluginsFrontendGetResponse = z.array(zFrontendPlugin);
+
+export const zV1PluginDeletePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * No Content
+ */
+export const zV1PluginDeleteResponse = z.void();
+
+export const zV1PluginGetPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGetResponse = zPlugin;
+
+export const zV1PluginEnableBody = zPluginEnable;
+
+export const zV1PluginEnablePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * No Content
+ */
+export const zV1PluginEnableResponse = z.void();
+
+export const zV1PluginDisableBody = zPluginEnable;
+
+export const zV1PluginDisablePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * No Content
+ */
+export const zV1PluginDisableResponse = z.void();
+
+export const zV1PluginConfigGetPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+export const zV1PluginConfigGetQuery = z.object({
+    scope_id: z.string(),
+    scope_type: zResourceType
+});
+
+/**
+ * OK
+ */
+export const zV1PluginConfigGetResponse = zPluginConfig;
+
+export const zV1PluginConfigPatchBody = zPluginConfigUpdate;
+
+export const zV1PluginConfigPatchPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+export const zV1PluginConfigPatchQuery = z.object({
+    scope_id: z.string(),
+    scope_type: zResourceType
+});
+
+/**
+ * OK
+ */
+export const zV1PluginConfigPatchResponse = zPluginConfig;
+
+export const zV1PluginUpgradeBody = zPluginPackage;
+
+export const zV1PluginUpgradePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * OK
+ */
+export const zV1PluginUpgradeResponse = zPlugin;
+
+export const zV1PluginInvokeBody = zPluginInvoke;
+
+export const zV1PluginInvokePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * OK
+ */
+export const zV1PluginInvokeResponse = zPluginInvokeResult;
+
+export const zV1PluginGraphNodesGetPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+export const zV1PluginGraphNodesGetQuery = z.object({
+    kind: z.string(),
+    scope_id: z.string(),
+    scope_type: zResourceType,
+    equals: z.string().optional(),
+    owner_plugin_id: z.string().optional(),
+    page_size: z.int().gte(1).lte(1000).optional().default(100),
+    page_token: z.string().optional()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGraphNodesGetResponse = zExtensionNodePage;
+
+export const zV1PluginGraphNodesCreateBody = zPluginGraphNodeCreate;
+
+export const zV1PluginGraphNodesCreatePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * Created
+ */
+export const zV1PluginGraphNodesCreateResponse = zExtensionNode;
+
+export const zV1PluginGraphNodeDeletePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/),
+    id: z.string()
+});
+
+/**
+ * No Content
+ */
+export const zV1PluginGraphNodeDeleteResponse = z.void();
+
+export const zV1PluginGraphNodeGetPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/),
+    id: z.string()
+});
+
+export const zV1PluginGraphNodeGetQuery = z.object({
+    owner_plugin_id: z.string().optional()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGraphNodeGetResponse = zExtensionNode;
+
+export const zV1PluginGraphNodeUpdateBody = zPluginGraphNodeUpdate;
+
+export const zV1PluginGraphNodeUpdatePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/),
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGraphNodeUpdateResponse = zExtensionNode;
+
+export const zV1PluginGraphNodeMoveBody = zPluginGraphNodeMove;
+
+export const zV1PluginGraphNodeMovePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/),
+    id: z.string()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGraphNodeMoveResponse = zExtensionNode;
+
+export const zV1PluginGraphRelationsGetPath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+export const zV1PluginGraphRelationsGetQuery = z.object({
+    kind: z.string(),
+    node_id: z.string(),
+    node_type: zResourceType,
+    direction: zPluginGraphRelationDirection.optional(),
+    page_size: z.int().gte(1).lte(1000).optional().default(100),
+    page_token: z.string().optional()
+});
+
+/**
+ * OK
+ */
+export const zV1PluginGraphRelationsGetResponse = zExtensionRelationPage;
+
+export const zV1PluginGraphRelationsCreateBody = zPluginGraphRelationCreate;
+
+export const zV1PluginGraphRelationsCreatePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/)
+});
+
+/**
+ * Created
+ */
+export const zV1PluginGraphRelationsCreateResponse = zExtensionRelation;
+
+export const zV1PluginGraphRelationDeletePath = z.object({
+    pluginId: z.string().regex(/^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/),
+    id: z.string()
+});
+
+/**
+ * No Content
+ */
+export const zV1PluginGraphRelationDeleteResponse = z.void();
 
 /**
  * OK

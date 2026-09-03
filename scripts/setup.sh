@@ -24,6 +24,10 @@ function validateBoolean() {
   esac
 }
 
+function compose() {
+  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" "$@"
+}
+
 function setupOAuthClient() {
   log "setting up OAuth2 client"
 
@@ -39,8 +43,7 @@ function setupOAuthClient() {
   fi
 
   local add_client_out
-  add_client_out="$(docker compose \
-    -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T elemo-server bin/elemo auth add-client \
+  add_client_out="$(compose exec -T elemo-server bin/elemo auth add-client \
         --callback-url "${webapp_host}/api/auth/callback/elemo" 2>&1 | grep "client-id")"
 
   backupCopyFile "${WEB_DIR}/.env" "${WEB_DIR}/.env.example"
@@ -54,10 +57,10 @@ function setupOAuthClient() {
 
 function setupDemoData() {
   log "loading demo data"
-  echo "MATCH (n) DETACH DELETE n" | docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo < "${QUERIES_DIR}/bootstrap.sql"
+  echo "MATCH (n) DETACH DELETE n" | compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret"
+  compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/bootstrap.cypher"
+  compose exec -T neo4j cypher-shell -u "neo4j" -p "neo4jsecret" < "${QUERIES_DIR}/demo.cypher"
+  compose exec -T postgres psql postgres://elemo:pgsecret@postgres/elemo < "${QUERIES_DIR}/bootstrap.sql"
 }
 
 function installFrontEnd() {
@@ -82,8 +85,7 @@ function installFrontEnd() {
 function reindexSearchIndex() {
   log "reindexing search"
 
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" \
-    exec -T elemo-server bin/elemo search reindex --delete-all
+  compose exec -T elemo-server bin/elemo search reindex --delete-all
 }
 
 # Run preflight
@@ -96,24 +98,27 @@ checkInstalled "npm"
 # Generate dev config if missing
 generateConfigIfMissing
 
-# Start services
-compose_args=(-f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" up --remove-orphans -d)
+# Bring up databases first so schema exists before the server restores plugins
+compose up --remove-orphans -d --wait postgres neo4j
+setupDemoData
+
+# Start remaining services
+compose_args=(up --remove-orphans -d)
 if [ "${ELEMO_SKIP_IMAGE_BUILD}" == "false" ]; then
   compose_args+=(--build)
 fi
-docker compose "${compose_args[@]}"
+compose "${compose_args[@]}"
 waitAndPrint 5
 
 # Create a new OAuth2 client and configure the front-end
 setupOAuthClient
-setupDemoData
 
 # Reindex the search index
 reindexSearchIndex
 
 # Tear down services
 if [ "${ELEMO_KEEP_BACKEND}" == "false" ]; then
-  docker compose -f "${DOCKER_DEPLOY_DIR}/docker-compose.yml" down
+  compose down
 fi
 
 # Setup the front-end

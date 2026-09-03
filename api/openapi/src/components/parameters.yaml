@@ -269,3 +269,12 @@ force:
   schema:
     type: boolean
   description: Irreversibly delete the user.
+pluginId:
+  name: pluginId
+  in: path
+  required: true
+  schema:
+    type: string
+    pattern: "^[a-z][a-z0-9]*(\\.[a-z0-9]+)+$"
+    example: com.elemo.timetracking
+  description: Reverse-domain plugin identifier.

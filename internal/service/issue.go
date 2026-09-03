@@ -7,6 +7,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -623,6 +624,10 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 
 	out := issueFromRepository(issue)
 	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
+	publishDomainEvent(ctx, s.eventBus, s.logger, event.Event{
+		Type:     model.PluginEventIssueCreated,
+		Resource: out.ID,
+	})
 	return out, nil
 }
 
@@ -898,6 +903,10 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 
 	out := issueFromRepository(issue)
 	enqueueSearchIndex(ctx, s.logger, s.searchService, out.ID)
+	publishDomainEvent(ctx, s.eventBus, s.logger, event.Event{
+		Type:     model.PluginEventIssueUpdated,
+		Resource: out.ID,
+	})
 	return out, nil
 }
 
@@ -933,6 +942,10 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 			log.WithValue(id.Composite()),
 		)
 	}
+	publishDomainEvent(ctx, s.eventBus, s.logger, event.Event{
+		Type:     model.PluginEventIssueDeleted,
+		Resource: id,
+	})
 	return nil
 }
 

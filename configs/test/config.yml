@@ -143,3 +143,7 @@ tracing:
   service_name: elemo
   collector_endpoint: 127.0.0.1:4318
   trace_ratio: 0.75
+
+plugin:
+  directory: /tmp/elemo-plugins
+  execution_timeout: 5s

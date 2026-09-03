@@ -171,14 +171,13 @@ function OptionContent({
       )}
     >
       {showAvatar ? (
-        <Avatar
-          size={size === "sm" ? "sm" : "default"}
-          className={size === "sm" ? "size-5" : undefined}
-        >
+        <Avatar size="sm" className="size-5">
           {option.avatarSrc ? (
             <AvatarImage src={option.avatarSrc} alt={option.title} />
           ) : null}
-          <AvatarFallback>{fallbackText}</AvatarFallback>
+          <AvatarFallback className="text-[0.625rem]">
+            {fallbackText}
+          </AvatarFallback>
         </Avatar>
       ) : null}
       <div className="flex min-w-0 flex-col">
@@ -440,11 +439,26 @@ export function SearchableEntitySelect({
       triggerIcon={ChevronDownIcon}
       trigger={
         selectedOption ? (
-          <OptionContent
-            option={selectedOption}
-            size={optionSize}
-            className="min-w-0 flex-1 justify-start"
-          />
+          optionHasAvatar(selectedOption) ? (
+            <PersonAvatarStack
+              size="sm"
+              showNames
+              className="min-w-0 flex-1"
+              people={[
+                {
+                  id: selectedOption.value,
+                  name: selectedOption.title,
+                  picture: selectedOption.avatarSrc,
+                },
+              ]}
+            />
+          ) : (
+            <OptionContent
+              option={selectedOption}
+              size={optionSize}
+              className="min-w-0 flex-1 justify-start"
+            />
+          )
         ) : (
           <span className="text-muted-foreground truncate">{placeholder}</span>
         )

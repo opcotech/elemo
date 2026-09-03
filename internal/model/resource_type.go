@@ -27,6 +27,7 @@ const (
 	ResourceTypeInstallation                                  // Installation
 	ResourceTypeTeam                                          // Team
 	ResourceTypeCustomFieldDefinition                         // CustomFieldDefinition
+	ResourceTypeExtension                                     // Extension
 )
 
 // ResourceType is the type of resource that is being managed in the system.

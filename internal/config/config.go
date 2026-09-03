@@ -209,6 +209,12 @@ type WorkerConfig struct {
 	Broker                   RedisConfig   `mapstructure:"broker"`
 }
 
+// PluginConfig is the configuration for the runtime plugin platform.
+type PluginConfig struct {
+	Directory        string        `mapstructure:"directory"`
+	ExecutionTimeout time.Duration `mapstructure:"execution_timeout"`
+}
+
 // TracingConfig is the configuration for the tracing.
 type TracingConfig struct {
 	ServiceName       string  `mapstructure:"service_name"`
@@ -232,4 +238,5 @@ type Config struct {
 	Tracing             TracingConfig            `mapstructure:"tracing"`
 	SMTP                SMTPConfig               `mapstructure:"smtp"`
 	Template            TemplateConfig           `mapstructure:"template"`
+	Plugin              PluginConfig             `mapstructure:"plugin"`
 }
