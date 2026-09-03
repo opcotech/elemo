@@ -1,7 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, it } from "vitest";
 
 import { bindPluginRuntimeImports } from "./runtime";
@@ -46,14 +42,17 @@ describe("bindPluginRuntimeImports", () => {
     );
   });
 
-  it("rewrites the built Time Tracking frontend module", () => {
-    const source = readFileSync(
-      resolve(
-        dirname(fileURLToPath(import.meta.url)),
-        "../../../../plugins/timetracking/frontend/index.js"
-      ),
-      "utf8"
-    );
+  it("rewrites a representative Time Tracking frontend module", () => {
+    // This fixture mirrors the shape of the Vite-bundled plugin output without
+    // depending on a build artifact being present in the working tree.
+    const source = `import { defineElemoPlugin } from "@elemo/plugin-sdk";
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState } from "@elemo/plugin-ui";
+import { useEffect, useState } from "react";
+import { jsx, jsxs } from "react/jsx-runtime";
+var PLUGIN_ID = "com.elemo.timetracking";
+var src_default = defineElemoPlugin({ id: PLUGIN_ID, activate() {} });
+export { src_default as default };
+`;
     const bound = bindPluginRuntimeImports(source);
     expect(bound).not.toMatch(/^import /m);
     expect(bound).toContain("const { defineElemoPlugin } = __rt.PluginSDK;");
