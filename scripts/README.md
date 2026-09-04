@@ -21,13 +21,9 @@ a TypeScript client from it.
 
 ## reset-demo.sh
 
-Wipes a running demo instance and reloads the ACME seed from
-`assets/queries/demo.cypher`. Services are left running.
-
-Clears Neo4j, Redis, Meilisearch, S3 objects, Postgres `user_tokens`,
-`notifications`, and `oauth2_tokens`. Does **not** touch `oauth2_clients`, so
-web `AUTH_CLIENT_ID` / `AUTH_CLIENT_SECRET` stay valid and you do not need to
-re-register an OAuth client or restart the stack.
+Wipes a running demo instance and reloads the smoke-profile seed via
+`tools/workload-prefill`. Data stores stay up; `elemo-server` is restarted so
+the plugin registry is empty.
 
 Requires the Compose stack to already be up (`make start.backend`). Pass
 `--yes` because the wipe is destructive:
@@ -37,6 +33,24 @@ Requires the Compose stack to already be up (`make start.backend`). Pass
 # or
 make demo.reset
 ```
+
+Local development uses the Compose file in-tree, `neo4jsecret` / `pgsecret`,
+and host `go`. Production (unpublished DB ports, vaulted passwords, no Go)
+sets:
+
+| Variable | Purpose |
+| --- | --- |
+| `ELEMO_COMPOSE_OVERRIDE` | Extra Compose file (vaulted auth, no published DB ports) |
+| `ELEMO_COMPOSE_ENV_FILE` | Compose `--env-file` |
+| `ELEMO_PREFILL_CONFIG` | `config.yml` with Docker DNS names (`neo4j`, `postgres`, …) |
+| `ELEMO_CONFIGS_DIR` | Host directory mounted at `/src/configs` so relative license paths resolve |
+| `ELEMO_PREFILL_DOCKER=1` | Run `workload-prefill` in `ELEMO_GOLANG_IMAGE` on `ELEMO_COMPOSE_NETWORK` |
+| `NEO4J_PASSWORD` / `NEO4J_AUTH` | cypher-shell auth (defaults to `neo4jsecret`) |
+| `POSTGRES_PASSWORD` | psql auth (defaults to `pgsecret`) |
+
+`--with-oauth` remints `bin/elemo auth add-client` after the reset (needs
+`ELEMO_OAUTH_CALLBACK_URL`, `ELEMO_OAUTH_SECRETS_FILE`, `ELEMO_WEB_ENV`,
+`ELEMO_API_BASE_URL`). Set `ELEMO_WEB_SERVICE` to restart a systemd unit.
 
 ## setup.sh
 

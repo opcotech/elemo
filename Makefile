@@ -129,6 +129,11 @@ start.frontend: ## Start front-end app
 	$(call log, starting front-end app)
 	@$(PNPM_RUN) start
 
+.PHONY: demo.reset
+demo.reset: ## Wipe stores and reload the smoke-profile demo seed (destructive)
+	$(call log, resetting demo data)
+	@./scripts/reset-demo.sh --yes
+
 .PHONY: demo.prefill
 demo.prefill: ## Prefill a mature-company demo workload (destructive)
 	$(call log, prefill demo workload)
