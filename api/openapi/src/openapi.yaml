@@ -1,52 +1,104 @@
-# Source OpenAPI root (info, servers, tags). Paths and components are merged
-# from sibling files. Assemble with: make generate.openapi
-
 openapi: 3.0.3
 info:
   title: Elemo API
-  version: 0.1.0
-  description: |
+  version: 1.0.0
+  description: >
     # Introduction
 
-    The Elemo API allows you to manage users, organizations and other resources within Elemo in a programmatic way. The API is capable of doing all operations that can be executed from the user interface.
 
-    You may use any tool that handles HTTP requests to interact with the API. However, the requests should be made using the HTTPS protocol so that traffic is encrypted.
+    The Elemo API allows you to manage users, organizations and other resources
+    within Elemo in a programmatic way. The API is capable of doing all
+    operations that can be executed from the user interface.
 
-    You need to obtain an [Access Token](https://en.wikipedia.org/wiki/Access_token) to call most of the API endpoints. The tokens are bound to users, therefore you must have a user in the system as well. Read more about obtaining an access token below.
+
+    You may use any tool that handles HTTP requests to interact with the API.
+    However, the requests should be made using the HTTPS protocol so that
+    traffic is encrypted.
+
+
+    You need to obtain an [Access
+    Token](https://en.wikipedia.org/wiki/Access_token) to call most of the API
+    endpoints. The tokens are bound to users, therefore you must have a user in
+    the system as well. Read more about obtaining an access token below.
+
 
     ## Requests
 
-    The endpoints have support for the HTTP methods below. Please note that not all endpoints are supporting every HTTP method.
 
-    | Method | Usage                                                                                                                        |
+    The endpoints have support for the HTTP methods below. Please note that not
+    all endpoints are supporting every HTTP method.
+
+
+    | Method |
+    Usage                                                                                                                       
+    |
+
     |----------|------------------------------------------------------------------------------------------------------------------------------|
-    | `GET`    | Used to retrieve information about one or many resources.                                                                    |
-    | `POST`   | Creates a new resource. The request must include all required attributes.                                                    |
-    | `PUT`    | Updates an existing resource. The request must include all required attributes.                                              |
-    | `PATCH`  | Partially updates an existing resource. The request attributes are not required. Most of the resources are supporting PATCH. |
-    | `DELETE` | Delete a resource from the system. Usually, this is an irreversible action.                                                  |
+
+    | `GET`    | Used to retrieve information about one or many
+    resources.                                                                   
+    |
+
+    | `POST`   | Creates a new resource. The request must include all required
+    attributes.                                                    |
+
+    | `PUT`    | Updates an existing resource. The request must include all
+    required attributes.                                              |
+
+    | `PATCH`  | Partially updates an existing resource. The request attributes
+    are not required. Most of the resources are supporting PATCH. |
+
+    | `DELETE` | Delete a resource from the system. Usually, this is an
+    irreversible action.                                                  |
+
 
     ## Authentication
 
-    Authentication is implemented based on the [OAuth 2.0](https://oauth.net/2/) specification supporting the password and authorization code flows. As a rule of thumb, whenever you need to interact with the API use authorization code flow and fallback to password flow if other flows cannot be implemented for any reason.
 
-    After the token obtained, use the token as part of the `Authorization` HTTP header in the format of: `Authorization: Bearer {access_token}`
+    Authentication is implemented based on the [OAuth 2.0](https://oauth.net/2/)
+    specification supporting the password and authorization code flows. As a
+    rule of thumb, whenever you need to interact with the API use authorization
+    code flow and fallback to password flow if other flows cannot be implemented
+    for any reason.
+
+
+    After the token obtained, use the token as part of the `Authorization` HTTP
+    header in the format of: `Authorization: Bearer {access_token}`
+
 
     ## Pagination
 
-    List endpoints use cursor pagination. Pass `page_size` (default `100`, max `1000`) and an opaque `page_token` from a previous response's `page_info.next_page_token` to continue. Responses wrap items with `page_info` (`has_more`, optional `next_page_token`, optional `total_count`).
+
+    List endpoints use cursor pagination. Pass `page_size` (default `100`, max
+    `1000`) and an opaque `page_token` from a previous response's
+    `page_info.next_page_token` to continue. Responses wrap items with
+    `page_info` (`has_more`, optional `next_page_token`, optional
+    `total_count`).
+
 
     ```shell
-    $ curl -H "Authorization: Bearer {access_token}" "https://{domain}/api/v1/users?page_size=100&page_token={token}"
+
+    $ curl -H "Authorization: Bearer {access_token}"
+    "https://{domain}/api/v1/users?page_size=100&page_token={token}"
+
     ```
+
 
     ## Versioning
 
+
     ### APIs
 
-    The endpoints are versioned and the version number is part of the path. When the required input or returned output of an endpoint is changed, the current version is being deprecated and a new version of the endpoint is created. Deprecated endpoints are removed when a new major application version is released.
+
+    The endpoints are versioned and the version number is part of the path. When
+    the required input or returned output of an endpoint is changed, the current
+    version is being deprecated and a new version of the endpoint is created.
+    Deprecated endpoints are removed when a new major application version is
+    released.
+
 
     ### This specification
+
 
     In contrast with the APIs, this specification follows semantic versioning.
 tags:
@@ -83,7 +135,7 @@ tags:
   - name: Plugin
     description: Runtime plugins, activations, and plugin-defined graph nodes.
 servers:
-  - url: "https://{domain}/api"
+  - url: https://{domain}/api
     description: Self-hosted instance.
     variables:
       domain:
