@@ -1,11 +1,5 @@
 name: Setup Mise
-description: Install Mise and the project tools from mise.toml
-
-inputs:
-  install_args:
-    description: Extra arguments passed to mise install
-    required: false
-    default: ""
+description: Install Mise and the project tools from mise.lock
 
 runs:
   using: composite
@@ -19,4 +13,6 @@ runs:
         # renovate: datasource=github-releases depName=mise packageName=jdx/mise extractVersion=^v(?<version>.+)$
         version: 2026.9.1
         cache: true
-        install_args: --locked ${{ inputs.install_args }}
+        # Tool names must not be passed with --locked: CLI args are treated as
+        # outside the project lockfile and mise then reports missing URLs.
+        install_args: --locked

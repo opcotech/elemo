@@ -58,8 +58,6 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go
 
       - name: Cache go-licenses
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0

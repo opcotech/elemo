@@ -41,8 +41,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go golangci-lint
       - name: Check formatting
         run: mise run format-check-backend
       - name: Go CI Lint
@@ -57,8 +55,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: node pnpm
       - name: Install web dependencies
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         run: pnpm install --dir web
@@ -89,8 +85,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go gotestsum
       - name: Execute unit tests
         run: mise run test-backend-unit
       - name: Stash test results
@@ -110,8 +104,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go
       - name: Execute benchmark tests
         run: go test -run=Bench -bench=. -benchmem -benchtime=10s ./...
 
@@ -125,8 +117,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go gotestsum
       - name: Execute integration tests
         run: mise run test-backend-integration
       - name: Stash test results
@@ -148,8 +138,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: node pnpm
       - name: Install dependencies
         run: pnpm install --dir web
       - name: Execute unit tests
@@ -165,8 +153,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: node pnpm
       - name: Install dependencies
         run: pnpm install --dir web
       - name: Production build
@@ -229,8 +215,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go node pnpm jq
       - name: Download E2E image
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -279,8 +263,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
-        with:
-          install_args: go
       - name: Unstash unit test results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
