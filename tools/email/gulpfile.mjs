@@ -102,7 +102,7 @@ function minifyHTML(cb) {
       })
     )
     .pipe(dest(DIST_DIR))
-    .pipe(exec((file) => `cd pre-mailer/; go run main.go ${file.path}`));
+    .pipe(exec((file) => `go run -C pre-mailer . ${file.path}`));
 
   cb();
 }

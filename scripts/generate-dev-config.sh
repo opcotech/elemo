@@ -28,7 +28,7 @@ function generateSigningKey() {
 
 function generateLicenseKey() {
   log "generating license key"
-  go run "${TOOLS_DIR}/license-generator/main.go" \
+  go run -C "${ROOT_DIR}" ./tools/license-generator \
     -validity-period 3650 \
     -email info@example.com \
     -organization "ACME Inc." \

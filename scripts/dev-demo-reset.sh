@@ -188,7 +188,7 @@ function loadDemoData() {
   fi
 
   checkInstalled "go"
-  go run "${TOOLS_DIR}/workload-prefill" \
+  go run -C "${ROOT_DIR}" ./tools/workload-prefill \
     -config "${config_file}" \
     -profile smoke \
     -yes

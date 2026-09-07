@@ -26,7 +26,7 @@ Usage of license-generator:
 ## Example
 
 ```bash
-go run tools/license-generator/main.go \
+go run ./tools/license-generator \
     -email "services@opcotech.com" \
     -organization "Open Code Technologies FZC" \
     -private-key "configs/test/generator.key" \
