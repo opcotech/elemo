@@ -8,7 +8,7 @@ onlyBuiltDependencies:
 overrides:
   # Keep on Babel 7: `>=7.29.6` alone resolves to 8.x, which has no default export
   # and breaks `@tanstack/start-plugin-core` (`import babel from "@babel/core"`).
-  "@babel/core@<=7.29.0": ">=7.29.6 <8"
+  "@babel/core@<=7.29.0": ">=7.29.6 <9"
   "@isaacs/brace-expansion@<=5.0.0": ">=5.0.1"
   axios@>=1.0.0 <1.15.0: ">=1.20.0"
   axios@>=1.0.0 <1.15.1: ">=1.20.0"
