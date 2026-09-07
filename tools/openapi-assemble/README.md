@@ -9,13 +9,14 @@ bundle `api/openapi/openapi.yaml`.
 mise run generate-openapi
 ```
 
-Or from the repository root, with absolute paths (required because
-`go -C` runs the tool in `tools/openapi-assemble`):
+Or from the repository root (`go -C` changes cwd into the nested module;
+relative `-src`/`-out` paths are still resolved from the repository root):
 
 ```bash
+go -C tools/openapi-assemble run .
 go -C tools/openapi-assemble run . \
-  -src "$(pwd)/api/openapi/src" \
-  -out "$(pwd)/api/openapi/openapi.yaml"
+  -src api/openapi/src \
+  -out api/openapi/openapi.yaml
 ```
 
 Edit fragments in `api/openapi/src/`. Do not edit the assembled bundle.

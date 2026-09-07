@@ -1,5 +1,6 @@
 import { rmSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import minimist from 'minimist';
 import { src, dest, series } from 'gulp';
@@ -26,10 +27,16 @@ const s3Client = s3Uploader(
   }
 );
 
-const BASE_PATH = dirname('.');
-const BUILD_DIR = `${BASE_PATH}/build`;
-const SRC_DIR = `${BASE_PATH}/src`;
-const DIST_DIR = options.out;
+const EMAIL_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(EMAIL_DIR, '../..');
+const PREMAILER_DIR = path.join(EMAIL_DIR, 'pre-mailer');
+const BUILD_DIR = path.join(EMAIL_DIR, 'build');
+const SRC_DIR = path.join(EMAIL_DIR, 'src');
+const DIST_DIR = options.out
+  ? path.isAbsolute(options.out)
+    ? options.out
+    : path.resolve(REPO_ROOT, options.out)
+  : path.join(REPO_ROOT, 'templates/email');
 
 const IMAGE_FILES = `${SRC_DIR}/**/*.(png|jpg|jpeg)`;
 const CSS_FILES = `${SRC_DIR}/**/*.css`;
@@ -44,7 +51,7 @@ function clean(cb) {
   cb();
 }
 
-function minifyImages(cb) {
+function minifyImages() {
   let stream = src(IMAGE_FILES, { encoding: false }).pipe(imagemin([mozjpeg(), optipng()], { silent: true }));
 
   if (options?.['s3-bucket']) {
@@ -58,20 +65,16 @@ function minifyImages(cb) {
     );
   }
 
-  stream.pipe(dest(BUILD_DIR));
-
-  cb();
+  return stream.pipe(dest(BUILD_DIR));
 }
 
-function minifyCSS(cb) {
-  src(CSS_FILES)
+function minifyCSS() {
+  return src(CSS_FILES)
     .pipe(purgecss({ content: [HTML_FILES] }))
     .pipe(dest(BUILD_DIR));
-
-  cb();
 }
 
-function minifyHTML(cb) {
+function minifyHTML() {
   let stream = src(HTML_FILES)
     .pipe(
       fileinclude({
@@ -85,7 +88,7 @@ function minifyHTML(cb) {
     stream = stream.pipe(replace('./assets/', `${options['static-root']}/${BUCKET_STATIC_PATH}`));
   }
 
-  stream
+  return stream
     .pipe(
       htmlmin({
         collapseWhitespace: true,
@@ -102,9 +105,10 @@ function minifyHTML(cb) {
       })
     )
     .pipe(dest(DIST_DIR))
-    .pipe(exec((file) => `go run -C pre-mailer . ${file.path}`));
-
-  cb();
+    .pipe(
+      exec((file) => `go run -C ${JSON.stringify(PREMAILER_DIR)} . ${JSON.stringify(file.path)}`)
+    )
+    .pipe(exec.reporter());
 }
 
 export default series(clean, minifyCSS, minifyImages, minifyHTML);

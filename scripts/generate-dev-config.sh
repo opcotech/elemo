@@ -32,7 +32,7 @@ function generateLicenseKey() {
     -validity-period 3650 \
     -email info@example.com \
     -organization "ACME Inc." \
-    -private-key configs/test/generator.key \
+    -private-key "${ROOT_DIR}/configs/test/generator.key" \
     -license "${CONFIG_DIR}/license.gen.key" \
     -quota "users=99999,organizations=99999,documents=99999,namespaces=99999,projects=99999,roles=99999"
 

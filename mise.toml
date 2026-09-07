@@ -188,7 +188,11 @@ depends = ["generate-email", "generate-server", "generate-client"]
 
 [tasks.generate-openapi]
 description = "Assemble OpenAPI spec from split sources"
-run = "go -C tools/openapi-assemble run . -src api/openapi/src -out api/openapi/openapi.yaml"
+run = '''
+go -C tools/openapi-assemble run . \
+  -src "$PWD/api/openapi/src" \
+  -out "$PWD/api/openapi/openapi.yaml"
+'''
 
 [tasks.generate-server]
 description = "Generate API server"
@@ -197,30 +201,39 @@ run = [
   "go generate ./...",
   '''
 go tool oapi-codegen \
-  -config api/openapi/generator.config.yml \
-  -o internal/transport/http/api/server.go \
-  api/openapi/openapi.yaml
+  -config "$PWD/api/openapi/generator.config.yml" \
+  -o "$PWD/internal/transport/http/api/server.go" \
+  "$PWD/api/openapi/openapi.yaml"
 ''',
 ]
 
 [tasks.generate-client]
 description = "Generate API client"
 depends = ["generate-openapi"]
-run = "pnpm --dir web generate"
+run = '''
+if [ ! -x web/node_modules/.bin/openapi-ts ]; then
+  pnpm --dir web install --frozen-lockfile
+fi
+pnpm --dir web generate
+'''
 
 [tasks.generate-client-check]
 description = "Fail if the generated TypeScript client drifted"
-run = "pnpm --dir web generate:check"
+run = '''
+if [ ! -x web/node_modules/.bin/openapi-ts ]; then
+  pnpm --dir web install --frozen-lockfile
+fi
+pnpm --dir web generate:check
+'''
 
 [tasks.generate-email]
 description = "Generate HTML template emails"
 run = '''
-pnpm --dir tools/email run build --out templates/email \
-  --access-key-id "access-key-id" \
-  --secret-access-key "secret-access-key" \
-  --region "us-east-1" \
-  --s3-bucket elemo \
-  --endpoint "http://0.0.0.0:4566" \
+if [ ! -x tools/email/node_modules/.bin/gulp ]; then
+  pnpm --dir tools/email install --frozen-lockfile
+fi
+pnpm --dir tools/email run build \
+  --out "$PWD/templates/email" \
   --static-root "http://0.0.0.0:4566/elemo"
 '''
 
