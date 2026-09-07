@@ -5,9 +5,9 @@ lockfile = true
 idiomatic_version_file_enable_tools = []
 
 [tools]
-go = "1.27"
-node = "24"
-pnpm = "10.13.1"
+go = "1.27.1"
+node = "24.20.0"
+pnpm = "10.34.5"
 jq = "1.8.2"
 golangci-lint = "2.13.2"
 gotestsum = "1.13.0"
