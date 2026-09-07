@@ -16,7 +16,7 @@ runs:
       run: |
         set -euo pipefail
         # renovate: datasource=npm depName=vercel
-        npm install -g vercel@59.11.2
+        npm install -g vercel@59.11.7
 
     - name: Deploy to Vercel
       shell: bash
