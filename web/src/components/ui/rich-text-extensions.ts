@@ -14,9 +14,8 @@ import { Markdown } from "@tiptap/markdown";
 import type { AnyExtension, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
-
-import { createSuggestionListRenderer } from "@/components/ui/rich-text-suggestion";
 import type { SuggestionListItem } from "@/components/ui/rich-text-suggestion";
+import { createSuggestionListRenderer } from "@/components/ui/rich-text-suggestion";
 
 const lowlight = createLowlight(common);
 
@@ -71,7 +70,8 @@ export const DEFAULT_RICH_TEXT_FEATURES: RichTextEditorFeatures = {
 };
 
 export type RichTextPlaceholder =
-  string | ((props: { node: { type: { name: string } } }) => string);
+  | string
+  | ((props: { node: { type: { name: string } } }) => string);
 
 export function resolveRichTextFeatures(
   features?: Partial<RichTextEditorFeatures>

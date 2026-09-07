@@ -20,10 +20,10 @@ export function CommandTrigger({
       className={className}
     >
       <SearchIcon className="h-4 w-4 opacity-50" />
-      <span className="flex-1 text-left text-sm font-normal">
+      <span className="flex-1 text-left font-normal text-sm">
         {placeholder}
       </span>
-      <kbd className="bg-muted text-muted-foreground pointer-events-none ml-auto space-x-0.5 rounded border px-1.5 py-0.5 text-xs font-medium opacity-100 select-none">
+      <kbd className="pointer-events-none ml-auto select-none space-x-0.5 rounded border bg-muted px-1.5 py-0.5 font-medium text-muted-foreground text-xs opacity-100">
         <span>⌘</span>
         <span>K</span>
       </kbd>

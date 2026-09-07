@@ -1,5 +1,3 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import {
   v1OrganizationTeamGet,
@@ -9,6 +7,7 @@ import {
   v1OrganizationTeamsCreate,
 } from "@/lib/api/sdk";
 import type { Team, TeamCreate, User } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 /**
  * Create a team under an organization.

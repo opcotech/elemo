@@ -12,20 +12,20 @@ import {
 
 export function NotFound() {
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-            <Search className="text-muted-foreground h-8 w-8" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+            <Search className="h-8 w-8 text-muted-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">Page Not Found</CardTitle>
+          <CardTitle className="font-bold text-2xl">Page Not Found</CardTitle>
           <CardDescription>
             Sorry, we couldn't find the page you're looking for. It might have
             been moved, deleted, or you entered the wrong URL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-muted-foreground space-y-2 text-sm">
+          <div className="space-y-2 text-muted-foreground text-sm">
             <p>Here are some things you can try:</p>
             <ul className="list-disc space-y-1 pl-4">
               <li>Check the URL for typos</li>

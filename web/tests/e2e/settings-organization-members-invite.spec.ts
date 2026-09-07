@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
 import { fillLocator, waitForSuccessToast } from "./helpers";
@@ -5,7 +6,7 @@ import {
   OrganizationsJoinPage,
   SettingsOrganizationDetailsPage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
@@ -14,8 +15,6 @@ import {
 } from "./utils/db";
 import { getInvitationTokenFromEmail, waitForEmail } from "./utils/mailpit";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-members-invite Organization Members Invite E2E Tests", () => {
   let ownerUser: User;

@@ -140,21 +140,21 @@ export const Team: Story = {
 export const Stacked: Story = {
   render: () => (
     <div className="flex -space-x-2">
-      <Avatar className="border-background border-2">
+      <Avatar className="border-2 border-background">
         <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
         <AvatarFallback>CN</AvatarFallback>
       </Avatar>
-      <Avatar className="border-background border-2">
+      <Avatar className="border-2 border-background">
         <AvatarImage src="https://github.com/vercel.png" alt="@vercel" />
         <AvatarFallback>VC</AvatarFallback>
       </Avatar>
-      <Avatar className="border-background border-2">
+      <Avatar className="border-2 border-background">
         <AvatarFallback>AB</AvatarFallback>
       </Avatar>
-      <Avatar className="border-background border-2">
+      <Avatar className="border-2 border-background">
         <AvatarFallback>CD</AvatarFallback>
       </Avatar>
-      <Avatar className="border-background border-2">
+      <Avatar className="border-2 border-background">
         <AvatarFallback>+5</AvatarFallback>
       </Avatar>
     </div>
@@ -207,19 +207,19 @@ export const WithStatus: Story = {
           <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
-        <div className="border-background absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 bg-green-500"></div>
+        <div className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-background bg-green-500"></div>
       </div>
       <div className="relative">
         <Avatar>
           <AvatarFallback>AB</AvatarFallback>
         </Avatar>
-        <div className="border-background absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 bg-yellow-500"></div>
+        <div className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-background bg-yellow-500"></div>
       </div>
       <div className="relative">
         <Avatar>
           <AvatarFallback>CD</AvatarFallback>
         </Avatar>
-        <div className="border-background absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 bg-gray-400"></div>
+        <div className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-background bg-gray-400"></div>
       </div>
     </div>
   ),

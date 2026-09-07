@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { TableSkeletonColumn } from "@/components/ui/table-skeleton";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
 const BOARD_COLUMN_COUNT = 6;
@@ -50,7 +50,7 @@ function LoadingStatus({
 
 function WorkCardSkeleton() {
   return (
-    <article className="bg-card w-full rounded-lg border p-3 shadow-xs">
+    <article className="w-full rounded-lg border bg-card p-3 shadow-xs">
       <Skeleton className="h-3 w-16" />
       <Skeleton className="mt-1 h-4 w-full" />
       <Skeleton className="mt-2 h-3 w-24" />
@@ -72,7 +72,7 @@ export function WorkBoardSkeleton() {
         {Array.from({ length: BOARD_COLUMN_COUNT }, (_column, columnIndex) => (
           <section
             key={columnIndex}
-            className="bg-surface-sunken flex max-h-[calc(100svh-15rem)] w-72 min-w-72 flex-col rounded-xl border"
+            className="flex max-h-[calc(100svh-15rem)] w-72 min-w-72 flex-col rounded-xl border bg-surface-sunken"
           >
             <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2.5">
               <Skeleton className="h-3 w-20" />
@@ -176,7 +176,7 @@ export function WorkInspectorSkeleton() {
         <Skeleton className="h-4 w-3/4" />
       </div>
       <Skeleton className="h-9 w-full rounded-md" />
-      <div className="divide-border/60 divide-y">
+      <div className="divide-y divide-border/60">
         {Array.from({ length: 6 }, (_, index) => (
           <div
             key={index}
@@ -234,7 +234,7 @@ export function WorkItemPageSkeleton() {
         </div>
         <div className="space-y-4">
           <Skeleton className="h-3 w-16" />
-          <div className="divide-border/60 divide-y">
+          <div className="divide-y divide-border/60">
             {Array.from({ length: 5 }, (_, index) => (
               <div
                 key={index}

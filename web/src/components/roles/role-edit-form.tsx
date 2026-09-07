@@ -3,9 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-
-import { RoleFormFields, roleFormSchema } from "./role-form-fields";
-
 import { FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { useFormMutation } from "@/hooks/use-form-mutation";
@@ -22,6 +19,7 @@ import type {
 } from "@/lib/api/types";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
+import { RoleFormFields, roleFormSchema } from "./role-form-fields";
 
 const roleEditFormSchema = createFormSchema(
   zRolePatch.extend({
@@ -100,7 +98,7 @@ export function RoleEditForm({
         params: { organizationSlug },
       }),
     transformValues: (values) => {
-      const { key: _key, ...patchValues } = values; // eslint-disable-line @typescript-eslint/no-unused-vars
+      const { key: _key, ...patchValues } = values;
       const normalizedBody = normalizePatchData(
         roleEditFormSchema,
         patchValues,

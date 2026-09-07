@@ -1,5 +1,5 @@
-import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
 import { PanelLeftCloseIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -76,7 +76,7 @@ export function DocumentEditorToc({
       className="sticky top-16 hidden max-h-[calc(100svh-8rem)] w-56 shrink-0 self-start overflow-y-auto lg:block"
     >
       <div className="mb-1 flex items-center justify-between gap-1 px-1">
-        <p className="text-muted-foreground text-xs font-medium">Contents</p>
+        <p className="font-medium text-muted-foreground text-xs">Contents</p>
         <Button
           type="button"
           variant="ghost"
@@ -89,7 +89,7 @@ export function DocumentEditorToc({
         </Button>
       </div>
       {headings.length === 0 ? (
-        <p className="text-muted-foreground px-2 py-1 text-sm">
+        <p className="px-2 py-1 text-muted-foreground text-sm">
           Headings will appear here
         </p>
       ) : (
@@ -102,10 +102,10 @@ export function DocumentEditorToc({
                   type="button"
                   aria-current={active ? "true" : undefined}
                   className={cn(
-                    "hover:bg-primary/10 hover:text-primary-on-subtle w-full truncate rounded-md py-1 text-left text-sm",
+                    "w-full truncate rounded-md py-1 text-left text-sm hover:bg-primary/10 hover:text-primary-on-subtle",
                     levelPad[heading.level],
                     active
-                      ? "bg-primary/10 text-primary-on-subtle font-medium"
+                      ? "bg-primary/10 font-medium text-primary-on-subtle"
                       : "text-muted-foreground"
                   )}
                   onClick={() => {

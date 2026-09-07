@@ -114,7 +114,7 @@ func TestCachedIssueRepository_ListForProject_metrics(t *testing.T) {
 		cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
 		cacheRepo.EXPECT().Get(ctx, issueListProjectGenKey(query.ProjectID), gomock.Any()).Return(cache.ErrCacheMiss)
 		cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-			*(dst.(*repository.Page[*repository.PartialIssue])) = page
+			*dst.(*repository.Page[*repository.PartialIssue]) = page
 		}).Return(nil)
 
 		r := func() *repository.RedisCachedIssueRepository {

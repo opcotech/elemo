@@ -145,7 +145,7 @@ function GraphBindingPicker({
 
   return (
     <div className="space-y-2" data-testid={`plugin-binding-${field.name}`}>
-      <Label className="text-sm font-medium">
+      <Label className="font-medium text-sm">
         {field.name === "time_source" ? "Time source" : field.name}
       </Label>
       <p className="text-muted-foreground text-xs">
@@ -307,7 +307,7 @@ export function PluginActivationManager({
   }
 
   return (
-    <ul className="divide-border divide-y rounded-xl border">
+    <ul className="divide-y divide-border rounded-xl border">
       {plugins.map((plugin) => {
         const enabled = plugin.enabled === true;
         const bindingFields = (plugin.config_schema ?? []).filter(
@@ -323,7 +323,7 @@ export function PluginActivationManager({
                     {enabled ? "Enabled" : "Disabled"}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground font-mono text-xs">
+                <p className="font-mono text-muted-foreground text-xs">
                   {plugin.plugin_id}
                 </p>
               </div>

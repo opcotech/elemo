@@ -4,12 +4,12 @@ import { useForm } from "react-hook-form";
 
 import { MoreProperties } from "@/components/quick-create/more-properties";
 import type { QuickCreateKindProps } from "@/components/quick-create/types";
+import type { TodoCreateFormValues } from "@/components/todo/todo-form-fields";
 import {
   TodoFormFields,
   todoCreateFormSchema,
   todoFormDefaultValues,
 } from "@/components/todo/todo-form-fields";
-import type { TodoCreateFormValues } from "@/components/todo/todo-form-fields";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";

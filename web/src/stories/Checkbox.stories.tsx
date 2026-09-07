@@ -72,7 +72,7 @@ export const WithLabel: Story = {
       <Checkbox id="terms" />
       <Label
         htmlFor="terms"
-        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
       >
         Accept terms and conditions
       </Label>
@@ -87,7 +87,7 @@ export const WithDescription: Story = {
       <div className="grid gap-1.5 leading-none">
         <Label
           htmlFor="terms2"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Accept terms and conditions
         </Label>
@@ -107,7 +107,7 @@ export const FormExample: Story = {
         <Checkbox id="marketing" />
         <Label
           htmlFor="marketing"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Marketing emails
         </Label>
@@ -116,7 +116,7 @@ export const FormExample: Story = {
         <Checkbox id="newsletter" defaultChecked />
         <Label
           htmlFor="newsletter"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Newsletter subscription
         </Label>
@@ -125,7 +125,7 @@ export const FormExample: Story = {
         <Checkbox id="notifications" />
         <Label
           htmlFor="notifications"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Push notifications
         </Label>
@@ -134,7 +134,7 @@ export const FormExample: Story = {
         <Checkbox id="security" defaultChecked disabled />
         <Label
           htmlFor="security"
-          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Security alerts (required)
         </Label>
@@ -147,7 +147,7 @@ export const FormExample: Story = {
 export const CheckboxList: Story = {
   render: () => (
     <div className="w-[250px] space-y-3">
-      <div className="text-sm font-medium">Select your interests:</div>
+      <div className="font-medium text-sm">Select your interests:</div>
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <Checkbox id="tech" />

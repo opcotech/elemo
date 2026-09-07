@@ -1,12 +1,11 @@
+import { PropertyRibbon } from "@/components/work/property-ribbon";
+import type { TodoPriority } from "@/lib/api/types";
+import { cn } from "@/lib/utils";
 import {
   todoPriorityIcons,
   todoPriorityLabels,
   todoPriorityToneClassName,
 } from "./priority";
-
-import { PropertyRibbon } from "@/components/work/property-ribbon";
-import type { TodoPriority } from "@/lib/api/types";
-import { cn } from "@/lib/utils";
 
 export function TodoPriorityRibbon({
   priority,

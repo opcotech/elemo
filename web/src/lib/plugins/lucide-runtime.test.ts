@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -46,9 +46,7 @@ function pluginFrontendSources(): string[] {
           files.push(join(srcDir, name));
         }
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return files;
 }

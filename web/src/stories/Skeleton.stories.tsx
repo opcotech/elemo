@@ -46,14 +46,14 @@ export const Shapes: Story = {
   render: () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h4 className="text-sm font-medium">Rectangles</h4>
+        <h4 className="font-medium text-sm">Rectangles</h4>
         <Skeleton className="h-4 w-[250px]" />
         <Skeleton className="h-4 w-[200px]" />
         <Skeleton className="h-4 w-[150px]" />
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-sm font-medium">Squares</h4>
+        <h4 className="font-medium text-sm">Squares</h4>
         <div className="flex space-x-2">
           <Skeleton className="h-12 w-12" />
           <Skeleton className="h-16 w-16" />
@@ -62,7 +62,7 @@ export const Shapes: Story = {
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-sm font-medium">Circles</h4>
+        <h4 className="font-medium text-sm">Circles</h4>
         <div className="flex space-x-2">
           <Skeleton className="h-8 w-8 rounded-full" />
           <Skeleton className="h-12 w-12 rounded-full" />
@@ -71,7 +71,7 @@ export const Shapes: Story = {
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-sm font-medium">Rounded Rectangles</h4>
+        <h4 className="font-medium text-sm">Rounded Rectangles</h4>
         <Skeleton className="h-8 w-[200px] rounded-md" />
         <Skeleton className="h-10 w-[150px] rounded-lg" />
         <Skeleton className="h-12 w-[100px] rounded-xl" />

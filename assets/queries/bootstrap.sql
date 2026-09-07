@@ -296,5 +296,3 @@ CREATE TABLE IF NOT EXISTS plugin_storage (
   updated_at TIMESTAMPTZ,
   PRIMARY KEY (plugin_id, scope_id, storage_key)
 );
-
-

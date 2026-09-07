@@ -186,8 +186,8 @@ export function EntityDangerZone<
           <p className="text-muted-foreground text-sm">
             {config.dangerZone.summary}
           </p>
-          <p className="text-sm font-medium">Consequences:</p>
-          <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
+          <p className="font-medium text-sm">Consequences:</p>
+          <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm">
             {config.dangerZone.consequences.map((consequence) => (
               <li key={consequence}>{consequence}</li>
             ))}

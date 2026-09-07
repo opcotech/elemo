@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import { createIssue } from "./api";
 import { expect, test } from "./fixtures";
 import {
@@ -7,15 +8,13 @@ import {
 } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { HomePage, WorkItemPage, WorkPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
   grantMembershipToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@issues.create Issue Create E2E Tests", () => {
   let workspace: OwnerWorkspace;

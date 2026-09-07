@@ -1,5 +1,3 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import {
   v1PermissionDelete,
@@ -13,6 +11,7 @@ import type {
   GrantPrincipalType,
   ResourceType,
 } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 export type CreateGrantInput = GrantCreate;
 

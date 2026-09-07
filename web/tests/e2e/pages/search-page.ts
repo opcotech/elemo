@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Locator } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
@@ -7,10 +7,6 @@ import { navigateAndWait, waitForElementVisible } from "../helpers";
  * Page Object Model for /search.
  */
 export class SearchPage extends BaseComponent {
-  constructor(page: Page) {
-    super(page);
-  }
-
   async goto(search?: {
     q?: string;
     type?: string;

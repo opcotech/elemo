@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsProjectEditPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { ProjectEditFormSection } from "../sections";
-
-import { settingsProjectEditPath } from "@/lib/paths";
 
 export class SettingsOrganizationProjectEditPage extends BaseComponent {
   public readonly projectEditForm: ProjectEditFormSection;

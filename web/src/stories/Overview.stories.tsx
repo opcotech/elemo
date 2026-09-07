@@ -76,10 +76,10 @@ type Story = StoryObj<typeof meta>;
 
 export const AllComponents: Story = {
   render: () => (
-    <div className="bg-background min-h-screen space-y-12 p-8">
+    <div className="min-h-screen space-y-12 bg-background p-8">
       <div className="space-y-4 text-center">
-        <h1 className="text-4xl font-bold">Elemo Design System</h1>
-        <p className="text-muted-foreground mx-auto max-w-3xl text-xl">
+        <h1 className="font-bold text-4xl">Elemo Design System</h1>
+        <p className="mx-auto max-w-3xl text-muted-foreground text-xl">
           Modern, energetic, and medium-density. More alive than Linear, calmer
           than Jira — blue leads actions and focus; surfaces use contrast and
           spacing over borders.
@@ -87,21 +87,21 @@ export const AllComponents: Story = {
       </div>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Color Palette</h2>
+        <h2 className="font-semibold text-2xl">Color Palette</h2>
         <div className="grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4">
           {paletteSwatches.map((swatch) => (
             <div key={swatch.name} className="space-y-2">
               <div
-                className={`${swatch.className} ring-border/60 h-16 rounded-lg ring-1`}
+                className={`${swatch.className} h-16 rounded-lg ring-1 ring-border/60`}
               />
-              <p className="text-sm font-medium">{swatch.name}</p>
+              <p className="font-medium text-sm">{swatch.name}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Buttons</h2>
+        <h2 className="font-semibold text-2xl">Buttons</h2>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Button>Default</Button>
@@ -140,8 +140,8 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Motion Demo</h2>
-        <p className="text-muted-foreground max-w-2xl text-sm">
+        <h2 className="font-semibold text-2xl">Motion Demo</h2>
+        <p className="max-w-2xl text-muted-foreground text-sm">
           Buttons include a subtle press scale. Open the dialog below to preview
           overlay and content transitions.
         </p>
@@ -167,7 +167,7 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Badges</h2>
+        <h2 className="font-semibold text-2xl">Badges</h2>
         <div className="flex flex-wrap gap-2">
           <Badge>Default</Badge>
           <Badge variant="secondary">Secondary</Badge>
@@ -191,7 +191,7 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Alerts</h2>
+        <h2 className="font-semibold text-2xl">Alerts</h2>
         <div className="max-w-2xl space-y-4">
           <Alert>
             <Info className="h-4 w-4" />
@@ -232,10 +232,10 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Form Elements</h2>
+        <h2 className="font-semibold text-2xl">Form Elements</h2>
         <div className="grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Inputs</h3>
+            <h3 className="font-medium text-lg">Inputs</h3>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
@@ -244,7 +244,7 @@ export const AllComponents: Story = {
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
-                  <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -256,7 +256,7 @@ export const AllComponents: Story = {
               <div className="space-y-2">
                 <Label htmlFor="search">Search</Label>
                 <div className="relative">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="search"
                     type="search"
@@ -269,7 +269,7 @@ export const AllComponents: Story = {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Checkboxes & Switches</h3>
+            <h3 className="font-medium text-lg">Checkboxes & Switches</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox id="newsletter" />
@@ -291,7 +291,7 @@ export const AllComponents: Story = {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Progress</h3>
+            <h3 className="font-medium text-lg">Progress</h3>
             <div className="space-y-3">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -313,7 +313,7 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Cards</h2>
+        <h2 className="font-semibold text-2xl">Cards</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader>
@@ -331,7 +331,7 @@ export const AllComponents: Story = {
             <CardHeader>
               <div className="flex items-center space-x-4">
                 <Avatar>
-                  <div className="bg-primary text-primary-foreground flex h-full w-full items-center justify-center">
+                  <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground">
                     <User className="h-5 w-5" />
                   </div>
                 </Avatar>
@@ -343,7 +343,7 @@ export const AllComponents: Story = {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="text-muted-foreground flex items-center text-sm">
+                <div className="flex items-center text-muted-foreground text-sm">
                   <Mail className="size-4" />
                   john@example.com
                 </div>
@@ -382,7 +382,7 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Tabs</h2>
+        <h2 className="font-semibold text-2xl">Tabs</h2>
         <div className="max-w-2xl">
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -400,19 +400,19 @@ export const AllComponents: Story = {
                 </CardHeader>
                 <CardContent className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold">24</div>
+                    <div className="font-bold text-2xl">24</div>
                     <div className="text-muted-foreground text-sm">
                       Active Tasks
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">8</div>
+                    <div className="font-bold text-2xl">8</div>
                     <div className="text-muted-foreground text-sm">
                       Team Members
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">95%</div>
+                    <div className="font-bold text-2xl">95%</div>
                     <div className="text-muted-foreground text-sm">
                       Completion
                     </div>
@@ -465,7 +465,7 @@ export const AllComponents: Story = {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold">Interactive Example</h2>
+        <h2 className="font-semibold text-2xl">Interactive Example</h2>
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Create Account</CardTitle>

@@ -118,7 +118,7 @@ function OrganizationsListPage() {
         }
       />
 
-      <div className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-2 py-3">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-background py-3">
         <SearchInput
           value={search.q ?? ""}
           onChange={(value) =>

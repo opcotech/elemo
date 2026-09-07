@@ -9,7 +9,8 @@ if [ "$CI" == "true" ]; then
 fi
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
-source "${ROOT_DIR}/scripts/common.sh";
+# shellcheck source=common.sh
+source "${ROOT_DIR}/scripts/common.sh"
 
 function generateAPIClient() {
     cd "${WEB_DIR}"

@@ -3,10 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-
-import { TeamFormFields, teamFormSchema } from "./team-form-fields";
-import { TeamMemberAssignment } from "./team-member-assignment";
-
 import { FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { useFormMutation } from "@/hooks/use-form-mutation";
@@ -23,6 +19,8 @@ import type {
 } from "@/lib/api/types";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
+import { TeamFormFields, teamFormSchema } from "./team-form-fields";
+import { TeamMemberAssignment } from "./team-member-assignment";
 
 const teamEditFormSchema = createFormSchema(
   zTeamPatch.extend({

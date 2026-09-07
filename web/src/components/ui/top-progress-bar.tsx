@@ -82,11 +82,11 @@ export function NavigationProgress() {
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={Math.round(position)}
-      className="bg-primary/20 pointer-events-none fixed inset-x-0 top-0 z-50 h-1 overflow-hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-primary/20"
       role="progressbar"
     >
       <div
-        className="bg-primary h-full transition-[width] duration-200 ease-out"
+        className="h-full bg-primary transition-[width] duration-200 ease-out"
         style={{ width: `${position}%` }}
       />
     </div>

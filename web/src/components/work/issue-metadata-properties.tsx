@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
-
-import { IssueReportedBy } from "./issue-reported-by";
-import { formatDateTime } from "./utils";
-
 import { InternalLink } from "@/components/ui/internal-link";
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
 import { PropertyList } from "@/components/ui/property-list";
 import { internalPath } from "@/lib/internal-url";
 import { namespacePath, projectWorkPath, workItemPath } from "@/lib/paths";
 import type { DataSource } from "@/lib/work/model";
+import { IssueReportedBy } from "./issue-reported-by";
+import { formatDateTime } from "./utils";
 
 export function IssueParentLink({
   parent,
@@ -40,7 +38,7 @@ export function IssueParentLink({
 
   return (
     <InternalLink
-      className="text-primary px-2 underline-offset-4 hover:underline"
+      className="px-2 text-primary underline-offset-4 hover:underline"
       to={internalPath(
         workItemPath({
           organizationSlug: parentOrganizationSlug,
@@ -92,7 +90,7 @@ export function IssueMetadataProperties({
           value:
             organizationSlug && namespaceSlug ? (
               <InternalLink
-                className="text-primary px-2 underline-offset-4 hover:underline"
+                className="px-2 text-primary underline-offset-4 hover:underline"
                 to={internalPath(
                   namespacePath({ organizationSlug, namespaceSlug })
                 )}
@@ -108,7 +106,7 @@ export function IssueMetadataProperties({
           value:
             organizationSlug && namespaceSlug && projectKey ? (
               <InternalLink
-                className="text-primary px-2 underline-offset-4 hover:underline"
+                className="px-2 text-primary underline-offset-4 hover:underline"
                 to={internalPath(
                   projectWorkPath({
                     organizationSlug,

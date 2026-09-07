@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { waitForErrorToast, waitForSuccessToast } from "./helpers";
 import { ForgotPasswordPage, LoginPage, ResetPasswordPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser, logoutUser } from "./utils/auth";
+import { loginUser, logoutUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { createUser } from "./utils/db";
 import { getPasswordResetTokenFromEmail, waitForEmail } from "./utils/mailpit";
 import { getRandomString } from "./utils/random";

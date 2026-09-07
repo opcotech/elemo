@@ -1,8 +1,7 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import { v1TodoGet, v1TodosCreate } from "@/lib/api/sdk";
 import type { Todo, TodoCreate } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 /**
  * Create a todo via API, then fetch the full todo by ID.

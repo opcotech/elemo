@@ -1,9 +1,7 @@
-import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-
-import { fillFormField, navigateAndWait, waitForPageLoad } from "../helpers";
-
+import { expect } from "@playwright/test";
 import type { LoginCredentials } from "@/lib/auth/types";
+import { fillFormField, navigateAndWait, waitForPageLoad } from "../helpers";
 
 export const USER_DEFAULT_PASSWORD = "AppleTree123";
 export const USER_DEFAULT_PASSWORD_HASH =

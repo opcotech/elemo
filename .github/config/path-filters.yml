@@ -1,0 +1,123 @@
+# Shared change filters for dorny/paths-filter.
+# Docs-only and k6-only diffs should not match backend/frontend/e2e.
+# Website-only diffs match the website filter (frontend-lint) but not frontend
+# unit tests or e2e. E2E is a union: Playwright boots Compose and a server
+# image, so web-only and backend-only PRs still run E2E.
+
+backend:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/ci.yml"
+  - "cmd/**"
+  - "internal/**"
+  - "tools/**"
+  - "go.mod"
+  - "go.sum"
+  - ".golangci.yml"
+  - "mise.toml"
+  - "mise.lock"
+  - ".pre-commit-config.yaml"
+  - "scripts/pre-commit-files.sh"
+  - ".github/actions/**"
+  - "scripts/build-plugin.sh"
+  - ".github/scripts/combine-backend-coverage.sh"
+  - "configs/test/**"
+  - "api/openapi/**"
+  - ".github/codecov.yml"
+
+frontend:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/ci.yml"
+  - "mise.toml"
+  - "mise.lock"
+  - ".pre-commit-config.yaml"
+  - "scripts/pre-commit-files.sh"
+  - ".github/actions/**"
+  - "web/**"
+
+website:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/ci.yml"
+  - "mise.toml"
+  - "mise.lock"
+  - ".pre-commit-config.yaml"
+  - "scripts/pre-commit-files.sh"
+  - ".github/actions/**"
+  - "website/**"
+
+api_docs_deploy:
+  - "api/**"
+  - ".github/actions/deploy-vercel/**"
+
+website_deploy:
+  - "website/**"
+  - ".github/actions/deploy-vercel/**"
+
+e2e:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/ci.yml"
+  - "web/**"
+  - "cmd/**"
+  - "internal/**"
+  - "tools/**"
+  - "go.mod"
+  - "go.sum"
+  - "mise.toml"
+  - "mise.lock"
+  - ".github/actions/**"
+  - ".github/scripts/wait-for-elemo.sh"
+  - "scripts/*.sh"
+  - "configs/test/**"
+  - "api/openapi/**"
+  - "deploy/docker/**"
+  - "assets/keys/**"
+  - "assets/queries/**"
+  - "templates/email/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+
+go:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/codeql.yml"
+  - "**/*.go"
+  - "go.mod"
+  - "go.sum"
+
+javascript:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/codeql.yml"
+  - "web/**"
+  - "website/**"
+  - "tools/email/**"
+
+licenses_pr:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/license-check.yml"
+  - "go.mod"
+  - "go.sum"
+  - "tools/**/go.mod"
+  - "tools/**/go.sum"
+  - "**/package.json"
+  - "**/pnpm-lock.yaml"
+  - ".ort.yml"
+  - "scripts/ort/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+
+licenses_full:
+  - ".github/config/path-filters.yml"
+  - ".github/workflows/license-check.yml"
+  - "go.mod"
+  - "go.sum"
+  - "tools/**/go.mod"
+  - "tools/**/go.sum"
+  - "**/package.json"
+  - "**/pnpm-lock.yaml"
+  - ".ort.yml"
+  - "scripts/ort/**"
+  - "LICENSE"
+  - "LICENSE-COMMERCIAL"
+  - "**/*.go"
+  - "cmd/**"
+  - "internal/**"
+  - "web/src/**"
+  - "templates/**"

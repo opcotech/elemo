@@ -52,12 +52,12 @@ function InboxPage() {
     <div className="flex h-full min-h-0 flex-col">
       <nav
         aria-label="Inbox views"
-        className="bg-muted grid grid-cols-2 gap-1 p-1 lg:hidden"
+        className="grid grid-cols-2 gap-1 bg-muted p-1 lg:hidden"
       >
         <button
           aria-controls="inbox-work"
           aria-pressed={mobileView === "work"}
-          className="aria-pressed:bg-background aria-pressed:text-foreground text-muted-foreground rounded-md px-3 py-1.5 text-sm font-medium"
+          className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm aria-pressed:bg-background aria-pressed:text-foreground"
           onClick={() => setMobileView("work")}
           type="button"
         >
@@ -66,7 +66,7 @@ function InboxPage() {
         <button
           aria-controls="inbox-alerts"
           aria-pressed={mobileView === "alerts"}
-          className="aria-pressed:bg-background aria-pressed:text-foreground text-muted-foreground flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium"
+          className="flex items-center justify-center rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm aria-pressed:bg-background aria-pressed:text-foreground"
           onClick={() => setMobileView("alerts")}
           type="button"
         >
@@ -155,7 +155,7 @@ const InboxContent = () => {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Inbox</h1>
         <p className="text-muted-foreground">
           Notifications and operational signals that may need your response.
         </p>
@@ -205,11 +205,11 @@ const NotificationFeed = ({ count }: { count: number }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            <h2 className="text-lg font-semibold">Notifications</h2>
+            <h2 className="font-semibold text-lg">Notifications</h2>
             {count > 0 && <Badge variant="primary">{count}</Badge>}
           </div>
         </div>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="mt-1 text-muted-foreground text-sm">
           Your in-app notifications
         </p>
       </div>

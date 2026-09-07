@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsNamespaceEditPath } from "@/lib/paths";
 import { Form } from "../components";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
-
-import { settingsNamespaceEditPath } from "@/lib/paths";
 
 export class SettingsOrganizationNamespaceEditPage extends BaseComponent {
   public readonly namespaceForm: Form;

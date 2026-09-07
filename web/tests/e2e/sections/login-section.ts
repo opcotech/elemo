@@ -1,5 +1,5 @@
-import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 
 import { Form } from "../components";
 import { BaseComponent } from "../components/base";

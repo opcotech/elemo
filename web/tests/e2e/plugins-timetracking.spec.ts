@@ -7,18 +7,18 @@ import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { WorkItemPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
 const pluginZip = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../../build/plugins/com.elemo.timetracking.zip"
+  "../../../dist/plugins/com.elemo.timetracking.zip"
 );
 
 test.describe("@plugins.timetracking Time Tracking plugin", () => {
   test.skip(
     !existsSync(pluginZip),
-    "build/plugins/com.elemo.timetracking.zip is missing; run make plugins"
+    "dist/plugins/com.elemo.timetracking.zip is missing; run mise run build-plugin -- timetracking"
   );
 
   let workspace: OwnerWorkspace;

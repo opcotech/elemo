@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
 import { Button } from "./button";
@@ -26,8 +26,6 @@ import {
   SelectValue,
 } from "./select";
 
-import { cn } from "@/lib/utils";
-
 export interface EntitySelectOption {
   value: string;
   title: string;
@@ -38,10 +36,11 @@ export interface EntitySelectOption {
   avatarFallback?: string;
 }
 
-export interface EntitySelectProps extends Pick<
-  ComponentProps<typeof SelectTrigger>,
-  "id" | "aria-describedby" | "aria-invalid" | "aria-label"
-> {
+export interface EntitySelectProps
+  extends Pick<
+    ComponentProps<typeof SelectTrigger>,
+    "id" | "aria-describedby" | "aria-invalid" | "aria-label"
+  > {
   options: EntitySelectOption[];
   value?: string;
   placeholder?: string;
@@ -52,10 +51,11 @@ export interface EntitySelectProps extends Pick<
   onValueChange?: (value: string) => void;
 }
 
-export interface SearchableEntitySelectProps extends Pick<
-  ComponentProps<typeof Button>,
-  "id" | "aria-describedby" | "aria-invalid" | "aria-label"
-> {
+export interface SearchableEntitySelectProps
+  extends Pick<
+    ComponentProps<typeof Button>,
+    "id" | "aria-describedby" | "aria-invalid" | "aria-label"
+  > {
   options: EntitySelectOption[];
   value?: string;
   placeholder?: string;
@@ -70,10 +70,11 @@ export interface SearchableEntitySelectProps extends Pick<
   onValueChange?: (value: string) => void;
 }
 
-export interface EntityMultiSelectProps extends Pick<
-  ComponentProps<typeof Button>,
-  "id" | "aria-describedby" | "aria-invalid" | "aria-label"
-> {
+export interface EntityMultiSelectProps
+  extends Pick<
+    ComponentProps<typeof Button>,
+    "id" | "aria-describedby" | "aria-invalid" | "aria-label"
+  > {
   options: EntitySelectOption[];
   value?: readonly string[];
   placeholder?: string;
@@ -109,7 +110,7 @@ function EmptyOptionItem({
       onSelect={onSelect}
       className={size === "sm" ? "py-1.5" : "py-2"}
     >
-      <span className="text-muted-foreground truncate">{label}</span>
+      <span className="truncate text-muted-foreground">{label}</span>
     </CommandItem>
   );
 }
@@ -136,7 +137,7 @@ function entitySelectTriggerClassName(
   }
 
   return cn(
-    "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 w-full justify-between font-normal shadow-none",
+    "w-full justify-between border-border bg-card font-normal shadow-none hover:bg-card dark:bg-input dark:hover:bg-input/80",
     size === "sm" ? "h-8 px-2" : "h-9 px-3",
     triggerClassName
   );
@@ -183,14 +184,14 @@ function OptionContent({
       <div className="flex min-w-0 flex-col">
         <span
           className={cn(
-            "truncate leading-none font-medium",
+            "truncate font-medium leading-none",
             size === "sm" && "text-sm"
           )}
         >
           {option.title}
         </span>
         {details ? (
-          <div className="text-muted-foreground mt-1">{details}</div>
+          <div className="mt-1 text-muted-foreground">{details}</div>
         ) : description ? (
           <span className="text-muted-foreground text-xs">{description}</span>
         ) : null}
@@ -210,7 +211,7 @@ function SelectedEntitiesSummary({
 }) {
   if (options.length === 0) {
     return (
-      <span className="text-muted-foreground truncate">{placeholder}</span>
+      <span className="truncate text-muted-foreground">{placeholder}</span>
     );
   }
 
@@ -460,7 +461,7 @@ export function SearchableEntitySelect({
             />
           )
         ) : (
-          <span className="text-muted-foreground truncate">{placeholder}</span>
+          <span className="truncate text-muted-foreground">{placeholder}</span>
         )
       }
       id={id}

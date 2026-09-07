@@ -1,6 +1,6 @@
 import type { QueryKey } from "@tanstack/react-query";
 
-import { collectListedPage, collectedQueryKey } from "@/lib/api/cursor-pages";
+import { collectedQueryKey, collectListedPage } from "@/lib/api/cursor-pages";
 import {
   v1IssueGetOptions,
   v1IssueRelationsGetOptions,

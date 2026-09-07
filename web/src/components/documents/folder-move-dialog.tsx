@@ -3,22 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import { FolderPickerField } from "./folder-picker";
-
 import { DialogForm } from "@/components/ui/dialog-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { v1FolderUpdate } from "@/lib/api/sdk";
 import type { Folder, FolderPatch } from "@/lib/api/types";
 import { invalidateLibraryQueries } from "@/lib/documents/document-queries";
+import type { DocumentLibraryKind } from "@/lib/documents/library";
 import {
-  LIBRARY_ROOT_FOLDER_VALUE,
   folderMoveTargets,
+  LIBRARY_ROOT_FOLDER_VALUE,
   libraryFolderOptionsQuery,
   libraryFolderPickerOptions,
 } from "@/lib/documents/library";
-import type { DocumentLibraryKind } from "@/lib/documents/library";
+import { FolderPickerField } from "./folder-picker";
 
 const moveFormSchema = z.object({
   parent_id: z.string().min(1),
@@ -116,7 +114,7 @@ export function FolderMoveDialog({
     >
       <p className="text-muted-foreground text-sm">
         Choose a folder in this library for{" "}
-        <span className="text-foreground font-medium">
+        <span className="font-medium text-foreground">
           {folder?.name ?? "this folder"}
         </span>
         . A folder cannot be moved into itself or one of its nested folders.

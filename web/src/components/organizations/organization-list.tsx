@@ -2,9 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Building2, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { OrganizationRow } from "./organization-row";
-
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import {
   CursorPaginator,
@@ -30,6 +27,7 @@ import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsGetOptions } from "@/lib/api/query-options";
 import { zOrganizationStatus } from "@/lib/api/schemas";
 import { Action, can } from "@/lib/auth/permissions";
+import { OrganizationRow } from "./organization-row";
 
 const organizationTableSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },

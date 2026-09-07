@@ -1,7 +1,6 @@
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
-
-import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import type { EntitySelectOption } from "@/components/ui/entity-select";
+import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import {
   ControlledField,
   Field,

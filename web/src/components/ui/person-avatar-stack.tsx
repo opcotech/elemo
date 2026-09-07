@@ -92,7 +92,7 @@ export function PersonAvatarStack({
       {showNames && (
         <span
           className={cn(
-            "min-w-0 truncate leading-none font-medium",
+            "min-w-0 truncate font-medium leading-none",
             size === "sm" && "text-sm"
           )}
         >

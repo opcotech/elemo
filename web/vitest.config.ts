@@ -15,9 +15,6 @@ export default defineConfig({
     },
   },
   test: {
-    include: [
-      "src/**/*.{test,spec}.{ts,tsx}",
-      "tests/e2e/utils/**/*.test.ts",
-    ],
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "tests/e2e/utils/**/*.test.ts"],
   },
 });

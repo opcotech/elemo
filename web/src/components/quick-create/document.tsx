@@ -25,6 +25,7 @@ import {
   v1ProjectsDocumentsCreate,
 } from "@/lib/api/sdk";
 import type { Document, DocumentCreate } from "@/lib/api/types";
+import type { DocumentCreateFormValues } from "@/lib/documents/create";
 import {
   documentCreateBody,
   documentCreateFormDefaults,
@@ -32,7 +33,6 @@ import {
   documentCreateParentFromNavigation,
   documentListQueryKey,
 } from "@/lib/documents/create";
-import type { DocumentCreateFormValues } from "@/lib/documents/create";
 import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 
 export function DocumentQuickCreate({

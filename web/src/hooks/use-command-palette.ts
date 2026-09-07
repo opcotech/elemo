@@ -86,12 +86,12 @@ export function useCommandPalette(): CommandPaletteState &
   const handleAddTodo = useCallback(() => {
     uiActions.openAddTodo();
     setOpen(false);
-  }, [setOpen]);
+  }, []);
 
   const handleShowTodos = useCallback(() => {
     setOpen(false);
     uiActions.openTodoSheet();
-  }, [setOpen]);
+  }, []);
 
   const handleToggleTheme = useCallback(() => {
     setTheme(theme === "light" ? "dark" : "light");

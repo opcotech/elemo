@@ -242,7 +242,7 @@ export const NotificationBadges: Story = {
   render: () => (
     <div className="flex items-center gap-4">
       <div className="relative">
-        <button className="bg-secondary rounded-lg p-2">
+        <button className="rounded-lg bg-secondary p-2">
           <User className="h-5 w-5" />
         </button>
         <Badge className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1">
@@ -250,7 +250,7 @@ export const NotificationBadges: Story = {
         </Badge>
       </div>
       <div className="relative">
-        <button className="bg-secondary rounded-lg p-2">Messages</button>
+        <button className="rounded-lg bg-secondary p-2">Messages</button>
         <Badge
           variant="destructive"
           className="absolute -top-2 -right-2 h-5 min-w-[1.25rem] px-1"

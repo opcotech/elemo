@@ -19,7 +19,7 @@ export function ImmutableIdentifierField({
     <Field>
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} aria-label={label} value={value} readOnly disabled />
-      <p className="text-muted-foreground text-sm leading-normal font-normal">
+      <p className="font-normal text-muted-foreground text-sm leading-normal">
         {description}
       </p>
     </Field>

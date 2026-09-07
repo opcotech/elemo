@@ -31,9 +31,9 @@ export function ActivityFeed({
         return (
           <li
             key={entry.id}
-            className="hover:bg-muted/50 flex gap-3 rounded-lg px-2 py-2.5"
+            className="flex gap-3 rounded-lg px-2 py-2.5 hover:bg-muted/50"
           >
-            <span className="bg-muted text-muted-foreground mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <UserIcon className="size-3.5" />
             </span>
             <div className="min-w-0 text-sm">

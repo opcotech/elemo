@@ -2,9 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Plus, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { TeamDeleteDialog } from "./team-delete-dialog";
-
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import {
   CursorPaginator,
@@ -26,6 +23,7 @@ import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationTeamsGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, Team } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
+import { TeamDeleteDialog } from "./team-delete-dialog";
 
 const teamsListSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },
@@ -75,7 +73,7 @@ export function TeamsList({
     return teams.filter(
       (team) =>
         team.name.toLowerCase().includes(term) ||
-        (team.description && team.description.toLowerCase().includes(term))
+        team.description?.toLowerCase().includes(term)
     );
   }, [teams, searchTerm]);
 

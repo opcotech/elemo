@@ -1,8 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
-import { buildUpstreamUrl } from "./protocol";
-
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getAuthServerEnv } from "@/lib/auth/server-env";
 import { refreshSession } from "@/lib/auth/session.server";
@@ -11,6 +8,7 @@ import {
   pluginIdPattern,
   versionPattern,
 } from "@/lib/plugins/asset-path";
+import { buildUpstreamUrl } from "./protocol";
 
 const MAX_FRONTEND_SOURCE_BYTES = 2 * 1024 * 1024;
 const JS_ACCEPT = "text/javascript, application/javascript;q=0.9, */*;q=0.1";

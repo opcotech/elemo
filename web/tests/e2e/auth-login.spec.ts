@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { navigateAndWait, waitForErrorToast, waitForPageLoad } from "./helpers";
 import { LoginPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser, logoutUser } from "./utils/auth";
+import { loginUser, logoutUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 
 test.describe("@auth.login Login E2E Tests", () => {
   test("should show validation errors for invalid form inputs", async ({

@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 )
 
 func main() {
@@ -20,6 +22,9 @@ func main() {
 }
 
 func run(srcDir, outPath, splitFrom string) error {
+	srcDir = resolveRepoPath(srcDir)
+	outPath = resolveRepoPath(outPath)
+	splitFrom = resolveRepoPath(splitFrom)
 	layout := elemoLayout()
 
 	if splitFrom != "" {
@@ -34,4 +39,25 @@ func run(srcDir, outPath, splitFrom string) error {
 	}
 
 	return writeBundle(outPath, node)
+}
+
+// repoRoot is the Elemo repository root. Relative -src/-out flags are resolved
+// from there so `go -C tools/openapi-assemble` does not look inside the tool dir.
+func repoRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return ""
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+}
+
+func resolveRepoPath(p string) string {
+	if p == "" || filepath.IsAbs(p) {
+		return p
+	}
+	root := repoRoot()
+	if root == "" {
+		return p
+	}
+	return filepath.Join(root, p)
 }

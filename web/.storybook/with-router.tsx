@@ -1,10 +1,10 @@
 import type { Decorator } from "@storybook/react-vite";
 import {
-  RouterProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
+  RouterProvider,
 } from "@tanstack/react-router";
 
 /**

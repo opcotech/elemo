@@ -1,5 +1,5 @@
-import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
@@ -115,7 +115,7 @@ export function StatusIndicator({
       </span>
       <span
         className={cn(
-          "text-sm font-medium whitespace-nowrap capitalize",
+          "whitespace-nowrap font-medium text-sm capitalize",
           labelClassName
         )}
       >

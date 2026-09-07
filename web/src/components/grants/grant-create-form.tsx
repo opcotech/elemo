@@ -48,7 +48,7 @@ import type {
   Team,
   V1PermissionsCreateData,
 } from "@/lib/api/types";
-import { Action, ResourceType, can } from "@/lib/auth/permissions";
+import { Action, can, ResourceType } from "@/lib/auth/permissions";
 import { showSuccessToast } from "@/lib/toast";
 import { getInitials } from "@/lib/utils";
 

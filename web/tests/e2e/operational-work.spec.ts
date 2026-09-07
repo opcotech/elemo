@@ -1,8 +1,8 @@
 import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers";
+import { seedOwnerWorkspace } from "./helpers";
 import { WorkPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 
 test.describe("@operational Namespace and project Work surfaces", () => {
   let workspace: OwnerWorkspace;

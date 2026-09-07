@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsProjectPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
 import { ProjectDangerZoneSection, ProjectInfoSection } from "../sections";
-
-import { settingsProjectPath } from "@/lib/paths";
 
 export class SettingsOrganizationProjectDetailsPage extends BaseComponent {
   public readonly projectInfo: ProjectInfoSection;

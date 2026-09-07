@@ -1,8 +1,7 @@
-import { toApiError } from "./errors";
-import { isPublicApiRequest, transportRequestSchema } from "./protocol";
-
 import type { Client } from "@/lib/client/client";
 import { client } from "@/lib/client/client.gen";
+import { toApiError } from "./errors";
+import { isPublicApiRequest, transportRequestSchema } from "./protocol";
 
 const BFF_BASE_URL = "https://elemo-bff.invalid/api";
 let configured = false;
@@ -31,8 +30,9 @@ async function bffFetch(input: RequestInfo | URL, init?: RequestInit) {
   });
 
   try {
-    const { protectedApiTransport, publicApiTransport } =
-      await import("./transport");
+    const { protectedApiTransport, publicApiTransport } = await import(
+      "./transport"
+    );
     const transport = isPublicApiRequest(transportRequest)
       ? publicApiTransport
       : protectedApiTransport;
@@ -84,5 +84,5 @@ export function ensureApiClientConfigured(): void {
 
 ensureApiClientConfigured();
 
-export { client };
 export type { Client };
+export { client };

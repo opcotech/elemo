@@ -1,7 +1,6 @@
-import { useOptimisticIssueFieldPatch } from "./use-optimistic-issue-field-patch";
-
 import type { IssuePatch } from "@/lib/api/types";
 import type { WorkItem } from "@/lib/work/model";
+import { useOptimisticIssueFieldPatch } from "./use-optimistic-issue-field-patch";
 
 export interface TimelineDateChange {
   readonly item: WorkItem;

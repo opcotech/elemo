@@ -1,0 +1,36 @@
+# Editors
+.idea/
+.vscode/
+.fleet/
+
+# Coverage data
+.coverage.out
+.coverage.*.out
+coverage.html
+
+# Generated files
+bin/
+dist/
+
+# Configuration files
+.github/
+.editorconfig
+
+# Misc
+api/
+deploy/
+tmp/
+TODO
+CHANGELOG.md
+README.md
+
+# Helper tools and scripts
+tools/
+scripts/
+
+# Test files
+tests/
+
+# Monorepo specific files
+web/
+website/

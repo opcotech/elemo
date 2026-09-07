@@ -1,5 +1,4 @@
 import { expect } from "@playwright/test";
-import type { Page } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { waitForElementVisible } from "../helpers";
@@ -8,10 +7,6 @@ import { waitForElementVisible } from "../helpers";
  * Forgot-password request form section.
  */
 export class ForgotPasswordSection extends BaseComponent {
-  constructor(page: Page) {
-    super(page);
-  }
-
   async waitForLoad(options?: { timeout?: number }): Promise<void> {
     // CardTitle renders as a div, not a heading role
     await waitForElementVisible(

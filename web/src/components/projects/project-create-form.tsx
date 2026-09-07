@@ -1,12 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-
+import type { ProjectCreateFormValues } from "@/components/projects/project-form-schema";
 import {
   normalizeProjectKey,
   projectCreateFormSchema,
 } from "@/components/projects/project-form-schema";
-import type { ProjectCreateFormValues } from "@/components/projects/project-form-schema";
 import {
   ControlledField,
   Field,

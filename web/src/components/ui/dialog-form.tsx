@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -52,7 +52,7 @@ export function DialogForm<TFormValues extends FieldValues>({
       onReset();
     }
     prevOpenRef.current = open;
-  }, [open]);
+  }, [open, onReset]);
 
   const errorMessage =
     typeof error === "string" ? error : error?.message || null;

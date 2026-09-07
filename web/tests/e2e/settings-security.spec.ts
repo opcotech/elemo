@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { waitForErrorToast, waitForSuccessToast } from "./helpers";
 import { SettingsSecurityPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 
 test.describe("@settings.security Password Change E2E Tests", () => {
   test.beforeEach(async ({ page, userPersona }) => {

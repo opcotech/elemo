@@ -1,3 +1,6 @@
+import type { Client } from "@/lib/api/client";
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
+import type { User } from "@/lib/api/types";
 import {
   createAuthenticatedClient,
   createOrganization,
@@ -9,10 +12,6 @@ import { USER_DEFAULT_PASSWORD } from "../utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "../utils/db";
 import { getRandomSlug, getRandomString } from "../utils/random";
 import type { TestConfig } from "../utils/test-config";
-
-import type { Client } from "@/lib/api/client";
-import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
-import type { User } from "@/lib/api/types";
 
 export interface OwnerWorkspace {
   owner: User;

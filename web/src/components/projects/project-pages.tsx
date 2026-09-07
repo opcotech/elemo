@@ -57,12 +57,12 @@ import type {
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { documentListQueryKey } from "@/lib/documents/create";
+import type { DocumentListSort } from "@/lib/documents/document-list";
 import {
   ALL_DOCUMENT_CREATORS,
   documentCreators,
   visibleDocuments,
 } from "@/lib/documents/document-list";
-import type { DocumentListSort } from "@/lib/documents/document-list";
 import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 import { internalPath } from "@/lib/internal-url";
 import {
@@ -167,7 +167,7 @@ export function ProjectOverviewPage({
                     : "No issue progress"}
                 </span>
               </div>
-              <p className="text-muted-foreground mt-3 text-sm">
+              <p className="mt-3 text-muted-foreground text-sm">
                 {issueCount
                   ? `${issueCount} linked issues are associated with this project.`
                   : "No linked issues are associated with this project yet."}

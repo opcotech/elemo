@@ -76,7 +76,7 @@ export function RelationshipExplorerPage({
     >
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold">Relationship explorer</h1>
+          <h1 className="font-semibold text-xl">Relationship explorer</h1>
           <p className="text-muted-foreground text-sm">
             {focus?.title ?? `${entityType}:${entityId}`}
           </p>
@@ -102,16 +102,16 @@ export function RelationshipExplorerPage({
       </MockDataAlert>
 
       <div className="grid min-h-135 flex-1 overflow-hidden rounded-xl border lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <div className="bg-surface-sunken relative min-h-105 overflow-auto p-8">
+        <div className="relative min-h-105 overflow-auto bg-surface-sunken p-8">
           {focus ? (
-            <div className="bg-primary text-primary-foreground shadow-float absolute top-1/2 left-1/2 z-10 w-52 -translate-x-1/2 -translate-y-1/2 rounded-xl border p-4 text-center">
+            <div className="absolute top-1/2 left-1/2 z-10 w-52 -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-primary p-4 text-center text-primary-foreground shadow-float">
               <EntityIcon type={focus.type} className="mx-auto mb-2" />
-              <p className="text-sm font-semibold">{focus.title}</p>
+              <p className="font-semibold text-sm">{focus.title}</p>
             </div>
           ) : (
-            <div className="bg-card shadow-float absolute top-1/2 left-1/2 z-10 w-52 -translate-x-1/2 -translate-y-1/2 rounded-xl border p-4 text-center">
-              <NetworkIcon className="text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-semibold">
+            <div className="absolute top-1/2 left-1/2 z-10 w-52 -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-card p-4 text-center shadow-float">
+              <NetworkIcon className="mx-auto mb-2 text-muted-foreground" />
+              <p className="font-semibold text-sm">
                 {entityType}:{entityId}
               </p>
             </div>
@@ -134,13 +134,13 @@ export function RelationshipExplorerPage({
                   key={`${node.type}:${node.id}`}
                   to={internalPath(entityHref(node))}
                   className={cn(
-                    "bg-card hover:border-primary absolute w-44 rounded-lg border p-3 shadow-sm",
+                    "absolute w-44 rounded-lg border bg-card p-3 shadow-sm hover:border-primary",
                     positions[index]
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <EntityIcon type={node.type} />
-                    <span className="truncate text-sm font-medium">
+                    <span className="truncate font-medium text-sm">
                       {node.title}
                     </span>
                   </div>
@@ -148,12 +148,12 @@ export function RelationshipExplorerPage({
               );
             })}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="border-primary/30 size-80 rounded-full border border-dashed" />
+            <div className="size-80 rounded-full border border-primary/30 border-dashed" />
           </div>
         </div>
-        <aside className="bg-background border-t lg:border-t-0 lg:border-l">
+        <aside className="border-t bg-background lg:border-t-0 lg:border-l">
           <div className="border-b p-4">
-            <h2 className="text-sm font-semibold">Direct relations</h2>
+            <h2 className="font-semibold text-sm">Direct relations</h2>
             <p className="text-muted-foreground text-xs">
               Expand only on intent.
             </p>
@@ -164,10 +164,10 @@ export function RelationshipExplorerPage({
                 <p className="text-muted-foreground text-xs capitalize">
                   {relation.kind.replaceAll("-", " ")}
                 </p>
-                <p className="mt-1 truncate text-sm font-medium">
+                <p className="mt-1 truncate font-medium text-sm">
                   {relation.from.title}
                 </p>
-                <p className="text-muted-foreground truncate text-xs">
+                <p className="truncate text-muted-foreground text-xs">
                   → {relation.to.title}
                 </p>
               </div>

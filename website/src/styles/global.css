@@ -144,9 +144,21 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgb(91 130 232 / 0.22), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 85% 70%, rgb(91 130 232 / 0.1), transparent 50%),
-      radial-gradient(ellipse 45% 35% at 10% 80%, rgb(28 45 82 / 0.55), transparent 55%),
+      radial-gradient(
+        ellipse 80% 60% at 50% -10%,
+        rgb(91 130 232 / 0.22),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 50% 40% at 85% 70%,
+        rgb(91 130 232 / 0.1),
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 45% 35% at 10% 80%,
+        rgb(28 45 82 / 0.55),
+        transparent 55%
+      ),
       linear-gradient(180deg, #080d18 0%, #0c121e 45%, #080d18 100%);
   }
 
@@ -154,8 +166,16 @@
     position: absolute;
     inset: -20%;
     background:
-      radial-gradient(ellipse 35% 28% at 40% 35%, rgb(91 130 232 / 0.28), transparent 70%),
-      radial-gradient(ellipse 30% 25% at 65% 55%, rgb(107 144 237 / 0.16), transparent 70%);
+      radial-gradient(
+        ellipse 35% 28% at 40% 35%,
+        rgb(91 130 232 / 0.28),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 30% 25% at 65% 55%,
+        rgb(107 144 237 / 0.16),
+        transparent 70%
+      );
     filter: blur(40px);
     animation: aurora-drift 18s ease-in-out infinite alternate;
     will-change: transform;
@@ -165,8 +185,16 @@
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' width='64' height='64' fill='none' stroke='rgb(91 130 232 / 0.07)'%3e%3cpath d='M0 .5h64M.5 0v64'/%3e%3c/svg%3e");
-    mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 20%, transparent 75%);
-    -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 20%, transparent 75%);
+    mask-image: radial-gradient(
+      ellipse 70% 55% at 50% 40%,
+      black 20%,
+      transparent 75%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 70% 55% at 50% 40%,
+      black 20%,
+      transparent 75%
+    );
     opacity: 0.9;
   }
 
@@ -209,10 +237,22 @@
     overflow: hidden;
     padding-inline: clamp(0.75rem, 3vw, 1.5rem);
     mask-image:
-      linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%),
+      linear-gradient(
+        to right,
+        transparent 0%,
+        black 3%,
+        black 97%,
+        transparent 100%
+      ),
       linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
     -webkit-mask-image:
-      linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%),
+      linear-gradient(
+        to right,
+        transparent 0%,
+        black 3%,
+        black 97%,
+        transparent 100%
+      ),
       linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
     mask-composite: intersect;
     -webkit-mask-composite: source-in;
@@ -446,7 +486,7 @@
   .reveal-delay-4,
   .reveal-delay-5,
   .demo-ribbon {
-    animation: none !important;
+    animation: none;
   }
 
   .reveal,

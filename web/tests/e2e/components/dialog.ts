@@ -1,8 +1,7 @@
-import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-
-import { LocatorComponent } from "./base";
+import { expect } from "@playwright/test";
 import { closeDialog, confirmDialog, waitForDialog } from "../helpers/dialogs";
+import { LocatorComponent } from "./base";
 
 /**
  * Reusable Dialog component helper.

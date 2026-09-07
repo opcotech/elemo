@@ -1,13 +1,3 @@
-import {
-  IssueMetadataProperties,
-  IssueParentLink,
-} from "./issue-metadata-properties";
-import { IssueRelationsPreview } from "./issue-relations";
-import { MarkdownContent } from "./markdown-content";
-import { workItemPath, workItemUrl } from "./utils";
-import { WorkItemActivity } from "./work-item-activity";
-import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
-
 import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
 import { PluginSlot } from "@/components/plugins/plugin-slot";
 import { ActivityFeed } from "@/components/shared/activity-feed";
@@ -22,6 +12,15 @@ import { internalPath } from "@/lib/internal-url";
 import { selectActivity, selectRelations } from "@/lib/mock-data";
 import type { WorkItem } from "@/lib/work/model";
 import { workItemPeople } from "@/lib/work/resolve-work-people";
+import {
+  IssueMetadataProperties,
+  IssueParentLink,
+} from "./issue-metadata-properties";
+import { IssueRelationsPreview } from "./issue-relations";
+import { MarkdownContent } from "./markdown-content";
+import { workItemPath, workItemUrl } from "./utils";
+import { WorkItemActivity } from "./work-item-activity";
+import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
 export function WorkInspector({ item }: { item: WorkItem }) {
   const isApi = item.dataSource === "api";

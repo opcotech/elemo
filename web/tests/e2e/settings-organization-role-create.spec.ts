@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import { createGrant, createOrganization, createRole } from "./api";
 import { expect, test } from "./fixtures";
 import { getFormFieldMessage, waitForSuccessToast } from "./helpers";
@@ -5,7 +6,7 @@ import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationRoleCreatePage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
@@ -13,8 +14,6 @@ import {
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-role-create Organization Role Creation E2E Tests", () => {
   let testUser: User;

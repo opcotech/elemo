@@ -279,7 +279,7 @@ func TestCachedProjectRepository_Get(t *testing.T) {
 
 					backend := mockrepo.NewMockCacheBackend(ctrl)
 					backend.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						*(dst.(**repository.Project)) = project
+						*dst.(**repository.Project) = project
 					}).Return(nil)
 
 					return []repository.RedisRepositoryOption{

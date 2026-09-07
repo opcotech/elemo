@@ -1,8 +1,7 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import { v1CustomFieldsCreate } from "@/lib/api/sdk";
 import type { CustomFieldCreate, CustomFieldDefinition } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 export async function createCustomField(
   client: Client,

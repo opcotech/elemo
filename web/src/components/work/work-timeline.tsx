@@ -1,12 +1,26 @@
-import { useEffect, useRef, useState } from "react";
 import type {
   CSSProperties,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   RefObject,
 } from "react";
-
+import { useEffect, useRef, useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { WorkItem } from "@/lib/work/model";
 import type { TimelineDateChange } from "./use-timeline-issue-dates";
+import type {
+  TimelineDragMode,
+  TimelineScale,
+  WorkTimelineEntry,
+  WorkTimelineRange,
+} from "./utils";
 import {
   applyTimelineDrag,
   createTimelineScale,
@@ -18,22 +32,6 @@ import {
   workItemDatesFromTimelineRange,
   workItemsToTimelineEntries,
 } from "./utils";
-import type {
-  TimelineDragMode,
-  TimelineScale,
-  WorkTimelineEntry,
-  WorkTimelineRange,
-} from "./utils";
-
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { WorkItem } from "@/lib/work/model";
 
 const DRAG_THRESHOLD_PX = 4;
 const WORK_COLUMN_PX = 300;
@@ -117,12 +115,12 @@ export function WorkTimeline({
             }}
           >
             <div
-              className="bg-background sticky top-0 z-20 grid border-b"
+              className="sticky top-0 z-20 grid border-b bg-background"
               style={{
                 gridTemplateColumns: `${WORK_COLUMN_PX}px minmax(0, 1fr)`,
               }}
             >
-              <div className="bg-background sticky left-0 z-30 border-r px-4 py-3 text-xs font-semibold uppercase">
+              <div className="sticky left-0 z-30 border-r bg-background px-4 py-3 font-semibold text-xs uppercase">
                 Work
               </div>
               <div className="grid py-3 text-xs" style={trackColumnsStyle}>
@@ -156,8 +154,8 @@ export function WorkTimeline({
                   gridTemplateColumns: `${WORK_COLUMN_PX}px minmax(0, 1fr)`,
                 }}
               >
-                <div className="bg-background sticky left-0 z-10 border-r px-4 py-3">
-                  <p className="text-xs font-semibold uppercase">
+                <div className="sticky left-0 z-10 border-r bg-background px-4 py-3">
+                  <p className="font-semibold text-xs uppercase">
                     Unscheduled ({unscheduled.length})
                   </p>
                   <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">
@@ -165,7 +163,7 @@ export function WorkTimeline({
                       <button
                         key={item.id}
                         type="button"
-                        className="text-muted-foreground hover:text-primary focus-visible:ring-ring block w-full truncate rounded-sm text-left text-xs outline-none focus-visible:ring-2"
+                        className="block w-full truncate rounded-sm text-left text-muted-foreground text-xs outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => onSelect(item)}
                       >
                         {item.key} {item.title}
@@ -205,7 +203,7 @@ function TimelineRow({
 
   return (
     <div
-      className="group bg-background grid w-full border-b"
+      className="group grid w-full border-b bg-background"
       style={{
         gridTemplateColumns: `${WORK_COLUMN_PX}px minmax(0, 1fr)`,
       }}
@@ -214,7 +212,7 @@ function TimelineRow({
         type="button"
         onClick={() => onSelect(item)}
         className={cn(
-          "bg-background focus-visible:ring-ring sticky left-0 z-50 truncate border-r px-4 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset",
+          "sticky left-0 z-50 truncate border-r bg-background px-4 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
           compact ? "py-2" : "py-3",
           entry.kind === "milestone"
             ? "text-pink-700 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300"
@@ -395,7 +393,7 @@ function TimelineBar({
       >
         <span
           className={cn(
-            "bg-primary/20 border-primary/80 pointer-events-none absolute inset-0 rounded-sm border",
+            "pointer-events-none absolute inset-0 rounded-sm border border-primary/80 bg-primary/20",
             range.kind === "milestone" && "border-pink-500/80 bg-pink-500/20"
           )}
         />
@@ -429,7 +427,7 @@ function TimelineHandle({
       type="button"
       aria-label={edge === "start" ? "Adjust start date" : "Adjust due date"}
       className={cn(
-        "border-primary bg-background absolute top-0 z-10 h-full w-1.5 rounded-sm border opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+        "absolute top-0 z-10 h-full w-1.5 rounded-sm border border-primary bg-background opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
         edge === "start"
           ? "left-0 -translate-x-1/2"
           : "right-0 translate-x-1/2",

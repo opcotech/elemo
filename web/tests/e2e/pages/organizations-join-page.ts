@@ -1,5 +1,3 @@
-import type { Page } from "@playwright/test";
-
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForSuccessToast } from "../helpers";
 
@@ -7,10 +5,6 @@ import { navigateAndWait, waitForSuccessToast } from "../helpers";
  * Page object for the public /organizations/join invite acceptance flow.
  */
 export class OrganizationsJoinPage extends BaseComponent {
-  constructor(page: Page) {
-    super(page);
-  }
-
   async goto(organizationId: string, token: string): Promise<void> {
     const searchParams = new URLSearchParams({
       organization: organizationId,

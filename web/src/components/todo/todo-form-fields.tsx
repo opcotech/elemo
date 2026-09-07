@@ -1,11 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Control, FieldValues, Path } from "react-hook-form";
 import type { z } from "zod";
-
-import { todoPriorities, todoPriorityLabels } from "./priority";
-import { TodoPriorityRibbon } from "./todo-priority-ribbon";
-
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   ControlledField,
@@ -15,8 +11,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { RichTextEditorValue } from "@/components/ui/rich-text-editor";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -28,6 +24,8 @@ import { zTodoCreate } from "@/lib/api/schemas";
 import type { TodoPriority } from "@/lib/api/types";
 import { createFormSchema } from "@/lib/forms";
 import { cn, getDefaultValue } from "@/lib/utils";
+import { todoPriorities, todoPriorityLabels } from "./priority";
+import { TodoPriorityRibbon } from "./todo-priority-ribbon";
 
 export const todoCreateFormSchema = createFormSchema(
   zTodoCreate.omit({ owned_by: true })

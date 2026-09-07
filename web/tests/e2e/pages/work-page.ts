@@ -1,12 +1,10 @@
 import type { Page } from "@playwright/test";
-
+import { namespaceWorkPath, projectWorkPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
 import { QuickCreateSection } from "../sections/quick-create-section";
 import { WorkInspectorSection } from "../sections/work-inspector-section";
 import { WorkSurfaceSection } from "../sections/work-surface-section";
-
-import { namespaceWorkPath, projectWorkPath } from "@/lib/paths";
 
 /**
  * Page Object Model for Work surfaces: My Work, namespace Work, and project Work.

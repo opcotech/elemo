@@ -16,7 +16,7 @@ Usage of license-validator:
 ## Example
 
 ```bash
-go run tools/license-validator/main.go \
-    -public-key "configs/keys/signing/public.key" \
-    -license "configs/licenses/license.key"
+go run ./tools/license-validator \
+    -public-key "assets/keys/public.key" \
+    -license "configs/test/license.key"
 ```

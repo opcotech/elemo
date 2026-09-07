@@ -135,7 +135,7 @@ export const WithIcons: Story = {
             <AvatarFallback>JD</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-lg font-medium">John Doe</h3>
+            <h3 className="font-medium text-lg">John Doe</h3>
             <p className="text-muted-foreground text-sm">Software Engineer</p>
           </div>
         </div>
@@ -162,7 +162,7 @@ export const WithIcons: Story = {
             <Label htmlFor="language">Language</Label>
             <select
               id="language"
-              className="border-input bg-background ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -217,12 +217,12 @@ export const DashboardTabs: Story = {
         <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="font-medium text-sm">
                 Total Revenue
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$45,231.89</div>
+              <div className="font-bold text-2xl">$45,231.89</div>
               <p className="text-muted-foreground text-xs">
                 +20.1% from last month
               </p>
@@ -230,12 +230,12 @@ export const DashboardTabs: Story = {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="font-medium text-sm">
                 Subscriptions
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+2350</div>
+              <div className="font-bold text-2xl">+2350</div>
               <p className="text-muted-foreground text-xs">
                 +180.1% from last month
               </p>
@@ -243,10 +243,10 @@ export const DashboardTabs: Story = {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Sales</CardTitle>
+              <CardTitle className="font-medium text-sm">Sales</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+12,234</div>
+              <div className="font-bold text-2xl">+12,234</div>
               <p className="text-muted-foreground text-xs">
                 +19% from last month
               </p>
@@ -257,7 +257,7 @@ export const DashboardTabs: Story = {
       <TabsContent value="analytics" className="space-y-4">
         <div className="flex h-[200px] items-center justify-center rounded-lg border">
           <div className="text-center">
-            <BarChart3 className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
+            <BarChart3 className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
             <p className="text-muted-foreground text-sm">
               Analytics chart would go here
             </p>
@@ -300,7 +300,7 @@ export const DashboardTabs: Story = {
       </TabsContent>
       <TabsContent value="users" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">User Management</h3>
+          <h3 className="font-medium text-lg">User Management</h3>
           <Button>
             <Plus className="size-4" />
             Add User
@@ -439,7 +439,7 @@ export const ContentManagement: Story = {
       </TabsList>
       <TabsContent value="posts" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Blog Posts</h3>
+          <h3 className="font-medium text-lg">Blog Posts</h3>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm">
               <Filter className="size-4" />
@@ -495,7 +495,7 @@ export const ContentManagement: Story = {
       </TabsContent>
       <TabsContent value="pages" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Pages</h3>
+          <h3 className="font-medium text-lg">Pages</h3>
           <Button size="sm">
             <Plus className="size-4" />
             New Page
@@ -530,7 +530,7 @@ export const ContentManagement: Story = {
       </TabsContent>
       <TabsContent value="media" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Media Library</h3>
+          <h3 className="font-medium text-lg">Media Library</h3>
           <Button size="sm">
             <Upload className="size-4" />
             Upload
@@ -540,7 +540,7 @@ export const ContentManagement: Story = {
           {Array.from({ length: 8 }, (_, i) => (
             <div
               key={i}
-              className="bg-muted flex aspect-square items-center justify-center rounded-lg border"
+              className="flex aspect-square items-center justify-center rounded-lg border bg-muted"
             >
               <div className="text-center">
                 <div className="mb-1 text-2xl">🖼️</div>
@@ -554,7 +554,7 @@ export const ContentManagement: Story = {
       </TabsContent>
       <TabsContent value="comments" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Comments</h3>
+          <h3 className="font-medium text-lg">Comments</h3>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm">
               <Filter className="size-4" />
@@ -629,7 +629,7 @@ export const VerticalTabs: Story = {
       <div className="ml-4 flex-1">
         <TabsContent value="general" className="mt-0 space-y-4">
           <div className="space-y-2">
-            <h3 className="text-lg font-medium">General Settings</h3>
+            <h3 className="font-medium text-lg">General Settings</h3>
             <p className="text-muted-foreground text-sm">
               Manage your general account settings and preferences.
             </p>
@@ -647,7 +647,7 @@ export const VerticalTabs: Story = {
         </TabsContent>
         <TabsContent value="security" className="mt-0 space-y-4">
           <div className="space-y-2">
-            <h3 className="text-lg font-medium">Security Settings</h3>
+            <h3 className="font-medium text-lg">Security Settings</h3>
             <p className="text-muted-foreground text-sm">
               Manage your account security and authentication.
             </p>
@@ -669,7 +669,7 @@ export const VerticalTabs: Story = {
         </TabsContent>
         <TabsContent value="billing" className="mt-0 space-y-4">
           <div className="space-y-2">
-            <h3 className="text-lg font-medium">Billing Settings</h3>
+            <h3 className="font-medium text-lg">Billing Settings</h3>
             <p className="text-muted-foreground text-sm">
               Manage your subscription and payment methods.
             </p>
@@ -689,7 +689,7 @@ export const VerticalTabs: Story = {
         </TabsContent>
         <TabsContent value="notifications" className="mt-0 space-y-4">
           <div className="space-y-2">
-            <h3 className="text-lg font-medium">Notification Settings</h3>
+            <h3 className="font-medium text-lg">Notification Settings</h3>
             <p className="text-muted-foreground text-sm">
               Configure how you receive notifications.
             </p>

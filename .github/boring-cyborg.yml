@@ -1,7 +1,7 @@
 labelPRBasedOnFilePath:
   "component: api": ["api/**/*", "internal/transport/http/**/*"]
   "component: auth": ["internal/transport/http/auth.go"]
-  "component: build": [".github/**/*", "build/**/*", "Makefile"]
+  "component: build": [".github/**/*", "deploy/docker/**/*", "mise.toml", "mise.lock"]
   "component: configs": ["configs/**/*", "internal/config/**/*"]
   "component: deployments": ["deploy/**/*"]
   "component: front-end": ["web/**/*"]

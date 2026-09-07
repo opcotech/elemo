@@ -1,10 +1,8 @@
-import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
-
+import { expect } from "@playwright/test";
+import type { Action } from "@/lib/api/types";
 import { BaseComponent } from "../components/base";
 import { SectionContainerMixin } from "../mixins";
-
-import type { Action } from "@/lib/api/types";
 
 interface DraftActionOptions {
   action: Action;

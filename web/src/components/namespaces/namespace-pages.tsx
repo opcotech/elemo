@@ -237,15 +237,15 @@ export function NamespaceOverviewPage({
                     key={signal.id}
                     className="rounded-lg border px-3 py-2.5"
                   >
-                    <p className="text-sm font-medium">{signal.summary}</p>
-                    <p className="text-muted-foreground mt-1 text-xs capitalize">
+                    <p className="font-medium text-sm">{signal.summary}</p>
+                    <p className="mt-1 text-muted-foreground text-xs capitalize">
                       {signal.reason.replaceAll("-", " ")}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground rounded-lg border p-4 text-sm">
+              <p className="rounded-lg border p-4 text-muted-foreground text-sm">
                 No fixture attention signals map to this namespace.
               </p>
             )}
@@ -360,9 +360,9 @@ export function NamespaceProjectsPage({
           ) : undefined
         }
       />
-      <div className="bg-background sticky top-0 z-10 flex flex-wrap gap-2 py-3">
+      <div className="sticky top-0 z-10 flex flex-wrap gap-2 bg-background py-3">
         <div className="relative min-w-60 flex-1">
-          <SearchIcon className="text-muted-foreground absolute top-2.5 left-3 size-4" />
+          <SearchIcon className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -393,41 +393,41 @@ export function NamespaceProjectsPage({
                     projectKey: project.key,
                   })
                 )}
-                className="hover:bg-muted/40 focus-visible:ring-ring grid gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"
+                className="grid gap-3 px-4 py-4 outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"
               >
                 <div className="flex min-w-0 gap-3">
                   {project.logo ? (
                     <img
                       src={project.logo}
                       alt=""
-                      className="bg-muted size-10 shrink-0 rounded-lg object-cover"
+                      className="size-10 shrink-0 rounded-lg bg-muted object-cover"
                     />
                   ) : (
-                    <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       <FolderKanbanIcon className="size-5" />
                     </span>
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h2 className="truncate font-medium">{project.name}</h2>
-                      <span className="text-muted-foreground font-mono text-xs">
+                      <span className="font-mono text-muted-foreground text-xs">
                         {project.key}
                       </span>
                     </div>
-                    <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                    <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
                       {project.description ||
                         "No project outcome has been added."}
                     </p>
                   </div>
                 </div>
                 <div className="text-sm">
-                  <span className="text-muted-foreground block text-xs">
+                  <span className="block text-muted-foreground text-xs">
                     State
                   </span>
                   <StatusIndicator status={project.status} />
                 </div>
                 <div className="text-sm">
-                  <span className="text-muted-foreground block text-xs">
+                  <span className="block text-muted-foreground text-xs">
                     Position
                   </span>
                   {index + 1} of {projectsPage?.items.length ?? projects.length}

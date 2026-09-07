@@ -41,7 +41,7 @@ export const Default: Story = {
   render: () => (
     <div className="w-64 space-y-4">
       <div className="space-y-1">
-        <h4 className="text-sm leading-none font-medium">Radix Primitives</h4>
+        <h4 className="font-medium text-sm leading-none">Radix Primitives</h4>
         <p className="text-muted-foreground text-sm">
           An open-source UI component library.
         </p>
@@ -63,21 +63,21 @@ export const Horizontal: Story = {
   render: () => (
     <div className="w-80 space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Section 1</h3>
+        <h3 className="font-medium text-lg">Section 1</h3>
         <p className="text-muted-foreground text-sm">
           This is the first section of content.
         </p>
       </div>
       <Separator />
       <div>
-        <h3 className="text-lg font-medium">Section 2</h3>
+        <h3 className="font-medium text-lg">Section 2</h3>
         <p className="text-muted-foreground text-sm">
           This is the second section of content.
         </p>
       </div>
       <Separator />
       <div>
-        <h3 className="text-lg font-medium">Section 3</h3>
+        <h3 className="font-medium text-lg">Section 3</h3>
         <p className="text-muted-foreground text-sm">
           This is the third section of content.
         </p>
@@ -91,17 +91,17 @@ export const Vertical: Story = {
   render: () => (
     <div className="flex h-20 items-center space-x-4">
       <div className="text-center">
-        <div className="text-lg font-semibold">Home</div>
+        <div className="font-semibold text-lg">Home</div>
         <div className="text-muted-foreground text-xs">Main page</div>
       </div>
       <Separator orientation="vertical" />
       <div className="text-center">
-        <div className="text-lg font-semibold">About</div>
+        <div className="font-semibold text-lg">About</div>
         <div className="text-muted-foreground text-xs">Learn more</div>
       </div>
       <Separator orientation="vertical" />
       <div className="text-center">
-        <div className="text-lg font-semibold">Contact</div>
+        <div className="font-semibold text-lg">Contact</div>
         <div className="text-muted-foreground text-xs">Get in touch</div>
       </div>
     </div>
@@ -136,7 +136,7 @@ export const FormSections: Story = {
   render: () => (
     <div className="w-80 space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Personal Information</h3>
+        <h3 className="font-medium text-lg">Personal Information</h3>
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Full Name</Label>
@@ -152,7 +152,7 @@ export const FormSections: Story = {
       <Separator />
 
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Account Settings</h3>
+        <h3 className="font-medium text-lg">Account Settings</h3>
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="username">Username</Label>
@@ -168,7 +168,7 @@ export const FormSections: Story = {
       <Separator />
 
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Preferences</h3>
+        <h3 className="font-medium text-lg">Preferences</h3>
         <div className="flex items-center justify-between">
           <Label>Email notifications</Label>
           <Button variant="outline" size="sm">
@@ -183,16 +183,16 @@ export const FormSections: Story = {
 // Breadcrumb separator
 export const Breadcrumb: Story = {
   render: () => (
-    <nav className="text-muted-foreground flex items-center space-x-2 text-sm">
-      <Button variant="link" className="text-muted-foreground h-auto p-0">
+    <nav className="flex items-center space-x-2 text-muted-foreground text-sm">
+      <Button variant="link" className="h-auto p-0 text-muted-foreground">
         Home
       </Button>
       <Separator orientation="vertical" className="h-4" />
-      <Button variant="link" className="text-muted-foreground h-auto p-0">
+      <Button variant="link" className="h-auto p-0 text-muted-foreground">
         Products
       </Button>
       <Separator orientation="vertical" className="h-4" />
-      <Button variant="link" className="text-muted-foreground h-auto p-0">
+      <Button variant="link" className="h-auto p-0 text-muted-foreground">
         Electronics
       </Button>
       <Separator orientation="vertical" className="h-4" />
@@ -204,14 +204,14 @@ export const Breadcrumb: Story = {
 // Card sections
 export const CardSections: Story = {
   render: () => (
-    <div className="bg-card w-80 rounded-lg border p-6">
+    <div className="w-80 rounded-lg border bg-card p-6">
       <div className="flex items-center space-x-4">
         <Avatar>
           <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
         <div>
-          <h4 className="text-sm font-semibold">John Doe</h4>
+          <h4 className="font-semibold text-sm">John Doe</h4>
           <p className="text-muted-foreground text-sm">Software Engineer</p>
         </div>
       </div>
@@ -251,16 +251,16 @@ export const CardSections: Story = {
 export const StatsDashboard: Story = {
   render: () => (
     <div className="w-96 space-y-6">
-      <h2 className="text-xl font-semibold">Analytics Dashboard</h2>
+      <h2 className="font-semibold text-xl">Analytics Dashboard</h2>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center">
-          <div className="text-2xl font-bold">1,234</div>
+          <div className="font-bold text-2xl">1,234</div>
           <div className="text-muted-foreground text-sm">Users</div>
         </div>
         <Separator orientation="vertical" className="justify-self-center" />
         <div className="text-center">
-          <div className="text-2xl font-bold">5,678</div>
+          <div className="font-bold text-2xl">5,678</div>
           <div className="text-muted-foreground text-sm">Orders</div>
         </div>
       </div>
@@ -269,12 +269,12 @@ export const StatsDashboard: Story = {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center">
-          <div className="text-2xl font-bold">$12.3K</div>
+          <div className="font-bold text-2xl">$12.3K</div>
           <div className="text-muted-foreground text-sm">Revenue</div>
         </div>
         <Separator orientation="vertical" className="justify-self-center" />
         <div className="text-center">
-          <div className="text-2xl font-bold">89%</div>
+          <div className="font-bold text-2xl">89%</div>
           <div className="text-muted-foreground text-sm">Conversion</div>
         </div>
       </div>
@@ -282,8 +282,8 @@ export const StatsDashboard: Story = {
       <Separator />
 
       <div className="text-center">
-        <div className="text-lg font-medium">Monthly Growth</div>
-        <div className="rounded bg-green-600 px-2 text-3xl font-bold text-white">
+        <div className="font-medium text-lg">Monthly Growth</div>
+        <div className="rounded bg-green-600 px-2 font-bold text-3xl text-white">
           +15.3%
         </div>
         <div className="text-muted-foreground text-sm">
@@ -307,19 +307,19 @@ export const CustomStyling: Story = {
   render: () => (
     <div className="w-80 space-y-6">
       <div>
-        <h3 className="text-lg font-medium">Default Separator</h3>
+        <h3 className="font-medium text-lg">Default Separator</h3>
         <p className="text-muted-foreground text-sm">Standard appearance</p>
       </div>
       <Separator />
 
       <div>
-        <h3 className="text-lg font-medium">Thick Separator</h3>
+        <h3 className="font-medium text-lg">Thick Separator</h3>
         <p className="text-muted-foreground text-sm">With increased height</p>
       </div>
-      <Separator className="bg-primary h-1" />
+      <Separator className="h-1 bg-primary" />
 
       <div>
-        <h3 className="text-lg font-medium">Dashed Separator</h3>
+        <h3 className="font-medium text-lg">Dashed Separator</h3>
         <p className="text-muted-foreground text-sm">
           With custom border style
         </p>
@@ -327,13 +327,13 @@ export const CustomStyling: Story = {
       <Separator className="border-muted-foreground border-t-2 border-dashed" />
 
       <div>
-        <h3 className="text-lg font-medium">Colored Separator</h3>
+        <h3 className="font-medium text-lg">Colored Separator</h3>
         <p className="text-muted-foreground text-sm">With custom color</p>
       </div>
       <Separator className="h-0.5 bg-linear-to-r from-blue-500 to-purple-500" />
 
       <div>
-        <h3 className="text-lg font-medium">Dotted Separator</h3>
+        <h3 className="font-medium text-lg">Dotted Separator</h3>
         <p className="text-muted-foreground text-sm">With dotted style</p>
       </div>
       <Separator className="border-muted-foreground border-t-2 border-dotted" />
@@ -355,7 +355,7 @@ export const ComplexLayout: Story = {
     <div className="w-96 space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-xl font-bold">User Profile</h2>
+        <h2 className="font-bold text-xl">User Profile</h2>
         <p className="text-muted-foreground text-sm">
           Manage your account settings
         </p>
@@ -387,17 +387,17 @@ export const ComplexLayout: Story = {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-4 text-center">
         <div>
-          <div className="text-lg font-semibold">142</div>
+          <div className="font-semibold text-lg">142</div>
           <div className="text-muted-foreground text-xs">Posts</div>
         </div>
         <Separator orientation="vertical" className="justify-self-center" />
         <div>
-          <div className="text-lg font-semibold">1.2K</div>
+          <div className="font-semibold text-lg">1.2K</div>
           <div className="text-muted-foreground text-xs">Followers</div>
         </div>
         <Separator orientation="vertical" className="justify-self-center" />
         <div>
-          <div className="text-lg font-semibold">342</div>
+          <div className="font-semibold text-lg">342</div>
           <div className="text-muted-foreground text-xs">Following</div>
         </div>
       </div>

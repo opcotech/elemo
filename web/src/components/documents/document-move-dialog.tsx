@@ -3,21 +3,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import { FolderPickerField } from "./folder-picker";
-
 import { DialogForm } from "@/components/ui/dialog-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { v1DocumentUpdate } from "@/lib/api/sdk";
 import type { Document, DocumentPatch } from "@/lib/api/types";
 import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
+import type { DocumentLibraryKind } from "@/lib/documents/library";
 import {
   LIBRARY_ROOT_FOLDER_VALUE,
   libraryFolderOptionsQuery,
   libraryFolderPickerOptions,
 } from "@/lib/documents/library";
-import type { DocumentLibraryKind } from "@/lib/documents/library";
+import { FolderPickerField } from "./folder-picker";
 
 const moveFormSchema = z.object({
   folder_id: z.string().min(1),
@@ -115,7 +113,7 @@ export function DocumentMoveDialog({
     >
       <p className="text-muted-foreground text-sm">
         Choose a folder in this library for{" "}
-        <span className="text-foreground font-medium">{documentTitle}</span>.
+        <span className="font-medium text-foreground">{documentTitle}</span>.
       </p>
       {isLoading ? (
         <Skeleton className="h-9 w-full" />

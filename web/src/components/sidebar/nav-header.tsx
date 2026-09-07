@@ -14,7 +14,7 @@ export function NavHeader() {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <header className="bg-surface-raised/95 sticky top-0 z-30 flex h-14 w-full shrink-0 items-center border-b backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center border-b bg-surface-raised/95 backdrop-blur-sm">
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3 sm:px-4">
         <Button
           className="size-8"

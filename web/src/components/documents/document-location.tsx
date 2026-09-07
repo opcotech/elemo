@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { FolderIcon, Link2Icon } from "lucide-react";
-import { Fragment } from "react";
 import type { ReactNode } from "react";
+import { Fragment } from "react";
 
 import { EntityIcon } from "@/components/shared/entity-link";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +89,7 @@ function MetaRow({
 }) {
   return (
     <div className="col-span-2 grid grid-cols-subgrid items-center gap-x-4 py-2.5">
-      <dt className="text-muted-foreground flex min-h-5 items-center gap-2 text-xs font-medium whitespace-nowrap">
+      <dt className="flex min-h-5 items-center gap-2 whitespace-nowrap font-medium text-muted-foreground text-xs">
         {icon}
         {label}
       </dt>
@@ -113,10 +113,10 @@ export function DocumentLocation({ document }: { document: Document }) {
 
   return (
     <div
-      className="border-border/80 bg-card overflow-hidden rounded-lg border"
+      className="overflow-hidden rounded-lg border border-border/80 bg-card"
       data-section="document-location"
     >
-      <dl className="divide-border/60 grid grid-cols-[7.5rem_minmax(0,1fr)] divide-y px-4">
+      <dl className="grid grid-cols-[7.5rem_minmax(0,1fr)] divide-y divide-border/60 px-4">
         <MetaRow
           label="Location"
           icon={<FolderIcon className="size-3.5" aria-hidden />}

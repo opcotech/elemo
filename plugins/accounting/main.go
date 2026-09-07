@@ -8,8 +8,10 @@ import (
 	plugin "github.com/opcotech/elemo/sdk/plugin"
 )
 
-const reportPageSize = 1000
-const defaultBudgetThreshold = 80
+const (
+	reportPageSize         = 1000
+	defaultBudgetThreshold = 80
+)
 
 func init() {
 	plugin.Register(handle)

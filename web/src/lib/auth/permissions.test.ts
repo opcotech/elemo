@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-
-import { Action, ResourceType, can, withResourceType } from "./permissions";
-
 import { SYSTEM_NIL_ID } from "@/lib/utils";
+import { Action, can, ResourceType, withResourceType } from "./permissions";
 
 describe("permission checks", () => {
   it("rejects missing and empty action sets", () => {

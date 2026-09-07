@@ -2,10 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { ChevronDownIcon, Link2Icon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-
-import { IssueRelationAddDialog } from "./issue-relation-add-dialog";
-import { IssueSelectDetails } from "./issue-select-option";
-
 import { AppList, EntityIcon } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +44,8 @@ import {
   relationKindPatch,
   visibleIssueRelations,
 } from "@/lib/work/issue-relations";
+import { IssueRelationAddDialog } from "./issue-relation-add-dialog";
+import { IssueSelectDetails } from "./issue-select-option";
 
 function useIssueRelationQueries(issueId: string, pageSize: number) {
   return useQuery(
@@ -168,16 +166,16 @@ function IssueRelationItem({
     >
       <InternalLink
         to={internalPath(href)}
-        className="text-foreground flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 hover:no-underline"
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-foreground hover:no-underline"
       >
         <ItemMedia
           variant="icon"
-          className="bg-muted text-muted-foreground size-8 rounded-lg"
+          className="size-8 rounded-lg bg-muted text-muted-foreground"
         >
           <EntityIcon type="work-item" />
         </ItemMedia>
         <ItemContent className="min-w-0">
-          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
+          <ItemTitle className="block max-w-full truncate group-hover/entity:text-primary">
             {relation.related.key} {relation.related.title}
           </ItemTitle>
           <IssueSelectDetails issue={relation.related} />
@@ -228,7 +226,7 @@ function IssueRelationItem({
             disabled={disabled}
             aria-label={`Remove relation to ${relation.related.key}`}
             title="Remove relation"
-            className="hover:text-destructive hover:bg-destructive/10 hover:ring-0"
+            className="hover:bg-destructive/10 hover:text-destructive hover:ring-0"
             onClick={onRemove}
           >
             <XIcon />

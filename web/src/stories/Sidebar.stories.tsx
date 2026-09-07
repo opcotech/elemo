@@ -59,7 +59,7 @@ export const Default: Story = {
       <div className="flex h-screen w-screen">
         <Sidebar variant="inset">
           <SidebarHeader>
-            <h2 className="px-4 py-2 text-lg font-semibold">My App</h2>
+            <h2 className="px-4 py-2 font-semibold text-lg">My App</h2>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -103,7 +103,7 @@ export const Default: Story = {
           <main className="flex-1 p-6">
             <div className="mb-4 flex items-center gap-2">
               <SidebarTrigger />
-              <h1 className="text-2xl font-bold">Main Content</h1>
+              <h1 className="font-bold text-2xl">Main Content</h1>
             </div>
             <p className="text-muted-foreground">
               This is the main content area. Use the trigger button to toggle

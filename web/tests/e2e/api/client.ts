@@ -1,9 +1,8 @@
-import { TestAuthClient } from "./auth-client";
-import { getTestConfig } from "../utils/test-config";
-
 import type { LoginCredentials } from "@/lib/auth/types";
 import type { Client } from "@/lib/client/client";
 import { createClient } from "@/lib/client/client";
+import { getTestConfig } from "../utils/test-config";
+import { TestAuthClient } from "./auth-client";
 
 const OAUTH_SCOPES = [
   "user",
@@ -49,8 +48,7 @@ export async function createAuthenticatedClient(
   // Create and configure API client
   const client = createClient({
     baseUrl: config.apiBaseUrl,
-    // eslint-disable-next-line @typescript-eslint/require-await
-    auth: async () => tokens.access_token,
+    auth: () => tokens.access_token,
   });
 
   // Cache tokens for potential refresh

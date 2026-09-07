@@ -1,6 +1,6 @@
 # Devcontainer Integration
 
-Elemo provides a basic [devcontainer configuration](https://github.com/opcotech/elemo/blob/main/.devcontainer/devcontainer.json) that makes contributing easier. The configuration sets up a development environment completely by running the [`setup.sh`](https://github.com/opcotech/elemo/blob/main/scripts/setup.sh), which is the recommended way to setup the project whether in a devcontainer or not.
+Elemo provides a basic [devcontainer configuration](https://github.com/opcotech/elemo/blob/main/.devcontainer/devcontainer.json) that makes contributing easier. The configuration installs [Mise](https://mise.jdx.dev/) and then runs `mise trust && mise bootstrap`, which is the recommended way to set up the project whether in a devcontainer or not. Bootstrap installs locked tools and dependencies and generates missing local config; it does not start services or modify databases. After that, run `./scripts/dev-demo-init.sh --yes` when you want the ACME demo stack, then `mise run dev`.
 
 ## Before Getting Started
 
@@ -22,4 +22,4 @@ A: This is not us. It is literally the container running out of space while doin
 
 > Q: Why are the ports is not accessible?
 
-A: You may not running the services. Start backend services using `make start.backend` and web app using `make dev.frontend`.
+A: You may not running the services. Start backend services using `mise run start` and the web app using `mise run dev`.

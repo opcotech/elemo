@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-
-import { resolveBoardDropColumn } from "./work-board";
-
 import type { WorkItem } from "@/lib/work/model";
+import { resolveBoardDropColumn } from "./work-board";
 
 function workItem(overrides: Partial<WorkItem> = {}): WorkItem {
   return {

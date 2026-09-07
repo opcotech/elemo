@@ -1,3 +1,4 @@
+import type { WorkItem } from "@/lib/work/model";
 import type {
   ActivityEntry,
   AttentionSignal,
@@ -8,8 +9,6 @@ import type {
   SavedView,
   TimelineEntry,
 } from "./types";
-
-import type { WorkItem } from "@/lib/work/model";
 
 export const mockPeople = [
   {

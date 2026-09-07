@@ -16,5 +16,5 @@ Usage of generate-key:
 ## Example
 
 ```bash
-go run tools/generate-key/main.go
+go run ./tools/key-generator
 ```

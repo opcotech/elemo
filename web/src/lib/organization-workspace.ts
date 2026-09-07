@@ -5,12 +5,12 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
-  v1OrganizationTeamsGetOptions,
   v1OrganizationsNamespacesGetOptions,
+  v1OrganizationTeamsGetOptions,
 } from "@/lib/api/query-options";
 import { organizationRefPath } from "@/lib/api/refs";
 import type { Organization } from "@/lib/api/types";
-import { Action, ResourceType, can } from "@/lib/auth/permissions";
+import { Action, can, ResourceType } from "@/lib/auth/permissions";
 import { loadResourcePermissions } from "@/lib/entity-context";
 
 export async function loadOrganization(

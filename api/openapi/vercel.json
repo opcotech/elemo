@@ -1,6 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "buildCommand": "redocly build-docs openapi.yaml --output index.html",
+    "buildCommand": "redocly build-docs --config redocly.yaml openapi.yaml --output index.html",
     "outputDirectory": ".",
     "installCommand": "npm install -g @redocly/cli",
     "git": {

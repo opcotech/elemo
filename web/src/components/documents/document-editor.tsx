@@ -1,22 +1,20 @@
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
-import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import { ListTreeIcon } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
-
-import { DocumentEditorToc, useDocumentTocOpen } from "./document-editor-toc";
-import { DocumentEditorToolbar } from "./document-editor-toolbar";
-
+import { useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import type { RichTextMentionItem } from "@/components/ui/rich-text-extensions";
 import {
   createRichTextExtensions,
   preventLinkNavigation,
 } from "@/components/ui/rich-text-extensions";
-import type { RichTextMentionItem } from "@/components/ui/rich-text-extensions";
 import { cn, getDefaultValue } from "@/lib/utils";
 import { markdownToSafeHtml } from "@/lib/work/markdown-html";
+import { DocumentEditorToc, useDocumentTocOpen } from "./document-editor-toc";
+import { DocumentEditorToolbar } from "./document-editor-toolbar";
 
 function focusEditorNearPointer(
   editor: Editor,
@@ -142,7 +140,7 @@ export function DocumentEditor({
       className={cn("document-editor flex min-h-full flex-col", className)}
       data-section="document-editor"
     >
-      <div className="bg-background/95 sticky top-0 z-20 border-b backdrop-blur-sm">
+      <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur-sm">
         <div className="flex min-h-10 items-center gap-1 px-1.5 py-2.5 sm:gap-2 sm:px-2">
           <Button
             type="button"
@@ -183,10 +181,10 @@ export function DocumentEditor({
             }}
           />
         ) : null}
-        <div className="flex w-full max-w-5xl min-w-0 flex-col">
+        <div className="flex w-full min-w-0 max-w-5xl flex-col">
           <div
             className={cn(
-              "document-editor__paper bg-card w-full min-w-0 cursor-text",
+              "document-editor__paper w-full min-w-0 cursor-text bg-card",
               disabled && "pointer-events-none opacity-60"
             )}
             onMouseDown={(event) => {

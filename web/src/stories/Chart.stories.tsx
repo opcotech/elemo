@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { PieLabelRenderProps } from "recharts";
 import {
   Area,
   AreaChart,
@@ -14,7 +15,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { PieLabelRenderProps } from "recharts";
 
 import {
   ChartContainer,

@@ -1,10 +1,10 @@
+import type { LucideIcon } from "lucide-react";
 import {
   FileTextIcon,
   FolderKanbanIcon,
   ListTodoIcon,
   XIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { InternalLink } from "@/components/ui/internal-link";
 import {
@@ -73,7 +73,7 @@ function RecentEntitiesSection({
                 showOnHover
                 aria-label={`Remove ${entity.label} from recents`}
                 title="Remove from recents"
-                className="hover:text-destructive hover:bg-transparent hover:ring-0"
+                className="hover:bg-transparent hover:text-destructive hover:ring-0"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();

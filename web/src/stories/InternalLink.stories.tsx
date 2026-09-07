@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
-import { withRouter } from "../../.storybook/with-router";
-
 import { InternalLink } from "@/components/ui/internal-link";
 import { internalPath } from "@/lib/internal-url";
+import { withRouter } from "../../.storybook/with-router";
 
 const meta: Meta<typeof InternalLink> = {
   title: "UI/InternalLink",

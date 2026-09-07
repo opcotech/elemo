@@ -1,11 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
-import { buildUpstreamUrl } from "./protocol";
-
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getAuthServerEnv } from "@/lib/auth/server-env";
 import { refreshSession } from "@/lib/auth/session.server";
+import { buildUpstreamUrl } from "./protocol";
 
 const MAX_PLUGIN_PACKAGE_BYTES = 32 * 1024 * 1024;
 const pluginIdPattern = /^[a-z][a-z0-9]*(\.[a-z0-9]+)+$/;

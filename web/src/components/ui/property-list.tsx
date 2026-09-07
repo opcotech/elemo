@@ -18,7 +18,7 @@ export function PropertyList({
   compact?: boolean;
 }) {
   return (
-    <dl className="divide-border/60 divide-y">
+    <dl className="divide-y divide-border/60">
       {items.map((item) => (
         <div
           key={item.id ?? item.label}
@@ -27,11 +27,11 @@ export function PropertyList({
             compact ? "py-2" : "py-3"
           )}
         >
-          <dt className="text-muted-foreground flex items-center gap-2 text-xs">
+          <dt className="flex items-center gap-2 text-muted-foreground text-xs">
             {item.icon}
             {item.label}
           </dt>
-          <dd className="min-w-0 overflow-visible text-sm font-medium">
+          <dd className="min-w-0 overflow-visible font-medium text-sm">
             {item.value}
           </dd>
         </div>

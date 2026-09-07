@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import { Suspense, lazy, useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 
 import { CommandTrigger } from "@/components/command-palette/command-trigger";
 import { openQuickCreate } from "@/components/quick-create/open";

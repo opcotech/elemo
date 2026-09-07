@@ -15,7 +15,7 @@ export function extractIdFromPath(
   const idMatch = path.match(pattern);
   const group = nth + 1;
 
-  if (!idMatch || !idMatch[group]) {
+  if (!idMatch?.[group]) {
     throw new Error(
       `Could not extract ID from path: ${path} with pattern: ${pattern} and nth: ${group}`
     );

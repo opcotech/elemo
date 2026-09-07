@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type {
   RichTextEditorValue,
   RichTextMentionItem,
 } from "@/components/ui/rich-text-editor";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn, getDefaultValue } from "@/lib/utils";
 import { parseIssueDescription } from "@/lib/work/issue-edit";
 import { markdownToSafeHtml } from "@/lib/work/markdown-html";
@@ -93,7 +93,14 @@ export function IssueDescriptionEditor({
     }
   }, [description, editing]);
 
-  useEffect(() => clearOpenTimer, []);
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current != null) {
+        window.clearTimeout(openTimerRef.current);
+        openTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const isEmpty = !description?.trim();
   const safeHtml = isEmpty ? "" : markdownToSafeHtml(description ?? "");
@@ -171,8 +178,8 @@ export function IssueDescriptionEditor({
         aria-label="Edit description"
         aria-disabled={disabled || undefined}
         className={cn(
-          "bg-card hover:bg-primary/5 hover:border-primary/20 min-h-40 w-full cursor-text rounded-xl border p-5 text-left transition-colors select-text",
-          "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
+          "min-h-40 w-full cursor-text select-text rounded-xl border bg-card p-5 text-left transition-colors hover:border-primary/20 hover:bg-primary/5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           disabled && "pointer-events-none opacity-60"
         )}
         onPointerDown={(event) => {

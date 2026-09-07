@@ -522,19 +522,19 @@ export const FormIntegration: Story = {
           <SelectContent>
             <SelectItem value="low">
               <div className="flex items-center gap-2">
-                <div className="bg-success h-2 w-2 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-success"></div>
                 Low
               </div>
             </SelectItem>
             <SelectItem value="medium">
               <div className="flex items-center gap-2">
-                <div className="bg-warning h-2 w-2 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-warning"></div>
                 Medium
               </div>
             </SelectItem>
             <SelectItem value="high">
               <div className="flex items-center gap-2">
-                <div className="bg-destructive h-2 w-2 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-destructive"></div>
                 High
               </div>
             </SelectItem>

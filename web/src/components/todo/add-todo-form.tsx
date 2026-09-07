@@ -1,14 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-
-import {
-  TodoFormFields,
-  todoCreateFormSchema,
-  todoFormDefaultValues,
-} from "./todo-form-fields";
-import type { TodoCreateFormValues } from "./todo-form-fields";
-
 import { Checkbox as ContinueCreatingCheckbox } from "@/components/ui/checkbox";
 import { DialogForm } from "@/components/ui/dialog-form";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +8,12 @@ import { useFormMutation } from "@/hooks/use-form-mutation";
 import { v1TodosCreate } from "@/lib/api/sdk";
 import type { Options, TodoCreate, V1TodosCreateData } from "@/lib/api/types";
 import { normalizeFormData } from "@/lib/forms";
+import type { TodoCreateFormValues } from "./todo-form-fields";
+import {
+  TodoFormFields,
+  todoCreateFormSchema,
+  todoFormDefaultValues,
+} from "./todo-form-fields";
 
 interface AddTodoFormProps {
   open: boolean;
@@ -102,7 +100,7 @@ export function AddTodoForm({
           id="continue-creating"
           onCheckedChange={(value) => setShouldContinueCreating(value === true)}
         ></ContinueCreatingCheckbox>
-        <label className="text-sm font-normal" htmlFor="continue-creating">
+        <label className="font-normal text-sm" htmlFor="continue-creating">
           Create more
         </label>
       </fieldset>

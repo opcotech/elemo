@@ -1,11 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { UserMinus, UserPlus, Users, X } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { OrganizationMemberInviteDialog } from "./organization-member-invite-dialog";
-import { OrganizationMemberInviteRevokeDialog } from "./organization-member-invite-revoke-dialog";
-import { OrganizationMemberRemoveDialog } from "./organization-member-remove-dialog";
-
 import {
   CursorPaginator,
   cursorPaginatorProps,
@@ -31,6 +26,9 @@ import { zUserStatus } from "@/lib/api/schemas";
 import type { EffectiveActions, OrganizationMember } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { sortOrganizationMembers } from "@/lib/organization-members";
+import { OrganizationMemberInviteDialog } from "./organization-member-invite-dialog";
+import { OrganizationMemberInviteRevokeDialog } from "./organization-member-invite-revoke-dialog";
+import { OrganizationMemberRemoveDialog } from "./organization-member-remove-dialog";
 
 function OrganizationMembersListSkeleton() {
   return (

@@ -1,0 +1,446 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      website: ${{ steps.filter.outputs.website }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      api_docs_deploy: ${{ steps.filter.outputs.api_docs_deploy }}
+      website_deploy: ${{ steps.filter.outputs.website_deploy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: .github/config/path-filters.yml
+
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - changes
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Cache pre-commit environments
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+      - name: Pre-commit
+        run: mise run pre-commit-ci
+
+  backend-lint:
+    name: Backend Lint
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    needs:
+      - changes
+      - pre-commit
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Check formatting
+        run: mise run format-check-backend
+      - name: Go CI Lint
+        run: mise run lint-backend
+
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    needs:
+      - changes
+      - pre-commit
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.website == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Install web dependencies
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        run: pnpm install --dir web --frozen-lockfile
+      - name: Install website dependencies
+        if: ${{ needs.changes.outputs.website == 'true' }}
+        run: pnpm install --dir website --frozen-lockfile
+      - name: Check web formatting
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        run: mise run format-check-web
+      - name: Check website formatting
+        if: ${{ needs.changes.outputs.website == 'true' }}
+        run: mise run format-check-website
+      - name: Lint web
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        run: mise run lint-web
+      - name: Lint website
+        if: ${{ needs.changes.outputs.website == 'true' }}
+        run: mise run lint-website
+      - name: Typecheck
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        run: pnpm --dir web typecheck
+
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - changes
+      - pre-commit
+      - backend-lint
+      - frontend-lint
+    if: ${{ always() && !cancelled() }}
+    steps:
+      - name: Verify quality checks
+        env:
+          REQUIRED_RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          case " ${REQUIRED_RESULTS} " in
+            *" failure "*|*" cancelled "*)
+              echo "One or more quality checks failed or were cancelled."
+              exit 1
+              ;;
+          esac
+
+  backend-unit-test:
+    name: Backend Unit Tests
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 20
+    needs:
+      - changes
+      - quality-gate
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Execute unit tests
+        run: mise run test-backend-unit
+      - name: Stash test results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: "unit-test-results"
+          path: .coverage.unit.out
+          include-hidden-files: true
+          retention-days: 7
+
+  backend-benchmark-test:
+    name: Backend Benchmark Tests
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+    needs:
+      - changes
+      - quality-gate
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Execute benchmark tests
+        run: go test -run=Bench -bench=. -benchmem -benchtime=10s ./...
+
+  backend-integration-test:
+    name: Backend Integration Tests
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+    needs:
+      - changes
+      - backend-unit-test
+      - backend-benchmark-test
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Execute integration tests
+        run: mise run test-backend-integration
+      - name: Stash test results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: "integration-test-results"
+          path: .coverage.integration.out
+          include-hidden-files: true
+          retention-days: 7
+
+  frontend-unit-test:
+    name: Frontend Unit Tests
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    needs:
+      - changes
+      - quality-gate
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Install dependencies
+        run: pnpm install --dir web --frozen-lockfile
+      - name: Execute unit tests
+        run: mise run test-frontend-unit
+
+  website-build:
+    name: Website Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - changes
+      - quality-gate
+    if: ${{ needs.changes.outputs.website == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Install dependencies
+        run: pnpm install --dir website --frozen-lockfile
+      - name: Production build
+        run: pnpm --dir website build
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 15
+    needs:
+      - changes
+      - frontend-unit-test
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Install dependencies
+        run: pnpm install --dir web --frozen-lockfile
+      - name: Production build
+        run: pnpm --dir web build
+      - name: Storybook build
+        run: pnpm --dir web storybook:build
+      - name: Install Playwright Chromium for Storybook a11y
+        run: pnpm --dir web exec playwright install --with-deps chromium
+      - name: Storybook a11y verification
+        run: pnpm --dir web test-storybook:ci
+
+  build-e2e-image:
+    name: Build E2E Image
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 20
+    needs:
+      - changes
+      - quality-gate
+      - backend-integration-test
+    if: ${{ always() && !cancelled() && needs.changes.outputs.e2e == 'true' && needs.quality-gate.result == 'success' && (needs.changes.outputs.backend != 'true' || needs.backend-integration-test.result == 'success') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build E2E image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          tags: elemo-server:latest
+          outputs: type=docker,dest=${{ runner.temp }}/elemo-server.tar
+          cache-from: type=gha,scope=elemo-server
+          cache-to: type=gha,mode=max,scope=elemo-server
+      - name: Upload E2E image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: elemo-server-image
+          path: ${{ runner.temp }}/elemo-server.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend-e2e-test:
+    name: Frontend E2E Tests - ${{ matrix.project }} (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 30
+    needs:
+      - changes
+      - build-e2e-image
+      - frontend-build
+    if: ${{ always() && !cancelled() && needs.changes.outputs.e2e == 'true' && needs.build-e2e-image.result == 'success' && (needs.changes.outputs.frontend != 'true' || needs.frontend-build.result == 'success') }}
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
+        total-shards: [3]
+        project:
+          - chromium
+          - firefox
+          - webkit
+          # FIXME: enable "Mobile Chrome" once we support mobile viewports
+          # FIXME: enable "Mobile Safari" once we support mobile viewports
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Download E2E image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: elemo-server-image
+          path: ${{ runner.temp }}
+      - name: Load E2E image
+        run: docker load --input "${{ runner.temp }}/elemo-server.tar"
+      - name: Setup local env
+        env:
+          ELEMO_SKIP_IMAGE_BUILD: "true"
+        run: |
+          pnpm install --dir web --frozen-lockfile
+          pnpm --dir web generate
+          pnpm --dir web exec playwright install --with-deps "${{ matrix.project }}"
+          ./scripts/dev-demo-init.sh --yes
+          pnpm --dir web build
+          sed -i s/CI=false/CI=true/g web/.env.test.local
+          ./.github/scripts/wait-for-elemo.sh
+
+      - name: Execute end-to-end tests
+        run: |
+          pnpm --dir web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
+      - name: Upload test results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: "e2e-test-results-${{ matrix.project }}-shard-${{ matrix.shard }}"
+          path: web/test-results
+          retention-days: 7
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: "playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}"
+          path: web/playwright-report
+          retention-days: 7
+      - name: Stop backend services
+        if: always()
+        run: mise run stop
+
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - backend-unit-test
+      - backend-integration-test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Unstash unit test results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: "unit-test-results"
+      - name: Unstash integration test results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: "integration-test-results"
+      - name: Combine coverage reports
+        run: ./.github/scripts/combine-backend-coverage.sh
+      - name: Upload coverage report
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          files: .coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: opcotech/elemo
+          fail_ci_if_error: true
+
+  validation-gate:
+    name: Validation Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - changes
+      - pre-commit
+      - backend-lint
+      - frontend-lint
+      - quality-gate
+      - backend-unit-test
+      - backend-benchmark-test
+      - backend-integration-test
+      - frontend-unit-test
+      - website-build
+      - frontend-build
+      - build-e2e-image
+      - frontend-e2e-test
+      - coverage
+    if: ${{ always() && !cancelled() }}
+    steps:
+      - name: Verify validation jobs
+        env:
+          VALIDATION_RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          case " ${VALIDATION_RESULTS} " in
+            *" failure "*|*" cancelled "*)
+              echo "One or more validation jobs failed or were cancelled."
+              exit 1
+              ;;
+          esac
+
+  deploy-api-docs:
+    name: Deploy API Docs to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - changes
+      - validation-gate
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.api_docs_deploy == 'true' }}
+    environment:
+      name: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_DOCS_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/deploy-vercel
+        with:
+          working-directory: api/openapi
+
+  deploy-website:
+    name: Deploy Website to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - changes
+      - validation-gate
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.website_deploy == 'true' }}
+    environment:
+      name: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/deploy-vercel
+        with:
+          working-directory: website
+
+  release:
+    name: Release Please
+    needs:
+      - validation-gate
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/release-please.yml
+    secrets:
+      RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}

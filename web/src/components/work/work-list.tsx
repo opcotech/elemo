@@ -1,9 +1,4 @@
 import { Rows3Icon } from "lucide-react";
-
-import { PriorityRibbon } from "./priority-ribbon";
-import { dateLabel, workItemPath } from "./utils";
-import { WorkLabelBadges } from "./work-label-badges";
-
 import { AppList } from "@/components/shared/entity-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InternalLink } from "@/components/ui/internal-link";
@@ -13,6 +8,9 @@ import { internalPath } from "@/lib/internal-url";
 import { cn } from "@/lib/utils";
 import type { WorkItem } from "@/lib/work/model";
 import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
+import { PriorityRibbon } from "./priority-ribbon";
+import { dateLabel, workItemPath } from "./utils";
+import { WorkLabelBadges } from "./work-label-badges";
 
 export function CompactWorkList({
   items,
@@ -53,7 +51,7 @@ export function CompactWorkList({
           key={item.id}
           role="listitem"
           className={cn(
-            "group hover:bg-muted/50 flex min-w-0 items-center gap-3 px-3",
+            "group flex min-w-0 items-center gap-3 px-3 hover:bg-muted/50",
             compact ? "py-2" : "py-2.5"
           )}
         >
@@ -71,21 +69,21 @@ export function CompactWorkList({
           <InternalLink
             to={internalPath(workItemPath(item))}
             onClick={(event) => event.stopPropagation()}
-            className="text-muted-foreground hover:text-primary w-20 shrink-0 font-mono text-xs"
+            className="w-20 shrink-0 font-mono text-muted-foreground text-xs hover:text-primary"
           >
             {item.key}
           </InternalLink>
           {onSelect ? (
             <button
               type="button"
-              className="hover:text-primary focus-visible:ring-ring min-w-0 flex-1 truncate rounded-sm text-left text-sm font-medium outline-none focus-visible:ring-2"
+              className="min-w-0 flex-1 truncate rounded-sm text-left font-medium text-sm outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Inspect ${item.key}: ${item.title}`}
               onClick={() => onSelect(item)}
             >
               {item.title}
             </button>
           ) : (
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            <span className="min-w-0 flex-1 truncate font-medium text-sm">
               {item.title}
             </span>
           )}
@@ -112,10 +110,10 @@ export function CompactWorkList({
                 className="max-w-32 shrink-0 flex-nowrap sm:max-w-40"
               />
             ) : null}
-            <span className="text-muted-foreground hidden justify-end text-xs xl:inline-flex xl:items-center">
+            <span className="hidden justify-end text-muted-foreground text-xs xl:inline-flex xl:items-center">
               {dateLabel(item.startDate)}
             </span>
-            <span className="text-muted-foreground hidden justify-end text-xs xl:inline-flex xl:items-center">
+            <span className="hidden justify-end text-muted-foreground text-xs xl:inline-flex xl:items-center">
               {dateLabel(item.dueDate)}
             </span>
           </div>

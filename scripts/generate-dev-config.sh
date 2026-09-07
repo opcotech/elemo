@@ -11,7 +11,8 @@ fi
 CODESPACE_CORS="${CODESPACE_NAME:+- https://${CODESPACE_NAME}-3000.app.github.dev}"
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
-source "${ROOT_DIR}/scripts/common.sh";
+# shellcheck source=common.sh
+source "${ROOT_DIR}/scripts/common.sh"
 
 function generateSigningKey() {
   log "generating signing key"
@@ -27,11 +28,11 @@ function generateSigningKey() {
 
 function generateLicenseKey() {
   log "generating license key"
-  go run "${TOOLS_DIR}/license-generator/main.go" \
+  go run -C "${ROOT_DIR}" ./tools/license-generator \
     -validity-period 3650 \
     -email info@example.com \
     -organization "ACME Inc." \
-    -private-key configs/test/generator.key \
+    -private-key "${ROOT_DIR}/configs/test/generator.key" \
     -license "${CONFIG_DIR}/license.gen.key" \
     -quota "users=99999,organizations=99999,documents=99999,namespaces=99999,projects=99999,roles=99999"
 

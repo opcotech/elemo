@@ -1,10 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-
-import type { RoleFormValues } from "./role-form-fields";
-import { RoleFormFields, roleFormSchema } from "./role-form-fields";
-
 import { FieldProvider } from "@/components/ui/field";
 import { FormCard } from "@/components/ui/form-card";
 import { useFormMutation } from "@/hooks/use-form-mutation";
@@ -18,6 +14,8 @@ import type {
 } from "@/lib/api/types";
 import { normalizeFormData } from "@/lib/forms";
 import { showSuccessToast } from "@/lib/toast";
+import type { RoleFormValues } from "./role-form-fields";
+import { RoleFormFields, roleFormSchema } from "./role-form-fields";
 
 interface RoleCreateFormProps {
   organizationId: string;

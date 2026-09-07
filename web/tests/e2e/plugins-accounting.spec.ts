@@ -7,7 +7,7 @@ import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { WorkItemPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
 const repoRoot = path.resolve(
@@ -16,17 +16,17 @@ const repoRoot = path.resolve(
 );
 const timeTrackingZip = path.join(
   repoRoot,
-  "build/plugins/com.elemo.timetracking.zip"
+  "dist/plugins/com.elemo.timetracking.zip"
 );
 const accountingZip = path.join(
   repoRoot,
-  "build/plugins/com.elemo.accounting.zip"
+  "dist/plugins/com.elemo.accounting.zip"
 );
 
 test.describe("@plugins.accounting Accounting plugin", () => {
   test.skip(
     !existsSync(timeTrackingZip) || !existsSync(accountingZip),
-    "plugin zips missing; run make plugins"
+    "plugin zips missing; run mise run build-plugin"
   );
 
   let workspace: OwnerWorkspace;

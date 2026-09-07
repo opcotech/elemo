@@ -1,10 +1,10 @@
+import type { LucideIcon } from "lucide-react";
 import {
-  ChevronUpIcon,
   ChevronsUpIcon,
+  ChevronUpIcon,
   EqualIcon,
   MinusIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import type { TodoPriority } from "@/lib/api/types";
 

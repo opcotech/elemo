@@ -46,10 +46,10 @@ export function PasswordResetRequestForm() {
   };
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl font-bold">
+          <CardTitle className="text-center font-bold text-2xl">
             Forgot your password?
           </CardTitle>
           <CardDescription className="text-center">
@@ -76,7 +76,7 @@ export function PasswordResetRequestForm() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="email"
                   name="email"
@@ -112,7 +112,7 @@ export function PasswordResetRequestForm() {
               <Link
                 to="/login"
                 search={{ redirect: undefined }}
-                className="text-muted-foreground hover:text-primary text-sm hover:underline"
+                className="text-muted-foreground text-sm hover:text-primary hover:underline"
               >
                 Back to login
               </Link>

@@ -210,10 +210,10 @@ export const FileUpload: Story = {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            <span className="text-sm font-medium">Uploading document.pdf</span>
+            <span className="font-medium text-sm">Uploading document.pdf</span>
           </div>
           <Progress value={uploadProgress} />
-          <div className="text-muted-foreground flex justify-between text-xs">
+          <div className="flex justify-between text-muted-foreground text-xs">
             <span>{uploadProgress.toFixed(1)}% complete</span>
             <span>
               {isUploading
@@ -257,10 +257,10 @@ export const DownloadProgress: Story = {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Download className="h-4 w-4" />
-          <span className="text-sm font-medium">Downloading update.zip</span>
+          <span className="font-medium text-sm">Downloading update.zip</span>
         </div>
         <Progress value={67} />
-        <div className="text-muted-foreground flex justify-between text-xs">
+        <div className="flex justify-between text-muted-foreground text-xs">
           <span>67% • 1.2 MB of 1.8 MB</span>
           <span>2 min remaining</span>
         </div>
@@ -274,13 +274,13 @@ export const MultipleProgress: Story = {
   render: () => (
     <div className="w-full space-y-6">
       <div className="space-y-2">
-        <Label className="text-sm font-medium">CPU Usage</Label>
+        <Label className="font-medium text-sm">CPU Usage</Label>
         <Progress value={45} className="h-2" />
         <div className="text-muted-foreground text-xs">45% used</div>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium">Memory Usage</Label>
+        <Label className="font-medium text-sm">Memory Usage</Label>
         <Progress value={78} className="h-2" />
         <div className="text-muted-foreground text-xs">
           7.8 GB of 10 GB used
@@ -288,7 +288,7 @@ export const MultipleProgress: Story = {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium">Disk Space</Label>
+        <Label className="font-medium text-sm">Disk Space</Label>
         <Progress value={23} className="h-2" />
         <div className="text-muted-foreground text-xs">
           115 GB of 500 GB used
@@ -296,7 +296,7 @@ export const MultipleProgress: Story = {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium">Network Usage</Label>
+        <Label className="font-medium text-sm">Network Usage</Label>
         <Progress value={89} className="h-2" />
         <div className="text-muted-foreground text-xs">
           89% of bandwidth used
@@ -396,10 +396,10 @@ export const Indeterminate: Story = {
   render: () => (
     <div className="w-full space-y-4">
       <div className="space-y-2">
-        <Label className="text-sm font-medium">Loading...</Label>
+        <Label className="font-medium text-sm">Loading...</Label>
         <div className="relative">
           <Progress value={0} className="overflow-hidden" />
-          <div className="via-primary absolute inset-0 animate-pulse bg-gradient-to-r from-transparent to-transparent"></div>
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-primary to-transparent"></div>
         </div>
         <div className="text-muted-foreground text-xs">
           Please wait while we process your request
@@ -431,14 +431,14 @@ export const SteppedProgress: Story = {
               key={step}
               className={`text-center ${
                 index <= currentStep
-                  ? "text-primary font-medium"
+                  ? "font-medium text-primary"
                   : "text-muted-foreground"
               }`}
             >
               <div
                 className={`mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                   index < currentStep
-                    ? "bg-primary border-primary text-primary-foreground"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : index === currentStep
                       ? "border-primary text-primary"
                       : "border-muted text-muted-foreground"
@@ -451,7 +451,7 @@ export const SteppedProgress: Story = {
           ))}
         </div>
         <Progress value={(currentStep / (steps.length - 1)) * 100} />
-        <div className="text-muted-foreground text-center text-sm">
+        <div className="text-center text-muted-foreground text-sm">
           Step {currentStep + 1} of {steps.length}: {steps[currentStep]}
         </div>
       </div>

@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsOrganizationEditPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { OrganizationEditFormSection } from "../sections";
-
-import { settingsOrganizationEditPath } from "@/lib/paths";
 
 /**
  * Page Object Model for Organization Edit page.

@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 import { pressPaletteShortcut, runPaletteCommand } from "./helpers";
 import { TodoSheetSection } from "./sections";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { createUser } from "./utils/db";
 
 test.describe("@todos.open Todo open E2E Tests", () => {

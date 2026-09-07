@@ -26,7 +26,7 @@ export function TodoSheetTrigger() {
       <CircleCheckBig />
       {uncompletedCount > 0 && (
         <Badge
-          className="border-background bg-destructive absolute top-1 right-1 size-2 rounded-full border p-0"
+          className="absolute top-1 right-1 size-2 rounded-full border border-background bg-destructive p-0"
           variant="destructive"
         />
       )}

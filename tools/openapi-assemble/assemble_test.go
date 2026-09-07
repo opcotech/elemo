@@ -175,6 +175,18 @@ func TestWriteFragmentsRejectsUnassignedKeys(t *testing.T) {
 	assert.Contains(t, err.Error(), `unassigned key "/v1/extra"`)
 }
 
+func TestResolveRepoPathUsesRepositoryRoot(t *testing.T) {
+	t.Parallel()
+
+	root := repoRoot()
+	require.DirExists(t, filepath.Join(root, "api", "openapi", "src"))
+
+	src := filepath.Join(root, "api", "openapi", "src")
+	assert.Equal(t, src, resolveRepoPath("api/openapi/src"))
+	assert.Equal(t, src, resolveRepoPath(src))
+	assert.Empty(t, resolveRepoPath(""))
+}
+
 func TestWriteBundleHeader(t *testing.T) {
 	t.Parallel()
 

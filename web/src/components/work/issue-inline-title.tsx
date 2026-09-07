@@ -78,7 +78,7 @@ export function IssueInlineTitle({
       <button
         type="button"
         className={cn(
-          "hover:bg-primary/5 hover:border-primary/20 hover:text-foreground dark:hover:bg-primary/10 dark:hover:border-primary/30 -mx-1 w-full cursor-text rounded-md border border-transparent px-1 text-left transition-colors",
+          "-mx-1 w-full cursor-text rounded-md border border-transparent px-1 text-left transition-colors hover:border-primary/20 hover:bg-primary/5 hover:text-foreground dark:hover:border-primary/30 dark:hover:bg-primary/10",
           disabled && "pointer-events-none"
         )}
         onClick={() => {
@@ -103,7 +103,7 @@ export function IssueInlineTitle({
         aria-invalid={error ? true : undefined}
         aria-label="Issue title"
         className={cn(
-          "placeholder:text-muted-foreground w-full min-w-0 bg-transparent p-px outline-none",
+          "w-full min-w-0 bg-transparent p-px outline-none placeholder:text-muted-foreground",
           error && "text-destructive"
         )}
         onChange={(event) => {
@@ -131,7 +131,7 @@ export function IssueInlineTitle({
         }}
       />
       {error && (
-        <span className="text-destructive mt-1 block text-sm font-normal">
+        <span className="mt-1 block font-normal text-destructive text-sm">
           {error}
         </span>
       )}

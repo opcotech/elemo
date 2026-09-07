@@ -19,8 +19,8 @@ function NamespacesSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Namespaces</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="font-bold text-2xl">Namespaces</h1>
+        <p className="mt-2 text-muted-foreground">
           View and manage all namespaces you have access to across
           organizations.
         </p>

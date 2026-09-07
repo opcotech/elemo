@@ -2,24 +2,11 @@
   "name": "Elemo",
   "image": "mcr.microsoft.com/devcontainers/base:bullseye",
   "features": {
-    "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.26",
-      "golangciLintVersion": "latest"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts",
-      "pnpmVersion": "latest"
+    "ghcr.io/devcontainers-extra/features/mise:1": {
+      "version": "2026.9.1"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "version": "latest"
-    },
-    "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
-      "jqVersion": "latest",
-      "yqVersion": "latest",
-      "gojqVersion": "none",
-      "xqVersion": "none",
-      "jaqVersion": "none",
-      "allowJqRcVersion": false
     }
   },
   "forwardPorts": [3000, 5432, 6379, 7474, 8025, 35478],
@@ -35,9 +22,14 @@
       "visibility": "public"
     }
   },
+  "customizations": {
+    "vscode": {
+      "extensions": ["hverlin.mise-vscode"]
+    }
+  },
   "remoteEnv": {
     "DOCKER_HOST": "unix:///var/run/docker.sock"
   },
-  "postCreateCommand": "scripts/setup.sh",
+  "postCreateCommand": "mise trust && mise bootstrap",
   "updateRemoteUserUID": true
 }

@@ -789,7 +789,7 @@ func TestCachedIssueRepository_ListForProject(t *testing.T) {
 					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, issueListProjectGenKey(query.ProjectID), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						*(dst.(*repository.Page[*repository.PartialIssue])) = page
+						*dst.(*repository.Page[*repository.PartialIssue]) = page
 					}).Return(nil)
 
 					return []repository.RedisRepositoryOption{
@@ -954,7 +954,7 @@ func TestCachedIssueRepository_ListForNamespace(t *testing.T) {
 					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, issueListNamespaceGenKey(query.NamespaceID), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						*(dst.(*repository.Page[*repository.PartialIssue])) = page
+						*dst.(*repository.Page[*repository.PartialIssue]) = page
 					}).Return(nil)
 
 					return []repository.RedisRepositoryOption{
@@ -1119,7 +1119,7 @@ func TestCachedIssueRepository_ListForUser(t *testing.T) {
 					cacheRepo.EXPECT().Get(ctx, issueListProjectionEpochKey(), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, issueListUserGenKey(query.UserID), gomock.Any()).Return(cache.ErrCacheMiss)
 					cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-						*(dst.(*repository.Page[*repository.PartialIssue])) = page
+						*dst.(*repository.Page[*repository.PartialIssue]) = page
 					}).Return(nil)
 
 					return []repository.RedisRepositoryOption{
@@ -2230,7 +2230,7 @@ func TestCachedIssueRepository_ListRelations(t *testing.T) {
 
 		cacheRepo := mockrepo.NewMockCacheBackend(ctrl)
 		cacheRepo.EXPECT().Get(gomock.Any(), key, gomock.Any()).DoAndReturn(func(_ context.Context, _ string, dest any) error {
-			*(dest.(*repository.Page[*repository.IssueRelationItem])) = page
+			*dest.(*repository.Page[*repository.IssueRelationItem]) = page
 			return nil
 		})
 

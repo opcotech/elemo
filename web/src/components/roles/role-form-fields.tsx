@@ -1,8 +1,5 @@
 import type { Control, FieldValues, Path } from "react-hook-form";
 import type { z } from "zod";
-
-import { ActionMultiSelect } from "./action-multi-select";
-
 import {
   ControlledField,
   Field,
@@ -17,6 +14,7 @@ import { NameDescriptionFields } from "@/components/ui/name-description-fields";
 import { zRoleCreate } from "@/lib/api/schemas";
 import { createFormSchema } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
+import { ActionMultiSelect } from "./action-multi-select";
 
 export const roleFormSchema = createFormSchema(zRoleCreate);
 

@@ -112,7 +112,7 @@ export function NamespaceSwitcher() {
 
   if (isError && namespaces.length === 0) {
     return (
-      <div className="text-muted-foreground px-2 py-2 text-sm">
+      <div className="px-2 py-2 text-muted-foreground text-sm">
         Namespace list unavailable
       </div>
     );
@@ -133,7 +133,7 @@ export function NamespaceSwitcher() {
                       aria-expanded={open}
                       aria-label={`Switch namespace, current: ${switcherLabel}`}
                       className={cn(
-                        "border-sidebar-border bg-surface-raised hover:border-primary/25 h-12 border px-2.5 shadow-none",
+                        "h-12 border border-sidebar-border bg-surface-raised px-2.5 shadow-none hover:border-primary/25",
                         "group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0!"
                       )}
                     />
@@ -141,21 +141,21 @@ export function NamespaceSwitcher() {
                 />
               }
             >
-              <div className="bg-primary-subtle text-primary-on-subtle flex size-8 shrink-0 items-center justify-center rounded-md group-data-[collapsible=icon]:size-7">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-subtle text-primary-on-subtle group-data-[collapsible=icon]:size-7">
                 <Layers3Icon className="size-4" aria-hidden />
               </div>
               <div className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="block truncate text-sm font-medium">
+                <span className="block truncate font-medium text-sm">
                   {switcherLabel}
                 </span>
-                <span className="text-muted-foreground block truncate text-xs">
+                <span className="block truncate text-muted-foreground text-xs">
                   {activeNamespace?.organizationName ??
                     (namespaces.length === 0
                       ? "No namespaces available"
                       : "Your workspace")}
                 </span>
               </div>
-              <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+              <ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
             </TooltipTrigger>
             <TooltipContent side="right" align="center" hidden={!isCollapsed}>
               {switcherLabel}
@@ -192,7 +192,7 @@ export function NamespaceSwitcher() {
                         }
                         onSelect={() => selectNamespace(namespace)}
                       >
-                        <span className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded-md text-xs font-semibold">
+                        <span className="flex size-6 items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground text-xs">
                           {namespace.name.slice(0, 1).toUpperCase()}
                         </span>
                         <span className="min-w-0 flex-1 truncate">

@@ -5,10 +5,8 @@ import type { InternalPath } from "@/lib/internal-url";
 
 type RouterLinkProps = ComponentProps<typeof Link>;
 
-export interface InternalLinkProps extends Omit<
-  RouterLinkProps,
-  "href" | "to" | "search"
-> {
+export interface InternalLinkProps
+  extends Omit<RouterLinkProps, "href" | "to" | "search"> {
   to: InternalPath;
   // Widened `to` loses route search inference; accept plain search objects.
   search?: Record<string, unknown>;

@@ -1,14 +1,12 @@
 import type { Page } from "@playwright/test";
-
+import type { RecentEntityType } from "@/lib/ui-store";
 import { createIssue, createProjectDocument } from "./api";
 import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers";
+import { seedOwnerWorkspace } from "./helpers";
 import { DocumentPage, WorkItemPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
-
-import type { RecentEntityType } from "@/lib/ui-store";
 
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 

@@ -1,5 +1,3 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import { projectIdPath } from "@/lib/api/refs";
 import {
@@ -16,6 +14,7 @@ import type {
   IssueRelation,
   IssueRelationCreate,
 } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 /**
  * Create an issue via API, then fetch the full issue by ID.

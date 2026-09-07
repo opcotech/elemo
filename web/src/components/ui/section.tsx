@@ -30,12 +30,12 @@ export function Section({
           {(title || description) && (
             <div className="min-w-0 flex-1">
               {title && (
-                <h2 className="text-sm font-semibold tracking-wide uppercase">
+                <h2 className="font-semibold text-sm uppercase tracking-wide">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="text-muted-foreground mt-0.5 text-xs">
+                <p className="mt-0.5 text-muted-foreground text-xs">
                   {description}
                 </p>
               )}
@@ -66,7 +66,7 @@ export function SectionAccordion({
     <Accordion defaultValue={defaultOpen ? [value] : []}>
       <AccordionItem value={value} className="border-0">
         <div className="flex min-h-8 items-center gap-3">
-          <AccordionTrigger className="text-foreground mb-0 min-h-8 flex-1 py-0 text-sm font-semibold tracking-wide uppercase hover:no-underline">
+          <AccordionTrigger className="mb-0 min-h-8 flex-1 py-0 font-semibold text-foreground text-sm uppercase tracking-wide hover:no-underline">
             {title}
           </AccordionTrigger>
           {action}

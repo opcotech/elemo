@@ -1,5 +1,5 @@
-import { clsx } from "clsx";
 import type { ClassValue } from "clsx";
+import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export const SYSTEM_NIL_ID = "00000000000000000000";
@@ -29,7 +29,7 @@ export function pluralize(
   singular: string,
   plural?: string
 ): string {
-  if (plural === undefined) plural = singular + "s";
+  if (plural === undefined) plural = `${singular}s`;
   if (count === 1) return singular;
   return plural;
 }

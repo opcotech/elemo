@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { DatePicker } from "@/components/ui/date-picker";
+import type { EntitySelectOption } from "@/components/ui/entity-select";
 import {
   EntityMultiSelect,
   SearchableEntitySelect,
 } from "@/components/ui/entity-select";
-import type { EntitySelectOption } from "@/components/ui/entity-select";
 import { Input } from "@/components/ui/input";
 import { InputGroupInput } from "@/components/ui/input-group";
 import { propertyControlClassName } from "@/components/ui/property-list";
@@ -40,8 +40,8 @@ import {
   userIdsFromValue,
   utcIsoToDatetimeLocal,
 } from "@/lib/custom-fields/value";
-import { SEARCH_RESOURCE_TYPES } from "@/lib/search/result";
 import type { SearchResourceType } from "@/lib/search/result";
+import { SEARCH_RESOURCE_TYPES } from "@/lib/search/result";
 import { cn, getInitials } from "@/lib/utils";
 import { personDisplayName } from "@/lib/work/resolve-work-people";
 
@@ -221,7 +221,7 @@ export function CustomFieldEditor({
 
   useEffect(() => {
     setDraft(textDraftFromValue(value, definition.kind));
-  }, [value, definition.id, definition.kind]);
+  }, [value, definition.kind]);
 
   const storedSelectKeys =
     value?.kind === "single_select"
@@ -379,7 +379,7 @@ export function CustomFieldEditor({
           {local ? null : (
             <span
               className={cn(
-                "text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center text-sm font-medium",
+                "pointer-events-none absolute inset-y-0 left-0 flex items-center font-medium text-muted-foreground text-sm",
                 sidebar ? "px-2" : "px-3"
               )}
             >

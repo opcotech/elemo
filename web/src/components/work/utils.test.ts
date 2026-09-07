@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { describe, expect, it, vi } from "vitest";
-
+import type { TimelineEntry } from "@/lib/mock-data";
+import type { WorkItem } from "@/lib/work/model";
 import {
   applyTimelineDrag,
   calendarDateToUtcNoonIso,
@@ -19,13 +20,10 @@ import {
   utcIsoToCalendarDate,
   workItemDatesFromTimelineRange,
   workItemPath,
+  workItemsToTimelineEntries,
   workItemTimelineRange,
   workItemUrl,
-  workItemsToTimelineEntries,
 } from "./utils";
-
-import type { TimelineEntry } from "@/lib/mock-data";
-import type { WorkItem } from "@/lib/work/model";
 
 const entries = [
   {

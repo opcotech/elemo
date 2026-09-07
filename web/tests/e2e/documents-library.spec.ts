@@ -1,3 +1,5 @@
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
+import type { Document } from "@/lib/api/types";
 import {
   createAuthenticatedClient,
   createNamespaceDocument,
@@ -9,16 +11,13 @@ import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { DocumentPage, DocumentsListPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
   grantMembershipToUser,
 } from "./utils/db";
 import { getRandomSlug, getRandomString } from "./utils/random";
-
-import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
-import type { Document } from "@/lib/api/types";
 
 function createdTime(document: Pick<Document, "created_at">): number {
   if (!document.created_at) {

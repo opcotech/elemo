@@ -28,7 +28,7 @@ export function WorkLabelBadges({
   return (
     <div
       className={cn(
-        "flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5",
+        "flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1.5",
         className
       )}
     >

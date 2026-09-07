@@ -221,7 +221,7 @@ export const Settings: Story = {
         </DialogHeader>
         <div className="grid gap-6 py-4">
           <div className="grid gap-3">
-            <Label className="text-sm font-medium">Account</Label>
+            <Label className="font-medium text-sm">Account</Label>
             <div className="grid gap-2">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="email" className="text-right text-sm">
@@ -247,7 +247,7 @@ export const Settings: Story = {
           </div>
 
           <div className="grid gap-3">
-            <Label className="text-sm font-medium">Preferences</Label>
+            <Label className="font-medium text-sm">Preferences</Label>
             <div className="grid gap-2">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="language" className="text-right text-sm">
@@ -255,7 +255,7 @@ export const Settings: Story = {
                 </Label>
                 <select
                   id="language"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring col-span-3 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
                   defaultValue="en"
                 >
                   <option value="en">English</option>
@@ -269,7 +269,7 @@ export const Settings: Story = {
                 </Label>
                 <select
                   id="timezone"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring col-span-3 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
                   defaultValue="utc"
                 >
                   <option value="utc">UTC</option>
@@ -309,7 +309,7 @@ export const UserProfile: Story = {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex items-center space-x-4">
-            <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <User className="h-6 w-6" />
             </div>
             <div>

@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { NotFound } from "@/components/shared/not-found";
 import { entityBreadcrumb } from "@/lib/breadcrumb";

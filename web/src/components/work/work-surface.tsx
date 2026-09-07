@@ -1,28 +1,23 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import {
-  Suspense,
   lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-
-import type { SearchPatch } from "./utils";
-import { selectedWorkId } from "./utils";
-import type { WorkFieldOverride } from "./work-field-overrides";
-
 import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
 import { openQuickCreate } from "@/components/quick-create/open";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { ContextLine } from "@/components/shared/context-line";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useBoardIssueMove } from "@/components/work/use-board-issue-move";
 import type { BoardItemMove } from "@/components/work/use-board-issue-move";
-import { useTimelineIssueDates } from "@/components/work/use-timeline-issue-dates";
+import { useBoardIssueMove } from "@/components/work/use-board-issue-move";
 import type { TimelineDateChange } from "@/components/work/use-timeline-issue-dates";
+import { useTimelineIssueDates } from "@/components/work/use-timeline-issue-dates";
 import { ViewBar } from "@/components/work/view-bar";
 import { CompactWorkList } from "@/components/work/work-list";
 import {
@@ -32,9 +27,9 @@ import {
 import { useNavigationContext } from "@/hooks/use-navigation-context";
 import { useAccessibleNamespaces } from "@/lib/api/accessible-namespaces";
 import {
-  MAX_CURSOR_PAGES,
   cursorPageQueryWith,
   flattenCursorPages,
+  MAX_CURSOR_PAGES,
   nextCursorPageToken,
 } from "@/lib/api/cursor-pages";
 import {
@@ -67,8 +62,11 @@ import type {
   WorkStatus,
 } from "@/lib/work/model";
 import { isWorkItemInScope, queryWorkItems } from "@/lib/work/query";
-import { resolveWorkScope } from "@/lib/work-route-search";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
+import { resolveWorkScope } from "@/lib/work-route-search";
+import type { SearchPatch } from "./utils";
+import { selectedWorkId } from "./utils";
+import type { WorkFieldOverride } from "./work-field-overrides";
 
 const WorkBoard = lazy(() =>
   import("@/components/work/work-board").then((module) => ({
@@ -376,9 +374,9 @@ function WorkSurfaceBody({
         <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
           <div className="flex shrink-0 items-start gap-4 px-4 py-4 sm:px-6">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+              <h1 className="font-semibold text-xl tracking-tight">{title}</h1>
               {description && (
-                <p className="text-muted-foreground mt-1 text-sm">
+                <p className="mt-1 text-muted-foreground text-sm">
                   {description}
                 </p>
               )}
@@ -422,7 +420,7 @@ function WorkSurfaceBody({
               </MockDataAlert>
             )}
             {usesApiIssues && issuesLoadingMore ? (
-              <p className="text-muted-foreground shrink-0 text-xs">
+              <p className="shrink-0 text-muted-foreground text-xs">
                 Loading more issues in the background...
               </p>
             ) : null}

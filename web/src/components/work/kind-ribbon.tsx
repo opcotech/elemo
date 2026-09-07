@@ -1,15 +1,13 @@
+import type { LucideIcon } from "lucide-react";
 import {
   BugIcon,
   CircleDotIcon,
   CrownIcon,
   SquareCheckIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-import { PropertyRibbon } from "./property-ribbon";
-
 import type { IssueKind } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+import { PropertyRibbon } from "./property-ribbon";
 
 const kindIcons: Record<IssueKind, LucideIcon> = {
   epic: CrownIcon,

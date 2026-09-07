@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 import {
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
-  createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { lazy } from "react";
 import type { ReactNode } from "react";
+import { lazy } from "react";
 
 import { NotFound } from "@/components/shared/not-found";
 import { ThemeProvider } from "@/components/shared/theme-provider";
@@ -89,6 +89,7 @@ function RootDocument({
 
   return (
     <html
+      lang="en"
       className={theme === "system" ? undefined : theme}
       data-theme-preference={theme}
       suppressHydrationWarning

@@ -47,10 +47,10 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   };
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl font-bold">
+          <CardTitle className="text-center font-bold text-2xl">
             Sign in
           </CardTitle>
           <CardDescription className="text-center">
@@ -68,7 +68,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="email"
                   name="email"
@@ -88,7 +88,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
-                <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="password"
                   name="password"
@@ -112,9 +112,9 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <EyeOff className="text-muted-foreground h-4 w-4" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="text-muted-foreground h-4 w-4" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -122,7 +122,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
                 <Link
                   to="/forgot-password"
                   search={{ redirect: redirectTo }}
-                  className="text-muted-foreground hover:text-primary text-sm hover:underline"
+                  className="text-muted-foreground text-sm hover:text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>

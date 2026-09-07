@@ -2,8 +2,8 @@
 
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { Suspense, lazy, useState } from "react";
 import type { ComponentProps } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { Matcher } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,11 @@ const Calendar = lazy(() =>
   }))
 );
 
-interface DatePickerProps extends Pick<
-  ComponentProps<typeof Button>,
-  "id" | "aria-describedby" | "aria-invalid" | "aria-label"
-> {
+interface DatePickerProps
+  extends Pick<
+    ComponentProps<typeof Button>,
+    "id" | "aria-describedby" | "aria-invalid" | "aria-label"
+  > {
   date?: Date | null;
   onDateChange?: (date: Date | null) => void;
   disabled?: boolean;
@@ -65,10 +66,10 @@ export function DatePicker({
             aria-label={ariaLabel}
             variant="outline"
             className={cn(
-              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-full justify-start rounded-md border px-0! font-normal shadow-none",
+              "h-9 w-full justify-start rounded-md border border-border bg-card px-0! font-normal shadow-none hover:bg-card dark:bg-input dark:hover:bg-input/80",
               !date && "text-muted-foreground",
               clearable &&
-                "group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive h-full min-w-0 flex-1 border-0 bg-transparent shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
+                "h-full min-w-0 flex-1 border-0 bg-transparent shadow-none hover:bg-transparent group-has-[[data-slot=input-group-remove]:hover]/input-group:text-destructive dark:bg-transparent dark:hover:bg-transparent",
               !clearable && className
             )}
             disabled={disabled}
@@ -86,7 +87,7 @@ export function DatePicker({
         {open ? (
           <Suspense
             fallback={
-              <div className="text-muted-foreground p-4 text-sm">Loading…</div>
+              <div className="p-4 text-muted-foreground text-sm">Loading…</div>
             }
           >
             <Calendar

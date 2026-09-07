@@ -1,10 +1,8 @@
 import { test as base } from "@playwright/test";
-
+import type { User } from "@/lib/api/types";
 import { USER_DEFAULT_PASSWORD } from "../utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "../utils/db";
 import { getTestConfig } from "../utils/test-config";
-
-import type { User } from "@/lib/api/types";
 
 export interface TestPersona {
   user: User;
@@ -41,11 +39,11 @@ async function createPersona(owner: boolean): Promise<TestPersona> {
  * This avoids shared authentication state while centralizing common bootstrap.
  */
 export const test = base.extend<PersonaFixtures>({
-  // eslint-disable-next-line no-empty-pattern
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture with no dependencies
   userPersona: async ({}, use) => {
     await use(await createPersona(false));
   },
-  // eslint-disable-next-line no-empty-pattern
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture with no dependencies
   ownerPersona: async ({}, use) => {
     await use(await createPersona(true));
   },

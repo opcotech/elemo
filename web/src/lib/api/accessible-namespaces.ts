@@ -1,5 +1,5 @@
-import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { collectListedPage, cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1NamespacesGetOptions } from "@/lib/api/query-options";

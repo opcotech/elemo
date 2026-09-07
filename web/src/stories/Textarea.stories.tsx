@@ -193,7 +193,7 @@ export const ValidationStates: Story = {
           className="border-red-500 focus:border-red-500 focus:ring-red-500"
           defaultValue="This message has an error."
         />
-        <div className="flex items-center text-sm text-red-600">
+        <div className="flex items-center text-red-600 text-sm">
           <X className="mr-1 h-4 w-4" />
           Message is required and must be at least 10 characters.
         </div>
@@ -267,7 +267,7 @@ export const MessageComposer: Story = {
             <Label htmlFor="to">To</Label>
             <input
               id="to"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
               placeholder="recipient@example.com"
             />
           </div>
@@ -275,7 +275,7 @@ export const MessageComposer: Story = {
             <Label htmlFor="subject">Subject</Label>
             <input
               id="subject"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
               placeholder="Message subject"
             />
           </div>
@@ -323,7 +323,7 @@ export const FeedbackForm: Story = {
             id="feedback-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
           >
             <option value="">Select a category</option>
             <option value="bug">Bug Report</option>
@@ -341,7 +341,7 @@ export const FeedbackForm: Story = {
             onChange={(e) => setFeedback(e.target.value)}
             rows={6}
           />
-          <div className="text-muted-foreground flex items-center text-xs">
+          <div className="flex items-center text-muted-foreground text-xs">
             <Info className="mr-1 h-3 w-3" />
             The more details you provide, the better we can help you.
           </div>
@@ -372,7 +372,7 @@ export const AutoResizing: Story = {
           onChange={(e) => setValue(e.target.value)}
           style={{
             minHeight: "80px",
-            height: Math.max(80, value.split("\n").length * 24 + 32) + "px",
+            height: `${Math.max(80, value.split("\n").length * 24 + 32)}px`,
           }}
           className="resize-none overflow-hidden"
         />
@@ -405,20 +405,20 @@ export const WithPreview: Story = {
         <div className="flex space-x-1 border-b">
           <button
             onClick={() => setActiveTab("write")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+            className={`border-b-2 px-3 py-2 font-medium text-sm ${
               activeTab === "write"
                 ? "border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground border-transparent"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Write
           </button>
           <button
             onClick={() => setActiveTab("preview")}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${
+            className={`border-b-2 px-3 py-2 font-medium text-sm ${
               activeTab === "preview"
                 ? "border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground border-transparent"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Preview
@@ -436,7 +436,7 @@ export const WithPreview: Story = {
         ) : (
           <div className="min-h-[200px] rounded-md border p-3 text-sm">
             <div className="space-y-2">
-              <h1 className="text-xl font-bold">Hello World</h1>
+              <h1 className="font-bold text-xl">Hello World</h1>
               <p>
                 This is <strong>bold</strong> text and this is <em>italic</em>{" "}
                 text.
@@ -480,7 +480,7 @@ export const CustomStyling: Story = {
         <Label>Minimal Style</Label>
         <Textarea
           placeholder="Minimal textarea..."
-          className="border-muted focus:border-primary rounded-none border-0 border-b-2 focus:ring-0"
+          className="rounded-none border-0 border-muted border-b-2 focus:border-primary focus:ring-0"
           rows={3}
         />
       </div>

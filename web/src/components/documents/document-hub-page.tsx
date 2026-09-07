@@ -65,7 +65,7 @@ export function DocumentHubPage({
       />
 
       {libraries.length > 0 || hasQuery ? (
-        <div className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-2 py-3">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-background py-3">
           <SearchInput
             value={query ?? ""}
             onChange={(value) => onQueryChange(value || undefined)}

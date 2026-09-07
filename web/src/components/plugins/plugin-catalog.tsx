@@ -123,7 +123,7 @@ export function PluginCatalog({ canInstall }: { canInstall: boolean }) {
           description="Upload a plugin zip to add capabilities without restarting Elemo."
         />
       ) : (
-        <ul className="divide-border divide-y rounded-xl border">
+        <ul className="divide-y divide-border rounded-xl border">
           {plugins.map((plugin) => (
             <li
               key={plugin.plugin_id}
@@ -141,7 +141,7 @@ export function PluginCatalog({ canInstall }: { canInstall: boolean }) {
                     {plugin.status}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground font-mono text-xs">
+                <p className="font-mono text-muted-foreground text-xs">
                   {plugin.plugin_id}
                 </p>
                 {plugin.error ? (

@@ -110,7 +110,7 @@ export function NotificationItem({
 
   return (
     <div
-      className={`group bg-background relative rounded-lg border p-4 transition-all hover:shadow-sm ${
+      className={`group relative rounded-lg border bg-background p-4 transition-all hover:shadow-sm ${
         notification.read ? "opacity-75" : ""
       }`}
     >
@@ -118,7 +118,7 @@ export function NotificationItem({
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
             <h4
-              className={`text-sm leading-tight font-medium ${
+              className={`font-medium text-sm leading-tight ${
                 notification.read ? "text-muted-foreground" : ""
               }`}
             >
@@ -136,7 +136,7 @@ export function NotificationItem({
 
       {notification.description && (
         <p
-          className={`text-muted-foreground mb-3 text-xs leading-relaxed ${
+          className={`mb-3 text-muted-foreground text-xs leading-relaxed ${
             notification.read ? "" : ""
           }`}
         >
@@ -172,7 +172,7 @@ export function NotificationItem({
             variant="ghost"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive size-7 p-0"
+            className="size-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
             title="Delete notification"
           >
             <Trash2 className="size-4" />

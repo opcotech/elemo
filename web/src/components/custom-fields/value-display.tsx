@@ -42,7 +42,7 @@ export function CustomFieldValueDisplay({
       return isSafeHttpUrl(value.url) ? (
         <a
           href={value.url}
-          className="text-primary block truncate underline-offset-4 hover:underline"
+          className="block truncate text-primary underline-offset-4 hover:underline"
           target="_blank"
           rel="noopener noreferrer"
         >

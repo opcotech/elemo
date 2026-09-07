@@ -75,9 +75,7 @@ export function DeleteConfirmationDialog({
             disabled={isPending}
           >
             {isPending ? (
-              <>
-                <span>Deleting...</span>
-              </>
+              <span>Deleting...</span>
             ) : (
               <>
                 <DeleteButtonIcon className="size-4" />

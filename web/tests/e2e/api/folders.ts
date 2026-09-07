@@ -1,11 +1,10 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import {
   v1NamespacesFoldersCreate,
   v1OrganizationsFoldersCreate,
 } from "@/lib/api/sdk";
 import type { Folder, FolderCreate } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 export async function createNamespaceFolder(
   client: Client,

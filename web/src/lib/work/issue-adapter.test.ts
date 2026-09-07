@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { Issue } from "@/lib/api/types";
 import {
   issueStatusLabels,
-  issueToWorkItem,
   issuesToWorkItemsWithNamespaces,
+  issueToWorkItem,
   mapIssueStatus,
   mapWorkStatusToIssueStatus,
 } from "@/lib/work/issue-adapter";
