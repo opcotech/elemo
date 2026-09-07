@@ -12,10 +12,6 @@ import {
   Table2Icon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-
-import { parseSort } from "./utils";
-import type { SearchPatch } from "./utils";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,12 +29,14 @@ import {
 } from "@/components/ui/popover";
 import type { SavedView } from "@/lib/mock-data";
 import type { Scope, WorkLayout } from "@/lib/work/model";
+import type { WorkRouteSearch } from "@/lib/work-route-search";
 import {
   resolveWorkScope,
   serializeWorkScope,
   workScopeOptions,
 } from "@/lib/work-route-search";
-import type { WorkRouteSearch } from "@/lib/work-route-search";
+import type { SearchPatch } from "./utils";
+import { parseSort } from "./utils";
 
 const layouts: readonly {
   value: WorkLayout;

@@ -1,14 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-
-import { withRouter } from "../../.storybook/with-router";
-
 import { ResponsiveInspectorShell } from "@/components/layout/responsive-inspector-shell";
 import { Button } from "@/components/ui/button";
 import { PropertyList } from "@/components/ui/property-list";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { WorkInspector } from "@/components/work/work-inspector";
 import { mockWorkItems } from "@/lib/mock-data";
+import { withRouter } from "../../.storybook/with-router";
 
 const sampleItem = mockWorkItems[0];
 

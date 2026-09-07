@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Navigate } from "@tanstack/react-router";
 
 const namespaceRoute = getRouteApi(
   "/_authenticated/organizations/$organizationSlug/namespaces/$namespaceSlug"

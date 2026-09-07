@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { FolderIcon, Link2Icon } from "lucide-react";
-import { Fragment } from "react";
 import type { ReactNode } from "react";
+import { Fragment } from "react";
 
 import { EntityIcon } from "@/components/shared/entity-link";
 import { Badge } from "@/components/ui/badge";

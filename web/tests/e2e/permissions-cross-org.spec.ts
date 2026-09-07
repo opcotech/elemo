@@ -1,4 +1,13 @@
 import {
+  v1NamespaceGet,
+  v1NamespacesGet,
+  v1NamespacesProjectsGet,
+  v1OrganizationGet,
+  v1OrganizationsNamespacesCreate,
+  v1OrganizationsNamespacesGet,
+  v1ProjectGet,
+} from "@/lib/api/sdk";
+import {
   createGrant,
   createOrganization,
   createProject,
@@ -8,16 +17,6 @@ import { expect, test } from "./fixtures";
 import { USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "./utils/db";
 import { getRandomSlug, getRandomString } from "./utils/random";
-
-import {
-  v1NamespaceGet,
-  v1NamespacesGet,
-  v1NamespacesProjectsGet,
-  v1OrganizationGet,
-  v1OrganizationsNamespacesCreate,
-  v1OrganizationsNamespacesGet,
-  v1ProjectGet,
-} from "@/lib/api/sdk";
 
 const PROJECT_VIEWER_ACTIONS = ["project.read", "issue.read", "document.read"];
 

@@ -24,11 +24,16 @@ import {
   UnderlineIcon,
   Undo2Icon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LinkAddDialog } from "@/components/ui/link-add-dialog";
+import type {
+  RichTextEditorFeatures,
+  RichTextEditorValue,
+  RichTextMentionItem,
+} from "@/components/ui/rich-text-extensions";
 import {
   CODE_BLOCK_LANGUAGES,
   createRichTextExtensions,
@@ -36,17 +41,12 @@ import {
   preventLinkNavigation,
   resolveRichTextFeatures,
 } from "@/components/ui/rich-text-extensions";
-import type {
-  RichTextEditorFeatures,
-  RichTextEditorValue,
-  RichTextMentionItem,
-} from "@/components/ui/rich-text-extensions";
+import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import {
   applyLinkDraft,
   captureLinkDraft,
   removeLinkDraft,
 } from "@/components/ui/rich-text-link";
-import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import { cn } from "@/lib/utils";
 
 export type {

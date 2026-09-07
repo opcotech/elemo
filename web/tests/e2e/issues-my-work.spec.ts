@@ -3,7 +3,7 @@ import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { HomePage, WorkPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
 test.describe("@issues.my-work Issue My Work E2E Tests", () => {

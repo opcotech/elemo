@@ -1,15 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-
-import {
-  cancelIssueCaches,
-  commitIssueCaches,
-  isProjectsIssuesQueryForProject,
-  rollbackIssueCaches,
-  snapshotAndPatchIssueCaches,
-} from "./issue-cache-patch";
-import { enqueueIssueUpdate } from "./issue-update-queue";
-
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { v1IssueUpdateMutation } from "@/lib/api/mutation-options";
 import {
   v1IssueGetOptions,
@@ -32,6 +22,14 @@ import type {
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { labelsFromIds } from "@/lib/work/resolve-work-labels";
 import { partialUsersFromIds } from "@/lib/work/resolve-work-people";
+import {
+  cancelIssueCaches,
+  commitIssueCaches,
+  isProjectsIssuesQueryForProject,
+  rollbackIssueCaches,
+  snapshotAndPatchIssueCaches,
+} from "./issue-cache-patch";
+import { enqueueIssueUpdate } from "./issue-update-queue";
 
 interface UseIssueUpdateOptions {
   organizationId: string;

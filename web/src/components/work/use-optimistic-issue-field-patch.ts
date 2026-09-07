@@ -1,5 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
+import { v1IssueUpdateMutation } from "@/lib/api/mutation-options";
+import type { Issue, IssuePatch, PartialIssue } from "@/lib/api/types";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import type { WorkItem } from "@/lib/work/model";
 import {
   applyIssuePatchFields,
   beginOptimisticIssuePatch,
@@ -7,11 +10,6 @@ import {
   rollbackIssueCaches,
 } from "./issue-cache-patch";
 import { enqueueIssueUpdate } from "./issue-update-queue";
-
-import { v1IssueUpdateMutation } from "@/lib/api/mutation-options";
-import type { Issue, IssuePatch, PartialIssue } from "@/lib/api/types";
-import { showErrorToast, showSuccessToast } from "@/lib/toast";
-import type { WorkItem } from "@/lib/work/model";
 
 function listFieldsFromUpdated(
   updated: Issue,

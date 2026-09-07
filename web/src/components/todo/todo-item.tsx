@@ -1,9 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon, Edit, Trash2 } from "lucide-react";
-
-import { TodoPriorityRibbon } from "./todo-priority-ribbon";
-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MarkdownContent } from "@/components/work/markdown-content";
@@ -17,6 +14,7 @@ import { formatDate } from "@/lib/format-date";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { uiActions } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
+import { TodoPriorityRibbon } from "./todo-priority-ribbon";
 
 interface TodoItemProps {
   todo: Todo;

@@ -1,15 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import { DocumentChangeLibraryDialog } from "./document-change-library-dialog";
-import { DocumentDeleteDialog } from "./document-delete-dialog";
-import { DocumentEditor } from "./document-editor";
-import { DocumentInlineExcerpt } from "./document-inline-excerpt";
-import { DocumentInlineTitle } from "./document-inline-title";
-import { DocumentLocation } from "./document-location";
-import { DocumentMoveDialog } from "./document-move-dialog";
-import { useDocumentUpdate } from "./use-document-update";
-
 import { PageActions } from "@/components/shared/entity-header";
 import { Button } from "@/components/ui/button";
 import type { RichTextMentionItem } from "@/components/ui/rich-text-extensions";
@@ -35,6 +25,14 @@ import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { uiActions } from "@/lib/ui-store";
 import { getDefaultValue } from "@/lib/utils";
 import { useAccessibleOrganizationMembers } from "@/lib/work/use-organization-members-for-namespace";
+import { DocumentChangeLibraryDialog } from "./document-change-library-dialog";
+import { DocumentDeleteDialog } from "./document-delete-dialog";
+import { DocumentEditor } from "./document-editor";
+import { DocumentInlineExcerpt } from "./document-inline-excerpt";
+import { DocumentInlineTitle } from "./document-inline-title";
+import { DocumentLocation } from "./document-location";
+import { DocumentMoveDialog } from "./document-move-dialog";
+import { useDocumentUpdate } from "./use-document-update";
 
 function documentUrl(documentId: string): string {
   const path = `/documents/${documentId}`;

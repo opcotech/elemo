@@ -1,12 +1,10 @@
-import neo4j from "neo4j-driver";
 import type { Driver } from "neo4j-driver";
-
+import neo4j from "neo4j-driver";
+import type { ResourceType, User } from "@/lib/api/types";
 import { USER_DEFAULT_PASSWORD_HASH } from "./auth";
 import { getRandomString } from "./random";
 import type { getTestConfig } from "./test-config";
 import { generateXid } from "./xid";
-
-import type { ResourceType, User } from "@/lib/api/types";
 
 /** Stable Installation node id used as the organization.create scope. */
 export const INSTALLATION_ID = "00000000000000000000";

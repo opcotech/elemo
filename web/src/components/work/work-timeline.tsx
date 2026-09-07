@@ -1,12 +1,26 @@
-import { useEffect, useRef, useState } from "react";
 import type {
   CSSProperties,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   RefObject,
 } from "react";
-
+import { useEffect, useRef, useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { WorkItem } from "@/lib/work/model";
 import type { TimelineDateChange } from "./use-timeline-issue-dates";
+import type {
+  TimelineDragMode,
+  TimelineScale,
+  WorkTimelineEntry,
+  WorkTimelineRange,
+} from "./utils";
 import {
   applyTimelineDrag,
   createTimelineScale,
@@ -18,22 +32,6 @@ import {
   workItemDatesFromTimelineRange,
   workItemsToTimelineEntries,
 } from "./utils";
-import type {
-  TimelineDragMode,
-  TimelineScale,
-  WorkTimelineEntry,
-  WorkTimelineRange,
-} from "./utils";
-
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { WorkItem } from "@/lib/work/model";
 
 const DRAG_THRESHOLD_PX = 4;
 const WORK_COLUMN_PX = 300;

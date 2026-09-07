@@ -2,8 +2,8 @@
 
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { Suspense, lazy, useState } from "react";
 import type { ComponentProps } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { Matcher } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";

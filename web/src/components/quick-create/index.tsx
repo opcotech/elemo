@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 import { DocumentQuickCreate } from "@/components/quick-create/document";
 import { TodoQuickCreate } from "@/components/quick-create/todo";
+import type { QuickCreateType } from "@/components/quick-create/types";
 import {
-  QUICK_CREATE_EVENT,
   isQuickCreateType,
   isTypingTarget,
+  QUICK_CREATE_EVENT,
 } from "@/components/quick-create/types";
-import type { QuickCreateType } from "@/components/quick-create/types";
 import { WorkQuickCreate } from "@/components/quick-create/work";
 import {
   Dialog,

@@ -1,6 +1,6 @@
 import type { PluginSlotName } from "@elemo/plugin-sdk";
-import { Component, useSyncExternalStore } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { Component, useSyncExternalStore } from "react";
 
 import {
   getSlotContributions,

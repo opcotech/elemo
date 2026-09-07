@@ -1,26 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Code2Icon, FileQuestionIcon, MessageSquareIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-
-import { IssueDescriptionEditor } from "./issue-description-editor";
-import {
-  IssueDetailsProperties,
-  IssueParentSelect,
-} from "./issue-details-properties";
-import { IssueDocumentsSection } from "./issue-documents";
-import { IssueInlineTitle } from "./issue-inline-title";
-import { IssueLinks } from "./issue-links";
-import {
-  IssueMetadataProperties,
-  IssueParentLink,
-} from "./issue-metadata-properties";
-import { IssueRelations } from "./issue-relations";
-import { MarkdownContent } from "./markdown-content";
-import { useIssueUpdate } from "./use-issue-update";
-import { workItemPath, workItemUrl } from "./utils";
-import { WorkItemActivity } from "./work-item-activity";
-import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
-
 import { IssueCustomFields } from "@/components/custom-fields/issue-custom-fields";
 import { ContentWidth } from "@/components/layout/content-width";
 import { PluginSlot } from "@/components/plugins/plugin-slot";
@@ -52,6 +32,24 @@ import {
   partialUserToPerson,
   workItemPeople,
 } from "@/lib/work/resolve-work-people";
+import { IssueDescriptionEditor } from "./issue-description-editor";
+import {
+  IssueDetailsProperties,
+  IssueParentSelect,
+} from "./issue-details-properties";
+import { IssueDocumentsSection } from "./issue-documents";
+import { IssueInlineTitle } from "./issue-inline-title";
+import { IssueLinks } from "./issue-links";
+import {
+  IssueMetadataProperties,
+  IssueParentLink,
+} from "./issue-metadata-properties";
+import { IssueRelations } from "./issue-relations";
+import { MarkdownContent } from "./markdown-content";
+import { useIssueUpdate } from "./use-issue-update";
+import { workItemPath, workItemUrl } from "./utils";
+import { WorkItemActivity } from "./work-item-activity";
+import { WorkItemDetailsReadonly } from "./work-item-details-readonly";
 
 function MockWorkItemPage({ item }: { item: WorkItem }) {
   const recentHref = internalPath(workItemPath(item));

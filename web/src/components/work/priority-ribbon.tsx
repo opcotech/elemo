@@ -1,16 +1,14 @@
+import type { LucideIcon } from "lucide-react";
 import {
   ChevronDownIcon,
-  ChevronUpIcon,
   ChevronsDownIcon,
   ChevronsUpIcon,
+  ChevronUpIcon,
   EqualIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-import { PropertyRibbon } from "./property-ribbon";
-
 import type { IssuePriority } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+import { PropertyRibbon } from "./property-ribbon";
 
 const priorityIcons: Record<IssuePriority, LucideIcon> = {
   highest: ChevronsUpIcon,

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-
+import type { LibraryFolderOption } from "./library";
 import {
-  LIBRARY_ROOT_FOLDER_LABEL,
-  LIBRARY_ROOT_FOLDER_VALUE,
   documentLibraryHref,
   documentLibraryKindFromType,
   documentLibraryListItems,
@@ -12,11 +10,12 @@ import {
   filterDocumentLibraryListItems,
   folderMoveTargets,
   folderPathLabel,
+  LIBRARY_ROOT_FOLDER_LABEL,
+  LIBRARY_ROOT_FOLDER_VALUE,
   libraryBrowseCrumbs,
   libraryFolderPickerOptions,
   resolveDocumentLibrarySearch,
 } from "./library";
-import type { LibraryFolderOption } from "./library";
 
 describe("document library search", () => {
   it("treats a missing search as the library root", () => {

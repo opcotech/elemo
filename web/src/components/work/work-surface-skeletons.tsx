@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 
 import { ContentWidth } from "@/components/layout/content-width";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { TableSkeletonColumn } from "@/components/ui/table-skeleton";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
 
 const BOARD_COLUMN_COUNT = 6;

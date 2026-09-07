@@ -2,9 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-
-import { TodoFormFields } from "./todo-form-fields";
-
 import { DialogForm } from "@/components/ui/dialog-form";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import { zTodoCreate, zTodoPatch } from "@/lib/api/schemas";
@@ -12,6 +9,7 @@ import { v1TodoUpdate } from "@/lib/api/sdk";
 import type { Options, TodoPriority, V1TodoUpdateData } from "@/lib/api/types";
 import { createFormSchema, normalizePatchData } from "@/lib/forms";
 import { getDefaultValue } from "@/lib/utils";
+import { TodoFormFields } from "./todo-form-fields";
 
 const todoEditFormSchema = createFormSchema(
   zTodoPatch.extend({

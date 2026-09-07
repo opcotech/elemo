@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-
-import { withRouter } from "../../.storybook/with-router";
-
 import { WorkBoard as Board } from "@/components/work/work-board";
 import { CompactWorkList } from "@/components/work/work-list";
 import { WorkSurface } from "@/components/work/work-surface";
@@ -11,6 +8,7 @@ import { WorkTimeline } from "@/components/work/work-timeline";
 import { mockWorkItems } from "@/lib/mock-data";
 import type { WorkItem } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
+import { withRouter } from "../../.storybook/with-router";
 
 const defaultSearch: WorkRouteSearch = {
   display: "comfortable",

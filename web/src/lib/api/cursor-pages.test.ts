@@ -1,13 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-
-import {
-  MAX_CURSOR_PAGES,
-  collectCursorPages,
-  collectListedPage,
-  collectedQueryKey,
-  cursorPageQuery,
-} from "./cursor-pages";
 import type { CursorPage } from "./cursor-pages";
+import {
+  collectCursorPages,
+  collectedQueryKey,
+  collectListedPage,
+  cursorPageQuery,
+  MAX_CURSOR_PAGES,
+} from "./cursor-pages";
 
 function page(
   items: string[],

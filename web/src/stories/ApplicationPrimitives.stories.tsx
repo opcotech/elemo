@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { BellRingIcon, Link2Icon, PlusIcon } from "lucide-react";
-
-import { withRouter } from "../../.storybook/with-router";
-
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { MockDataAlert } from "@/components/shared/app-feedback";
 import { EntityHeader } from "@/components/shared/entity-header";
@@ -23,6 +20,7 @@ import {
   selectActivity,
   selectRelations,
 } from "@/lib/mock-data";
+import { withRouter } from "../../.storybook/with-router";
 
 const selectedWork = mockWorkItems[0];
 const selectedEntity = {

@@ -3,7 +3,7 @@ import { expect, test } from "./fixtures";
 import { searchPaletteResult, seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { HomePage, SearchPage, WorkItemPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
 test.describe("@search Search E2E Tests", () => {

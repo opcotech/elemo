@@ -1,3 +1,4 @@
+export { resolveDemoPerson } from "./demo-person";
 export {
   mockActivity,
   mockAttentionSignals,
@@ -9,7 +10,6 @@ export {
   mockTimeline,
   mockWorkItems,
 } from "./fixtures";
-export { resolveDemoPerson } from "./demo-person";
 export {
   getDocumentBody,
   getPerson,
@@ -24,8 +24,6 @@ export {
   selectTimeline,
   selectWorkItems,
 } from "./selectors";
-export { API_BACKED_DOMAINS, MOCK_ONLY_DOMAINS } from "./types";
-
 export type {
   ActivityAction,
   ActivityEntry,
@@ -42,8 +40,8 @@ export type {
   GlobalSearchQuery,
   MockOnlyDomain,
   MockRecord,
-  Person,
   PeopleQuery,
+  Person,
   Relation,
   RelationDirection,
   RelationKind,
@@ -54,3 +52,4 @@ export type {
   TimelineEntry,
   TimelineQuery,
 } from "./types";
+export { API_BACKED_DOMAINS, MOCK_ONLY_DOMAINS } from "./types";

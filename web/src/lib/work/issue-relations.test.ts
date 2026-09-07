@@ -1,10 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
-
+import { v1IssueRelationsGetOptions } from "@/lib/api/query-options";
+import type { IssueRelation, PartialIssue } from "@/lib/api/types";
 import {
-  ISSUE_RELATION_KIND_SUBTASK_OF,
   editableIssueRelationKinds,
   filterAvailableRelatedIssues,
+  ISSUE_RELATION_KIND_SUBTASK_OF,
   issueRelationDisplayKind,
   issueRelationInvalidationKeys,
   issueRelationKindLabel,
@@ -15,9 +16,6 @@ import {
   relationKindPatch,
   visibleIssueRelations,
 } from "./issue-relations";
-
-import { v1IssueRelationsGetOptions } from "@/lib/api/query-options";
-import type { IssueRelation, PartialIssue } from "@/lib/api/types";
 
 function partialIssue(
   overrides: Partial<PartialIssue> & Pick<PartialIssue, "id" | "key">

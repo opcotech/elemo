@@ -7,15 +7,15 @@ import {
   SparklesIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Suspense, lazy, useEffect, useLayoutEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from "react";
 
 import { NamespaceSwitcher } from "@/components/namespace-switcher";
+import type { QuickCreateType } from "@/components/quick-create/types";
 import {
-  QUICK_CREATE_EVENT,
   isQuickCreateType,
   isTypingTarget,
+  QUICK_CREATE_EVENT,
 } from "@/components/quick-create/types";
-import type { QuickCreateType } from "@/components/quick-create/types";
 import { ContextualNavigationSection } from "@/components/sidebar/contextual-navigation-section";
 import { NavHeader } from "@/components/sidebar/nav-header";
 import { NavUser, NavUserSkeleton } from "@/components/sidebar/nav-user";

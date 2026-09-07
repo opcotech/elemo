@@ -1,7 +1,6 @@
 import { test as base } from "@playwright/test";
-
-import { getTestConfig } from "../utils/test-config";
 import type { TestConfig } from "../utils/test-config";
+import { getTestConfig } from "../utils/test-config";
 
 /**
  * Custom Playwright fixtures for test configuration.

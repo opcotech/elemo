@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   API_BACKED_DOMAINS,
-  MOCK_ONLY_DOMAINS,
   getDocumentBody,
+  MOCK_ONLY_DOMAINS,
   mockActivity,
   mockAttentionSignals,
   mockDocumentBodies,

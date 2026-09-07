@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import { createOrganization } from "./api";
 import { Dialog } from "./components";
 import { expect, test } from "./fixtures";
@@ -6,7 +7,7 @@ import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationsPage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
@@ -14,8 +15,6 @@ import {
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-delete Organization Delete E2E Tests", () => {
   let ownerUser: User;

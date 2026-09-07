@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";

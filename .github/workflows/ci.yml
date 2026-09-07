@@ -32,6 +32,22 @@ jobs:
         with:
           filters: .github/config/path-filters.yml
 
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-mise
+      - name: Cache pre-commit environments
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+      - name: Pre-commit
+        run: mise run pre-commit-ci
+
   backend-lint:
     name: Backend Lint
     runs-on: "ubuntu-latest"
@@ -41,6 +57,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
+      - name: Cache pre-commit environments
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+      - name: Pre-commit
+        run: mise run pre-commit-ci
       - name: Check formatting
         run: mise run format-check-backend
       - name: Go CI Lint
@@ -55,6 +80,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
+      - name: Cache pre-commit environments
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+      - name: Pre-commit
+        run: mise run pre-commit-ci
       - name: Install web dependencies
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         run: pnpm install --dir web

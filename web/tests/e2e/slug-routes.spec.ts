@@ -1,13 +1,12 @@
-import { createOrganization, createProjectDocument } from "./api";
-import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace } from "./helpers";
-import type { OwnerWorkspace } from "./helpers";
-import { DocumentPage, DocumentsListPage, WorkItemPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { getRandomSlug, getRandomString } from "./utils/random";
-
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import { namespacePath } from "@/lib/paths";
+import { createOrganization, createProjectDocument } from "./api";
+import { expect, test } from "./fixtures";
+import type { OwnerWorkspace } from "./helpers";
+import { seedOwnerWorkspace } from "./helpers";
+import { DocumentPage, DocumentsListPage, WorkItemPage } from "./pages";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 test.describe("@routes.slugs Hierarchical URL identity E2E Tests", () => {
   let workspace: OwnerWorkspace;

@@ -1,5 +1,5 @@
-import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 
 import { BaseComponent } from "../components/base";
 import { clickUntilVisible, waitForSuccessToast } from "../helpers";

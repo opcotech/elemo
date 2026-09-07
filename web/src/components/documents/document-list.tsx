@@ -5,8 +5,8 @@ import {
   MoreHorizontalIcon,
   SearchIcon,
 } from "lucide-react";
-import { useMemo } from "react";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 
 import { AppList } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
@@ -19,13 +19,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import type { EntitySelectOption } from "@/components/ui/entity-select";
+import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import { Input } from "@/components/ui/input";
 import { InternalLink } from "@/components/ui/internal-link";
 import { Item, ItemActions, ItemContent } from "@/components/ui/item";
 import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import type { PartialDocument } from "@/lib/api/types";
+import type {
+  DocumentCreatorOption,
+  DocumentListSort,
+} from "@/lib/documents/document-list";
 import {
   ALL_DOCUMENT_CREATORS,
   documentAuthorName,
@@ -33,10 +37,6 @@ import {
   documentListSortLabels,
   documentUpdatedAt,
   isDocumentListSort,
-} from "@/lib/documents/document-list";
-import type {
-  DocumentCreatorOption,
-  DocumentListSort,
 } from "@/lib/documents/document-list";
 import { formatDate } from "@/lib/format-date";
 import { internalPath } from "@/lib/internal-url";

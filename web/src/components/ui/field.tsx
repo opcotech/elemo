@@ -1,13 +1,13 @@
-import { cva } from "class-variance-authority";
 import type { VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import * as React from "react";
+import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
 import {
   Controller,
   FormProvider,
   useFormContext,
   useFormState,
 } from "react-hook-form";
-import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
 
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -321,16 +321,16 @@ function FieldControl({
 export {
   ControlledField,
   Field,
+  FieldContent,
   FieldControl,
-  FieldLabel,
   FieldDescription,
   FieldError,
   FieldGroup,
+  FieldLabel,
   FieldLegend,
+  FieldProvider,
   FieldSeparator,
   FieldSet,
-  FieldContent,
-  FieldProvider,
   FieldTitle,
   useControlledField,
 };

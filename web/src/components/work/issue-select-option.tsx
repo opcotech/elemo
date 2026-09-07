@@ -1,10 +1,9 @@
-import { KindRibbon, issueKindLabels } from "./kind-ribbon";
-import { PriorityRibbon, issuePriorityLabels } from "./priority-ribbon";
-
 import type { EntitySelectOption } from "@/components/ui/entity-select";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import type { PartialIssue } from "@/lib/api/types";
 import { issueStatusLabels } from "@/lib/work/issue-adapter";
+import { issueKindLabels, KindRibbon } from "./kind-ribbon";
+import { issuePriorityLabels, PriorityRibbon } from "./priority-ribbon";
 
 type IssueSelectFields = Pick<
   PartialIssue,

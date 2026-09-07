@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
-
-import { IssueReportedBy } from "./issue-reported-by";
-import { formatDateTime } from "./utils";
-
 import { InternalLink } from "@/components/ui/internal-link";
 import type { PersonAvatarStackPerson } from "@/components/ui/person-avatar-stack";
 import { PropertyList } from "@/components/ui/property-list";
 import { internalPath } from "@/lib/internal-url";
 import { namespacePath, projectWorkPath, workItemPath } from "@/lib/paths";
 import type { DataSource } from "@/lib/work/model";
+import { IssueReportedBy } from "./issue-reported-by";
+import { formatDateTime } from "./utils";
 
 export function IssueParentLink({
   parent,

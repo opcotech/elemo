@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import {
   createGrant,
   createOrganization,
@@ -13,8 +14,6 @@ import {
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-role-assignment Role Grant Assignment E2E Tests", () => {
   let owner: User;

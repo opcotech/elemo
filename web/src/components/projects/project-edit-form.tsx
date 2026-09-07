@@ -3,9 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-
-import { projectEditFormSchema } from "@/components/projects/project-form-schema";
 import type { ProjectEditFormValues } from "@/components/projects/project-form-schema";
+import { projectEditFormSchema } from "@/components/projects/project-form-schema";
 import {
   ControlledField,
   Field,

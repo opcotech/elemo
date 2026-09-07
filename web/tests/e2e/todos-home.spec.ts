@@ -2,7 +2,7 @@ import { createTodo } from "./api";
 import { expect, test } from "./fixtures";
 import { HomePage } from "./pages";
 import { TodoSheetSection } from "./sections";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { createUser } from "./utils/db";
 import { getRandomString } from "./utils/random";
 

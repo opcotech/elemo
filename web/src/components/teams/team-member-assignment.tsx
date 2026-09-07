@@ -1,10 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus, UserMinus, Users } from "lucide-react";
 import { useState } from "react";
-
-import { TeamMemberAddDialog } from "./team-member-add-dialog";
-import { TeamMemberRemoveDialog } from "./team-member-remove-dialog";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ListContainer } from "@/components/ui/list-container";
@@ -26,6 +22,8 @@ import { v1OrganizationTeamMembersGetOptions } from "@/lib/api/query-options";
 import type { User } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { getInitials } from "@/lib/utils";
+import { TeamMemberAddDialog } from "./team-member-add-dialog";
+import { TeamMemberRemoveDialog } from "./team-member-remove-dialog";
 
 interface TeamMemberAssignmentProps {
   organizationId: string;

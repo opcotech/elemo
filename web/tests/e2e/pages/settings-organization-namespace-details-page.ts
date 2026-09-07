@@ -1,13 +1,11 @@
 import type { Page } from "@playwright/test";
-
+import { settingsNamespacePath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait, waitForElementVisible } from "../helpers";
 import {
   NamespaceDangerZoneSection,
   NamespaceProjectsSection,
 } from "../sections";
-
-import { settingsNamespacePath } from "@/lib/paths";
 
 export class SettingsOrganizationNamespaceDetailsPage extends BaseComponent {
   public readonly projects: NamespaceProjectsSection;

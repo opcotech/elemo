@@ -88,9 +88,9 @@ function DangerZoneActions({
 
 export {
   DangerZone,
+  DangerZoneActions,
+  DangerZoneContent,
+  DangerZoneDescription,
   DangerZoneHeader,
   DangerZoneTitle,
-  DangerZoneDescription,
-  DangerZoneContent,
-  DangerZoneActions,
 };

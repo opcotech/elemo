@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-
-import { getTodoDueGroup, groupTodosByDueDate } from "./grouping";
-
 import type { Todo } from "@/lib/api/types";
+import { getTodoDueGroup, groupTodosByDueDate } from "./grouping";
 
 /** Wednesday 2026-08-12 — week Mon 10 – Sun 16 */
 const NOW = new Date("2026-08-12T15:30:00.000Z");

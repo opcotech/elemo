@@ -5,12 +5,12 @@ import { SearchPage } from "@/components/pages/search-page";
 import { accessibleNamespacesOptions } from "@/lib/api/accessible-namespaces";
 import { v1SearchGetOptions } from "@/lib/api/query-options";
 import { withRouteErrors } from "@/lib/route-errors";
+import type { SearchRouteSearch } from "@/lib/search/params";
 import {
   hasActiveSearch,
   searchQueryFromRoute,
   searchRouteSearchSchema,
 } from "@/lib/search/params";
-import type { SearchRouteSearch } from "@/lib/search/params";
 
 export const Route = createFileRoute("/_authenticated/search")({
   staticData: { breadcrumb: "Search" },

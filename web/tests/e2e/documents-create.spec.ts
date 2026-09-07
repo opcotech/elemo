@@ -1,3 +1,4 @@
+import type { User } from "@/lib/api/types";
 import { createNamespaceDocument, createProjectDocument } from "./api";
 import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
@@ -8,15 +9,13 @@ import {
   HomePage,
   ProjectPage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
   grantMembershipToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@documents.create Document Create E2E Tests", () => {
   let workspace: OwnerWorkspace;

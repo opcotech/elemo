@@ -2,22 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronDownIcon,
-  FileTextIcon,
   FilesIcon,
+  FileTextIcon,
   FolderIcon,
   MoreHorizontalIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { DocumentDeleteDialog } from "./document-delete-dialog";
-import { DocumentList, DocumentListToolbar } from "./document-list";
-import { DocumentMoveDialog } from "./document-move-dialog";
-import { DocumentRenameDialog } from "./document-rename-dialog";
-import { FolderCreateDialog } from "./folder-create-dialog";
-import { FolderDeleteDialog } from "./folder-delete-dialog";
-import { FolderMoveDialog } from "./folder-move-dialog";
-import { FolderRenameDialog } from "./folder-rename-dialog";
-
 import { ContentWidth } from "@/components/layout/content-width";
 import { openQuickCreate } from "@/components/quick-create/open";
 import {
@@ -64,12 +54,16 @@ import {
   v1OrganizationsFoldersGetOptions,
 } from "@/lib/api/query-options";
 import type { Folder, PartialDocument } from "@/lib/api/types";
+import type { DocumentListSort } from "@/lib/documents/document-list";
 import {
   ALL_DOCUMENT_CREATORS,
   documentCreators,
   visibleDocuments,
 } from "@/lib/documents/document-list";
-import type { DocumentListSort } from "@/lib/documents/document-list";
+import type {
+  DocumentLibraryKind,
+  DocumentLibrarySearch,
+} from "@/lib/documents/library";
 import {
   documentLibraryApiPath,
   documentLibraryHref,
@@ -78,11 +72,15 @@ import {
   libraryBrowseCrumbs,
   resolveDocumentLibrarySearch,
 } from "@/lib/documents/library";
-import type {
-  DocumentLibraryKind,
-  DocumentLibrarySearch,
-} from "@/lib/documents/library";
 import { pluralize } from "@/lib/utils";
+import { DocumentDeleteDialog } from "./document-delete-dialog";
+import { DocumentList, DocumentListToolbar } from "./document-list";
+import { DocumentMoveDialog } from "./document-move-dialog";
+import { DocumentRenameDialog } from "./document-rename-dialog";
+import { FolderCreateDialog } from "./folder-create-dialog";
+import { FolderDeleteDialog } from "./folder-delete-dialog";
+import { FolderMoveDialog } from "./folder-move-dialog";
+import { FolderRenameDialog } from "./folder-rename-dialog";
 
 export function DocumentLibraryPage({
   kind,

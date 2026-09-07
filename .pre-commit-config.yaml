@@ -1,0 +1,54 @@
+# See https://pre-commit.com for more information
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+default_stages:
+  - pre-commit
+
+exclude: |
+  (?x)^(
+    internal/transport/http/api/.*|
+    .*_gen\.go$|
+    web/src/lib/client/.*|
+    web/src/routeTree\.gen\.ts|
+    .*\.key$
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-json
+        exclude: '\.jsonc$'
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: local
+    hooks:
+      - id: elemo-files
+        name: Format staged Go, web, and website files
+        entry: mise run pre-commit-files --
+        language: system
+        types: [text]
+        files: \.(go|jsx?|tsx?|cjs|mjs|cts|mts|jsonc?|css|astro)$
+        pass_filenames: true
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.26.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies: ["@commitlint/config-conventional@21.1.0"]
+        args: ["--config", ".github/config/commitlint.mjs"]

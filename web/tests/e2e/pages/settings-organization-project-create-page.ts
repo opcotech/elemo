@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsProjectNewPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { ProjectCreateFormSection } from "../sections";
-
-import { settingsProjectNewPath } from "@/lib/paths";
 
 export class SettingsOrganizationProjectCreatePage extends BaseComponent {
   public readonly projectForm: ProjectCreateFormSection;

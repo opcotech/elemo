@@ -1,9 +1,8 @@
-import { TestAuthClient } from "./auth-client";
-import { getTestConfig } from "../utils/test-config";
-
 import type { LoginCredentials } from "@/lib/auth/types";
 import type { Client } from "@/lib/client/client";
 import { createClient } from "@/lib/client/client";
+import { getTestConfig } from "../utils/test-config";
+import { TestAuthClient } from "./auth-client";
 
 const OAUTH_SCOPES = [
   "user",

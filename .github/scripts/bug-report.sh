@@ -34,7 +34,7 @@ function replaceUsername() {
 }
 
 function getOSInfo() {
-    log "getting OS information" 
+    log "getting OS information"
     formatOutput "OS information" "text" "$(uname -a)"
 }
 

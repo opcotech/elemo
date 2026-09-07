@@ -6,8 +6,8 @@ import {
   v1NamespaceGetOptions,
   v1NotificationsGetOptions,
   v1OrganizationRoleGetOptions,
-  v1OrganizationTeamGetOptions,
   v1OrganizationsGetOptions,
+  v1OrganizationTeamGetOptions,
 } from "@/lib/api/query-options";
 import { namespaceRefPath, organizationRefPath } from "@/lib/api/refs";
 import { Action, ResourceType } from "@/lib/auth/permissions";

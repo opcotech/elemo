@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { DatePicker } from "@/components/ui/date-picker";
+import type { EntitySelectOption } from "@/components/ui/entity-select";
 import {
   EntityMultiSelect,
   SearchableEntitySelect,
 } from "@/components/ui/entity-select";
-import type { EntitySelectOption } from "@/components/ui/entity-select";
 import { Input } from "@/components/ui/input";
 import { InputGroupInput } from "@/components/ui/input-group";
 import { propertyControlClassName } from "@/components/ui/property-list";
@@ -40,8 +40,8 @@ import {
   userIdsFromValue,
   utcIsoToDatetimeLocal,
 } from "@/lib/custom-fields/value";
-import { SEARCH_RESOURCE_TYPES } from "@/lib/search/result";
 import type { SearchResourceType } from "@/lib/search/result";
+import { SEARCH_RESOURCE_TYPES } from "@/lib/search/result";
 import { cn, getInitials } from "@/lib/utils";
 import { personDisplayName } from "@/lib/work/resolve-work-people";
 

@@ -1,5 +1,3 @@
-import { withErrorHandling } from "./error-handler";
-
 import type { Client } from "@/lib/api/client";
 import { projectIdPath } from "@/lib/api/refs";
 import {
@@ -11,6 +9,7 @@ import {
   v1ProjectsDocumentsCreate,
 } from "@/lib/api/sdk";
 import type { Document, DocumentCreate, DocumentPatch } from "@/lib/api/types";
+import { withErrorHandling } from "./error-handler";
 
 type DocumentCreateFields = Partial<DocumentCreate> & { title: string };
 

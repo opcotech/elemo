@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  SEARCH_PAGE_SIZE,
   hasActiveSearch,
+  SEARCH_PAGE_SIZE,
   searchQueryFromRoute,
   searchRouteSearchSchema,
 } from "@/lib/search/params";

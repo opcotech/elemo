@@ -3,9 +3,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheckBig, Plus } from "lucide-react";
 import { useMemo } from "react";
-
-import { TodoItem } from "./todo-item";
-
 import {
   CursorPaginator,
   cursorPaginatorProps,
@@ -28,6 +25,7 @@ import { useCursorPageNav } from "@/hooks/use-cursor-page-nav";
 import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1TodosGetOptions } from "@/lib/api/query-options";
 import { uiActions, useUiSelector } from "@/lib/ui-store";
+import { TodoItem } from "./todo-item";
 
 export function TodoSheet() {
   const pageNav = useCursorPageNav();

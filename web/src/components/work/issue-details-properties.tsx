@@ -1,17 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-
-import { issueToSelectOption } from "./issue-select-option";
-import { KindRibbon, issueKindLabels, issueKinds } from "./kind-ribbon";
-import { PriorityRibbon, issuePriorityLabels } from "./priority-ribbon";
-import { calendarDateToUtcNoonIso, utcIsoToCalendarDate } from "./utils";
-
 import { DatePicker } from "@/components/ui/date-picker";
+import type { EntitySelectOption } from "@/components/ui/entity-select";
 import {
   EntityMultiSelect,
   SearchableEntitySelect,
 } from "@/components/ui/entity-select";
-import type { EntitySelectOption } from "@/components/ui/entity-select";
 import {
   PropertyList,
   propertyControlClassName,
@@ -24,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusIndicator } from "@/components/ui/status-indicator";
-import { collectListedPage, collectedQueryKey } from "@/lib/api/cursor-pages";
+import { collectedQueryKey, collectListedPage } from "@/lib/api/cursor-pages";
 import {
   v1LabelsGetOptions,
   v1ProjectsIssuesGetOptions,
@@ -60,6 +54,10 @@ import {
   personDisplayName,
 } from "@/lib/work/resolve-work-people";
 import { useOrganizationMembersForNamespace } from "@/lib/work/use-organization-members-for-namespace";
+import { issueToSelectOption } from "./issue-select-option";
+import { issueKindLabels, issueKinds, KindRibbon } from "./kind-ribbon";
+import { issuePriorityLabels, PriorityRibbon } from "./priority-ribbon";
+import { calendarDateToUtcNoonIso, utcIsoToCalendarDate } from "./utils";
 
 const issueStatuses: readonly IssueStatus[] = [
   "open",

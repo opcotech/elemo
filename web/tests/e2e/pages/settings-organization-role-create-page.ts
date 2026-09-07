@@ -1,10 +1,8 @@
 import type { Page } from "@playwright/test";
-
+import { settingsOrganizationPath } from "@/lib/paths";
 import { BaseComponent } from "../components/base";
 import { navigateAndWait } from "../helpers";
 import { RoleCreateFormSection } from "../sections";
-
-import { settingsOrganizationPath } from "@/lib/paths";
 
 /**
  * Page Object Model for Organization Role Create page.

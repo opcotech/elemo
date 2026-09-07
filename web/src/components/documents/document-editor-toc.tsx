@@ -1,5 +1,5 @@
-import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
 import { PanelLeftCloseIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 

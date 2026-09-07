@@ -57,12 +57,12 @@ import type {
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 import { documentListQueryKey } from "@/lib/documents/create";
+import type { DocumentListSort } from "@/lib/documents/document-list";
 import {
   ALL_DOCUMENT_CREATORS,
   documentCreators,
   visibleDocuments,
 } from "@/lib/documents/document-list";
-import type { DocumentListSort } from "@/lib/documents/document-list";
 import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 import { internalPath } from "@/lib/internal-url";
 import {

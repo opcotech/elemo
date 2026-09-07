@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { ChevronDownIcon, ChevronsUpDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
 import { Button } from "./button";
@@ -25,8 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./select";
-
-import { cn } from "@/lib/utils";
 
 export interface EntitySelectOption {
   value: string;

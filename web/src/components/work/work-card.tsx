@@ -1,7 +1,3 @@
-import { PriorityRibbon } from "./priority-ribbon";
-import { dateLabel, workItemPath } from "./utils";
-import { WorkLabelBadges } from "./work-label-badges";
-
 import { InternalLink } from "@/components/ui/internal-link";
 import { PersonAvatarStack } from "@/components/ui/person-avatar-stack";
 import { StatusIndicator } from "@/components/ui/status-indicator";
@@ -9,6 +5,9 @@ import { internalPath } from "@/lib/internal-url";
 import { cn } from "@/lib/utils";
 import type { WorkItem } from "@/lib/work/model";
 import { workItemAssignmentPeople } from "@/lib/work/resolve-work-people";
+import { PriorityRibbon } from "./priority-ribbon";
+import { dateLabel, workItemPath } from "./utils";
+import { WorkLabelBadges } from "./work-label-badges";
 
 function WorkIdentity({
   item,

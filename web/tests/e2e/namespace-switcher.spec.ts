@@ -1,13 +1,12 @@
-import { createOrganization } from "./api";
-import { expect, test } from "./fixtures";
-import { fillLocator } from "./helpers";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
-import { createUser, grantOrganizationCreateToUser } from "./utils/db";
-import { getRandomSlug, getRandomString } from "./utils/random";
-
 import type { Client } from "@/lib/api/client";
 import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
 import type { User } from "@/lib/api/types";
+import { createOrganization } from "./api";
+import { expect, test } from "./fixtures";
+import { fillLocator } from "./helpers";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
+import { createUser, grantOrganizationCreateToUser } from "./utils/db";
+import { getRandomSlug, getRandomString } from "./utils/random";
 
 test.describe("@namespace.switcher Namespace Switcher E2E Tests", () => {
   let ownerUser: User;

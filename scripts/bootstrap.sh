@@ -58,4 +58,7 @@ else
   pnpm --dir web exec playwright install --with-deps
 fi
 
+log "installing git hooks"
+mise run pre-commit-install
+
 success "bootstrap finished; run \"scripts/dev-demo-init.sh --yes\" then \"mise run dev\""

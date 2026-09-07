@@ -2,9 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
-
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import {
   CursorPaginator,
@@ -32,6 +29,7 @@ import { cursorPageQuery } from "@/lib/api/cursor-pages";
 import { v1OrganizationsNamespacesGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions, Namespace } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
+import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
 
 const namespacesListSkeletonColumns = [
   { header: "Name", skeletonClassName: "h-5 w-32" },

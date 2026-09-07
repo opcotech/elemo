@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DialogForm } from "@/components/ui/dialog-form";
-import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import type { EntitySelectOption } from "@/components/ui/entity-select";
+import { SearchableEntitySelect } from "@/components/ui/entity-select";
 import {
   ControlledField,
   Field,

@@ -1,11 +1,9 @@
 import { test as base } from "@playwright/test";
-
+import type { Client } from "@/lib/api/client";
 import {
   createAuthenticatedClient,
   createPrivilegedClient,
 } from "../api/client";
-
-import type { Client } from "@/lib/api/client";
 
 /**
  * Custom Playwright fixtures for API client.

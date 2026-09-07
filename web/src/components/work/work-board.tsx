@@ -1,19 +1,19 @@
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-  pointerWithin,
-  useDroppable,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
 import type {
   CollisionDetection,
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
   UniqueIdentifier,
+} from "@dnd-kit/core";
+import {
+  closestCorners,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDroppable,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -30,11 +30,6 @@ import {
   useRef,
   useState,
 } from "react";
-
-import { issuePriorityLabels } from "./priority-ribbon";
-import type { BoardItemMove, BoardMoveGroup } from "./use-board-issue-move";
-import { WorkCard } from "./work-card";
-
 import { openQuickCreate } from "@/components/quick-create/open";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -42,6 +37,9 @@ import { getPerson } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { WorkItem, WorkPriority, WorkStatus } from "@/lib/work/model";
 import type { WorkRouteSearch } from "@/lib/work-route-search";
+import { issuePriorityLabels } from "./priority-ribbon";
+import type { BoardItemMove, BoardMoveGroup } from "./use-board-issue-move";
+import { WorkCard } from "./work-card";
 
 const COLUMN_PAGE_SIZE = 25;
 const statusOrder: readonly WorkStatus[] = [

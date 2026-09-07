@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type {
   RichTextEditorValue,
   RichTextMentionItem,
 } from "@/components/ui/rich-text-editor";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn, getDefaultValue } from "@/lib/utils";
 import { parseIssueDescription } from "@/lib/work/issue-edit";
 import { markdownToSafeHtml } from "@/lib/work/markdown-html";

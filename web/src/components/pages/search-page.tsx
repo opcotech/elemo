@@ -34,16 +34,16 @@ import {
 import { namespaceRefPath } from "@/lib/api/refs";
 import { v1NamespacesProjectsGet, v1SearchGet } from "@/lib/api/sdk";
 import { recentEntityLinkType } from "@/lib/recent-entity";
-import {
-  SEARCH_DEBOUNCE_MS,
-  hasActiveSearch,
-  searchQueryFromRoute,
-} from "@/lib/search/params";
 import type { SearchRouteSearch, SearchRouteType } from "@/lib/search/params";
 import {
+  hasActiveSearch,
+  SEARCH_DEBOUNCE_MS,
+  searchQueryFromRoute,
+} from "@/lib/search/params";
+import {
+  groupSearchResults,
   SEARCH_RESOURCE_TYPES,
   SEARCH_TYPE_LABELS,
-  groupSearchResults,
   searchResultEntityType,
   searchResultHref,
 } from "@/lib/search/result";

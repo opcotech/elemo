@@ -134,7 +134,11 @@ _Note: All contributions are subject to the [Contributor License Agreement](CLA.
   [Contributor License Agreement](CLA.md) (the bot will prompt you).
 - **Use conventional commits.** The changelog is generated automatically from conventional commit messages by
   [Release Please](https://github.com/googleapis/release-please). Prefer `feat` and `fix` for user-facing changes;
-  include the issue number in the commit body or PR description when one exists.
+  include the issue number in the commit body or PR description when one exists. `mise bootstrap` installs
+  [pre-commit](https://pre-commit.com/) hooks that format staged files and lint the commit message against
+  [`.github/config/commitlint.mjs`](.github/config/commitlint.mjs). Reinstall with `mise run pre-commit-install`.
+  Run every hook on the tree with `mise run pre-commit`. Bypass a single commit with `git commit --no-verify`
+  (or `SKIP=hook-id git commit`) only when you have a reason CI will still accept.
 - **Use the repo's default branch.** Branch from
   and [submit your pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork)
   to the repo's default branch. This is the `main` branch.
@@ -202,6 +206,9 @@ generate-server                # Generate API server
 generate-client                # Generate API client
 generate-client-check          # Fail if generated TypeScript client drifted
 generate-email                 # Generate HTML emails from MJML templates
+pre-commit-install             # Install git pre-commit and commit-msg hooks
+pre-commit                     # Run pre-commit hooks on all tracked files
+pre-commit-ci                  # Run pre-commit hooks in CI check mode
 
 start                          # Start Compose services
 stop                           # Stop Compose services
@@ -263,7 +270,10 @@ copyleft in project source. Reports land in `.ort/results/` (gitignored), includ
 GitHub Release assets.
 
 Although front-end unit tests exist (`mise run test-frontend-unit`), linters and
-end-to-end tests are also available. In order to run end-to-end tests, you have
+end-to-end tests are also available. Pull request CI runs `mise run pre-commit-ci`
+in the Pre-commit, Backend Lint, and Frontend Lint jobs. That skips local
+formatters already covered by `format-check` / `lint` and `no-commit-to-branch`
+(which would fail on `main`). In order to run end-to-end tests, you have
 to have the necessary browser drivers installed. The easiest way to install them
 is using playwright. When the drivers are installed, you can start the
 end-to-end tests.

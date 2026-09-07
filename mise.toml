@@ -12,6 +12,7 @@ jq = "1.8.2"
 golangci-lint = "2.13.2"
 gotestsum = "1.13.0"
 k6 = "2.2.0"
+pre-commit = "4.6.2"
 
 [tasks.bootstrap]
 description = "Install tools and project dependencies without starting services"
@@ -236,6 +237,26 @@ pnpm --dir tools/email run build \
   --out "$PWD/templates/email" \
   --static-root "http://0.0.0.0:4566/elemo"
 '''
+
+[tasks.pre-commit-install]
+description = "Install git pre-commit and commit-msg hooks"
+run = "pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg"
+
+[tasks.pre-commit]
+description = "Run pre-commit hooks on all tracked files"
+run = "pre-commit run --all-files"
+
+[tasks.pre-commit-ci]
+description = "Run pre-commit hooks in CI check mode"
+run = '''
+SKIP="${SKIP:-elemo-files,no-commit-to-branch}" \
+  pre-commit run --all-files --show-diff-on-failure
+'''
+
+[tasks.pre-commit-files]
+description = "Format and lint files passed by pre-commit"
+hide = true
+run = "scripts/pre-commit-files.sh"
 
 [tasks.dev]
 description = "Start services and the frontend dev server"

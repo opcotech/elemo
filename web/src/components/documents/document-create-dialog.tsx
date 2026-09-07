@@ -1,18 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { DocumentCreateFields } from "@/components/documents/document-create-fields";
 import { DialogForm } from "@/components/ui/dialog-form";
 import { useFormMutation } from "@/hooks/use-form-mutation";
 import type { Document, DocumentCreate } from "@/lib/api/types";
+import type { DocumentCreateFormValues } from "@/lib/documents/create";
 import {
   documentCreateBody,
   documentCreateFormDefaults,
   documentCreateFormSchema,
 } from "@/lib/documents/create";
-import type { DocumentCreateFormValues } from "@/lib/documents/create";
 import { invalidateDocumentQueries } from "@/lib/documents/document-queries";
 
 export function DocumentCreateDialog({

@@ -1,5 +1,3 @@
-import type { EntityLifecycleConfig } from "./entity-lifecycle";
-
 import { accessibleNamespacesQueryKey } from "@/lib/api/accessible-namespaces";
 import {
   v1DocumentGetOptions,
@@ -8,10 +6,10 @@ import {
   v1OrganizationGetOptions,
   v1OrganizationRoleGetOptions,
   v1OrganizationRolesGetOptions,
-  v1OrganizationTeamGetOptions,
-  v1OrganizationTeamsGetOptions,
   v1OrganizationsGetOptions,
   v1OrganizationsNamespacesGetOptions,
+  v1OrganizationTeamGetOptions,
+  v1OrganizationTeamsGetOptions,
   v1ProjectGetOptions,
 } from "@/lib/api/query-options";
 import {
@@ -38,6 +36,7 @@ import type {
   V1ProjectDeleteData,
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
+import type { EntityLifecycleConfig } from "./entity-lifecycle";
 
 interface OrganizationLifecycleEntity
   extends Pick<Organization, "id" | "name" | "status"> {}

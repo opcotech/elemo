@@ -9,7 +9,7 @@ import { expect, test } from "./fixtures";
 import { seedOwnerWorkspace } from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { DocumentPage, DocumentsListPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import { getRandomString } from "./utils/random";
 
 test.describe("@documents.list Document List E2E Tests", () => {

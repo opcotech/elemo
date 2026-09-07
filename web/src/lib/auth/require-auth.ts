@@ -1,10 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
-
-import { can } from "./permissions";
-import type { ResourceType } from "./permissions";
-
 import { loadResourcePermissions } from "@/lib/entity-context";
+import type { ResourceType } from "./permissions";
+import { can } from "./permissions";
 
 export async function redirectIfAuthenticated() {
   const { currentSessionFn } = await import("./functions");

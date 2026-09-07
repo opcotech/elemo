@@ -1,15 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-
+import { authMiddleware } from "@/lib/auth/middleware";
+import { getAuthServerEnv } from "@/lib/auth/server-env";
+import { refreshSession } from "@/lib/auth/session.server";
+import type { ApiTransportRequest, ApiTransportResponse } from "./protocol";
 import {
   buildUpstreamUrl,
   isPublicApiRequest,
   transportRequestSchema,
 } from "./protocol";
-import type { ApiTransportRequest, ApiTransportResponse } from "./protocol";
-
-import { authMiddleware } from "@/lib/auth/middleware";
-import { getAuthServerEnv } from "@/lib/auth/server-env";
-import { refreshSession } from "@/lib/auth/session.server";
 
 const RESPONSE_HEADERS = ["content-type", "retry-after"] as const;
 

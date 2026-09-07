@@ -1,10 +1,10 @@
+import type { LucideIcon } from "lucide-react";
 import {
   FileTextIcon,
   FolderKanbanIcon,
   ListTodoIcon,
   XIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { InternalLink } from "@/components/ui/internal-link";
 import {

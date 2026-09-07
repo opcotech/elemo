@@ -1,11 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import type { Todo } from "@/lib/api/types";
 import { internalPath } from "./internal-url";
 import { uiActions, uiStore, useUiSelector } from "./ui-store";
-
-import type { Todo } from "@/lib/api/types";
 
 const todo: Todo = {
   id: "todo-1",

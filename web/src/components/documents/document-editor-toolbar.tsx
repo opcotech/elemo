@@ -1,5 +1,5 @@
-import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
 import {
   BetweenHorizontalEndIcon,
   BetweenVerticalEndIcon,
@@ -28,18 +28,18 @@ import {
   UnderlineIcon,
   Undo2Icon,
 } from "lucide-react";
-import { useState } from "react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LinkAddDialog } from "@/components/ui/link-add-dialog";
 import { CODE_BLOCK_LANGUAGES } from "@/components/ui/rich-text-extensions";
+import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import {
   applyLinkDraft,
   captureLinkDraft,
   removeLinkDraft,
 } from "@/components/ui/rich-text-link";
-import type { LinkDialogDraft } from "@/components/ui/rich-text-link";
 import { cn } from "@/lib/utils";
 
 const LIST_ITEM_TYPES = ["listItem", "taskItem"] as const;

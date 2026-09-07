@@ -5,8 +5,8 @@ import { v1PermissionResourceGetOptions } from "@/lib/api/query-options";
 import type { EffectiveActions } from "@/lib/api/types";
 import {
   Action,
-  ResourceType,
   can,
+  ResourceType,
   withResourceType,
 } from "@/lib/auth/permissions";
 

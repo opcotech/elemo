@@ -1,3 +1,5 @@
+import type { Scope, WorkItem, WorkItemQuery } from "@/lib/work/model";
+import { isInScope, queryWorkItems } from "@/lib/work/query";
 import {
   mockActivity,
   mockAttentionSignals,
@@ -27,9 +29,6 @@ import type {
   TimelineEntry,
   TimelineQuery,
 } from "./types";
-
-import type { Scope, WorkItem, WorkItemQuery } from "@/lib/work/model";
-import { isInScope, queryWorkItems } from "@/lib/work/query";
 
 const severityOrder: Record<AttentionSignal["severity"], number> = {
   info: 0,

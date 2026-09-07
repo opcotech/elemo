@@ -1,10 +1,8 @@
 import { test as base } from "@playwright/test";
-
+import type { User } from "@/lib/api/types";
 import { USER_DEFAULT_PASSWORD } from "../utils/auth";
 import { createUser, grantOrganizationCreateToUser } from "../utils/db";
 import { getTestConfig } from "../utils/test-config";
-
-import type { User } from "@/lib/api/types";
 
 export interface TestPersona {
   user: User;

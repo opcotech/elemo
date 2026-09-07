@@ -3,10 +3,8 @@ import * as PluginUI from "@elemo/plugin-ui";
 import * as React from "react";
 import * as jsxRuntime from "react/jsx-runtime";
 import * as ReactDOM from "react-dom";
-
-import * as Lucide from "./lucide-runtime";
-
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import * as Lucide from "./lucide-runtime";
 
 declare global {
   interface Window {

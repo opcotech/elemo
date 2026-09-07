@@ -2,10 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { ChevronDownIcon, Link2Icon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-
-import { IssueRelationAddDialog } from "./issue-relation-add-dialog";
-import { IssueSelectDetails } from "./issue-select-option";
-
 import { AppList, EntityIcon } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +44,8 @@ import {
   relationKindPatch,
   visibleIssueRelations,
 } from "@/lib/work/issue-relations";
+import { IssueRelationAddDialog } from "./issue-relation-add-dialog";
+import { IssueSelectDetails } from "./issue-select-option";
 
 function useIssueRelationQueries(issueId: string, pageSize: number) {
   return useQuery(

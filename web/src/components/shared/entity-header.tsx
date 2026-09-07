@@ -1,9 +1,8 @@
 import { CopyIcon, MoreHorizontalIcon } from "lucide-react";
-import { Fragment } from "react";
 import type { ReactNode } from "react";
-
-import { EntityIcon } from "@/components/shared/entity-link";
+import { Fragment } from "react";
 import type { AppEntityType } from "@/components/shared/entity-link";
+import { EntityIcon } from "@/components/shared/entity-link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

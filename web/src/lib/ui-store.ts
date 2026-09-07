@@ -1,8 +1,8 @@
 import { Store, useSelector } from "@tanstack/react-store";
 
 import type { Todo } from "@/lib/api/types";
-import { isSafeInternalPath } from "@/lib/internal-url";
 import type { InternalPath } from "@/lib/internal-url";
+import { isSafeInternalPath } from "@/lib/internal-url";
 
 const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 const MAX_RECENT_ENTITIES = 20;

@@ -29,8 +29,9 @@ Idempotent toolchain and dependency setup. Installs locked Mise tools from
 this project's `mise.lock` (not tools declared in a user-global Mise config),
 Go
 modules, frontend and email dependencies, generates missing local config and
-certificates, generates the frontend API client, and installs Playwright
-browsers. It does not start services or modify databases.
+certificates, generates the frontend API client, installs Playwright
+browsers, and installs git pre-commit and commit-msg hooks. It does not start
+services or modify databases.
 
 ```sh
 mise bootstrap
@@ -97,6 +98,17 @@ path to build one:
 ./scripts/build-plugin.sh
 ./scripts/build-plugin.sh timetracking
 mise run build-plugin -- accounting
+```
+
+## pre-commit-files.sh
+
+Formats and applies safe lint fixes to paths passed by pre-commit. Go files
+run through `gofumpt` and `goimports`; files under `web/` and `website/` run
+through that package's Biome. Generated Go and OpenAPI client sources are
+skipped. Used by `mise run pre-commit-files`.
+
+```sh
+mise run pre-commit-files -- internal/model/user.go web/src/lib/utils.ts
 ```
 
 ## generate-frontend-client.sh

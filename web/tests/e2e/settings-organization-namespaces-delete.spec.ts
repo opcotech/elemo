@@ -1,7 +1,10 @@
+import type { Client } from "@/lib/api/client";
+import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
+import type { User } from "@/lib/api/types";
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
 import { SettingsOrganizationDetailsPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
@@ -9,10 +12,6 @@ import {
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomSlug, getRandomString } from "./utils/random";
-
-import type { Client } from "@/lib/api/client";
-import { v1OrganizationsNamespacesCreate } from "@/lib/api/sdk";
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-namespaces-delete Organization Namespaces Delete E2E Tests", () => {
   let ownerUser: User;

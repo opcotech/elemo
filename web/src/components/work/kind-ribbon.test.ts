@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   issueKindLabels,
-  issueKindToneClassName,
   issueKinds,
+  issueKindToneClassName,
 } from "./kind-ribbon";
 
 describe("KindRibbon", () => {

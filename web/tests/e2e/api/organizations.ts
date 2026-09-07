@@ -1,7 +1,3 @@
-import { withErrorHandling } from "./error-handler";
-import { grantActions } from "./permissions";
-import { getRandomSlug, getRandomString } from "../utils/random";
-
 import type { Client } from "@/lib/api/client";
 import {
   v1OrganizationGet,
@@ -9,6 +5,9 @@ import {
   v1OrganizationsCreate,
 } from "@/lib/api/sdk";
 import type { Action, Organization, OrganizationCreate } from "@/lib/api/types";
+import { getRandomSlug, getRandomString } from "../utils/random";
+import { withErrorHandling } from "./error-handler";
+import { grantActions } from "./permissions";
 
 /**
  * Create an organization via API.

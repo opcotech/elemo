@@ -1,17 +1,16 @@
+import type { User } from "@/lib/api/types";
 import { createOrganization, createRole } from "./api";
 import { Dialog } from "./components";
 import { expect, test } from "./fixtures";
 import { waitForSuccessToast } from "./helpers";
 import { SettingsOrganizationDetailsPage } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomString } from "./utils/random";
-
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-role-delete Organization Role Delete E2E Tests", () => {
   let testUser: User;

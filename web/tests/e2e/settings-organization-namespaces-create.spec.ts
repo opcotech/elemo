@@ -1,3 +1,5 @@
+import type { Client } from "@/lib/api/client";
+import type { User } from "@/lib/api/types";
 import { createOrganization } from "./api";
 import { expect, test } from "./fixtures";
 import { waitForSuccessToast } from "./helpers";
@@ -5,7 +7,7 @@ import {
   SettingsOrganizationDetailsPage,
   SettingsOrganizationNamespaceCreatePage,
 } from "./pages";
-import { USER_DEFAULT_PASSWORD, loginUser } from "./utils/auth";
+import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
 import {
   createUser,
   grantActionsToUser,
@@ -13,9 +15,6 @@ import {
   grantOrganizationCreateToUser,
 } from "./utils/db";
 import { getRandomSlug, getRandomString } from "./utils/random";
-
-import type { Client } from "@/lib/api/client";
-import type { User } from "@/lib/api/types";
 
 test.describe("@settings.organization-namespaces-create Organization Namespaces Create E2E Tests", () => {
   let ownerUser: User;

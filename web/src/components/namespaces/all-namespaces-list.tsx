@@ -2,9 +2,6 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Edit, Folder, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
-
 import { SettingsResourceTable } from "@/components/settings/settings-resource-table";
 import {
   CursorPaginator,
@@ -37,6 +34,7 @@ import {
 } from "@/lib/api/query-options";
 import type { EffectiveActions, Namespace } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
+import { NamespaceDeleteDialog } from "./namespace-delete-dialog";
 
 interface NamespaceWithOrganization extends Namespace {
   organizationId: string;

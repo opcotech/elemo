@@ -1,6 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
-
+import {
+  v1IssueGetOptions,
+  v1NamespacesIssuesKeyGetOptions,
+  v1ProjectsIssuesGetOptions,
+} from "@/lib/api/query-options";
+import type { Issue, PartialIssue, PartialIssuePage } from "@/lib/api/types";
 import {
   applyIssuePatchFields,
   commitIssueCaches,
@@ -10,13 +15,6 @@ import {
   rollbackIssueCaches,
   snapshotAndPatchIssueCaches,
 } from "./issue-cache-patch";
-
-import {
-  v1IssueGetOptions,
-  v1NamespacesIssuesKeyGetOptions,
-  v1ProjectsIssuesGetOptions,
-} from "@/lib/api/query-options";
-import type { Issue, PartialIssue, PartialIssuePage } from "@/lib/api/types";
 
 function partialIssue(overrides: Partial<PartialIssue> = {}): PartialIssue {
   return {

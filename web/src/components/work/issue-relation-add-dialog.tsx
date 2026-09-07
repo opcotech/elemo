@@ -4,9 +4,6 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import { issueToSelectOption } from "./issue-select-option";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DialogForm } from "@/components/ui/dialog-form";
 import {
@@ -32,6 +29,7 @@ import {
   issueRelationKindLabel,
   relatedIssueCatalogQueryOptions,
 } from "@/lib/work/issue-relations";
+import { issueToSelectOption } from "./issue-select-option";
 
 const relationFormSchema = z.object({
   relatedId: z.string().min(1, "Issue is required"),

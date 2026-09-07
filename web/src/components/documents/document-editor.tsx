@@ -1,22 +1,20 @@
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
-import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import { ListTreeIcon } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
-
-import { DocumentEditorToc, useDocumentTocOpen } from "./document-editor-toc";
-import { DocumentEditorToolbar } from "./document-editor-toolbar";
-
+import { useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import type { RichTextMentionItem } from "@/components/ui/rich-text-extensions";
 import {
   createRichTextExtensions,
   preventLinkNavigation,
 } from "@/components/ui/rich-text-extensions";
-import type { RichTextMentionItem } from "@/components/ui/rich-text-extensions";
 import { cn, getDefaultValue } from "@/lib/utils";
 import { markdownToSafeHtml } from "@/lib/work/markdown-html";
+import { DocumentEditorToc, useDocumentTocOpen } from "./document-editor-toc";
+import { DocumentEditorToolbar } from "./document-editor-toolbar";
 
 function focusEditorNearPointer(
   editor: Editor,
