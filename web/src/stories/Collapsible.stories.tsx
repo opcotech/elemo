@@ -38,7 +38,7 @@ export const Default: Story = {
         className="w-[350px] space-y-2"
       >
         <div className="flex items-center justify-between gap-4">
-          <h4 className="text-sm font-semibold">3 starred repositories</h4>
+          <h4 className="font-semibold text-sm">3 starred repositories</h4>
           <CollapsibleTrigger
             render={<Button variant="ghost" size="icon-sm" />}
           >

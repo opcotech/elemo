@@ -11,7 +11,8 @@ fi
 CODESPACE_CORS="${CODESPACE_NAME:+- https://${CODESPACE_NAME}-3000.app.github.dev}"
 
 ROOT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]:-$0}")/..")"
-source "${ROOT_DIR}/scripts/common.sh";
+# shellcheck source=common.sh
+source "${ROOT_DIR}/scripts/common.sh"
 
 function generateSigningKey() {
   log "generating signing key"

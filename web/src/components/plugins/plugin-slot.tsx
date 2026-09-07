@@ -26,7 +26,7 @@ export class PluginErrorBoundary extends Component<
       return (
         <div
           data-slot="plugin-error"
-          className="text-destructive border-destructive/30 rounded-md border p-3 text-sm"
+          className="rounded-md border border-destructive/30 p-3 text-destructive text-sm"
         >
           Plugin {this.props.pluginId} failed to render.
         </div>

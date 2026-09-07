@@ -109,7 +109,7 @@ export function TodoSheet() {
             <div className="flex flex-col gap-5 pr-3">
               {groups.map((group) => (
                 <section key={group.id} className="min-w-0">
-                  <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+                  <h3 className="mb-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
                     {group.label}
                   </h3>
                   <AppList

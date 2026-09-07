@@ -173,7 +173,7 @@ export const UserProfileMenu: Story = {
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm leading-none font-medium">shadcn</p>
+            <p className="font-medium text-sm leading-none">shadcn</p>
             <p className="text-muted-foreground text-xs leading-none">
               m@example.com
             </p>
@@ -541,7 +541,7 @@ export const SettingsMenu: Story = {
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-muted-foreground text-xs tracking-wider uppercase">
+            <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
               Notifications
             </DropdownMenuLabel>
             <DropdownMenuCheckboxItem
@@ -561,7 +561,7 @@ export const SettingsMenu: Story = {
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-muted-foreground text-xs tracking-wider uppercase">
+            <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
               Appearance
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>

@@ -96,7 +96,7 @@ export const Empty: Story = {
 
 export const Dense: Story = {
   render: () => (
-    <div className="bg-background h-190 overflow-hidden p-4">
+    <div className="h-190 overflow-hidden bg-background p-4">
       <h1 className="sr-only">Dense work board</h1>
       <Board
         items={denseItems}
@@ -110,7 +110,7 @@ export const Dense: Story = {
 
 export const ListProjection: Story = {
   render: () => (
-    <div className="bg-background mx-auto max-w-3xl p-4">
+    <div className="mx-auto max-w-3xl bg-background p-4">
       <h1 className="sr-only">Work list projection</h1>
       <CompactWorkList
         items={mockWorkItems.slice(0, 8)}
@@ -122,7 +122,7 @@ export const ListProjection: Story = {
 
 export const TableProjection: Story = {
   render: () => (
-    <div className="bg-background h-150 overflow-hidden p-4">
+    <div className="h-150 overflow-hidden bg-background p-4">
       <h1 className="sr-only">Work table projection</h1>
       <WorkTable
         items={mockWorkItems.slice(0, 12)}
@@ -135,7 +135,7 @@ export const TableProjection: Story = {
 
 export const TimelineProjection: Story = {
   render: () => (
-    <div className="bg-background h-150 overflow-auto p-4">
+    <div className="h-150 overflow-auto bg-background p-4">
       <h1 className="sr-only">Work timeline projection</h1>
       <WorkTimeline
         items={mockWorkItems.slice(0, 10)}
@@ -152,7 +152,7 @@ export const Mobile: Story = {
     viewport: { defaultViewport: "mobile1" },
   },
   render: () => (
-    <div className="bg-background mx-auto h-190 w-97.5 max-w-full overflow-hidden border-x">
+    <div className="mx-auto h-190 w-97.5 max-w-full overflow-hidden border-x bg-background">
       <StatefulWorkSurface
         initialSearch={{ ...defaultSearch, layout: "list" }}
       />

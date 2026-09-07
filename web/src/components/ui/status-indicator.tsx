@@ -115,7 +115,7 @@ export function StatusIndicator({
       </span>
       <span
         className={cn(
-          "text-sm font-medium whitespace-nowrap capitalize",
+          "whitespace-nowrap font-medium text-sm capitalize",
           labelClassName
         )}
       >

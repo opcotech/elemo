@@ -171,7 +171,7 @@ export function CommandPalette({
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate">{hit.title}</span>
                     {hit.subtitle ? (
-                      <span className="text-muted-foreground truncate text-xs">
+                      <span className="truncate text-muted-foreground text-xs">
                         {hit.subtitle}
                       </span>
                     ) : null}
@@ -201,13 +201,9 @@ export function CommandPalette({
                     <span className="size-4">{command.icon}</span>
                   )}
                   <span className="flex-1">{command.title}</span>
-                  {command.shortcut && (
-                    <>
-                      {command.shortcut.map((key, index) => (
-                        <CommandShortcut key={index}>{key}</CommandShortcut>
-                      ))}
-                    </>
-                  )}
+                  {command.shortcut?.map((key, index) => (
+                    <CommandShortcut key={index}>{key}</CommandShortcut>
+                  ))}
                 </CommandItem>
               ))}
             </CommandGroup>

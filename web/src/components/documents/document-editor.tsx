@@ -142,7 +142,7 @@ export function DocumentEditor({
       className={cn("document-editor flex min-h-full flex-col", className)}
       data-section="document-editor"
     >
-      <div className="bg-background/95 sticky top-0 z-20 border-b backdrop-blur-sm">
+      <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur-sm">
         <div className="flex min-h-10 items-center gap-1 px-1.5 py-2.5 sm:gap-2 sm:px-2">
           <Button
             type="button"
@@ -183,10 +183,10 @@ export function DocumentEditor({
             }}
           />
         ) : null}
-        <div className="flex w-full max-w-5xl min-w-0 flex-col">
+        <div className="flex w-full min-w-0 max-w-5xl flex-col">
           <div
             className={cn(
-              "document-editor__paper bg-card w-full min-w-0 cursor-text",
+              "document-editor__paper w-full min-w-0 cursor-text bg-card",
               disabled && "pointer-events-none opacity-60"
             )}
             onMouseDown={(event) => {

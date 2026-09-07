@@ -25,7 +25,7 @@ export function DocumentInlineExcerpt({
         aria-label="Document excerpt"
         placeholder="Add excerpt (optional)…"
         className={cn(
-          "placeholder:text-muted-foreground text-muted-foreground mt-3 field-sizing-content w-full min-w-0 resize-none overflow-hidden bg-transparent text-lg leading-8 font-normal outline-none",
+          "field-sizing-content mt-3 w-full min-w-0 resize-none overflow-hidden bg-transparent font-normal text-lg text-muted-foreground leading-8 outline-none placeholder:text-muted-foreground",
           error && "text-destructive"
         )}
         onChange={(event) => {
@@ -40,7 +40,7 @@ export function DocumentInlineExcerpt({
         }}
       />
       {error ? (
-        <span className="text-destructive mt-1 block text-sm font-normal">
+        <span className="mt-1 block font-normal text-destructive text-sm">
           {error}
         </span>
       ) : null}

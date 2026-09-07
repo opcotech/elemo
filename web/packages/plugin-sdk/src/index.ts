@@ -57,7 +57,7 @@ export interface PluginGraphAPI {
       scopeType: string;
       equals?: Record<string, unknown>;
       ownerPluginId?: string;
-    }) => Promise<Array<PluginGraphNode>>;
+    }) => Promise<PluginGraphNode[]>;
     get: (
       id: string,
       opts?: { ownerPluginId?: string }
@@ -84,7 +84,7 @@ export interface PluginGraphAPI {
       nodeId: string;
       nodeType: string;
       direction?: "outgoing" | "incoming" | "both";
-    }) => Promise<Array<PluginGraphRelation>>;
+    }) => Promise<PluginGraphRelation[]>;
     create: (opts: {
       kind: string;
       fromId: string;
@@ -105,7 +105,7 @@ export interface ElemoPluginAPI {
     graph: PluginGraphAPI;
     issues: {
       get: (id: string) => Promise<PluginIssue>;
-      list: (opts: { projectId: string }) => Promise<Array<PluginIssue>>;
+      list: (opts: { projectId: string }) => Promise<PluginIssue[]>;
     };
     users: {
       get: (id: string) => Promise<PluginUser>;
@@ -128,7 +128,7 @@ export interface ElemoPluginAPI {
 
 export interface ElemoPluginDefinition {
   id: string;
-  activate: (elemo: ElemoPluginAPI) => void | (() => void);
+  activate: (elemo: ElemoPluginAPI) => undefined | (() => void);
   deactivate?: (elemo: ElemoPluginAPI) => void;
 }
 

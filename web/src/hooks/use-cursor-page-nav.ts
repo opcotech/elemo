@@ -2,7 +2,9 @@ import { useCallback, useState } from "react";
 
 export function useCursorPageNav({
   resetKey = "",
-}: { resetKey?: string } = {}) {
+}: {
+  resetKey?: string;
+} = {}) {
   const [pageToken, setPageToken] = useState<string | undefined>();
   const [previousTokens, setPreviousTokens] = useState<string[]>([]);
   const [previousResetKey, setPreviousResetKey] = useState(resetKey);

@@ -43,12 +43,12 @@ export function ResponsiveInspectorShell({
       closeButtonRef.current?.focus()
     );
     return () => window.cancelAnimationFrame(frame);
-  }, [inspectorTitle, showInspector]);
+  }, [showInspector]);
 
   return (
     <div
       className={cn(
-        "h-full min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto",
+        "h-full min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden",
         className
       )}
     >
@@ -57,7 +57,7 @@ export function ResponsiveInspectorShell({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="bg-surface-raised w-full gap-0 p-0 data-[side=right]:w-full data-[side=right]:max-w-none sm:data-[side=right]:w-137.5 sm:data-[side=right]:max-w-187.5 sm:data-[side=right]:min-w-137.5"
+          className="w-full gap-0 bg-surface-raised p-0 data-[side=right]:w-full data-[side=right]:max-w-none sm:data-[side=right]:w-137.5 sm:data-[side=right]:min-w-137.5 sm:data-[side=right]:max-w-187.5"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{inspectorTitle}</SheetTitle>

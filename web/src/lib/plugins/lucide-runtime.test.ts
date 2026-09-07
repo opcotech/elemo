@@ -46,9 +46,7 @@ function pluginFrontendSources(): string[] {
           files.push(join(srcDir, name));
         }
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return files;
 }

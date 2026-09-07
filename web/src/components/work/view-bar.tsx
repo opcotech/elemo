@@ -178,7 +178,7 @@ export function ViewBar({
   };
 
   return (
-    <div className="bg-background/95 sticky top-0 z-20 space-y-2 border-y px-3 py-2 backdrop-blur sm:px-4">
+    <div className="sticky top-0 z-20 space-y-2 border-y bg-background/95 px-3 py-2 backdrop-blur sm:px-4">
       <div className="flex flex-wrap items-center gap-2">
         <ViewMenuButton
           icon={PanelTopIcon}
@@ -239,7 +239,7 @@ export function ViewBar({
               <span className="hidden md:inline">Filter</span>
             </PopoverTrigger>
             <PopoverContent align="end" className="min-w-72">
-              <div className="text-muted-foreground text-xs font-medium">
+              <div className="font-medium text-muted-foreground text-xs">
                 Natural-language filter
               </div>
               <Input
@@ -340,12 +340,12 @@ export function ViewBar({
 
       {(search.filter || activeView) && (
         <div className="flex items-center gap-2 overflow-x-auto text-xs">
-          <span className="text-muted-foreground shrink-0">Active:</span>
+          <span className="shrink-0 text-muted-foreground">Active:</span>
           {activeView && (
             <button
               type="button"
               onClick={() => onSearchChange({ view: undefined })}
-              className="bg-primary-subtle text-primary-on-subtle rounded-full px-2 py-1"
+              className="rounded-full bg-primary-subtle px-2 py-1 text-primary-on-subtle"
             >
               View: {activeView.name} ×
             </button>
@@ -354,7 +354,7 @@ export function ViewBar({
             <button
               type="button"
               onClick={() => onSearchChange({ filter: undefined })}
-              className="bg-primary-subtle text-primary-on-subtle rounded-full px-2 py-1"
+              className="rounded-full bg-primary-subtle px-2 py-1 text-primary-on-subtle"
             >
               “{search.filter}” ×
             </button>

@@ -11,8 +11,8 @@ function ProfileSettings() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Profile & Account</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="font-bold text-2xl">Profile & Account</h1>
+        <p className="mt-2 text-muted-foreground">
           Manage your personal information and preferences.
         </p>
       </div>

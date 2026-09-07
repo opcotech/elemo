@@ -56,6 +56,38 @@ function checkInstalled() {
   fi
 }
 
+# Run Docker Compose. Prefer `docker compose`; if the CLI plugin is not
+# discovered (common with Docker Desktop when ~/.docker/cli-plugins is empty),
+# fall back to docker-compose or the plugin binary.
+function dockerCompose() {
+  if docker compose version >/dev/null 2>&1; then
+    docker compose "$@"
+    return
+  fi
+
+  if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose "$@"
+    return
+  fi
+
+  local plugin
+  for plugin in \
+    "${DOCKER_COMPOSE_PLUGIN:-}" \
+    "${HOME}/.docker/cli-plugins/docker-compose" \
+    "/Applications/Docker.app/Contents/Resources/cli-plugins/docker-compose" \
+    "/usr/libexec/docker/cli-plugins/docker-compose" \
+    "/usr/local/lib/docker/cli-plugins/docker-compose" \
+    "/usr/lib/docker/cli-plugins/docker-compose"
+  do
+    if [ -n "${plugin}" ] && [ -x "${plugin}" ]; then
+      "${plugin}" "$@"
+      return
+    fi
+  done
+
+  error "couldn't find docker compose. Install the Docker Compose CLI plugin."
+}
+
 function waitAndPrint() {
   log "waiting ${1} seconds to let the services boot"
   sleep "${1}"

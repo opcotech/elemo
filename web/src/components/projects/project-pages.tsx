@@ -167,7 +167,7 @@ export function ProjectOverviewPage({
                     : "No issue progress"}
                 </span>
               </div>
-              <p className="text-muted-foreground mt-3 text-sm">
+              <p className="mt-3 text-muted-foreground text-sm">
                 {issueCount
                   ? `${issueCount} linked issues are associated with this project.`
                   : "No linked issues are associated with this project yet."}

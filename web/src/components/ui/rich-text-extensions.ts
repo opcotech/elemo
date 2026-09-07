@@ -71,7 +71,8 @@ export const DEFAULT_RICH_TEXT_FEATURES: RichTextEditorFeatures = {
 };
 
 export type RichTextPlaceholder =
-  string | ((props: { node: { type: { name: string } } }) => string);
+  | string
+  | ((props: { node: { type: { name: string } } }) => string);
 
 export function resolveRichTextFeatures(
   features?: Partial<RichTextEditorFeatures>

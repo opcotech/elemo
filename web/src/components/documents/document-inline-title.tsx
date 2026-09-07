@@ -24,7 +24,7 @@ export function DocumentInlineTitle({
         aria-label="Document title"
         placeholder="Untitled"
         className={cn(
-          "placeholder:text-muted-foreground w-full min-w-0 bg-transparent text-4xl leading-tight font-bold tracking-tight outline-none sm:text-5xl",
+          "w-full min-w-0 bg-transparent font-bold text-4xl leading-tight tracking-tight outline-none placeholder:text-muted-foreground sm:text-5xl",
           error && "text-destructive"
         )}
         onChange={(event) => {
@@ -43,7 +43,7 @@ export function DocumentInlineTitle({
         }}
       />
       {error ? (
-        <span className="text-destructive mt-1 block text-sm font-normal">
+        <span className="mt-1 block font-normal text-destructive text-sm">
           {error}
         </span>
       ) : null}

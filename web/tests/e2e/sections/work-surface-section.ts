@@ -13,7 +13,10 @@ import { SectionContainerMixin } from "../mixins";
 export type WorkLayoutName = "List" | "Table" | "Board" | "Timeline";
 export type WorkGroupName = "Status" | "Priority" | "Assignee" | "No grouping";
 export type WorkSortName =
-  "Manual rank" | "Priority" | "Due date" | "Recently updated";
+  | "Manual rank"
+  | "Priority"
+  | "Due date"
+  | "Recently updated";
 export type WorkDisplayName = "Comfortable" | "Compact";
 
 /**

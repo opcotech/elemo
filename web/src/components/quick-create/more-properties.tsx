@@ -15,7 +15,7 @@ export function MoreProperties({ children }: MorePropertiesProps) {
   return (
     <Accordion>
       <AccordionItem value="more" className="border-0">
-        <AccordionTrigger className="text-muted-foreground font-normal hover:no-underline">
+        <AccordionTrigger className="font-normal text-muted-foreground hover:no-underline">
           More properties
         </AccordionTrigger>
         <AccordionContent>

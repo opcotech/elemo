@@ -44,7 +44,7 @@ export function NavUser({ user }: { user: User }) {
           render={
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-primary/5 data-[state=open]:text-primary data-[state=open]:border-primary/20"
+              className="data-[state=open]:border-primary/20 data-[state=open]:bg-primary/5 data-[state=open]:text-primary"
             />
           }
         >
@@ -102,7 +102,7 @@ export function NavUserSkeleton() {
     <SidebarMenuItem>
       <SidebarMenuButton
         size="lg"
-        className="data-[state=open]:bg-primary/5 data-[state=open]:text-primary data-[state=open]:border-primary/20"
+        className="data-[state=open]:border-primary/20 data-[state=open]:bg-primary/5 data-[state=open]:text-primary"
       >
         <div className="flex items-center space-x-4">
           <Skeleton className="size-8 rounded-lg" />

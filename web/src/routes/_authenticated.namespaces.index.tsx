@@ -86,13 +86,13 @@ function OrganizationFilter({
             aria-expanded={open}
             aria-label="Filter by organization"
             className={cn(
-              "border-border bg-card hover:bg-card dark:bg-input dark:hover:bg-input/80 h-9 w-56 justify-between rounded-md border font-normal shadow-none"
+              "h-9 w-56 justify-between rounded-md border border-border bg-card font-normal shadow-none hover:bg-card dark:bg-input dark:hover:bg-input/80"
             )}
           />
         }
       >
         <span className="truncate">{label}</span>
-        <ChevronsUpDownIcon className="text-muted-foreground size-4 shrink-0 opacity-50" />
+        <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="start">
         <Command>
@@ -187,7 +187,7 @@ function NamespacesListPage() {
         description="Namespaces you can open as operational context."
       />
 
-      <div className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-2 py-3">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-background py-3">
         <SearchInput
           value={search.q ?? ""}
           onChange={(value) =>

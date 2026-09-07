@@ -9,7 +9,7 @@ export function ContextLine({
 }) {
   if (!namespace && !project) return null;
   return (
-    <div className="text-muted-foreground flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-2 text-muted-foreground text-xs">
       <BriefcaseBusinessIcon className="size-3.5" />
       <span>{[namespace, project].filter(Boolean).join(" / ")}</span>
     </div>

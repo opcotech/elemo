@@ -157,10 +157,10 @@ export function OrganizationInviteAcceptForm() {
 
   if (!organization || !token) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-center text-2xl font-bold">
+            <CardTitle className="text-center font-bold text-2xl">
               Invalid Invitation Link
             </CardTitle>
             <CardDescription className="text-center">
@@ -178,7 +178,7 @@ export function OrganizationInviteAcceptForm() {
                 <Link
                   to="/login"
                   search={{ redirect: undefined }}
-                  className="text-primary hover:text-primary/80 text-sm hover:underline"
+                  className="text-primary text-sm hover:text-primary/80 hover:underline"
                 >
                   Go to login
                 </Link>
@@ -195,13 +195,13 @@ export function OrganizationInviteAcceptForm() {
   const showPasswordForm = needsPassword === true;
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="mb-2 flex items-center justify-center">
-            <Users className="text-primary h-8 w-8" />
+            <Users className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-center text-2xl font-bold">
+          <CardTitle className="text-center font-bold text-2xl">
             {showPasswordForm ? "Set Your Password" : "Accept Invitation"}
           </CardTitle>
           <CardDescription className="text-center">
@@ -237,7 +237,7 @@ export function OrganizationInviteAcceptForm() {
                       <Field>
                         <FieldLabel>Password</FieldLabel>
                         <div className="relative">
-                          <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                          <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <FieldControl>
                             <Input
                               type={showPassword ? "text" : "password"}
@@ -260,9 +260,9 @@ export function OrganizationInviteAcceptForm() {
                             }
                           >
                             {showPassword ? (
-                              <EyeOff className="text-muted-foreground h-4 w-4" />
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
                             ) : (
-                              <Eye className="text-muted-foreground h-4 w-4" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             )}
                           </Button>
                         </div>
@@ -278,7 +278,7 @@ export function OrganizationInviteAcceptForm() {
                       <Field>
                         <FieldLabel>Confirm Password</FieldLabel>
                         <div className="relative">
-                          <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                          <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <FieldControl>
                             <Input
                               type={showConfirmPassword ? "text" : "password"}
@@ -305,9 +305,9 @@ export function OrganizationInviteAcceptForm() {
                             }
                           >
                             {showConfirmPassword ? (
-                              <EyeOff className="text-muted-foreground h-4 w-4" />
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
                             ) : (
-                              <Eye className="text-muted-foreground h-4 w-4" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             )}
                           </Button>
                         </div>
@@ -371,7 +371,7 @@ export function OrganizationInviteAcceptForm() {
             <Link
               to="/login"
               search={{ redirect: undefined }}
-              className="text-muted-foreground hover:text-primary text-sm hover:underline"
+              className="text-muted-foreground text-sm hover:text-primary hover:underline"
             >
               Back to login
             </Link>

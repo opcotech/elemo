@@ -100,7 +100,7 @@ export function RoleEditForm({
         params: { organizationSlug },
       }),
     transformValues: (values) => {
-      const { key: _key, ...patchValues } = values; // eslint-disable-line @typescript-eslint/no-unused-vars
+      const { key: _key, ...patchValues } = values;
       const normalizedBody = normalizePatchData(
         roleEditFormSchema,
         patchValues,

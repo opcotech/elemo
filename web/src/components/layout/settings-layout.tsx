@@ -7,7 +7,7 @@ import {
   Shield,
   User,
 } from "lucide-react";
-import React from "react";
+import type React from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -146,12 +146,12 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
         <header className="flex h-14 shrink-0 items-center border-b px-4 sm:px-6">
           <Link
             to="/"
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
+            className="inline-flex items-center gap-2 font-medium text-muted-foreground text-sm hover:text-foreground"
           >
             <ArrowLeft className="size-4" />
             Back to Home
           </Link>
-          <span className="ml-auto text-sm font-semibold">Settings</span>
+          <span className="ml-auto font-semibold text-sm">Settings</span>
         </header>
         <nav
           aria-label="Settings"
@@ -168,7 +168,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
                   className={cn(
                     "shrink-0 rounded-lg px-3 py-2 text-sm",
                     isActive
-                      ? "bg-muted text-foreground font-medium"
+                      ? "bg-muted font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted"
                   )}
                 >

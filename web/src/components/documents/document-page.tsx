@@ -104,7 +104,7 @@ export function DocumentPageSkeleton() {
       aria-busy="true"
     >
       <span className="sr-only">Loading page</span>
-      <div className="bg-background border-b">
+      <div className="border-b bg-background">
         <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
           <Skeleton className="h-6 flex-1" />
           <Skeleton className="h-6 w-24" />
@@ -112,7 +112,7 @@ export function DocumentPageSkeleton() {
         </div>
       </div>
       <div className="flex flex-1 justify-center gap-6 px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
-        <div className="document-editor__paper bg-card w-full max-w-5xl min-w-0 space-y-8">
+        <div className="document-editor__paper w-full min-w-0 max-w-5xl space-y-8 bg-card">
           <Skeleton className="h-12 w-2/3" />
           <Skeleton className="h-6 w-1/2" />
           <Skeleton className="h-80 w-full" />
@@ -310,12 +310,12 @@ export function DocumentPage({
         disabled={saving || isPending}
         mentionItems={mentionItems}
         trailing={
-          <div className="border-border flex shrink-0 items-center gap-1.5 border-l pl-2">
+          <div className="flex shrink-0 items-center gap-1.5 border-border border-l pl-2">
             <TooltipProvider delay={300}>
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <p className="text-muted-foreground max-w-24 text-xs leading-none sm:max-w-36" />
+                    <p className="max-w-24 text-muted-foreground text-xs leading-none sm:max-w-36" />
                   }
                 >
                   {formatDate(document.updated_at ?? document.created_at)}
@@ -392,7 +392,7 @@ export function DocumentPage({
         }
         banner={
           contentError ? (
-            <p className="text-destructive px-3 pb-1.5 text-xs">
+            <p className="px-3 pb-1.5 text-destructive text-xs">
               {contentError}
             </p>
           ) : null

@@ -104,7 +104,7 @@ function ToolbarDivider() {
   return (
     <span
       aria-hidden
-      className="bg-border mx-1 hidden h-4 w-px sm:inline-block"
+      className="mx-1 hidden h-4 w-px bg-border sm:inline-block"
     />
   );
 }
@@ -131,6 +131,7 @@ export function RichTextEditor({
       featuresProp?.history,
       featuresProp?.horizontalRule,
       featuresProp?.tables,
+      featuresProp,
     ]
   );
   const mentionItemsRef = useRef(mentionItems);
@@ -273,13 +274,13 @@ export function RichTextEditor({
   return (
     <div
       className={cn(
-        "rich-text-editor border-border bg-card rounded-xl border",
+        "rich-text-editor rounded-xl border border-border bg-card",
         disabled && "opacity-60",
         className
       )}
     >
       {editable && (
-        <div className="border-border bg-card/95 sticky top-0 z-10 flex min-h-10 flex-wrap items-center gap-0.5 rounded-t-xl border-b px-2 py-1.5 backdrop-blur">
+        <div className="sticky top-0 z-10 flex min-h-10 flex-wrap items-center gap-0.5 rounded-t-xl border-border border-b bg-card/95 px-2 py-1.5 backdrop-blur">
           {editor ? (
             <>
               {features.history ? (
@@ -419,10 +420,10 @@ export function RichTextEditor({
                 <SquareCodeIcon />
               </ToolbarButton>
               {toolbarState?.codeBlock ? (
-                <label className="text-muted-foreground ml-1 flex items-center gap-1 text-xs">
+                <label className="ml-1 flex items-center gap-1 text-muted-foreground text-xs">
                   <span className="sr-only">Code language</span>
                   <select
-                    className="border-border bg-background h-7 rounded-md border px-1.5 text-xs"
+                    className="h-7 rounded-md border border-border bg-background px-1.5 text-xs"
                     value={
                       CODE_BLOCK_LANGUAGES.includes(
                         toolbarState.codeLanguage as (typeof CODE_BLOCK_LANGUAGES)[number]

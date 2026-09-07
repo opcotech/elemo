@@ -208,7 +208,7 @@ export function AllNamespacesList({ organizations }: AllNamespacesListProps) {
   );
 
   const canCreateNamespace = useMemo(() => {
-    return organizations.some((org, index) => {
+    return organizations.some((_org, index) => {
       const permissions = permissionQueries[index]?.data;
       return can(permissions, Action.NamespaceCreate);
     });
@@ -233,8 +233,7 @@ export function AllNamespacesList({ organizations }: AllNamespacesListProps) {
             (namespace) =>
               namespace.name.toLowerCase().includes(term) ||
               namespace.organizationName.toLowerCase().includes(term) ||
-              (namespace.description &&
-                namespace.description.toLowerCase().includes(term))
+              namespace.description?.toLowerCase().includes(term)
           );
         })();
     return [...filtered].sort((a, b) =>

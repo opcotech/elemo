@@ -153,7 +153,7 @@ export const HelpTooltips: Story = {
           <Tooltip>
             <TooltipTrigger
               render={
-                <HelpCircle className="text-muted-foreground h-4 w-4 cursor-help" />
+                <HelpCircle className="h-4 w-4 cursor-help text-muted-foreground" />
               }
             ></TooltipTrigger>
             <TooltipContent>
@@ -169,7 +169,7 @@ export const HelpTooltips: Story = {
           <Tooltip>
             <TooltipTrigger
               render={
-                <Info className="text-muted-foreground h-4 w-4 cursor-help" />
+                <Info className="h-4 w-4 cursor-help text-muted-foreground" />
               }
             ></TooltipTrigger>
             <TooltipContent className="max-w-xs">
@@ -462,7 +462,7 @@ export const KeyboardShortcuts: Story = {
           <TooltipContent>
             <div className="flex items-center gap-2">
               <span>Create new file</span>
-              <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium select-none">
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px]">
                 <span className="text-xs">⌘</span>N
               </kbd>
             </div>
@@ -477,7 +477,7 @@ export const KeyboardShortcuts: Story = {
           <TooltipContent>
             <div className="flex items-center gap-2">
               <span>Search files</span>
-              <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium select-none">
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px]">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </div>
@@ -492,7 +492,7 @@ export const KeyboardShortcuts: Story = {
           <TooltipContent>
             <div className="flex items-center gap-2">
               <span>Open settings</span>
-              <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium select-none">
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px]">
                 <span className="text-xs">⌘</span>,
               </kbd>
             </div>
@@ -507,7 +507,7 @@ export const KeyboardShortcuts: Story = {
           <TooltipContent>
             <div className="flex items-center gap-2">
               <span>Copy selection</span>
-              <kbd className="bg-muted pointer-events-none inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium select-none">
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium font-mono text-[10px]">
                 <span className="text-xs">⌘</span>C
               </kbd>
             </div>
@@ -644,7 +644,7 @@ export const ComplexInteractions: Story = {
               <Tooltip key={i}>
                 <TooltipTrigger
                   render={
-                    <Avatar className="border-background cursor-help border-2" />
+                    <Avatar className="cursor-help border-2 border-background" />
                   }
                 >
                   <AvatarImage src={`https://github.com/shadcn.png`} />
@@ -691,7 +691,7 @@ export const ComplexInteractions: Story = {
               </Tooltip>
             ))}
           </div>
-          <span className="text-muted-foreground ml-2 text-sm">
+          <span className="ml-2 text-muted-foreground text-sm">
             4.0 (127 reviews)
           </span>
         </div>

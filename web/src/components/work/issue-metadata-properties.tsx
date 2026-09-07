@@ -40,7 +40,7 @@ export function IssueParentLink({
 
   return (
     <InternalLink
-      className="text-primary px-2 underline-offset-4 hover:underline"
+      className="px-2 text-primary underline-offset-4 hover:underline"
       to={internalPath(
         workItemPath({
           organizationSlug: parentOrganizationSlug,
@@ -92,7 +92,7 @@ export function IssueMetadataProperties({
           value:
             organizationSlug && namespaceSlug ? (
               <InternalLink
-                className="text-primary px-2 underline-offset-4 hover:underline"
+                className="px-2 text-primary underline-offset-4 hover:underline"
                 to={internalPath(
                   namespacePath({ organizationSlug, namespaceSlug })
                 )}
@@ -108,7 +108,7 @@ export function IssueMetadataProperties({
           value:
             organizationSlug && namespaceSlug && projectKey ? (
               <InternalLink
-                className="text-primary px-2 underline-offset-4 hover:underline"
+                className="px-2 text-primary underline-offset-4 hover:underline"
                 to={internalPath(
                   projectWorkPath({
                     organizationSlug,

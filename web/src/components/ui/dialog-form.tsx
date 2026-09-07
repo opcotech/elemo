@@ -52,7 +52,7 @@ export function DialogForm<TFormValues extends FieldValues>({
       onReset();
     }
     prevOpenRef.current = open;
-  }, [open]);
+  }, [open, onReset]);
 
   const errorMessage =
     typeof error === "string" ? error : error?.message || null;

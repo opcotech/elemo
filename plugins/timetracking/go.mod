@@ -1,6 +1,6 @@
 module github.com/opcotech/elemo/plugins/timetracking
 
-go 1.26
+go 1.27
 
 require github.com/opcotech/elemo v0.0.0
 

@@ -86,10 +86,10 @@ export function PasswordResetForm() {
 
   if (!token) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-center text-2xl font-bold">
+            <CardTitle className="text-center font-bold text-2xl">
               Invalid Reset Link
             </CardTitle>
             <CardDescription className="text-center">
@@ -107,7 +107,7 @@ export function PasswordResetForm() {
                 <Link
                   to="/forgot-password"
                   search={{ redirect: undefined }}
-                  className="text-primary hover:text-primary/80 text-sm hover:underline"
+                  className="text-primary text-sm hover:text-primary/80 hover:underline"
                 >
                   Request new reset link
                 </Link>
@@ -120,10 +120,10 @@ export function PasswordResetForm() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl font-bold">
+          <CardTitle className="text-center font-bold text-2xl">
             Reset your password
           </CardTitle>
           <CardDescription className="text-center">
@@ -152,7 +152,7 @@ export function PasswordResetForm() {
                     <Field>
                       <FieldLabel>New Password</FieldLabel>
                       <div className="relative">
-                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FieldControl>
                           <Input
                             type={showPassword ? "text" : "password"}
@@ -175,9 +175,9 @@ export function PasswordResetForm() {
                           }
                         >
                           {showPassword ? (
-                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="text-muted-foreground h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
@@ -193,7 +193,7 @@ export function PasswordResetForm() {
                     <Field>
                       <FieldLabel>Confirm New Password</FieldLabel>
                       <div className="relative">
-                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FieldControl>
                           <Input
                             type={showConfirmPassword ? "text" : "password"}
@@ -220,9 +220,9 @@ export function PasswordResetForm() {
                           }
                         >
                           {showConfirmPassword ? (
-                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="text-muted-foreground h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
@@ -254,7 +254,7 @@ export function PasswordResetForm() {
                 <Link
                   to="/login"
                   search={{ redirect: undefined }}
-                  className="text-muted-foreground hover:text-primary text-sm hover:underline"
+                  className="text-muted-foreground text-sm hover:text-primary hover:underline"
                 >
                   Back to login
                 </Link>

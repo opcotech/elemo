@@ -86,7 +86,7 @@ export function NamespaceCreateForm({
 
   const writableOrganizations = useMemo(() => {
     if (!showOrganizationSelector) return [];
-    return organizations.filter((org, index) => {
+    return organizations.filter((_org, index) => {
       const permissions = permissionQueries[index]?.data;
       return can(permissions, Action.NamespaceCreate);
     });

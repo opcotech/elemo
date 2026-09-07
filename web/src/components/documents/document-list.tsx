@@ -76,9 +76,9 @@ export function DocumentListToolbar({
   );
 
   return (
-    <div className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-2 py-3">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-background py-3">
       <div className="relative min-w-60 flex-1">
-        <SearchIcon className="text-muted-foreground absolute top-2.5 left-3 size-4" />
+        <SearchIcon className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
         <Input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
@@ -162,24 +162,24 @@ export function DocumentList({
             key={document.id}
             role="listitem"
             size="sm"
-            className="hover:bg-muted/40 p-0 [a]:hover:bg-transparent"
+            className="p-0 hover:bg-muted/40 [a]:hover:bg-transparent"
           >
             <InternalLink
               to={internalPath(`/documents/${document.id}`)}
-              className="focus-visible:ring-ring grid min-w-0 flex-1 items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_7.5rem]"
+              className="grid min-w-0 flex-1 items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:grid-cols-[minmax(0,1fr)_minmax(9rem,12rem)_7.5rem]"
             >
               <div className="flex min-w-0 gap-3">
-                <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <FileTextIcon className="size-5" />
                 </span>
                 <ItemContent className="min-w-0">
                   <h2 className="truncate font-medium">{document.title}</h2>
                   {excerpt ? (
-                    <p className="text-muted-foreground mt-0.5 line-clamp-1 text-sm">
+                    <p className="mt-0.5 line-clamp-1 text-muted-foreground text-sm">
                       {excerpt}
                     </p>
                   ) : null}
-                  <p className="text-muted-foreground mt-1 truncate text-xs sm:hidden">
+                  <p className="mt-1 truncate text-muted-foreground text-xs sm:hidden">
                     {authorName}
                     {updatedLabel ? ` · ${updatedLabel}` : ""}
                   </p>
@@ -196,12 +196,12 @@ export function DocumentList({
                   ]}
                   size="sm"
                 />
-                <span className="text-muted-foreground ml-2 truncate text-sm">
+                <span className="ml-2 truncate text-muted-foreground text-sm">
                   {authorName}
                 </span>
               </div>
               <time
-                className="text-muted-foreground hidden text-sm sm:block"
+                className="hidden text-muted-foreground text-sm sm:block"
                 dateTime={updatedAt ?? undefined}
               >
                 {updatedLabel ?? "—"}

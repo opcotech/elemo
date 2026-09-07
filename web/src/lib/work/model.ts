@@ -22,7 +22,12 @@ export type Scope =
   | { readonly type: "person"; readonly personId: string };
 
 export type WorkStatus =
-  "backlog" | "in progress" | "in review" | "blocked" | "done" | "closed";
+  | "backlog"
+  | "in progress"
+  | "in review"
+  | "blocked"
+  | "done"
+  | "closed";
 
 export type WorkPriority = IssuePriority;
 

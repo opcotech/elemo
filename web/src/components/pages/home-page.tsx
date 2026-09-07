@@ -51,8 +51,9 @@ export function HomePage() {
   const { data: accessibleWorkspace, isLoading: namespacesLoading } =
     useAccessibleNamespaces();
   const namespaces = accessibleWorkspace?.namespaces ?? [];
-  const { data: todosPage, isLoading: todosLoading } =
-    useQuery(v1TodosGetOptions());
+  const { data: todosPage, isLoading: todosLoading } = useQuery(
+    v1TodosGetOptions()
+  );
   const userIssuesOptions = v1UsersIssuesGetOptions({
     path: { id: userId ?? "" },
     query: cursorPageQuery(),
@@ -167,14 +168,14 @@ export function HomePage() {
                     <InternalLink
                       key={signal.id}
                       to={internalPath(workItemPath(item))}
-                      className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
+                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50"
                     >
                       <AttentionIcon severity={signal.severity} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">
+                        <span className="block truncate font-medium text-sm">
                           {`${item.key} ${item.title}`}
                         </span>
-                        <span className="text-muted-foreground block truncate text-xs">
+                        <span className="block truncate text-muted-foreground text-xs">
                           {signal.summary}
                         </span>
                       </span>
@@ -251,7 +252,7 @@ export function HomePage() {
               <div className="flex flex-col gap-5">
                 {openTodoGroups.map((group) => (
                   <section key={group.id} className="min-w-0">
-                    <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+                    <h3 className="mb-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
                       {group.label}
                     </h3>
                     <AppList aria-label={`${group.label} todos`}>
@@ -259,12 +260,12 @@ export function HomePage() {
                         <button
                           type="button"
                           key={todo.id}
-                          className="hover:bg-muted/50 flex w-full items-center gap-3 px-3 py-2.5 text-left"
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50"
                           onClick={uiActions.openTodoSheet}
                         >
-                          <ListChecksIcon className="text-muted-foreground size-4" />
+                          <ListChecksIcon className="size-4 text-muted-foreground" />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium">
+                            <span className="block truncate font-medium text-sm">
                               {todo.title}
                             </span>
                             <MarkdownContent
@@ -272,7 +273,7 @@ export function HomePage() {
                               size="xs"
                               className="block truncate"
                               empty={
-                                <span className="text-muted-foreground block truncate text-xs">
+                                <span className="block truncate text-muted-foreground text-xs">
                                   No description
                                 </span>
                               }
@@ -356,7 +357,7 @@ export function HomePage() {
                 ))}
               </AppList>
             ) : (
-              <p className="text-muted-foreground rounded-lg border p-4 text-sm">
+              <p className="rounded-lg border p-4 text-muted-foreground text-sm">
                 Open a namespace, project, work item, or document to build your
                 recent history.
               </p>

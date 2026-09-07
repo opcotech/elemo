@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# shellcheck source=scripts/common.sh
+# shellcheck source=../common.sh
 source "$(dirname "${BASH_SOURCE[0]:-$0}")/../common.sh"
 
 # Pin image and ort-config together. Update both when bumping ORT.
@@ -105,7 +105,7 @@ run_ort() {
   # Caches live on host-owned mounts so the container can run as the invoking
   # user (PNPM stash + go list write to the project / module cache). Reuse the
   # host Go module cache when available so analyze does not re-download what
-  # setup-go and go-licenses already populated.
+  # Mise and go-licenses already populated.
   mkdir -p "${ORT_CONFIG_DIR}" "${ORT_RESULTS_DIR}" \
     "${ORT_DIR}/gopath" "${HOST_GOMODCACHE}" "${HOST_GOCACHE}"
 
@@ -151,7 +151,7 @@ run_ort() {
 ORT_WORKSPACE_FILES=(
   web/pnpm-workspace.yaml
   website/pnpm-workspace.yaml
-  build/email/pnpm-workspace.yaml
+  tools/email/pnpm-workspace.yaml
 )
 
 snapshot_workspace_files() {
@@ -227,18 +227,18 @@ curate_go_licenses() {
   {
     go list -m all
     go -C "${ROOT_DIR}/tools/openapi-assemble" list -m all
-    go -C "${ROOT_DIR}/tools/pre-mailer" list -m all
+    go -C "${ROOT_DIR}/tools/email/pre-mailer" list -m all
   } | awk 'NF >= 2 { print $1, $2 }' | sort -u > "${modules_file}"
 
   # Ensure module cache has LICENSE files for transitive / test-only modules.
   go mod download all >/dev/null 2>&1 || true
   go -C "${ROOT_DIR}/tools/openapi-assemble" mod download all >/dev/null 2>&1 || true
-  go -C "${ROOT_DIR}/tools/pre-mailer" mod download all >/dev/null 2>&1 || true
+  go -C "${ROOT_DIR}/tools/email/pre-mailer" mod download all >/dev/null 2>&1 || true
 
   : > "${licenses_file}"
   "${gobin}/go-licenses" csv ./... >> "${licenses_file}" 2>/dev/null || true
   (cd "${ROOT_DIR}/tools/openapi-assemble" && "${gobin}/go-licenses" csv ./... >> "${licenses_file}" 2>/dev/null) || true
-  (cd "${ROOT_DIR}/tools/pre-mailer" && "${gobin}/go-licenses" csv ./... >> "${licenses_file}" 2>/dev/null) || true
+  (cd "${ROOT_DIR}/tools/email/pre-mailer" && "${gobin}/go-licenses" csv ./... >> "${licenses_file}" 2>/dev/null) || true
 
   GOMODCACHE="$(go env GOMODCACHE)" \
     python3 "${ORT_OVERLAY_DIR}/go-licenses-curations.py" \

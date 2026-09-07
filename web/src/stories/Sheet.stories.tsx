@@ -191,7 +191,7 @@ export const NavigationMenu: Story = {
         </SheetHeader>
         <nav className="mt-6 space-y-4">
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Main</h4>
+            <h4 className="font-medium text-sm">Main</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
                 <User className="size-4" />
@@ -211,7 +211,7 @@ export const NavigationMenu: Story = {
           <Separator />
 
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Tools</h4>
+            <h4 className="font-medium text-sm">Tools</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
                 <Search className="size-4" />
@@ -227,7 +227,7 @@ export const NavigationMenu: Story = {
           <Separator />
 
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Account</h4>
+            <h4 className="font-medium text-sm">Account</h4>
             <div className="space-y-1">
               <Button variant="ghost" className="w-full justify-start">
                 <Edit className="size-4" />
@@ -280,7 +280,7 @@ export const AddItemForm: Story = {
             <Label htmlFor="category">Category</Label>
             <select
               id="category"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring focus:ring-offset-2 focus:outline-none"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring focus:ring-ring focus:ring-offset-2"
             >
               <option value="">Select category</option>
               <option value="electronics">Electronics</option>
@@ -345,7 +345,7 @@ export const UserProfile: Story = {
 
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label className="text-sm font-medium">Contact Information</Label>
+              <Label className="font-medium text-sm">Contact Information</Label>
               <div className="space-y-2">
                 <div className="flex items-center text-sm">
                   <Mail className="size-4" />
@@ -365,7 +365,7 @@ export const UserProfile: Story = {
             <Separator />
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Account Stats</Label>
+              <Label className="font-medium text-sm">Account Stats</Label>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="font-medium">142</div>
@@ -389,7 +389,7 @@ export const UserProfile: Story = {
             <Separator />
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Quick Actions</Label>
+              <Label className="font-medium text-sm">Quick Actions</Label>
               <div className="grid gap-2">
                 <Button variant="outline" className="justify-start">
                   <Edit className="size-4" />
@@ -429,7 +429,7 @@ export const FilterPanel: Story = {
         </SheetHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Price Range</Label>
+            <Label className="font-medium text-sm">Price Range</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Min" />
               <Input placeholder="Max" />
@@ -439,7 +439,7 @@ export const FilterPanel: Story = {
           <Separator />
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Category</Label>
+            <Label className="font-medium text-sm">Category</Label>
             <div className="space-y-2">
               {[
                 "Electronics",
@@ -452,7 +452,7 @@ export const FilterPanel: Story = {
                   <input
                     type="checkbox"
                     id={category}
-                    className="border-input h-4 w-4 rounded border"
+                    className="h-4 w-4 rounded border border-input"
                   />
                   <Label htmlFor={category} className="text-sm">
                     {category}
@@ -465,7 +465,7 @@ export const FilterPanel: Story = {
           <Separator />
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Rating</Label>
+            <Label className="font-medium text-sm">Rating</Label>
             <div className="space-y-2">
               {[5, 4, 3, 2, 1].map((rating) => (
                 <div key={rating} className="flex items-center space-x-2">
@@ -495,7 +495,7 @@ export const FilterPanel: Story = {
           <Separator />
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Features</Label>
+            <Label className="font-medium text-sm">Features</Label>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="free-shipping" className="text-sm">
@@ -580,19 +580,19 @@ export const FileUploadSheet: Story = {
           </SheetDescription>
         </SheetHeader>
         <div className="space-y-6 py-4">
-          <div className="border-muted-foreground rounded-lg border-2 border-dashed p-8 text-center">
-            <Upload className="text-muted-foreground mx-auto mb-4 h-8 w-8" />
+          <div className="rounded-lg border-2 border-muted-foreground border-dashed p-8 text-center">
+            <Upload className="mx-auto mb-4 h-8 w-8 text-muted-foreground" />
             <div className="text-sm">
               <span className="font-medium">Click to upload</span> or drag and
               drop
             </div>
-            <div className="text-muted-foreground mt-1 text-xs">
+            <div className="mt-1 text-muted-foreground text-xs">
               PNG, JPG, PDF up to 10MB
             </div>
           </div>
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Recent Uploads</Label>
+            <Label className="font-medium text-sm">Recent Uploads</Label>
             <div className="space-y-2">
               {[
                 { name: "document.pdf", size: "2.1 MB", time: "2 minutes ago" },
@@ -608,7 +608,7 @@ export const FileUploadSheet: Story = {
                   className="flex items-center justify-between rounded border p-2"
                 >
                   <div>
-                    <div className="text-sm font-medium">{file.name}</div>
+                    <div className="font-medium text-sm">{file.name}</div>
                     <div className="text-muted-foreground text-xs">
                       {file.size} • {file.time}
                     </div>

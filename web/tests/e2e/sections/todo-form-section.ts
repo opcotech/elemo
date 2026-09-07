@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import type { Locator, Page } from "@playwright/test";
+import type { Locator } from "@playwright/test";
 
 import { Form } from "../components";
 import { fillLocator, waitForAnimations } from "../helpers";
@@ -17,10 +17,6 @@ export interface TodoFormFields {
  * Add Todo and Edit Todo dialogs.
  */
 export class TodoFormSection extends DialogMixin(Form) {
-  constructor(page: Page) {
-    super(page);
-  }
-
   getAddDialog(options?: { includeHidden?: boolean }): Locator {
     return this.page.locator("[data-section='todo-add-form']").or(
       this.page.getByRole("dialog", {

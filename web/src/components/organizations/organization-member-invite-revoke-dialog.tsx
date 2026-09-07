@@ -64,7 +64,7 @@ export function OrganizationMemberInviteRevokeDialog({
       onConfirm={handleConfirm}
       isPending={deleteMutation.isPending}
     >
-      <div className="bg-primary/5 ring-primary/10 mt-2 rounded-md p-3 text-sm ring-1">
+      <div className="mt-2 rounded-md bg-primary/5 p-3 text-sm ring-1 ring-primary/10">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={member.picture || undefined} alt={fullName} />

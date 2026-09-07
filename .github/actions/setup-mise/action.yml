@@ -1,0 +1,22 @@
+name: Setup Mise
+description: Install Mise and the project tools from mise.toml
+
+inputs:
+  install_args:
+    description: Extra arguments passed to mise install
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      env:
+        # Keep --locked on project tools only; do not require lockfile
+        # entries for a runner's global ~/.config/mise tools.
+        MISE_LOCKED_SCOPES: project
+      with:
+        # renovate: datasource=github-releases depName=mise packageName=jdx/mise extractVersion=^v(?<version>.+)$
+        version: 2026.9.1
+        cache: true
+        install_args: --locked ${{ inputs.install_args }}

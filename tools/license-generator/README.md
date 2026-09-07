@@ -27,8 +27,8 @@ Usage of license-generator:
 
 ```bash
 go run tools/license-generator/main.go \
-    -email" services@opcotech.com" \
+    -email "services@opcotech.com" \
     -organization "Open Code Technologies FZC" \
-    -private-key "configs/keys/license-signer.key" \
-    -quota-seats 100
+    -private-key "configs/test/generator.key" \
+    -quota "seats=100"
 ```

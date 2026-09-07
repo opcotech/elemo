@@ -43,8 +43,8 @@ export const Default: Story = {
           Deleting this resource permanently removes it. This action cannot be
           undone.
         </p>
-        <p className="text-sm font-medium">Consequences:</p>
-        <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
+        <p className="font-medium text-sm">Consequences:</p>
+        <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm">
           <li>All related access will be revoked</li>
           <li>Associated data will no longer be linked</li>
           <li>This action is permanent and cannot be reversed</li>

@@ -29,7 +29,7 @@ export function pluralize(
   singular: string,
   plural?: string
 ): string {
-  if (plural === undefined) plural = singular + "s";
+  if (plural === undefined) plural = `${singular}s`;
   if (count === 1) return singular;
   return plural;
 }

@@ -168,16 +168,16 @@ function IssueRelationItem({
     >
       <InternalLink
         to={internalPath(href)}
-        className="text-foreground flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 hover:no-underline"
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-foreground hover:no-underline"
       >
         <ItemMedia
           variant="icon"
-          className="bg-muted text-muted-foreground size-8 rounded-lg"
+          className="size-8 rounded-lg bg-muted text-muted-foreground"
         >
           <EntityIcon type="work-item" />
         </ItemMedia>
         <ItemContent className="min-w-0">
-          <ItemTitle className="group-hover/entity:text-primary block max-w-full truncate">
+          <ItemTitle className="block max-w-full truncate group-hover/entity:text-primary">
             {relation.related.key} {relation.related.title}
           </ItemTitle>
           <IssueSelectDetails issue={relation.related} />
@@ -228,7 +228,7 @@ function IssueRelationItem({
             disabled={disabled}
             aria-label={`Remove relation to ${relation.related.key}`}
             title="Remove relation"
-            className="hover:text-destructive hover:bg-destructive/10 hover:ring-0"
+            className="hover:bg-destructive/10 hover:text-destructive hover:ring-0"
             onClick={onRemove}
           >
             <XIcon />

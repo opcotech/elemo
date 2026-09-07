@@ -24,7 +24,7 @@ class PluginRouteErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <div className="text-destructive p-6 text-sm">
+        <div className="p-6 text-destructive text-sm">
           This plugin page failed to load.
         </div>
       );
@@ -57,7 +57,7 @@ export function PluginRouteOutlet({
     return (
       <div
         data-testid="plugin-page-loading"
-        className="text-muted-foreground p-6 text-sm"
+        className="p-6 text-muted-foreground text-sm"
       >
         Loading plugin page…
       </div>
@@ -66,7 +66,7 @@ export function PluginRouteOutlet({
 
   if (!match) {
     return (
-      <div className="text-muted-foreground p-6 text-sm">
+      <div className="p-6 text-muted-foreground text-sm">
         This plugin page is not available.
       </div>
     );

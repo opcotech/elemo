@@ -5,7 +5,7 @@ export default defineConfig({
   output: {
     path: `${process.env.PACKAGE_DIR}`,
     clean: true,
-    postProcess: ["prettier"],
+    postProcess: ["biome:format"],
   },
   plugins: [
     {

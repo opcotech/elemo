@@ -248,7 +248,6 @@ export function ContextualNavigationSection() {
     context.namespaceId,
     context.namespaceSlug,
     context.organizationSlug,
-    context.projectId,
     context.type,
     currentPath,
     namespace,

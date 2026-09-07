@@ -118,7 +118,7 @@ export function BreadcrumbNav({ className }: BreadcrumbNavProps) {
                 {showLink && item.href ? (
                   <BreadcrumbLink
                     render={<InternalLink to={internalPath(item.href)} />}
-                    className="hover:text-primary max-w-40 truncate transition-colors duration-150"
+                    className="max-w-40 truncate transition-colors duration-150 hover:text-primary"
                   >
                     {item.label}
                   </BreadcrumbLink>

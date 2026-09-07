@@ -167,7 +167,7 @@ export function RolesList({
       (role) =>
         role.name.toLowerCase().includes(term) ||
         role.key.toLowerCase().includes(term) ||
-        (role.description && role.description.toLowerCase().includes(term))
+        role.description?.toLowerCase().includes(term)
     );
   }, [roles, searchTerm]);
 

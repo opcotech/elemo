@@ -209,7 +209,7 @@ export function PluginHost() {
     }
     return frontendPluginsFromQuery(query.data);
   }, [query.data, query.status]);
-  const wantedIds = useMemo(() => wantedPluginIdsKey(plugins), [plugins]);
+  const _wantedIds = useMemo(() => wantedPluginIdsKey(plugins), [plugins]);
   const pluginsRef = useRef<FrontendPlugin[]>(plugins);
   pluginsRef.current = plugins;
 
@@ -280,7 +280,7 @@ export function PluginHost() {
     return () => {
       cancelled = true;
     };
-  }, [query.status, scope, scopeKey, wantedIds]);
+  }, [query.status, scope, scopeKey]);
 
   useEffect(() => {
     const live = active.current;

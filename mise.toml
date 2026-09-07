@@ -1,0 +1,250 @@
+min_version = "2026.8.0"
+
+[settings]
+lockfile = true
+idiomatic_version_file_enable_tools = []
+
+[tools]
+go = "1.27"
+node = "24"
+pnpm = "10.13.1"
+jq = "1.8.2"
+golangci-lint = "2.13.2"
+gotestsum = "1.13.0"
+k6 = "2.2.0"
+
+[tasks.bootstrap]
+description = "Install tools and project dependencies without starting services"
+hide = true
+run = "scripts/bootstrap.sh"
+
+[tasks.build]
+description = "Build backend image and frontend"
+depends = ["build-backend", "build-frontend"]
+
+[tasks.build-backend]
+description = "Build backend images"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.yml build --no-cache"
+
+[tasks.build-frontend]
+description = "Build front-end app"
+run = "pnpm --dir web build"
+
+[tasks.build-plugin]
+description = "Build plugin zips (all, or one plugin by name)"
+usage = '''
+arg "[name]" help="Plugin name or directory (omit to build all)"
+'''
+run = '''
+if [ -n "{{ usage.name }}" ]; then
+  scripts/build-plugin.sh "{{ usage.name }}"
+else
+  scripts/build-plugin.sh
+fi
+'''
+
+[tasks.test]
+description = "Run backend and frontend correctness tests"
+depends = ["test-backend", "test-frontend"]
+
+[tasks.test-backend]
+description = "Run backend unit and integration tests"
+run = [
+  "mise run test-backend-unit",
+  "mise run test-backend-integration",
+]
+
+[tasks.test-backend-unit]
+description = "Run backend unit tests"
+run = '''
+rm -f .coverage.unit.out
+gotestsum --format testname -- -shuffle=on -cover -covermode=atomic \
+  -ldflags="-extldflags=-Wl,-ld_classic" -race -short \
+  -coverprofile=.coverage.unit.out ./...
+go -C tools/openapi-assemble test ./...
+'''
+
+[tasks.test-backend-integration]
+description = "Run backend integration tests"
+run = '''
+rm -f .coverage.integration.out
+gotestsum --format testname -- -p=1 -shuffle=on -cover -covermode=atomic \
+  -ldflags="-extldflags=-Wl,-ld_classic" -timeout 1200s -run=Integration \
+  -coverprofile=.coverage.integration.out ./...
+'''
+
+[tasks.test-frontend]
+description = "Run frontend unit and end-to-end tests"
+depends = ["test-frontend-unit", "test-frontend-e2e"]
+
+[tasks.test-frontend-unit]
+description = "Run frontend unit tests"
+run = "pnpm --dir web test:unit"
+
+[tasks.test-frontend-e2e]
+description = "Run frontend end-to-end tests"
+run = '''
+trap 'mise run stop' EXIT
+mise run start
+pnpm --dir web test:e2e "$@"
+'''
+
+[tasks.test-k6]
+description = "Run k6 tests"
+run = '''
+trap 'mise run stop' EXIT
+mise run start
+(cd tests/k6 && k6 run main.js "$@")
+'''
+
+[tasks.test-storybook]
+description = "Build Storybook and run a11y verification stories"
+run = [
+  "pnpm --dir web storybook:build",
+  "pnpm --dir web test-storybook:ci",
+]
+
+[tasks.check]
+description = "Run formatting checks, lint, typecheck, and unit tests"
+depends = ["format-check", "lint", "test-backend-unit", "test-frontend-unit"]
+run = "pnpm --dir web typecheck"
+
+[tasks.lint]
+description = "Lint backend and frontend"
+depends = ["lint-backend", "lint-frontend"]
+
+[tasks.lint-backend]
+description = "Lint backend"
+run = "golangci-lint run --timeout 5m"
+
+[tasks.lint-web]
+description = "Lint the web app"
+run = "pnpm --dir web lint"
+
+[tasks.lint-website]
+description = "Lint the website"
+run = "pnpm --dir website lint"
+
+[tasks.lint-frontend]
+description = "Lint the web app and website"
+depends = ["lint-web", "lint-website"]
+
+[tasks.format]
+description = "Format backend and frontend"
+depends = ["format-backend", "format-frontend"]
+
+[tasks.format-backend]
+description = "Format backend"
+run = '''
+find cmd internal tools -name '*.go' ! -name '*_gen.go' ! -path 'internal/transport/http/api/*' -print0 \
+  | xargs -0 go tool gofumpt -l -w
+find cmd internal tools -name '*.go' ! -name '*_gen.go' ! -path 'internal/transport/http/api/*' -print0 \
+  | xargs -0 go tool goimports -local github.com/opcotech/elemo -w
+'''
+
+[tasks.format-web]
+description = "Format the web app"
+run = "pnpm --dir web format"
+
+[tasks.format-website]
+description = "Format the website"
+run = "pnpm --dir website format"
+
+[tasks.format-frontend]
+description = "Format the web app and website"
+depends = ["format-web", "format-website"]
+
+[tasks.format-check]
+description = "Check backend and frontend formatting"
+depends = ["format-check-backend", "format-check-frontend"]
+
+[tasks.format-check-backend]
+description = "Check backend formatting"
+run = '''
+files="$(find cmd internal tools -name '*.go' ! -name '*_gen.go' \
+  ! -path 'internal/transport/http/api/*' -print0 | xargs -0 go tool gofumpt -l)"
+if [ -n "$files" ]; then echo "unformatted Go files:"; echo "$files"; exit 1; fi
+files="$(find cmd internal tools -name '*.go' ! -name '*_gen.go' \
+  ! -path 'internal/transport/http/api/*' -print0 \
+  | xargs -0 go tool goimports -local github.com/opcotech/elemo -l)"
+if [ -n "$files" ]; then echo "unformatted Go imports:"; echo "$files"; exit 1; fi
+'''
+
+[tasks.format-check-web]
+description = "Check web app formatting"
+run = "pnpm --dir web format:check"
+
+[tasks.format-check-website]
+description = "Check website formatting"
+run = "pnpm --dir website format:check"
+
+[tasks.format-check-frontend]
+description = "Check web app and website formatting"
+depends = ["format-check-web", "format-check-website"]
+
+[tasks.generate]
+description = "Generate OpenAPI, server, client, and email artifacts"
+depends = ["generate-email", "generate-server", "generate-client"]
+
+[tasks.generate-openapi]
+description = "Assemble OpenAPI spec from split sources"
+run = "go -C tools/openapi-assemble run . -src api/openapi/src -out api/openapi/openapi.yaml"
+
+[tasks.generate-server]
+description = "Generate API server"
+depends = ["generate-openapi"]
+run = [
+  "go generate ./...",
+  '''
+go tool oapi-codegen \
+  -config api/openapi/generator.config.yml \
+  -o internal/transport/http/api/server.go \
+  api/openapi/openapi.yaml
+''',
+]
+
+[tasks.generate-client]
+description = "Generate API client"
+depends = ["generate-openapi"]
+run = "pnpm --dir web generate"
+
+[tasks.generate-client-check]
+description = "Fail if the generated TypeScript client drifted"
+run = "pnpm --dir web generate:check"
+
+[tasks.generate-email]
+description = "Generate HTML template emails"
+run = '''
+pnpm --dir tools/email run build --out templates/email \
+  --access-key-id "access-key-id" \
+  --secret-access-key "secret-access-key" \
+  --region "us-east-1" \
+  --s3-bucket elemo \
+  --endpoint "http://0.0.0.0:4566" \
+  --static-root "http://0.0.0.0:4566/elemo"
+'''
+
+[tasks.dev]
+description = "Start services and the frontend dev server"
+depends = ["start"]
+run = "pnpm --dir web dev"
+
+[tasks.start]
+description = "Start Compose services"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.yml up -d --force-recreate"
+
+[tasks.stop]
+description = "Stop Compose services"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.yml stop"
+
+[tasks.destroy]
+description = "Stop Compose services and remove local images and volumes"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.yml down --rmi local --volumes"
+
+[tasks.monitoring-start]
+description = "Start Jaeger/Prometheus/Grafana monitoring stack"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.monitoring.yml up -d --force-recreate"
+
+[tasks.monitoring-stop]
+description = "Stop Jaeger/Prometheus/Grafana monitoring stack"
+run = "scripts/compose.sh -f deploy/docker/docker-compose.monitoring.yml stop"

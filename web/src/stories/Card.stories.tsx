@@ -137,7 +137,7 @@ export const BlogPost: Story = {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <div className="text-muted-foreground flex items-center space-x-2 text-sm">
+        <div className="flex items-center space-x-2 text-muted-foreground text-sm">
           <Calendar className="h-4 w-4" />
           <span>Dec 15, 2024</span>
         </div>
@@ -180,11 +180,11 @@ export const UserProfile: Story = {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="text-muted-foreground flex items-center text-sm">
+          <div className="flex items-center text-muted-foreground text-sm">
             <MapPin className="size-4" />
             San Francisco, CA
           </div>
-          <div className="text-muted-foreground flex items-center text-sm">
+          <div className="flex items-center text-muted-foreground text-sm">
             <Users className="size-4" />
             2.5k followers
           </div>
@@ -203,11 +203,11 @@ export const StatsCard: Story = {
   render: () => (
     <Card className="w-[300px]">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-        <DollarSign className="text-muted-foreground h-4 w-4" />
+        <CardTitle className="font-medium text-sm">Total Revenue</CardTitle>
+        <DollarSign className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">$45,231.89</div>
+        <div className="font-bold text-2xl">$45,231.89</div>
         <p className="text-muted-foreground text-xs">
           <Badge variant="success" className="gap-1 px-1.5 py-0.5">
             <TrendingUp className="mr-1 h-3 w-3" />
@@ -258,7 +258,7 @@ export const ProgressCard: Story = {
 // Interactive card
 export const InteractiveCard: Story = {
   render: () => (
-    <Card className="hover:border-border-strong hover:bg-muted/40 w-[350px] cursor-pointer transition-[border-color,background-color] duration-150">
+    <Card className="w-[350px] cursor-pointer transition-[border-color,background-color] duration-150 hover:border-border-strong hover:bg-muted/40">
       <CardHeader>
         <CardTitle>Premium Plan</CardTitle>
         <CardDescription>
@@ -270,9 +270,9 @@ export const InteractiveCard: Story = {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="text-3xl font-bold">
+          <div className="font-bold text-3xl">
             $29
-            <span className="text-muted-foreground text-lg font-normal">
+            <span className="font-normal text-lg text-muted-foreground">
               /month
             </span>
           </div>

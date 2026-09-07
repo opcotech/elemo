@@ -71,7 +71,7 @@ const preview: Preview = {
       defaultTheme: "light",
     }),
     (Story) => (
-      <div className="bg-background text-foreground min-h-50 p-4">
+      <div className="min-h-50 bg-background p-4 text-foreground">
         <Story />
       </div>
     ),

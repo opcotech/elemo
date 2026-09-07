@@ -67,9 +67,9 @@ body:
     attributes:
       label: "Automated bug report"
       description: |
-        Run `scripts/bug-report.sh` locally and paste its output. If the script
-        fails, paste that output. If it is not applicable to share the output,
-        paste "N/A". Do not include any sensitive information.
+        Run `.github/scripts/bug-report.sh` locally and paste its output. If
+        the script fails, paste that output. If it is not applicable to share
+        the output, paste "N/A". Do not include any sensitive information.
       placeholder: |
         <OUTPUT>
     validations:

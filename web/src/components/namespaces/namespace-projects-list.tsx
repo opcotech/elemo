@@ -195,8 +195,7 @@ export function NamespaceProjectsList({
       (project) =>
         project.name.toLowerCase().includes(term) ||
         project.key.toLowerCase().includes(term) ||
-        (project.description &&
-          project.description.toLowerCase().includes(term))
+        project.description?.toLowerCase().includes(term)
     );
   }, [projects, searchTerm]);
 

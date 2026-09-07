@@ -185,14 +185,14 @@ function BoardColumn({
     <section
       aria-labelledby={headingId}
       className={cn(
-        "bg-surface-sunken flex max-h-[calc(100svh-15rem)] w-72 flex-col rounded-xl border",
-        isOver && "ring-primary/40 ring-2"
+        "flex max-h-[calc(100svh-15rem)] w-72 flex-col rounded-xl border bg-surface-sunken",
+        isOver && "ring-2 ring-primary/40"
       )}
     >
       <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2.5">
         <h2
           id={headingId}
-          className="flex-1 text-xs font-semibold tracking-wide uppercase"
+          className="flex-1 font-semibold text-xs uppercase tracking-wide"
         >
           {label.replaceAll("-", " ")}
         </h2>
@@ -228,7 +228,7 @@ function BoardColumn({
           ))}
         </SortableContext>
         {items.length === 0 && (
-          <p className="text-muted-foreground py-6 text-center text-xs">
+          <p className="py-6 text-center text-muted-foreground text-xs">
             No work in this group
           </p>
         )}

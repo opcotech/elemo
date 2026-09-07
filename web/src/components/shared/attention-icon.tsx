@@ -6,10 +6,10 @@ import {
 
 export function AttentionIcon({ severity }: { severity: string }) {
   if (severity === "critical") {
-    return <AlertTriangleIcon className="text-destructive size-4" />;
+    return <AlertTriangleIcon className="size-4 text-destructive" />;
   }
   if (severity === "warning") {
-    return <CircleDotIcon className="text-warning-on-subtle size-4" />;
+    return <CircleDotIcon className="size-4 text-warning-on-subtle" />;
   }
-  return <CheckCircle2Icon className="text-info size-4" />;
+  return <CheckCircle2Icon className="size-4 text-info" />;
 }

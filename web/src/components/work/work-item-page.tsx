@@ -107,7 +107,7 @@ function MockWorkItemPage({ item }: { item: WorkItem }) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <main className="space-y-8">
           <Section title="Description" data-section="issue-description">
-            <div className="bg-card min-h-40 rounded-xl border p-5">
+            <div className="min-h-40 rounded-xl border bg-card p-5">
               <MarkdownContent
                 markdown={item.summary}
                 size="default"

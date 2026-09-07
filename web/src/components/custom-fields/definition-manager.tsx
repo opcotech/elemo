@@ -770,7 +770,7 @@ function DefinitionList({
     );
   });
 
-  const list = <ul className="divide-border divide-y">{rows}</ul>;
+  const list = <ul className="divide-y divide-border">{rows}</ul>;
   if (sortableIds.length === 0) {
     return list;
   }

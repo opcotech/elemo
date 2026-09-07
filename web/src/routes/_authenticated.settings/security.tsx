@@ -101,8 +101,8 @@ function SecuritySettings() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Password & Authentication</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="font-bold text-2xl">Password & Authentication</h1>
+        <p className="mt-2 text-muted-foreground">
           Manage your password and authentication settings.
         </p>
       </div>
@@ -130,7 +130,7 @@ function SecuritySettings() {
                     <Field>
                       <FieldLabel>Current Password</FieldLabel>
                       <div className="relative">
-                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FieldControl>
                           <Input
                             type={showCurrentPassword ? "text" : "password"}
@@ -156,9 +156,9 @@ function SecuritySettings() {
                           }
                         >
                           {showCurrentPassword ? (
-                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="text-muted-foreground h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
@@ -174,7 +174,7 @@ function SecuritySettings() {
                     <Field>
                       <FieldLabel>New Password</FieldLabel>
                       <div className="relative">
-                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FieldControl>
                           <Input
                             type={showNewPassword ? "text" : "password"}
@@ -196,9 +196,9 @@ function SecuritySettings() {
                           }
                         >
                           {showNewPassword ? (
-                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="text-muted-foreground h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>
@@ -214,7 +214,7 @@ function SecuritySettings() {
                     <Field>
                       <FieldLabel>Confirm New Password</FieldLabel>
                       <div className="relative">
-                        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <FieldControl>
                           <Input
                             type={showConfirmPassword ? "text" : "password"}
@@ -240,9 +240,9 @@ function SecuritySettings() {
                           }
                         >
                           {showConfirmPassword ? (
-                            <EyeOff className="text-muted-foreground h-4 w-4" />
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Eye className="text-muted-foreground h-4 w-4" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           )}
                         </Button>
                       </div>

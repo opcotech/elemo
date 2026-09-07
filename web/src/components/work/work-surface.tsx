@@ -376,9 +376,9 @@ function WorkSurfaceBody({
         <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
           <div className="flex shrink-0 items-start gap-4 px-4 py-4 sm:px-6">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+              <h1 className="font-semibold text-xl tracking-tight">{title}</h1>
               {description && (
-                <p className="text-muted-foreground mt-1 text-sm">
+                <p className="mt-1 text-muted-foreground text-sm">
                   {description}
                 </p>
               )}
@@ -422,7 +422,7 @@ function WorkSurfaceBody({
               </MockDataAlert>
             )}
             {usesApiIssues && issuesLoadingMore ? (
-              <p className="text-muted-foreground shrink-0 text-xs">
+              <p className="shrink-0 text-muted-foreground text-xs">
                 Loading more issues in the background...
               </p>
             ) : null}

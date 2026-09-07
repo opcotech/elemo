@@ -21,7 +21,7 @@ export function ExternalLink({
       >
         {children ?? href}
       </a>
-      <ExternalLinkIcon className="text-primary size-4" />
+      <ExternalLinkIcon className="size-4 text-primary" />
     </div>
   );
 }

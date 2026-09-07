@@ -174,7 +174,11 @@ export interface TimelineQuery {
 }
 
 export type AttentionReason =
-  "overdue" | "blocked" | "mentioned" | "unread-activity" | "due-soon";
+  | "overdue"
+  | "blocked"
+  | "mentioned"
+  | "unread-activity"
+  | "due-soon";
 
 export interface AttentionSignal extends MockRecord {
   readonly id: string;
@@ -214,7 +218,10 @@ export interface PeopleQuery {
 }
 
 export type SearchResultKind =
-  "work-item" | "document" | "saved-view" | "person";
+  | "work-item"
+  | "document"
+  | "saved-view"
+  | "person";
 
 export interface GlobalSearchEntry extends MockRecord {
   readonly id: string;

@@ -121,7 +121,7 @@ services:
     container_name: elemo-server
     build:
       context: ../../
-      dockerfile: build/package/Dockerfile
+      dockerfile: deploy/docker/Dockerfile
     entrypoint:
       - bin/elemo
       - start
@@ -153,7 +153,7 @@ services:
     container_name: elemo-worker
     build:
       context: ../../
-      dockerfile: build/package/Dockerfile
+      dockerfile: deploy/docker/Dockerfile
     entrypoint:
       - bin/elemo
       - start

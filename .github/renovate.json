@@ -1,0 +1,102 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":disableRateLimiting"
+  ],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Mise CLI version in the setup-mise composite action",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/actions/setup-mise/action\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) extractVersion=(?<extractVersion>\\S+)\\s+version:\\s*(?<currentValue>\\S+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update Mise CLI version in the devcontainer feature",
+      "managerFilePatterns": [
+        "/(^|/)\\.devcontainer/devcontainer\\.json$/"
+      ],
+      "matchStrings": [
+        "\"ghcr\\.io/devcontainers-extra/features/mise:1\"\\s*:\\s*\\{\\s*\"version\"\\s*:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "mise",
+      "packageNameTemplate": "jdx/mise",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Vercel CLI version in deploy workflows",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/deploy-.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=npm depName=vercel\\s+npm install -g vercel@(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "vercel"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group Mise tool and lockfile updates",
+      "matchManagers": ["mise"],
+      "groupName": "mise tools"
+    },
+    {
+      "description": "Group non-major Go module updates",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "go modules non-major"
+    },
+    {
+      "description": "Group non-major npm updates in web/",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["web/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "web npm non-major"
+    },
+    {
+      "description": "Group non-major npm updates in website/",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["website/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "website npm non-major"
+    },
+    {
+      "description": "Group non-major npm updates in tools/email/",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["tools/email/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "email npm non-major"
+    },
+    {
+      "description": "Group GitHub Actions digest and version updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Keep GitHub Actions pinned by digest",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}

@@ -1,5 +1,5 @@
 # Source OpenAPI root (info, servers, tags). Paths and components are merged
-# from sibling files. Assemble with: make generate.openapi
+# from sibling files. Assemble with: mise run generate-openapi
 
 openapi: 3.0.3
 info:

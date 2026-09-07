@@ -70,7 +70,7 @@ export const Default: Story = {
       <PopoverContent className="w-80">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="leading-none font-medium">Dimensions</h4>
+            <h4 className="font-medium leading-none">Dimensions</h4>
             <p className="text-muted-foreground text-sm">
               Set the dimensions for the layer.
             </p>
@@ -142,7 +142,7 @@ export const UserProfile: Story = {
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="flex gap-4">
-          <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <User className="h-6 w-6" />
           </div>
           <div className="grid gap-1">
@@ -150,11 +150,11 @@ export const UserProfile: Story = {
             <p className="text-muted-foreground text-sm">
               Product Designer at Acme Inc.
             </p>
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
               <Mail className="h-3 w-3" />
               sarah@acme.com
             </div>
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs">
               <MapPin className="h-3 w-3" />
               San Francisco, CA
             </div>
@@ -187,7 +187,7 @@ export const FormPopover: Story = {
       <PopoverContent className="w-80">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="leading-none font-medium">Add Note</h4>
+            <h4 className="font-medium leading-none">Add Note</h4>
             <p className="text-muted-foreground text-sm">
               Create a new note with title and description.
             </p>
@@ -268,7 +268,7 @@ export const Help: Story = {
               Your email address is used for account notifications and password
               recovery. We'll never share your email with third parties.
             </p>
-            <ul className="text-muted-foreground space-y-1 text-sm">
+            <ul className="space-y-1 text-muted-foreground text-sm">
               <li>• Must be a valid email format</li>
               <li>• Cannot be changed once set</li>
               <li>• Used for important account updates</li>
@@ -291,7 +291,7 @@ export const CalendarPopover: Story = {
       <PopoverContent className="w-auto p-0">
         <div className="p-3">
           <div className="grid gap-2">
-            <div className="text-sm font-medium">Select Date</div>
+            <div className="font-medium text-sm">Select Date</div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs">
               <div className="p-2 font-medium">Sun</div>
               <div className="p-2 font-medium">Mon</div>
@@ -330,7 +330,7 @@ export const SettingsPopover: Story = {
       <PopoverContent className="w-64">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="leading-none font-medium">Quick Settings</h4>
+            <h4 className="font-medium leading-none">Quick Settings</h4>
             <p className="text-muted-foreground text-sm">
               Adjust your preferences.
             </p>

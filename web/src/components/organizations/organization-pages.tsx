@@ -278,7 +278,7 @@ export function OrganizationOverviewPage({
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex min-w-0 items-center gap-2">
-                              <p className="truncate text-sm font-medium">
+                              <p className="truncate font-medium text-sm">
                                 {fullName}
                               </p>
                               {isCurrentUser && (
@@ -296,7 +296,7 @@ export function OrganizationOverviewPage({
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-muted-foreground truncate text-xs">
+                            <p className="truncate text-muted-foreground text-xs">
                               {member.roles.length > 0
                                 ? member.roles.join(", ")
                                 : member.email}
@@ -348,14 +348,14 @@ export function OrganizationOverviewPage({
                         role="listitem"
                         className="flex min-w-0 items-center gap-2.5 px-3 py-2.5"
                       >
-                        <div className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                           <ShieldIcon className="size-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
+                          <p className="truncate font-medium text-sm">
                             {role.name}
                           </p>
-                          <p className="text-muted-foreground truncate text-xs">
+                          <p className="truncate text-muted-foreground text-xs">
                             {role.description ||
                               `${role.member_count ?? 0} ${pluralize(
                                 role.member_count ?? 0,

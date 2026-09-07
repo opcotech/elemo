@@ -39,10 +39,8 @@ import type {
 } from "@/lib/api/types";
 import { Action, can } from "@/lib/auth/permissions";
 
-interface OrganizationLifecycleEntity extends Pick<
-  Organization,
-  "id" | "name" | "status"
-> {}
+interface OrganizationLifecycleEntity
+  extends Pick<Organization, "id" | "name" | "status"> {}
 
 interface NamespaceLifecycleContext {
   organizationId: string;

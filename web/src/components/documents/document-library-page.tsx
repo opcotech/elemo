@@ -339,18 +339,18 @@ export function DocumentLibraryPage({
                       key={folder.id}
                       role="listitem"
                       size="sm"
-                      className="hover:bg-muted/40 p-0 [a]:hover:bg-transparent"
+                      className="p-0 hover:bg-muted/40 [a]:hover:bg-transparent"
                     >
                       <InternalLink
                         to={documentsHref}
                         search={documentLibrarySearchParams({
                           folderId: folder.id,
                         })}
-                        className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset"
+                        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       >
                         <ItemMedia
                           variant="icon"
-                          className="bg-muted text-muted-foreground size-10 rounded-lg"
+                          className="size-10 rounded-lg bg-muted text-muted-foreground"
                         >
                           <FolderIcon className="size-5" />
                         </ItemMedia>

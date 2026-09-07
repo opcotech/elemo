@@ -4,13 +4,13 @@ Destructive demo seeder that wipes Neo4j, Meilisearch, Redis, Postgres
 tokens, and plugin installations, then fills a mature-company world through
 Elemo's internal services.
 
-This does **not** replace `assets/queries/demo.cypher`. Use `scripts/setup.sh`
-for the small ACME workspace, and this tool when you need a large tenant for
-product demos.
+This does **not** replace `assets/queries/demo.cypher`. Use
+`scripts/dev-demo-init.sh --yes` for the small ACME workspace, and this tool
+when you need a large tenant for product demos.
 
 ## Prerequisites
 
-- Backend stack running (`make start.backend`) with LocalStack, Neo4j,
+- Backend stack running (`mise run start`) with LocalStack, Neo4j,
   Postgres, Redis, and Meilisearch
 - Config file, usually `configs/development/config.local.gen.yml`
 - Run from the repository root so relative license, query, and S3 paths resolve
@@ -24,12 +24,6 @@ for the full profile.
 go run ./tools/workload-prefill \
   -config configs/development/config.local.gen.yml \
   -yes
-```
-
-Or:
-
-```bash
-make demo.prefill
 ```
 
 The `-yes` flag is required. The run **deletes all graph data**, rebuilds
@@ -52,7 +46,7 @@ tables, removes extracted plugin packages (source trees with a root
 
 `smoke` seeds the same six organizations and demo login users as `full`,
 with a few stub live projects, tens of issues, and 20 documents. Use it for
-fast iteration and local demo resets (`make demo.reset`).
+fast iteration and local demo resets (`./scripts/dev-demo-reset.sh --yes`).
 
 ## Full profile
 

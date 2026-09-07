@@ -155,7 +155,7 @@ export function TodoItem({ todo, onSuccess }: TodoItemProps) {
     <div
       role="listitem"
       className={cn(
-        "group/todo hover:bg-muted/50 flex min-w-0 items-start gap-3 px-3 py-2.5 transition-colors",
+        "group/todo flex min-w-0 items-start gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50",
         todo.completed && "opacity-80"
       )}
     >
@@ -174,7 +174,7 @@ export function TodoItem({ todo, onSuccess }: TodoItemProps) {
         <p
           id={titleId}
           className={cn(
-            "text-sm font-medium",
+            "font-medium text-sm",
             todo.completed && "text-muted-foreground line-through"
           )}
         >
@@ -199,14 +199,14 @@ export function TodoItem({ todo, onSuccess }: TodoItemProps) {
             iconClassName="size-3"
             labelClassName="text-xs font-medium"
           />
-          <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+          <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
             <CalendarIcon className="size-3" />
             {getDueDateLabel(todo.due_date)}
           </span>
         </div>
       </div>
 
-      <div className="relative z-10 flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within/todo:opacity-100 sm:group-hover/todo:opacity-100">
+      <div className="relative z-10 flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/todo:opacity-100 sm:group-focus-within/todo:opacity-100">
         {!todo.completed && (
           <Button
             type="button"

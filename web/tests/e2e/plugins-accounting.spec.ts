@@ -16,17 +16,17 @@ const repoRoot = path.resolve(
 );
 const timeTrackingZip = path.join(
   repoRoot,
-  "build/plugins/com.elemo.timetracking.zip"
+  "dist/plugins/com.elemo.timetracking.zip"
 );
 const accountingZip = path.join(
   repoRoot,
-  "build/plugins/com.elemo.accounting.zip"
+  "dist/plugins/com.elemo.accounting.zip"
 );
 
 test.describe("@plugins.accounting Accounting plugin", () => {
   test.skip(
     !existsSync(timeTrackingZip) || !existsSync(accountingZip),
-    "plugin zips missing; run make plugins"
+    "plugin zips missing; run mise run build-plugin"
   );
 
   let workspace: OwnerWorkspace;

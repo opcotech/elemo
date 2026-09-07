@@ -221,7 +221,7 @@ export function CustomFieldEditor({
 
   useEffect(() => {
     setDraft(textDraftFromValue(value, definition.kind));
-  }, [value, definition.id, definition.kind]);
+  }, [value, definition.kind]);
 
   const storedSelectKeys =
     value?.kind === "single_select"
@@ -379,7 +379,7 @@ export function CustomFieldEditor({
           {local ? null : (
             <span
               className={cn(
-                "text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center text-sm font-medium",
+                "pointer-events-none absolute inset-y-0 left-0 flex items-center font-medium text-muted-foreground text-sm",
                 sidebar ? "px-2" : "px-3"
               )}
             >

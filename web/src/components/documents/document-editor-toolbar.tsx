@@ -106,7 +106,7 @@ function ToolbarDivider() {
   return (
     <span
       aria-hidden
-      className="bg-border mx-0.5 hidden h-4 w-px shrink-0 sm:inline-block"
+      className="mx-0.5 hidden h-4 w-px shrink-0 bg-border sm:inline-block"
     />
   );
 }
@@ -210,7 +210,7 @@ export function DocumentEditorToolbar({
     <>
       <div
         className={cn(
-          "document-editor__toolbar flex min-w-0 [scrollbar-width:none] items-center gap-0.5 overflow-x-auto [&::-webkit-scrollbar]:hidden",
+          "document-editor__toolbar flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           className
         )}
       >
@@ -373,10 +373,10 @@ export function DocumentEditorToolbar({
           <SquareCodeIcon />
         </ToolbarButton>
         {toolbarState?.codeBlock ? (
-          <label className="text-muted-foreground ml-1 flex items-center gap-1 text-xs">
+          <label className="ml-1 flex items-center gap-1 text-muted-foreground text-xs">
             <span className="sr-only">Code language</span>
             <select
-              className="border-border bg-background h-8 rounded-md border px-1.5 text-xs"
+              className="h-8 rounded-md border border-border bg-background px-1.5 text-xs"
               value={
                 CODE_BLOCK_LANGUAGES.includes(
                   toolbarState.codeLanguage as (typeof CODE_BLOCK_LANGUAGES)[number]

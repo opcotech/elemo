@@ -1643,7 +1643,7 @@ func bumpIssueListProjectionEpoch(ctx context.Context, r *redisBaseRepository) e
 func issueListCurrentEpochs(ctx context.Context, r *redisBaseRepository) (authz int64, projection int64) {
 	authz = issueListReadGeneration(ctx, r, issueListAuthzEpochKey())
 	projection = issueListReadGeneration(ctx, r, issueListProjectionEpochKey())
-	return
+	return authz, projection
 }
 
 func issueAssigneeIDs(issue *Issue) []model.ID {

@@ -89,6 +89,7 @@ function RootDocument({
 
   return (
     <html
+      lang="en"
       className={theme === "system" ? undefined : theme}
       data-theme-preference={theme}
       suppressHydrationWarning

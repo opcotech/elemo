@@ -127,7 +127,7 @@ function RemovableInputGroupRemove({
         size={size}
         variant={variant}
         className={cn(
-          "hover:text-destructive hover:bg-transparent hover:ring-0",
+          "hover:bg-transparent hover:text-destructive hover:ring-0",
           className
         )}
         {...props}

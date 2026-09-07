@@ -148,54 +148,97 @@ _Note: All contributions are subject to the [Contributor License Agreement](CLA.
 
 ## Running the Services
 
-The project is using Makefile for the backend and standard pnpm tooling for the front-end. To start backend-related
-services, execute `make start.backend`. In order to start the front-end, execute `pnpm dev` in the `web/` directory.
+The project uses [Mise](https://mise.jdx.dev/) for tool versions and a focused set of
+developer tasks. Install Mise, then run `mise trust && mise bootstrap` in the
+repository root so Go, Node, pnpm, and the other pinned tools are on your PATH and
+project dependencies are installed. Bootstrap does not start services or modify
+databases. When you want a running ACME demo, run `./scripts/dev-demo-init.sh --yes`,
+then start Compose plus the frontend with `mise run dev`.
 
-Below, you can find more useful make targets to run (`make <target>`):
+List every task with `mise tasks`. Conventional entry points first (`mise run <task>`):
 
 ```shell
-build.backend                  # Build backend images
-build.frontend                 # Build front-end app
-build                          # Build backend and front-end
-clean                          # Destroys all backend resources and cleans up untracked files
-dep.backend                    # Download backend dependencies
-dep.frontend                   # Install front-end dependencies
-dep                            # Download and install backend and front-end dependencies
-destroy.backend                # Destroy all backend resources
-dev.frontend                   # Start front-end for development
-dev                            # Start backend and front-end for development
-format.backend                 # Run formatters for the backend
-format.backend.check           # Check backend formatting
-format.frontend                # Run formatters for the front-end
-format.frontend.check          # Check front-end formatting
-format                         # Run formatters for the backend and front-end
-generate.backend.check         # Check backend generated artifacts are up to date
-generate.client                # Generate API client
-generate.email                 # Generate HTML emails from MJML templates
-generate.server                # Generate API server
-generate                       # Generate resources
-help                           # Show help message
-lint.backend                   # Run linters for the backend
-lint.frontend                  # Run linters for the front-end
-lint                           # Run linters for the backend and front-end
-start.backend                  # Start backend services
-start.frontend                 # Start front-end app
-start                          # Start backend and front-end
-stop.backend                   # Stop backend service
-stop                           # Stop backend services
-test.k6                        # Run k6 tests
-test.backend.bench             # Run backend benchmarks
-test.backend.coverage          # Combine unit and integration test coverage
-test.backend.integration       # Run backend integration tests
-test.backend.unit              # Run backend unit tests
-test.backend                   # Run all backend tests
-test.frontend.e2e              # Run front-end end-to-end tests
-test.frontend.storybook        # Build Storybook and run a11y verification stories
-test.frontend.unit             # Run front-end unit tests
-test.frontend                  # Run all front-end tests
-test                           # Run all k6, backend and front-end tests
-typecheck.frontend             # Typecheck the front-end
+build                          # Build backend image and frontend
+test                           # Run backend and frontend correctness tests
+check                          # Formatting checks, lint, typecheck, and unit tests
+dev                            # Start Compose services and the frontend dev server
 ```
+
+Selective build, test, quality, generation, and service tasks:
+
+```shell
+build-backend                  # Build backend images
+build-frontend                 # Build front-end app
+build-plugin                   # Build plugin zips (all, or one plugin by name)
+
+test-backend                   # Run backend unit and integration tests
+test-backend-unit              # Run backend unit tests
+test-backend-integration       # Run backend integration tests
+test-frontend                  # Run frontend unit and end-to-end tests
+test-frontend-unit             # Run frontend unit tests
+test-frontend-e2e              # Run frontend end-to-end tests
+test-k6                        # Run k6 tests
+test-storybook                 # Build Storybook and run a11y verification stories
+
+lint                           # Lint backend and frontend
+lint-backend                   # Lint backend
+lint-frontend                  # Lint the web app and website
+lint-web                       # Lint the web app
+lint-website                   # Lint the website
+format                         # Format backend and frontend
+format-backend                 # Format backend
+format-frontend                # Format the web app and website
+format-web                     # Format the web app
+format-website                 # Format the website
+format-check                   # Check backend and frontend formatting
+format-check-backend           # Check backend formatting
+format-check-frontend          # Check web app and website formatting
+format-check-web               # Check web app formatting
+format-check-website           # Check website formatting
+
+generate                       # Generate OpenAPI, server, client, and email artifacts
+generate-openapi               # Assemble OpenAPI spec from split sources
+generate-server                # Generate API server
+generate-client                # Generate API client
+generate-client-check          # Fail if generated TypeScript client drifted
+generate-email                 # Generate HTML emails from MJML templates
+
+start                          # Start Compose services
+stop                           # Stop Compose services
+destroy                        # Stop Compose services and remove local images and volumes
+monitoring-start               # Start Jaeger/Prometheus/Grafana monitoring stack
+monitoring-stop                # Stop Jaeger/Prometheus/Grafana monitoring stack
+```
+
+Dependency installation, environment setup, demo initialization, license scanning,
+coverage combination, typecheck, and benchmarks are not Mise tasks. Use the native
+commands:
+
+```shell
+mise bootstrap
+./scripts/dev-demo-init.sh --yes
+pnpm --dir web install
+pnpm --dir website install
+pnpm --dir tools/email install
+go mod download
+pnpm --dir web typecheck
+./scripts/dev-demo-reset.sh --yes
+go run ./tools/workload-prefill -config configs/development/config.local.gen.yml -yes
+./scripts/ort/ort.sh pr
+./scripts/ort/ort.sh run
+./.github/scripts/combine-backend-coverage.sh
+go test -run=Bench -bench=. -benchmem -benchtime=10s ./...
+```
+
+Former Makefile targets that are not Mise tasks:
+
+- `generate.backend.check` — run `mise run generate-server`, then
+  `git diff --exit-code` and `mise run format-check-backend`.
+- `test.k6.work-item-latency` — start the stack and run k6 with
+  `tests/k6/config/work-item-latency.json` (see [`tests/k6/README.md`](tests/k6/README.md)).
+- `clean` — `mise run stop` or `mise run destroy`, and delete local
+  coverage files (`.coverage.*.out`) as needed.
+- `demo.prefill` — `go run ./tools/workload-prefill` as listed above.
 
 ## Releases
 
@@ -208,18 +251,18 @@ Publish the draft when ready.
 ## Code Quality and Tests
 
 The project ensures code quality and code coverage in multiple ways. Besides third-party online tools, with the lack of
-completeness, `gofmt` `go-imports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `eslint` are used to keep up with
-industry standards.
+completeness, `gofumpt`, `goimports`, `golangci-lint`, `gotestsum`, `k6`, `playwright` and `biome` are used to keep up with
+industry standards. Backend formatters are Go tools (`go tool gofumpt`, `go tool goimports`) declared in `go.mod`.
 
 License and dependency policy is enforced with [ORT](https://oss-review-toolkit.org/ort/). Pull request CI runs
-`make ort.pr` (analyzer + evaluator) so dependency-license policy is gated quickly. Pushes to `main`, nightly
-runs, and releases run `make ort`, which ScanCodes **Elemo source** (not every dependency), concludes Go licenses
+`./scripts/ort/ort.sh pr` (analyzer + evaluator) so dependency-license policy is gated quickly. Pushes to `main`, nightly
+runs, and releases run `./scripts/ort/ort.sh run`, which ScanCodes **Elemo source** (not every dependency), concludes Go licenses
 from `go-licenses`, and produces reports. Evaluation is against Apache-2.0 (the future license of FSL-1.1-ALv2).
 It fails on strong copyleft inbound and restrictive, unknown, or unlicensed dependencies. Full runs also fail on
 copyleft in project source. Reports land in `.ort/results/` (gitignored), including `.ort/results/legal/` for
 GitHub Release assets.
 
-Although front-end unit tests exist (`make test.frontend.unit`), linters and
+Although front-end unit tests exist (`mise run test-frontend-unit`), linters and
 end-to-end tests are also available. In order to run end-to-end tests, you have
 to have the necessary browser drivers installed. The easiest way to install them
 is using playwright. When the drivers are installed, you can start the
@@ -230,39 +273,41 @@ end-to-end tests.
 pnpm --dir web install
 pnpm --dir web exec playwright install --with-deps
 
+# Fast quality gate (formatting, lint, typecheck, unit tests)
+mise run check
+
 # Run linters
-make lint           # Run linters for the backend and front-end, or
-make lint.backend   # Run linters for the backend, or
-make lint.frontend  # Run linters for the front-end
+mise run lint            # Run linters for the backend and front-end, or
+mise run lint-backend    # Run linters for the backend, or
+mise run lint-frontend   # Run linters for the front-end
 
 # License / dependency policy (requires Docker)
-make ort.pr         # Analyze and evaluate (PR CI policy gate; no ScanCode)
-make ort            # Analyze, scan Elemo source, evaluate, advise, and report
-make ort.prepare    # Fetch pinned ORT config (needed once, or after pin bumps)
-make ort.analyze    # Dependency analysis only
-make ort.scan       # ScanCode on Elemo projects (full CI default)
-make ort.scan.packages  # ScanCode on every dependency (slow; not CI)
-make ort.evaluate   # Policy evaluation (fails on ERROR violations)
-make ort.report     # SPDX, CycloneDX, WebApp, NOTICE, and legal/ bundle
+./scripts/ort/ort.sh pr              # Analyze and evaluate (PR CI policy gate; no ScanCode)
+./scripts/ort/ort.sh run             # Analyze, scan Elemo source, evaluate, advise, and report
+./scripts/ort/ort.sh prepare         # Fetch pinned ORT config (needed once, or after pin bumps)
+./scripts/ort/ort.sh analyze         # Dependency analysis only
+./scripts/ort/ort.sh scan            # ScanCode on Elemo projects (full CI default)
+ORT_SCAN_PACKAGE_TYPES=PACKAGE,PROJECT ./scripts/ort/ort.sh scan  # ScanCode on every dependency (slow; not CI)
+./scripts/ort/ort.sh evaluate        # Policy evaluation (fails on ERROR violations)
+./scripts/ort/ort.sh report          # SPDX, CycloneDX, WebApp, NOTICE, and legal/ bundle
 
 # Run tests
-make test                     # Run all backend and front-end tests, or
-make test.backend.bench       # Run backend benchmarks, or
-make test.backend.coverage    # Combine unit and integration test coverage, or
-make test.backend.integration # Run backend integration tests, or
-make test.backend.unit        # Run backend unit tests, or
-make test.backend             # Run all backend tests, or
-make test.frontend.unit       # Run front-end unit tests, or
-make test.frontend.e2e        # Run front-end end-to-end tests, or
-make test.frontend            # Run all front-end tests
+mise run test                        # Run all backend and front-end correctness tests, or
+mise run test-backend-integration    # Run backend integration tests, or
+mise run test-backend-unit           # Run backend unit tests, or
+mise run test-backend                # Run all backend tests, or
+mise run test-frontend-unit          # Run front-end unit tests, or
+mise run test-frontend-e2e           # Run front-end end-to-end tests, or
+mise run test-frontend               # Run all front-end tests
+go test -run=Bench -bench=. -benchmem -benchtime=10s ./...  # Backend benchmarks
+./.github/scripts/combine-backend-coverage.sh                       # Combine unit and integration coverage
 ```
 
 The external tests, such as load tests, smoke tests, stress tests, etc., are
-defined in the `tests` directory. To run these tests, you need to install `k6`
-first. Then, execute the following:
+defined in the `tests/k6` directory. k6 is installed by Mise. Then, execute the following:
 
 ```shell
-make test.k6 # Run k6 tests
+mise run test-k6 # Run k6 tests
 ```
 
 ## Updating The APIs
@@ -276,11 +321,10 @@ After updating the API specification, you have to assemble the spec, regenerate
 the server and client code, then confirm there is no unexpected drift:
 
 ```shell
-make generate.openapi         # Assemble api/openapi/openapi.yaml from src/
-make generate.server          # Assemble, then generate API server and Go mocks/enums
-make generate.backend.check   # Fail if generated Go artifacts or the OpenAPI bundle changed
-make generate.client          # Assemble, then generate API client
-pnpm --dir web generate:check # Fail if generated TypeScript client changed
+mise run generate-openapi         # Assemble api/openapi/openapi.yaml from src/
+mise run generate-server          # Assemble, then generate API server and Go mocks/enums
+mise run generate-client          # Assemble, then generate API client
+mise run generate-client-check    # Fail if generated TypeScript client changed
 ```
 
 ## Writing Commit Messages
@@ -399,11 +443,12 @@ when touching existing code.
 - Place unit tests next to the package (`*_test.go`). Integration tests live in
   `*_integration_test.go` and require the testcontainers environment.
 - Regenerate mocks, enumer output, and the OpenAPI server with
-  `make generate.server`. Check drift with `make generate.backend.check` and
-  `make format.backend.check`. The front-end client uses
-  `pnpm --dir web generate` / `generate:check`.
-- Front-end unit tests: `make test.frontend.unit`. End-to-end tests:
-  `make test.frontend.e2e`.
+  `mise run generate-server`. Check drift with `mise run generate-server` followed
+  by `git diff --exit-code`, `mise run format-check-backend`, and
+  `mise run generate-client-check`. The front-end client uses
+  `mise run generate-client` / `generate-client-check`.
+- Front-end unit tests: `mise run test-frontend-unit`. End-to-end tests:
+  `mise run test-frontend-e2e`.
 
 ## Web Component Design
 
@@ -421,5 +466,5 @@ grants those licenses for your prior Elemo contributions.
 The CLA bot comments on pull requests with the exact reply needed to sign. Signatures are committed
 onto the PR branch as [`.github/cla.json`](.github/cla.json) (main cannot be pushed to directly). The
 bot only records PR committers; to import other matching comments, run
-`./scripts/cla-sync-signatures.py <pr> --push`. Corporate-owned work also requires the Corporate CLA
+`./.github/scripts/cla-sync-signatures.py <pr> --push`. Corporate-owned work also requires the Corporate CLA
 section of that document.

@@ -35,7 +35,7 @@ export function PropertyRibbon({
         className={cn("size-4 shrink-0", iconClassName)}
       />
       {showLabel ? (
-        <span className={cn("text-sm font-medium capitalize", labelClassName)}>
+        <span className={cn("font-medium text-sm capitalize", labelClassName)}>
           {label}
         </span>
       ) : null}

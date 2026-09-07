@@ -23,10 +23,10 @@ function WorkIdentity({
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+      <div className="flex items-center gap-2 font-medium text-muted-foreground text-xs">
         <InternalLink
           to={internalPath(workItemPath(item))}
-          className="hover:text-primary focus-visible:ring-ring focus-visible:rounded focus-visible:ring-2 focus-visible:outline-none"
+          className="hover:text-primary focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={(event) => event.stopPropagation()}
         >
           {item.key}
@@ -37,7 +37,7 @@ function WorkIdentity({
         <button
           type="button"
           className={cn(
-            "hover:text-primary focus-visible:ring-ring mt-1 block w-full rounded-sm text-left font-medium outline-none focus-visible:ring-2",
+            "mt-1 block w-full rounded-sm text-left font-medium outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring",
             compact ? "text-sm" : "text-[15px]"
           )}
           aria-label={`Inspect ${item.key}: ${item.title}`}
@@ -56,7 +56,7 @@ function WorkIdentity({
         </p>
       )}
       {!compact && (
-        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs whitespace-pre-wrap">
+        <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-muted-foreground text-xs">
           {item.summary}
         </p>
       )}
@@ -66,7 +66,7 @@ function WorkIdentity({
         limit={compact ? 2 : 3}
         className="mt-2"
       />
-      <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-3 text-xs">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-muted-foreground text-xs">
         <PersonAvatarStack people={people} size="sm" />
         <PriorityRibbon labelClassName="text-xs" priority={item.priority} />
         {item.dueDate && <span>{dateLabel(item.dueDate)}</span>}
@@ -89,7 +89,7 @@ export function WorkCard({
   return (
     <article
       className={cn(
-        "bg-card hover:border-primary/30 w-full rounded-lg border text-left shadow-xs transition-colors",
+        "w-full rounded-lg border bg-card text-left shadow-xs transition-colors hover:border-primary/30",
         compact ? "p-2.5" : "p-3",
         className
       )}

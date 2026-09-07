@@ -31,8 +31,9 @@ async function bffFetch(input: RequestInfo | URL, init?: RequestInit) {
   });
 
   try {
-    const { protectedApiTransport, publicApiTransport } =
-      await import("./transport");
+    const { protectedApiTransport, publicApiTransport } = await import(
+      "./transport"
+    );
     const transport = isPublicApiRequest(transportRequest)
       ? publicApiTransport
       : protectedApiTransport;

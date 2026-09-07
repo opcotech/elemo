@@ -76,7 +76,7 @@ export const WithHelperText: Story = {
     <div className="grid w-full max-w-sm items-center gap-1.5">
       <Label htmlFor="password" className="flex items-center gap-2">
         Password
-        <Info className="text-muted-foreground h-4 w-4" />
+        <Info className="h-4 w-4 text-muted-foreground" />
       </Label>
       <Input type="password" id="password" placeholder="Password" />
       <p className="text-muted-foreground text-xs">
@@ -93,7 +93,7 @@ export const WithCheckbox: Story = {
       <Checkbox id="terms" />
       <Label
         htmlFor="terms"
-        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
       >
         Accept terms and conditions
       </Label>
@@ -136,7 +136,7 @@ export const ErrorState: Story = {
         placeholder="Email"
         className="border-red-500 focus:border-red-500 focus:ring-red-500"
       />
-      <p className="text-sm text-red-600">
+      <p className="text-red-600 text-sm">
         Please enter a valid email address.
       </p>
     </div>
@@ -246,7 +246,7 @@ export const WithoutHtmlFor: Story = {
         Label without htmlFor (not recommended)
       </Label>
       <Input type="text" placeholder="Input without proper association" />
-      <p className="rounded bg-amber-600 px-2 py-1 text-xs text-white">
+      <p className="rounded bg-amber-600 px-2 py-1 text-white text-xs">
         ⚠️ This label is not properly associated with the input
       </p>
     </div>
@@ -268,7 +268,7 @@ export const CustomStyling: Story = {
       <div className="grid w-full max-w-sm items-center gap-1.5">
         <Label
           htmlFor="custom1"
-          className="rounded bg-blue-600 px-2 py-1 font-semibold tracking-wide text-white uppercase"
+          className="rounded bg-blue-600 px-2 py-1 font-semibold text-white uppercase tracking-wide"
         >
           Custom Label
         </Label>
@@ -288,7 +288,7 @@ export const CustomStyling: Story = {
       <div className="grid w-full max-w-sm items-center gap-1.5">
         <Label
           htmlFor="custom3"
-          className="border-l-4 border-purple-600 pl-3 font-medium text-purple-600"
+          className="border-purple-600 border-l-4 pl-3 font-medium text-purple-600"
         >
           Bordered Label
         </Label>

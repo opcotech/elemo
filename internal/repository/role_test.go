@@ -388,7 +388,7 @@ func TestCachedRoleRepository_GetByID(t *testing.T) {
 				span.EXPECT().End(gomock.Len(0)).Times(1)
 				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 				cacheRepo.EXPECT().Get(ctx, key, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-					*(dst.(**repository.Role)) = role
+					*dst.(**repository.Role) = role
 				}).Return(nil)
 			case tt.getErr != nil:
 				span.EXPECT().End(gomock.Len(0)).Times(1)
@@ -479,7 +479,7 @@ func TestCachedRoleRepository_GetByKey(t *testing.T) {
 				span.EXPECT().End(gomock.Len(0)).Times(1)
 				tracer.EXPECT().Start(ctx, "repository.redisBaseRepository/Get", gomock.Len(0)).Return(ctx, span)
 				cacheRepo.EXPECT().Get(ctx, cacheKey, gomock.Any()).Do(func(_ context.Context, _ string, dst any) {
-					*(dst.(**repository.Role)) = role
+					*dst.(**repository.Role) = role
 				}).Return(nil)
 			case tt.getErr != nil:
 				span.EXPECT().End(gomock.Len(0)).Times(1)

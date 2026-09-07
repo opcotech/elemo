@@ -102,7 +102,7 @@ export function AddTodoForm({
           id="continue-creating"
           onCheckedChange={(value) => setShouldContinueCreating(value === true)}
         ></ContinueCreatingCheckbox>
-        <label className="text-sm font-normal" htmlFor="continue-creating">
+        <label className="font-normal text-sm" htmlFor="continue-creating">
           Create more
         </label>
       </fieldset>

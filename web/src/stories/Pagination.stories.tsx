@@ -320,7 +320,7 @@ export const Controlled: Story = {
 
     return (
       <div className="space-y-4">
-        <div className="text-muted-foreground text-center text-sm">
+        <div className="text-center text-muted-foreground text-sm">
           Page {currentPage} of {totalPages}
         </div>
         <Pagination>
@@ -370,18 +370,18 @@ export const Controlled: Story = {
 // Custom styling
 export const CustomStyling: Story = {
   render: () => (
-    <Pagination className="bg-muted/50 rounded-lg p-4">
+    <Pagination className="rounded-lg bg-muted/50 p-4">
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
             href="#"
-            className="bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/20 border border-transparent transition-colors"
+            className="border border-transparent bg-background transition-colors hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
           />
         </PaginationItem>
         <PaginationItem>
           <PaginationLink
             href="#"
-            className="bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/20 border border-transparent transition-colors"
+            className="border border-transparent bg-background transition-colors hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
           >
             1
           </PaginationLink>
@@ -390,7 +390,7 @@ export const CustomStyling: Story = {
           <PaginationLink
             href="#"
             isActive
-            className="bg-primary text-primary-foreground border-primary"
+            className="border-primary bg-primary text-primary-foreground"
           >
             2
           </PaginationLink>
@@ -398,7 +398,7 @@ export const CustomStyling: Story = {
         <PaginationItem>
           <PaginationLink
             href="#"
-            className="bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/20 border border-transparent transition-colors"
+            className="border border-transparent bg-background transition-colors hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
           >
             3
           </PaginationLink>
@@ -409,7 +409,7 @@ export const CustomStyling: Story = {
         <PaginationItem>
           <PaginationNext
             href="#"
-            className="bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/20 border border-transparent transition-colors"
+            className="border border-transparent bg-background transition-colors hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
           />
         </PaginationItem>
       </PaginationContent>

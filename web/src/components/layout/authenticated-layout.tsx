@@ -141,12 +141,12 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
           <SidebarHeader className="gap-3 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
             <Link
               to="/"
-              className="focus-visible:ring-ring flex h-8 items-center gap-2 rounded-lg px-1.5 outline-none group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 focus-visible:ring-2"
+              className="flex h-8 items-center gap-2 rounded-lg px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             >
-              <span className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-lg">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <SparklesIcon className="size-4" />
               </span>
-              <span className="text-base font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
+              <span className="font-semibold text-base tracking-tight group-data-[collapsible=icon]:hidden">
                 Elemo
               </span>
             </Link>

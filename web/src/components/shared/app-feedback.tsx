@@ -16,11 +16,11 @@ export function MockDataAlert({
   return (
     <Alert
       variant="warning"
-      className={cn("max-w-full min-w-0 overflow-hidden py-2.5", className)}
+      className={cn("min-w-0 max-w-full overflow-hidden py-2.5", className)}
     >
       <FlaskConicalIcon />
       <AlertTitle className="min-w-0">{title}</AlertTitle>
-      <AlertDescription className="min-w-0 wrap-break-word">
+      <AlertDescription className="wrap-break-word min-w-0">
         {children}
       </AlertDescription>
     </Alert>

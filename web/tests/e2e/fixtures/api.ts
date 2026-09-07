@@ -21,7 +21,7 @@ export const test = base.extend<ApiFixtures>({
    * Authenticated API client using the e2e privileged user
    * (organization.create on Installation).
    */
-  // eslint-disable-next-line no-empty-pattern
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture with no dependencies
   privilegedApiClient: async ({}, use: (client: Client) => Promise<void>) => {
     const client = await createPrivilegedClient();
     await use(client);
@@ -34,7 +34,7 @@ export const test = base.extend<ApiFixtures>({
    * @param password - User password
    * @returns API client
    */
-  // eslint-disable-next-line no-empty-pattern
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture with no dependencies
   createApiClient: async ({}, use) => {
     await use(async (username: string, password: string) => {
       return await createAuthenticatedClient(username, password);

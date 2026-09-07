@@ -195,8 +195,7 @@ export function NamespacesList({
           return namespaces.filter(
             (namespace) =>
               namespace.name.toLowerCase().includes(term) ||
-              (namespace.description &&
-                namespace.description.toLowerCase().includes(term))
+              namespace.description?.toLowerCase().includes(term)
           );
         })();
     return [...filtered].sort((a, b) =>

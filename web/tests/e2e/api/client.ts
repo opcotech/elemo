@@ -49,8 +49,7 @@ export async function createAuthenticatedClient(
   // Create and configure API client
   const client = createClient({
     baseUrl: config.apiBaseUrl,
-    // eslint-disable-next-line @typescript-eslint/require-await
-    auth: async () => tokens.access_token,
+    auth: () => tokens.access_token,
   });
 
   // Cache tokens for potential refresh

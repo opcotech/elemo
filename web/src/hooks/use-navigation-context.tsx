@@ -4,7 +4,10 @@ import { useMemo } from "react";
 import { identityFromMatches } from "@/lib/route-identity";
 
 export type NavigationContextType =
-  "organization" | "namespace" | "project" | "global";
+  | "organization"
+  | "namespace"
+  | "project"
+  | "global";
 
 export interface NavigationContext {
   type: NavigationContextType;

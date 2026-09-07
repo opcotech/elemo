@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 // Type declaration for Node.js process (needed for Playwright config files)
 declare const process: {
@@ -7,17 +7,17 @@ declare const process: {
   };
 };
 
-const IS_CI_ENV = process.env.CI === 'true';
+const IS_CI_ENV = process.env.CI === "true";
 
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: "./tests/e2e",
   /* Specs only — keep *.test.ts for Vitest unit coverage of e2e helpers */
   testMatch: /.*\.spec\.ts/,
   /* Global setup runs once before all tests */
-  globalSetup: './tests/e2e/global-setup.ts',
+  globalSetup: "./tests/e2e/global-setup.ts",
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if test.only left in the source code. */
@@ -32,44 +32,44 @@ export default defineConfig({
   /* Global timeout for each test */
   timeout: 45 * 1000, // 30 seconds
   /* Output directory for test artifacts */
-  outputDir: './test-results',
+  outputDir: "./test-results",
   /* Reporter configuration - use list in CI for better logs, html for local */
   reporter: IS_CI_ENV
-    ? [['list'], ['html', { outputFolder: 'playwright-report' }]]
-    : [['html', { outputFolder: 'playwright-report' }]],
+    ? [["list"], ["html", { outputFolder: "playwright-report" }]]
+    : [["html", { outputFolder: "playwright-report" }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+    baseURL: "http://localhost:3000",
     /* Run in headless mode in CI, headed locally for debugging */
     headless: IS_CI_ENV,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
     /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
     /* Record video on failure */
-    video: 'retain-on-failure',
+    video: "retain-on-failure",
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
+      name: "chromium",
       use: {
-        ...devices['Desktop Chrome'],
+        ...devices["Desktop Chrome"],
         // Firefox/WebKit reject these permission names.
-        permissions: ['clipboard-read', 'clipboard-write'],
+        permissions: ["clipboard-read", "clipboard-write"],
       },
     },
 
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
     },
 
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
 
     /* Test against mobile viewports. */
@@ -94,14 +94,14 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.NO_COMMAND === 'true' ? '' : 'pnpm start',
+    command: process.env.NO_COMMAND === "true" ? "" : "pnpm start",
     // Hit /login so readiness reflects the SPA entry used by most specs.
-    url: 'http://localhost:3000/login',
-    // Reuse only when explicitly opted in, or when CI is unset and the port
-    // already serves Elemo (Makefile frees foreign listeners first).
+    url: "http://localhost:3000/login",
+    // Reuse the existing frontend when CI is unset so local `pnpm start`
+    // or `mise run test-frontend-e2e` can share a running server.
     reuseExistingServer: !IS_CI_ENV,
     timeout: 120 * 1000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });

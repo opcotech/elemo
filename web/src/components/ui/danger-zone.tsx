@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -7,7 +7,7 @@ function DangerZone({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="danger-zone"
       className={cn(
-        "group/danger-zone border-destructive bg-destructive/5 text-card-foreground flex flex-col gap-(--danger-zone-spacing) overflow-hidden rounded-xl border py-(--danger-zone-spacing) text-sm [--danger-zone-spacing:--spacing(5)]",
+        "group/danger-zone flex flex-col gap-(--danger-zone-spacing) overflow-hidden rounded-xl border border-destructive bg-destructive/5 py-(--danger-zone-spacing) text-card-foreground text-sm [--danger-zone-spacing:--spacing(5)]",
         className
       )}
       {...props}
@@ -36,7 +36,7 @@ function DangerZoneTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="danger-zone-title"
       className={cn(
-        "text-destructive text-base leading-snug font-medium",
+        "font-medium text-base text-destructive leading-snug",
         className
       )}
       {...props}

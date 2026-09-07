@@ -26,7 +26,10 @@ export const documentCreateFormDefaults: DocumentCreateFormValues = {
 };
 
 export type DocumentListParentType =
-  "organization" | "namespace" | "project" | "issue";
+  | "organization"
+  | "namespace"
+  | "project"
+  | "issue";
 
 export interface DocumentCreateParent {
   type: Exclude<DocumentListParentType, "issue">;

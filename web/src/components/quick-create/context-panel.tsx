@@ -31,10 +31,10 @@ export function QuickCreateContext() {
   });
 
   return (
-    <div className="bg-muted/50 rounded-lg border px-3 py-2.5">
-      <p className="text-xs font-medium tracking-wide uppercase">Context</p>
-      <p className="text-muted-foreground mt-1 text-sm">{contextLabel}</p>
-      <p className="text-muted-foreground mt-1 text-xs">
+    <div className="rounded-lg border bg-muted/50 px-3 py-2.5">
+      <p className="font-medium text-xs uppercase tracking-wide">Context</p>
+      <p className="mt-1 text-muted-foreground text-sm">{contextLabel}</p>
+      <p className="mt-1 text-muted-foreground text-xs">
         {parent
           ? "Create stays in this context. Folders can be chosen later."
           : "Inherited from the current route."}

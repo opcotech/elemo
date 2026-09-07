@@ -74,7 +74,7 @@ export function EntityHeader({
       leading={
         showIcon ? (
           resolvedImageUrl ? (
-            <span className="bg-muted size-11 shrink-0 overflow-hidden rounded-xl">
+            <span className="size-11 shrink-0 overflow-hidden rounded-xl bg-muted">
               <img
                 src={resolvedImageUrl}
                 alt=""
@@ -82,7 +82,7 @@ export function EntityHeader({
               />
             </span>
           ) : (
-            <span className="bg-primary-subtle text-primary-on-subtle flex size-11 shrink-0 items-center justify-center rounded-xl">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-subtle text-primary-on-subtle">
               <EntityIcon type={type} className="size-5" />
             </span>
           )
@@ -97,7 +97,7 @@ export function EntityHeader({
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="text-muted-foreground hover:text-foreground size-5"
+                className="size-5 text-muted-foreground hover:text-foreground"
                 aria-label={copyLabel}
                 title={copyLabel}
                 onClick={() => {

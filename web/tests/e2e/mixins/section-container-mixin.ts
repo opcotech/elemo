@@ -7,7 +7,9 @@ import { waitForElementVisible } from "../helpers";
  * Provides common functionality for waiting for section containers to load.
  */
 export function SectionContainerMixin<
-  T extends abstract new (...args: any[]) => any,
+  T extends abstract new (
+    ...args: any[]
+  ) => any,
 >(Base: T) {
   abstract class SectionContainerMixinClass extends Base {
     protected sectionContainer?: Locator;

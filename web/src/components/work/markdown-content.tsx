@@ -20,7 +20,7 @@ export function MarkdownContent({
 }) {
   const trimmed = markdown?.trim() ?? "";
   if (!trimmed) {
-    return empty ? <>{empty}</> : null;
+    return empty ? empty : null;
   }
 
   return (

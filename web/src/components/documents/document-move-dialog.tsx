@@ -115,7 +115,7 @@ export function DocumentMoveDialog({
     >
       <p className="text-muted-foreground text-sm">
         Choose a folder in this library for{" "}
-        <span className="text-foreground font-medium">{documentTitle}</span>.
+        <span className="font-medium text-foreground">{documentTitle}</span>.
       </p>
       {isLoading ? (
         <Skeleton className="h-9 w-full" />

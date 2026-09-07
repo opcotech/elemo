@@ -72,7 +72,7 @@ export function SearchPage({
   const debouncedQ = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS);
   const qForSearch = queryInput === search.q ? search.q : debouncedQ;
   const searchForQuery = { ...search, q: qForSearch, page_token: undefined };
-  const filterKey = [
+  const _filterKey = [
     qForSearch,
     search.type,
     search.organization_id ?? "",
@@ -179,15 +179,7 @@ export function SearchPage({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [
-    active,
-    fetchNextPage,
-    filterKey,
-    hasNextPage,
-    isFetchingNextPage,
-    isSearchPending,
-    items.length,
-  ]);
+  }, [active, fetchNextPage, hasNextPage, isFetchingNextPage, isSearchPending]);
 
   function applyFilters(patch: Partial<SearchRouteSearch>) {
     onSearchChange({ ...patch, page_token: undefined });
@@ -257,9 +249,9 @@ export function SearchPage({
           description="Find entities and actions across contexts you can access."
         />
 
-        <div className="bg-background sticky top-0 z-20 space-y-3 border-y py-3">
+        <div className="sticky top-0 z-20 space-y-3 border-y bg-background py-3">
           <div className="relative">
-            <SearchIcon className="text-muted-foreground absolute top-3 left-3 size-5" />
+            <SearchIcon className="absolute top-3 left-3 size-5 text-muted-foreground" />
             <Input
               autoFocus
               type="search"
@@ -377,24 +369,24 @@ export function SearchPage({
                 <button
                   type="button"
                   onClick={() => openQuickCreate()}
-                  className="hover:bg-muted/50 flex w-full items-center gap-3 px-3 py-3 text-left text-sm"
+                  className="flex w-full items-center gap-3 px-3 py-3 text-left text-sm hover:bg-muted/50"
                 >
-                  <CommandIcon className="text-muted-foreground size-4" />
+                  <CommandIcon className="size-4 text-muted-foreground" />
                   Quick create
-                  <kbd className="text-muted-foreground ml-auto text-xs">C</kbd>
+                  <kbd className="ml-auto text-muted-foreground text-xs">C</kbd>
                 </button>
                 <InternalLink
                   to="/my-work"
-                  className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
+                  className="flex items-center gap-3 px-3 py-3 text-sm hover:bg-muted/50"
                 >
-                  <CommandIcon className="text-muted-foreground size-4" />
+                  <CommandIcon className="size-4 text-muted-foreground" />
                   Open My Work
                 </InternalLink>
                 <InternalLink
                   to="/namespaces"
-                  className="hover:bg-muted/50 flex items-center gap-3 px-3 py-3 text-sm"
+                  className="flex items-center gap-3 px-3 py-3 text-sm hover:bg-muted/50"
                 >
-                  <CommandIcon className="text-muted-foreground size-4" />
+                  <CommandIcon className="size-4 text-muted-foreground" />
                   Browse namespaces
                 </InternalLink>
               </AppList>
@@ -457,7 +449,7 @@ export function SearchPage({
                       return (
                         <div
                           key={`${item.type}:${item.id}`}
-                          className="text-muted-foreground px-3 py-2.5 text-sm"
+                          className="px-3 py-2.5 text-muted-foreground text-sm"
                         >
                           {item.title}
                         </div>

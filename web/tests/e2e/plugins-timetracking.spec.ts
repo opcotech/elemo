@@ -12,13 +12,13 @@ import { getRandomString } from "./utils/random";
 
 const pluginZip = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../../build/plugins/com.elemo.timetracking.zip"
+  "../../../dist/plugins/com.elemo.timetracking.zip"
 );
 
 test.describe("@plugins.timetracking Time Tracking plugin", () => {
   test.skip(
     !existsSync(pluginZip),
-    "build/plugins/com.elemo.timetracking.zip is missing; run make plugins"
+    "dist/plugins/com.elemo.timetracking.zip is missing; run mise run build-plugin -- timetracking"
   );
 
   let workspace: OwnerWorkspace;

@@ -75,7 +75,7 @@ export function TeamsList({
     return teams.filter(
       (team) =>
         team.name.toLowerCase().includes(term) ||
-        (team.description && team.description.toLowerCase().includes(term))
+        team.description?.toLowerCase().includes(term)
     );
   }, [teams, searchTerm]);
 

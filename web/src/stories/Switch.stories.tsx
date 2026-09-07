@@ -148,7 +148,7 @@ export const SettingsPanel: Story = {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <h4 className="text-sm font-medium">Notifications</h4>
+          <h4 className="font-medium text-sm">Notifications</h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -183,7 +183,7 @@ export const SettingsPanel: Story = {
         <Separator />
 
         <div className="space-y-4">
-          <h4 className="text-sm font-medium">Privacy</h4>
+          <h4 className="font-medium text-sm">Privacy</h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -238,10 +238,10 @@ export const DeviceControls: Story = {
               {wifi ? (
                 <Wifi className="h-5 w-5 text-blue-500" />
               ) : (
-                <WifiOff className="text-muted-foreground h-5 w-5" />
+                <WifiOff className="h-5 w-5 text-muted-foreground" />
               )}
               <div>
-                <Label htmlFor="wifi" className="text-sm font-medium">
+                <Label htmlFor="wifi" className="font-medium text-sm">
                   Wi-Fi
                 </Label>
                 <div className="text-muted-foreground text-xs">
@@ -260,7 +260,7 @@ export const DeviceControls: Story = {
                 }`}
               />
               <div>
-                <Label htmlFor="bluetooth" className="text-sm font-medium">
+                <Label htmlFor="bluetooth" className="font-medium text-sm">
                   Bluetooth
                 </Label>
                 <div className="text-muted-foreground text-xs">
@@ -283,7 +283,7 @@ export const DeviceControls: Story = {
                 }`}
               />
               <div>
-                <Label htmlFor="airplane" className="text-sm font-medium">
+                <Label htmlFor="airplane" className="font-medium text-sm">
                   Airplane Mode
                 </Label>
                 <div className="text-muted-foreground text-xs">
@@ -306,7 +306,7 @@ export const DeviceControls: Story = {
                 <Sun className="h-5 w-5" />
               )}
               <div>
-                <Label htmlFor="dark-mode" className="text-sm font-medium">
+                <Label htmlFor="dark-mode" className="font-medium text-sm">
                   Dark Mode
                 </Label>
                 <div className="text-muted-foreground text-xs">
@@ -338,7 +338,7 @@ export const FormIntegration: Story = {
   render: () => (
     <form className="w-[400px] space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Account Preferences</h3>
+        <h3 className="font-medium text-lg">Account Preferences</h3>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -414,7 +414,7 @@ export const SizesAndStyling: Story = {
   render: () => (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h4 className="text-sm font-medium">Different Sizes</h4>
+        <h4 className="font-medium text-sm">Different Sizes</h4>
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Switch id="small" className="scale-75" />
@@ -440,7 +440,7 @@ export const SizesAndStyling: Story = {
       <Separator />
 
       <div className="space-y-3">
-        <h4 className="text-sm font-medium">Custom Colors</h4>
+        <h4 className="font-medium text-sm">Custom Colors</h4>
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <Switch

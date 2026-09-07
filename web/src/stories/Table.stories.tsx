@@ -468,7 +468,7 @@ export const DataTableWithSearch: Story = {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <div className="relative flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+            <Search className="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search customers..."
               value={searchTerm}
@@ -651,7 +651,7 @@ export const ProductInventory: Story = {
         <TableRow>
           <TableCell>
             <div className="flex items-center space-x-3">
-              <div className="bg-muted flex h-10 w-10 items-center justify-center rounded">
+              <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
                 📱
               </div>
               <div>
@@ -681,7 +681,7 @@ export const ProductInventory: Story = {
         <TableRow>
           <TableCell>
             <div className="flex items-center space-x-3">
-              <div className="bg-muted flex h-10 w-10 items-center justify-center rounded">
+              <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
                 💻
               </div>
               <div>
@@ -711,7 +711,7 @@ export const ProductInventory: Story = {
         <TableRow>
           <TableCell>
             <div className="flex items-center space-x-3">
-              <div className="bg-muted flex h-10 w-10 items-center justify-center rounded">
+              <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
                 🎧
               </div>
               <div>

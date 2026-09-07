@@ -174,7 +174,7 @@ export function IssueLinks({
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-muted-foreground min-w-0 truncate underline-offset-4 hover:underline"
+                    className="min-w-0 truncate text-muted-foreground underline-offset-4 hover:underline"
                   >
                     {hostname ?? link.url}
                   </a>

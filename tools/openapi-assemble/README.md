@@ -6,7 +6,7 @@ bundle `api/openapi/openapi.yaml`.
 ## Usage
 
 ```bash
-make generate.openapi
+mise run generate-openapi
 ```
 
 Or from the repository root, with absolute paths (required because

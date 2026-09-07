@@ -42,7 +42,7 @@ export const Default: Story = {
   render: () => (
     <ScrollArea className="h-72 w-48 rounded-md border">
       <div className="p-4">
-        <h4 className="mb-4 text-sm leading-none font-medium">Tags</h4>
+        <h4 className="mb-4 font-medium text-sm leading-none">Tags</h4>
         {Array.from({ length: 50 }, (_, i) => (
           <div key={i} className="text-sm">
             v1.2.{i}
@@ -56,12 +56,12 @@ export const Default: Story = {
 // Horizontal scroll
 export const Horizontal: Story = {
   render: () => (
-    <ScrollArea className="w-96 rounded-md border whitespace-nowrap">
+    <ScrollArea className="w-96 whitespace-nowrap rounded-md border">
       <div className="flex w-max space-x-4 p-4">
         {Array.from({ length: 20 }, (_, i) => (
           <div
             key={i}
-            className="bg-muted flex h-20 w-20 items-center justify-center rounded-md text-sm font-medium"
+            className="flex h-20 w-20 items-center justify-center rounded-md bg-muted font-medium text-sm"
           >
             {i + 1}
           </div>
@@ -164,17 +164,17 @@ export const FileList: Story = {
     return (
       <ScrollArea className="h-80 w-96 rounded-md border">
         <div className="p-4">
-          <h4 className="mb-4 text-sm leading-none font-medium">Files</h4>
+          <h4 className="mb-4 font-medium text-sm leading-none">Files</h4>
           <div className="space-y-1">
             {files.map((file, index) => (
               <div
                 key={index}
-                className="hover:bg-muted flex cursor-pointer items-center justify-between rounded-md p-2"
+                className="flex cursor-pointer items-center justify-between rounded-md p-2 hover:bg-muted"
               >
                 <div className="flex items-center space-x-2">
                   {getIcon(file.type)}
                   <div>
-                    <div className="text-sm font-medium">{file.name}</div>
+                    <div className="font-medium text-sm">{file.name}</div>
                     <div className="text-muted-foreground text-xs">
                       {file.size && `${file.size} • `}
                       {file.modified}
@@ -283,7 +283,7 @@ export const ChatMessages: Story = {
                 }`}
               >
                 {!msg.own && (
-                  <div className="mb-1 text-xs font-medium">{msg.user}</div>
+                  <div className="mb-1 font-medium text-xs">{msg.user}</div>
                 )}
                 <div className="text-sm">{msg.message}</div>
                 <div
@@ -366,31 +366,31 @@ export const NotificationsList: Story = {
     return (
       <ScrollArea className="h-80 w-96 rounded-md border">
         <div className="p-4">
-          <h4 className="mb-4 text-sm leading-none font-medium">
+          <h4 className="mb-4 font-medium text-sm leading-none">
             Notifications
           </h4>
           <div className="space-y-1">
             {notifications.map((notification, index) => (
               <div key={notification.id}>
                 <div
-                  className={`hover:bg-muted cursor-pointer rounded-md p-3 ${
+                  className={`cursor-pointer rounded-md p-3 hover:bg-muted ${
                     notification.unread ? "bg-muted/50" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h5 className="text-sm font-medium">
+                        <h5 className="font-medium text-sm">
                           {notification.title}
                         </h5>
                         {notification.unread && (
                           <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                         )}
                       </div>
-                      <p className="text-muted-foreground mt-1 text-xs">
+                      <p className="mt-1 text-muted-foreground text-xs">
                         {notification.description}
                       </p>
-                      <div className="text-muted-foreground mt-2 text-xs">
+                      <div className="mt-2 text-muted-foreground text-xs">
                         {notification.time}
                       </div>
                     </div>
@@ -466,7 +466,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       <ScrollArea className="h-80 w-96 rounded-md border">
         <div className="p-4">
           <div className="mb-4 flex items-center justify-between">
-            <h4 className="text-sm font-medium">LoginForm.tsx</h4>
+            <h4 className="font-medium text-sm">LoginForm.tsx</h4>
             <Badge variant="secondary">TypeScript</Badge>
           </div>
           <pre className="font-mono text-xs">
@@ -483,7 +483,7 @@ export const BothScrollbars: Story = {
   render: () => (
     <ScrollArea className="h-60 w-80 rounded-md border">
       <div className="p-4" style={{ width: "600px" }}>
-        <h4 className="mb-4 text-sm leading-none font-medium">
+        <h4 className="mb-4 font-medium text-sm leading-none">
           Wide Content with Both Scrollbars
         </h4>
         {Array.from({ length: 30 }, (_, i) => (
@@ -507,13 +507,13 @@ export const BothScrollbars: Story = {
 // Custom styling
 export const CustomStyling: Story = {
   render: () => (
-    <ScrollArea className="border-primary/50 bg-muted/30 h-72 w-48 rounded-lg border-2 border-dashed">
+    <ScrollArea className="h-72 w-48 rounded-lg border-2 border-primary/50 border-dashed bg-muted/30">
       <div className="p-6">
-        <h4 className="text-primary mb-4 text-sm leading-none font-medium">
+        <h4 className="mb-4 font-medium text-primary text-sm leading-none">
           Custom Styled
         </h4>
         {Array.from({ length: 25 }, (_, i) => (
-          <div key={i} className="bg-background mb-2 rounded p-2 text-sm">
+          <div key={i} className="mb-2 rounded bg-background p-2 text-sm">
             Custom item {i + 1}
           </div>
         ))}

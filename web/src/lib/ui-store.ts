@@ -8,7 +8,10 @@ const NAVIGATION_STORAGE_KEY = "elemo_navigation_context";
 const MAX_RECENT_ENTITIES = 20;
 
 export type RecentEntityType =
-  "namespace" | "project" | "work-item" | "document";
+  | "namespace"
+  | "project"
+  | "work-item"
+  | "document";
 
 const MAX_RECENT_BY_TYPE: Partial<Record<RecentEntityType, number>> = {
   "work-item": 7,

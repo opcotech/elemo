@@ -116,7 +116,7 @@ export function FolderMoveDialog({
     >
       <p className="text-muted-foreground text-sm">
         Choose a folder in this library for{" "}
-        <span className="text-foreground font-medium">
+        <span className="font-medium text-foreground">
           {folder?.name ?? "this folder"}
         </span>
         . A folder cannot be moved into itself or one of its nested folders.

@@ -82,7 +82,7 @@ export const Password: Story = {
   },
 };
 
-export const Number: Story = {
+export const NumberInput: Story = {
   args: {
     type: "number",
     placeholder: "Enter a number...",
@@ -103,7 +103,7 @@ export const Tel: Story = {
   },
 };
 
-export const Date: Story = {
+export const DateInput: Story = {
   args: {
     type: "date",
   },
@@ -157,7 +157,7 @@ export const WithLabelAndDescription: Story = {
 export const WithIconLeft: Story = {
   render: () => (
     <div className="relative w-full max-w-sm">
-      <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input placeholder="Search..." className="pl-10" />
     </div>
   ),
@@ -167,7 +167,7 @@ export const WithIconRight: Story = {
   render: () => (
     <div className="relative w-full max-w-sm">
       <Input placeholder="Enter email..." type="email" className="pr-10" />
-      <Mail className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+      <Mail className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
     </div>
   ),
 };
@@ -179,7 +179,7 @@ export const PasswordWithToggle: Story = {
 
     return (
       <div className="relative w-full max-w-sm">
-        <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type={showPassword ? "text" : "password"}
           placeholder="Enter password..."
@@ -210,7 +210,7 @@ export const LoginForm: Story = {
       <div className="grid gap-2">
         <Label htmlFor="login-email">Email</Label>
         <div className="relative">
-          <User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="login-email"
             type="email"
@@ -222,7 +222,7 @@ export const LoginForm: Story = {
       <div className="grid gap-2">
         <Label htmlFor="login-password">Password</Label>
         <div className="relative">
-          <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="login-password"
             type="password"
@@ -246,7 +246,7 @@ export const ContactForm: Story = {
       <div className="grid gap-2">
         <Label htmlFor="contact-email">Email</Label>
         <div className="relative">
-          <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="contact-email"
             type="email"
@@ -258,7 +258,7 @@ export const ContactForm: Story = {
       <div className="grid gap-2">
         <Label htmlFor="contact-phone">Phone</Label>
         <div className="relative">
-          <Phone className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="contact-phone"
             type="tel"
@@ -275,7 +275,7 @@ export const ContactForm: Story = {
 export const SearchWithIcon: Story = {
   render: () => (
     <div className="relative w-full max-w-md">
-      <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+      <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search"
         placeholder="Search products, customers, orders..."
@@ -291,7 +291,7 @@ export const CreditCardInput: Story = {
       <div className="grid gap-2">
         <Label htmlFor="card-number">Card Number</Label>
         <div className="relative">
-          <CreditCard className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <CreditCard className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="card-number"
             placeholder="1234 5678 9012 3456"
@@ -320,7 +320,7 @@ export const DateTimeInputs: Story = {
       <div className="grid gap-2">
         <Label htmlFor="date-input">Date</Label>
         <div className="relative">
-          <Calendar className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input id="date-input" type="date" className="pl-10" />
         </div>
       </div>
@@ -428,7 +428,7 @@ export const ErrorStates: Story = {
           className="border-success focus-visible:ring-success/20"
           readOnly
         />
-        <p className="text-success text-sm">Email address is valid.</p>
+        <p className="text-sm text-success">Email address is valid.</p>
       </div>
     </div>
   ),

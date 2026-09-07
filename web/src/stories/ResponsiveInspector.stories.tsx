@@ -16,7 +16,7 @@ function InspectorDemo({ initiallyOpen = true }: { initiallyOpen?: boolean }) {
   const [open, setOpen] = useState(initiallyOpen);
 
   return (
-    <div className="bg-background h-150 w-full overflow-hidden border">
+    <div className="h-150 w-full overflow-hidden border bg-background">
       <ResponsiveInspectorShell
         open={open}
         onOpenChange={setOpen}
@@ -25,7 +25,7 @@ function InspectorDemo({ initiallyOpen = true }: { initiallyOpen?: boolean }) {
         inspector={open ? <WorkInspector item={sampleItem} /> : undefined}
       >
         <div className="space-y-4 p-4">
-          <h1 className="text-lg font-semibold">Work projection</h1>
+          <h1 className="font-semibold text-lg">Work projection</h1>
           <p className="text-muted-foreground text-sm">
             All viewports open a right-side Sheet over the projection, with
             labelled close controls and focus management.
