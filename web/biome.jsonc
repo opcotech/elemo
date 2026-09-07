@@ -16,7 +16,6 @@
       "!!**/storybook-static",
       "!!**/playwright-report",
       "!!**/test-results",
-      "!**/src/lib/client",
       "!**/src/routeTree.gen.ts"
     ]
   },
@@ -55,6 +54,9 @@
   },
   "linter": {
     "enabled": true,
+    // Generated Hey API client is formatted (so format-check is a no-op after
+    // generate) but not linted.
+    "includes": ["**", "!**/src/lib/client/**"],
     "domains": {
       "react": "recommended",
       "test": "recommended",
