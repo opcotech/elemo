@@ -1,8 +1,11 @@
 name: Release Please
 
 on:
-  push:
-    branches: [main]
+  workflow_call:
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        description: Optional token used to create release pull requests
+        required: false
   workflow_dispatch:
 
 # GITHUB_TOKEN can open release PRs only when the repository setting
@@ -49,31 +52,12 @@ jobs:
       GO_LICENSES_VERSION: v1.6.0
       GOPROXY: https://proxy.golang.org,direct
     steps:
-      - name: Use HTTPS instead of SSH for Git cloning
-        run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
-
       - name: Checkout release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
-      - uses: ./.github/actions/setup-mise
-
-      - name: Cache go-licenses
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: .ort/bin
-          key: go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-1.27
-          restore-keys: |
-            go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-
-
-      - name: Cache ORT ScanCode results
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: .ort/scanner
-          key: ort-scancode-projects-92.4.0-${{ github.sha }}
-          restore-keys: |
-            ort-scancode-projects-92.4.0-
+      - uses: ./.github/actions/setup-ort
 
       - name: Run ORT
         run: ./scripts/ort/ort.sh run

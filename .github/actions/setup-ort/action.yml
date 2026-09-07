@@ -1,0 +1,36 @@
+name: Setup ORT
+description: Install ORT prerequisites and restore license-analysis caches
+
+inputs:
+  cache-scancode:
+    description: Restore and save the ORT ScanCode cache
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Use HTTPS instead of SSH for Git cloning
+      shell: bash
+      run: |
+        set -euo pipefail
+        git config --global url.https://github.com/.insteadOf ssh://git@github.com/
+
+    - uses: ./.github/actions/setup-mise
+
+    - name: Cache go-licenses
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: .ort/bin
+        key: go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-1.27
+        restore-keys: |
+          go-licenses-${{ env.GO_LICENSES_VERSION }}-${{ runner.os }}-
+
+    - name: Cache ORT ScanCode results
+      if: ${{ inputs.cache-scancode == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: .ort/scanner
+        key: ort-scancode-projects-92.4.0-${{ github.sha }}
+        restore-keys: |
+          ort-scancode-projects-92.4.0-

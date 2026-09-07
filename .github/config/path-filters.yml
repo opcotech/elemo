@@ -44,6 +44,14 @@ website:
   - ".github/actions/**"
   - "website/**"
 
+api_docs_deploy:
+  - "api/**"
+  - ".github/actions/deploy-vercel/**"
+
+website_deploy:
+  - "website/**"
+  - ".github/actions/deploy-vercel/**"
+
 e2e:
   - ".github/config/path-filters.yml"
   - ".github/workflows/ci.yml"

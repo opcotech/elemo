@@ -1,0 +1,35 @@
+name: Deploy to Vercel
+description: Install Vercel and deploy one project to production
+
+inputs:
+  working-directory:
+    description: Directory containing the Vercel project
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/setup-mise
+
+    - name: Install Vercel CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        # renovate: datasource=npm depName=vercel
+        npm install -g vercel@59.11.2
+
+    - name: Deploy to Vercel
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        : "${VERCEL_TOKEN:?VERCEL_TOKEN is required}"
+        : "${VERCEL_ORG_ID:?VERCEL_ORG_ID is required}"
+        : "${VERCEL_PROJECT_ID:?VERCEL_PROJECT_ID is required}"
+
+        vercel link \
+          --token "${VERCEL_TOKEN}" \
+          --scope "${VERCEL_ORG_ID}" \
+          --project "${VERCEL_PROJECT_ID}" \
+          --yes
+        vercel --token "${VERCEL_TOKEN}" --prod --yes
