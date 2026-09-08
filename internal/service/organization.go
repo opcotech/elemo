@@ -522,6 +522,10 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
+	if err := s.ensureNotSoleAdmin(ctx, orgID, memberID); err != nil {
+		return errors.Join(ErrOrganizationMemberRemove, err)
+	}
+
 	grants, err := s.permissionService.ListByPrincipal(ctx, memberID)
 	if err != nil && !errors.Is(err, repository.ErrPermissionRead) {
 		s.logger.Warn(ctx, "failed to get grants when removing member",
@@ -568,6 +572,50 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 					log.WithUserID(memberID.String()))
 			}
 		}
+	}
+
+	return nil
+}
+
+// ensureNotSoleAdmin reports an error when a member removes themselves while
+// being the only administrator of the organization. Losing the last
+// administrator would leave the organization unmanageable.
+func (s *organizationService) ensureNotSoleAdmin(ctx context.Context, orgID, memberID model.ID) error {
+	userID, err := ctxUserID(ctx)
+	if err != nil {
+		return err
+	}
+
+	if userID != memberID {
+		return nil
+	}
+
+	adminRole, err := s.roleRepo.GetByKey(ctx, orgID, model.RoleKeyOrgAdmin)
+	if err != nil {
+		return err
+	}
+
+	grants, err := s.permissionService.ListByScope(ctx, orgID)
+	if err != nil {
+		return err
+	}
+
+	memberIsAdmin := false
+	for _, grant := range grants {
+		if grant.RoleID == nil || *grant.RoleID != adminRole.ID {
+			continue
+		}
+		if grant.Principal == memberID {
+			memberIsAdmin = true
+			continue
+		}
+		if grant.Principal.Type == model.ResourceTypeUser {
+			return nil
+		}
+	}
+
+	if memberIsAdmin {
+		return ErrOrganizationMemberSoleAdmin
 	}
 
 	return nil

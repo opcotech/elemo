@@ -2458,6 +2458,7 @@ func TestOrganizationService_ListMembers(t *testing.T) {
 
 func TestOrganizationService_RemoveMember(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
+	adminRoleID := model.MustNewID(model.ResourceTypeRole)
 
 	type fields struct {
 		baseService func(ctrl *gomock.Controller, ctx context.Context, organization model.ID) service.OrganizationService
@@ -2487,8 +2488,12 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(nil).Times(1)
 					organizationRepo.EXPECT().Get(ctx, organization, repository.OrganizationDetailProjection()).Return(&repository.Organization{Name: "org"}, nil)
 
+					roleRepo := mockrepo.NewMockRoleRepository(ctrl)
+					roleRepo.EXPECT().GetByKey(ctx, organization, model.RoleKeyOrgAdmin).Return(&repository.Role{ID: adminRoleID}, nil)
+
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, organization, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().ListByScope(ctx, organization).Return([]*service.Grant{}, nil)
 					permSvc.EXPECT().ListByPrincipal(ctx, userID).Return([]*service.Grant{}, nil)
 
 					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
@@ -2502,7 +2507,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 							organizationRepo,
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mockrepo.NewMockRoleRepository(ctrl),
+							roleRepo,
 							permSvc,
 							licenseSvc,
 							mocksvc.NewMockEmailService(ctrl),
@@ -2707,8 +2712,12 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 					organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
 					organizationRepo.EXPECT().RemoveMember(ctx, organization, userID).Return(assert.AnError).Times(1)
 
+					roleRepo := mockrepo.NewMockRoleRepository(ctrl)
+					roleRepo.EXPECT().GetByKey(ctx, organization, model.RoleKeyOrgAdmin).Return(&repository.Role{ID: adminRoleID}, nil)
+
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().CtxUserHas(ctx, organization, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().ListByScope(ctx, organization).Return([]*service.Grant{}, nil)
 					permSvc.EXPECT().ListByPrincipal(ctx, userID).Return([]*service.Grant{}, nil)
 
 					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
@@ -2719,7 +2728,7 @@ func TestOrganizationService_RemoveMember(t *testing.T) {
 							organizationRepo,
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mockrepo.NewMockRoleRepository(ctrl),
+							roleRepo,
 							permSvc,
 							licenseSvc,
 							mocksvc.NewMockEmailService(ctrl),
@@ -4870,6 +4879,7 @@ func TestOrganizationService_RemoveMember_DeletesOrgScopedGrants(t *testing.T) {
 	userID := model.MustNewID(model.ResourceTypeUser)
 	orgID := model.MustNewID(model.ResourceTypeOrganization)
 	otherOrgID := model.MustNewID(model.ResourceTypeOrganization)
+	adminRoleID := model.MustNewID(model.ResourceTypeRole)
 	matchingGrant := &service.Grant{ID: model.MustNewID(model.ResourceTypePermission), Scope: orgID}
 	foreignGrant := &service.Grant{ID: model.MustNewID(model.ResourceTypePermission), Scope: otherOrgID}
 	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
@@ -4884,8 +4894,12 @@ func TestOrganizationService_RemoveMember_DeletesOrgScopedGrants(t *testing.T) {
 	organizationRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
 	organizationRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(&repository.Organization{Name: "org"}, nil)
 
+	roleRepo := mockrepo.NewMockRoleRepository(ctrl)
+	roleRepo.EXPECT().GetByKey(ctx, orgID, model.RoleKeyOrgAdmin).Return(&repository.Role{ID: adminRoleID}, nil)
+
 	permSvc := mocksvc.NewMockPermissionService(ctrl)
 	permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage).Return(true, nil)
+	permSvc.EXPECT().ListByScope(ctx, orgID).Return([]*service.Grant{}, nil)
 	permSvc.EXPECT().ListByPrincipal(ctx, userID).Return([]*service.Grant{matchingGrant, foreignGrant}, nil)
 	permSvc.EXPECT().Delete(ctx, matchingGrant.ID).Return(nil)
 
@@ -4900,7 +4914,129 @@ func TestOrganizationService_RemoveMember_DeletesOrgScopedGrants(t *testing.T) {
 			organizationRepo,
 			mockrepo.NewMockUserRepository(ctrl),
 			mockrepo.NewMockUserTokenRepository(ctrl),
-			mockrepo.NewMockRoleRepository(ctrl),
+			roleRepo,
+			permSvc,
+			licenseSvc,
+			mocksvc.NewMockEmailService(ctrl),
+			notificationSvc,
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			panic(err)
+		}
+		return svc
+	}()
+	require.NoError(t, s.RemoveMember(ctx, orgID, userID))
+}
+
+func TestOrganizationService_RemoveMember_SoleAdminSelfRemoval(t *testing.T) {
+	t.Parallel()
+
+	userID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	adminRoleID := model.MustNewID(model.ResourceTypeRole)
+	adminGrant := &service.Grant{
+		ID:        model.MustNewID(model.ResourceTypePermission),
+		Principal: userID,
+		Scope:     orgID,
+		RoleID:    &adminRoleID,
+	}
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
+
+	ctrl := gomock.NewController(t)
+	span := mocktrace.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
+	tracer := mocktrace.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "service.organizationService/RemoveMember", gomock.Len(0)).Return(ctx, span)
+
+	roleRepo := mockrepo.NewMockRoleRepository(ctrl)
+	roleRepo.EXPECT().GetByKey(ctx, orgID, model.RoleKeyOrgAdmin).Return(&repository.Role{ID: adminRoleID}, nil)
+
+	permSvc := mocksvc.NewMockPermissionService(ctrl)
+	permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage).Return(true, nil)
+	permSvc.EXPECT().ListByScope(ctx, orgID).Return([]*service.Grant{adminGrant}, nil)
+
+	licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+	s := func() service.OrganizationService {
+		svc, err := service.NewOrganizationService(
+			mockrepo.NewMockOrganizationRepository(ctrl),
+			mockrepo.NewMockUserRepository(ctrl),
+			mockrepo.NewMockUserTokenRepository(ctrl),
+			roleRepo,
+			permSvc,
+			licenseSvc,
+			mocksvc.NewMockEmailService(ctrl),
+			mocksvc.NewMockNotificationService(ctrl),
+			mocksvc.NewMockSearchService(ctrl),
+			service.WithLogger(mocklog.NewMockLogger(ctrl)),
+			service.WithTracer(tracer),
+		)
+		if err != nil {
+			panic(err)
+		}
+		return svc
+	}()
+	err := s.RemoveMember(ctx, orgID, userID)
+	require.ErrorIs(t, err, service.ErrOrganizationMemberRemove)
+	require.ErrorIs(t, err, service.ErrOrganizationMemberSoleAdmin)
+}
+
+func TestOrganizationService_RemoveMember_AdminSelfRemovalWithOtherAdmin(t *testing.T) {
+	t.Parallel()
+
+	userID := model.MustNewID(model.ResourceTypeUser)
+	otherAdminID := model.MustNewID(model.ResourceTypeUser)
+	orgID := model.MustNewID(model.ResourceTypeOrganization)
+	adminRoleID := model.MustNewID(model.ResourceTypeRole)
+	adminGrant := &service.Grant{
+		ID:        model.MustNewID(model.ResourceTypePermission),
+		Principal: userID,
+		Scope:     orgID,
+		RoleID:    &adminRoleID,
+	}
+	otherAdminGrant := &service.Grant{
+		ID:        model.MustNewID(model.ResourceTypePermission),
+		Principal: otherAdminID,
+		Scope:     orgID,
+		RoleID:    &adminRoleID,
+	}
+	ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
+
+	ctrl := gomock.NewController(t)
+	span := mocktrace.NewMockSpan(ctrl)
+	span.EXPECT().End(gomock.Len(0))
+	tracer := mocktrace.NewMockTracer(ctrl)
+	tracer.EXPECT().Start(ctx, "service.organizationService/RemoveMember", gomock.Len(0)).Return(ctx, span)
+
+	organizationRepo := mockrepo.NewMockOrganizationRepository(ctrl)
+	organizationRepo.EXPECT().RemoveMember(ctx, orgID, userID).Return(nil)
+	organizationRepo.EXPECT().Get(ctx, orgID, repository.OrganizationDetailProjection()).Return(&repository.Organization{Name: "org"}, nil)
+
+	roleRepo := mockrepo.NewMockRoleRepository(ctrl)
+	roleRepo.EXPECT().GetByKey(ctx, orgID, model.RoleKeyOrgAdmin).Return(&repository.Role{ID: adminRoleID}, nil)
+
+	permSvc := mocksvc.NewMockPermissionService(ctrl)
+	permSvc.EXPECT().CtxUserHas(ctx, orgID, model.ActionOrganizationMembersManage).Return(true, nil)
+	permSvc.EXPECT().ListByScope(ctx, orgID).Return([]*service.Grant{adminGrant, otherAdminGrant}, nil)
+	permSvc.EXPECT().ListByPrincipal(ctx, userID).Return([]*service.Grant{adminGrant}, nil)
+	permSvc.EXPECT().Delete(ctx, adminGrant.ID).Return(nil)
+
+	licenseSvc := mocksvc.NewMockLicenseService(ctrl)
+	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+
+	notificationSvc := mocksvc.NewMockNotificationService(ctrl)
+	notificationSvc.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&service.Notification{}, nil)
+
+	s := func() service.OrganizationService {
+		svc, err := service.NewOrganizationService(
+			organizationRepo,
+			mockrepo.NewMockUserRepository(ctrl),
+			mockrepo.NewMockUserTokenRepository(ctrl),
+			roleRepo,
 			permSvc,
 			licenseSvc,
 			mocksvc.NewMockEmailService(ctrl),

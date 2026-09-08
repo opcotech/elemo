@@ -117,6 +117,7 @@ var (
 	ErrOrganizationMemberInvalidStatus = errors.New("user status is not valid for invitation")      // user status is not valid for invitation
 	ErrOrganizationMemberInvite        = errors.New("failed to invite member to organization")      // failed to invite member to organization
 	ErrOrganizationMemberRemove        = errors.New("failed to remove member from organization")    // failed to remove member from organization
+	ErrOrganizationMemberSoleAdmin     = errors.New("cannot remove the only organization admin")    // cannot remove the only organization admin
 	ErrOrganizationMembersGet          = errors.New("failed to get members of organization")        // failed to get members of organization
 	ErrOrganizationUpdate              = errors.New("failed to update organization")                // failed to update organization
 	ErrPermissionCreate                = errors.New("failed to create permission")                  // failed to create permission

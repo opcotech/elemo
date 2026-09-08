@@ -387,6 +387,8 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 
 	if err := c.organizationService.RemoveMember(ctx, organizationID, userID); err != nil {
 		switch classifyServiceError(err) {
+		case http.StatusBadRequest:
+			return api.V1OrganizationMemberRemove400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		case http.StatusForbidden:
 			return api.V1OrganizationMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
