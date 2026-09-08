@@ -88,6 +88,7 @@ func isClientValidationError(err error) bool {
 		errors.Is(err, service.ErrExpiredToken) ||
 		errors.Is(err, service.ErrOrganizationMemberAlreadyExists) ||
 		errors.Is(err, service.ErrOrganizationMemberInvalidStatus) ||
+		errors.Is(err, service.ErrOrganizationMemberSoleAdmin) ||
 		errors.Is(err, service.ErrIssueSelfRelation) ||
 		errors.Is(err, service.ErrIssueReservedRelationKind) ||
 		errors.Is(err, repository.ErrFolderNameConflict) ||

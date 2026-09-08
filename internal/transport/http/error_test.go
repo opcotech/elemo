@@ -153,6 +153,7 @@ func TestClassifyServiceError(t *testing.T) {
 		{name: "no user", err: service.ErrNoUser, status: http.StatusBadRequest},
 		{name: "member already exists", err: service.ErrOrganizationMemberAlreadyExists, status: http.StatusBadRequest},
 		{name: "member invalid status", err: service.ErrOrganizationMemberInvalidStatus, status: http.StatusBadRequest},
+		{name: "member sole admin", err: service.ErrOrganizationMemberSoleAdmin, status: http.StatusBadRequest},
 		{name: "folder name conflict", err: repository.ErrFolderNameConflict, status: http.StatusBadRequest},
 		{name: "folder cycle", err: repository.ErrFolderCycle, status: http.StatusBadRequest},
 		{name: "wrapped validation", err: errors.Join(service.ErrProjectList, model.ErrInvalidID), status: http.StatusBadRequest},
