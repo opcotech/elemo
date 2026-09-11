@@ -30,7 +30,7 @@ overrides:
   follow-redirects@<=1.15.11: '>=1.16.0'
   form-data@>=4.0.0 <4.0.6: '>=4.0.6'
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
-  joi@<17.13.4: '>=17.13.7'
+  joi@<17.13.4: '>=18.2.5'
   js-yaml@<3.15.0: '>=3.15.2'
   js-yaml@>=3.0.0 <3.15.0: '>=3.15.2'
   js-yaml@>=4.0.0 <4.3.0: '>=4.3.2'
@@ -67,7 +67,7 @@ importers:
         version: 3.2.2(react@19.2.8)
       '@hookform/resolvers':
         specifier: ^5.9.1
-        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(joi@18.2.3)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)
+        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(joi@18.2.8)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.1)(jiti@2.7.0))
@@ -884,7 +884,7 @@ packages:
       fluentvalidation-ts: ^3.0.0
       fp-ts: ^2.7.0
       io-ts: ^2.0.0
-      joi: '>=17.13.7'
+      joi: '>=18.2.5'
       nope-validator: '>=0.12.0'
       react-hook-form: ^7.55.0
       superstruct: '>=0.12.0'
@@ -4065,6 +4065,10 @@ packages:
     resolution: {integrity: sha512-N5A3KTWQpPWT4ExxxPlUx7WmykGXRzhNidWhV41d6Abu9YfI2NyWCJuxdPnslJCPWtbRpSVOWSnSS6GakLM/Rg==}
     engines: {node: '>= 20'}
 
+  joi@18.2.8:
+    resolution: {integrity: sha512-G2TX62h58ZHuwqetJgP2F4ualakqAmZtBYe3jWen7gxQRw5xApX6crnFtuB91WC0c3ESBnva+kGSnb3+6pIQDQ==}
+    engines: {node: '>= 20'}
+
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
 
@@ -6239,14 +6243,14 @@ snapshots:
 
   '@hey-api/types@0.1.4': {}
 
-  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(joi@18.2.3)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)':
+  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(joi@18.2.8)(react-hook-form@7.87.0(react@19.2.8))(zod@4.5.4)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.87.0(react@19.2.8)
     optionalDependencies:
       '@sinclair/typebox': 0.34.52
       '@standard-schema/spec': 1.1.0
-      joi: 18.2.3
+      joi: 18.2.8
       zod: 4.5.4
 
   '@isaacs/cliui@8.0.2':
@@ -9473,6 +9477,16 @@ snapshots:
       '@hapi/topo': 6.0.2
       '@standard-schema/spec': 1.1.0
 
+  joi@18.2.8:
+    dependencies:
+      '@hapi/address': 5.1.1
+      '@hapi/formula': 3.0.2
+      '@hapi/hoek': 11.0.7
+      '@hapi/pinpoint': 2.0.1
+      '@hapi/tlds': 1.1.7
+      '@hapi/topo': 6.0.2
+      '@standard-schema/spec': 1.1.0
+
   js-tokens@10.0.0: {}
 
   js-tokens@4.0.0: {}
@@ -10860,7 +10874,7 @@ snapshots:
   wait-on@7.2.0:
     dependencies:
       axios: 1.20.0
-      joi: 18.2.3
+      joi: 18.2.8
       lodash: 4.18.1
       minimist: 1.2.8
       rxjs: 7.8.2
