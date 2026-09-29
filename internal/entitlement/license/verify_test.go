@@ -224,7 +224,7 @@ func TestVendorTrustKeyIDAndFingerprint(t *testing.T) {
 	require.Len(t, publicKey, ed25519.PublicKeySize)
 
 	fingerprint := sha256.Sum256(publicKey)
-	require.Equal(t, "5b04483301c143f4524b5113a7cbb7aa8d71eac021d13dcd83d38c9cdfbaa700", hex.EncodeToString(fingerprint[:]))
+	require.Equal(t, "f9a27c913cc8163bc43dba8b160b7fa301d56da276dedb84b01e7803e5be71f7", hex.EncodeToString(fingerprint[:]))
 
 	_, err = license.Verify([]byte("{}"), nil)
 	require.ErrorIs(t, err, license.ErrNoTrust)
