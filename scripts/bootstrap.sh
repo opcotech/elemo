@@ -52,6 +52,11 @@ if [ -n "${PLAYWRIGHT_BROWSERS}" ]; then
   log "installing Playwright browsers: ${PLAYWRIGHT_BROWSERS}"
   # shellcheck disable=SC2206
   browsers=(${PLAYWRIGHT_BROWSERS})
+  for browser in "${browsers[@]}"; do
+    if [ "$browser" = "chromium" ]; then
+      browsers+=(chromium-headless-shell)
+    fi
+  done
   pnpm --dir web exec playwright install --with-deps "${browsers[@]}"
 else
   log "installing Playwright browsers"
