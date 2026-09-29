@@ -45,6 +45,8 @@
         $ref: "#/components/responses/401"
       "403":
         $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new todo item.
@@ -98,6 +100,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     tags:
@@ -126,6 +130,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Update the given todo

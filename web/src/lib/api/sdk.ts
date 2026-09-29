@@ -89,6 +89,7 @@ export {
   v1ResourceCustomFieldValueDelete,
   v1ResourceCustomFieldValuePut,
   v1SearchGet,
+  v1SystemEntitlements,
   v1TodoGet,
   v1TodosCreate,
   v1TodosGet,

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -197,7 +196,6 @@ type issueService struct {
 	assignmentRepo     repository.AssignmentRepository
 	labelRepo          repository.LabelRepository
 	permissionService  PermissionService
-	licenseService     LicenseService
 	searchService      SearchService
 	customFieldService CustomFieldService
 }
@@ -532,8 +530,9 @@ func (s *issueService) Create(ctx context.Context, projectID model.ID, opts Crea
 	ctx, span := s.tracer.Start(ctx, "service.issueService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrIssueCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrIssueCreate, err)
 	}
 
 	if err := projectID.Validate(); err != nil {
@@ -815,8 +814,9 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 	ctx, span := s.tracer.Start(ctx, "service.issueService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrIssueUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrIssueUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -830,15 +830,6 @@ func (s *issueService) Update(ctx context.Context, id model.ID, opts UpdateIssue
 	assignees, err := optionalIDs(opts.Assignees)
 	if err != nil {
 		return nil, errors.Join(ErrIssueUpdate, err)
-	}
-	if opts.Assignees.Defined && len(assignees) > 1 {
-		ok, err := s.licenseService.HasFeature(ctx, license.FeatureMultipleAssignees)
-		if err != nil {
-			return nil, errors.Join(ErrIssueUpdate, err)
-		}
-		if !ok {
-			return nil, errors.Join(ErrIssueUpdate, ErrQuotaExceeded)
-		}
 	}
 
 	reviewers, err := optionalIDs(opts.Reviewers)
@@ -914,8 +905,9 @@ func (s *issueService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.issueService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrIssueDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrIssueDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -983,8 +975,9 @@ func (s *issueService) AddRelation(ctx context.Context, issueID, relatedID model
 	ctx, span := s.tracer.Start(ctx, "service.issueService/AddRelation")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrIssueAddRelation, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrIssueAddRelation, err)
 	}
 
 	if err := issueID.Validate(); err != nil {
@@ -1034,8 +1027,9 @@ func (s *issueService) UpdateRelation(ctx context.Context, issueID, relationID m
 	ctx, span := s.tracer.Start(ctx, "service.issueService/UpdateRelation")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrIssueUpdateRelation, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrIssueUpdateRelation, err)
 	}
 
 	if err := issueID.Validate(); err != nil {
@@ -1097,8 +1091,9 @@ func (s *issueService) RemoveRelation(ctx context.Context, issueID, relationID m
 	ctx, span := s.tracer.Start(ctx, "service.issueService/RemoveRelation")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrIssueRemoveRelation, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrIssueRemoveRelation, err)
 	}
 
 	if err := issueID.Validate(); err != nil {
@@ -1139,7 +1134,6 @@ func NewIssueService(
 	assignmentRepo repository.AssignmentRepository,
 	labelRepo repository.LabelRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	searchService SearchService,
 	customFieldService CustomFieldService,
 	opts ...Option,
@@ -1155,7 +1149,6 @@ func NewIssueService(
 		assignmentRepo:     assignmentRepo,
 		labelRepo:          labelRepo,
 		permissionService:  permissionService,
-		licenseService:     licenseService,
 		searchService:      searchService,
 		customFieldService: customFieldService,
 	}
@@ -1174,10 +1167,6 @@ func NewIssueService(
 
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.searchService == nil {

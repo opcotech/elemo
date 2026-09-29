@@ -72,9 +72,7 @@ func (c *organizationController) V1OrganizationsCreate(ctx context.Context, requ
 		case http.StatusForbidden:
 			return api.V1OrganizationsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusConflict:
-			return api.V1OrganizationsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
-				Message: err.Error(),
-			}}, nil
+			return api.V1OrganizationsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -168,6 +166,8 @@ func (c *organizationController) V1OrganizationUpdate(ctx context.Context, reque
 			return api.V1OrganizationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -193,6 +193,8 @@ func (c *organizationController) V1OrganizationDelete(ctx context.Context, reque
 			return api.V1OrganizationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -268,6 +270,8 @@ func (c *organizationController) V1OrganizationMembersAdd(ctx context.Context, r
 			return api.V1OrganizationMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationMembersAdd409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -331,6 +335,8 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
 			case http.StatusNotFound:
 				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			case http.StatusConflict:
+				return api.V1OrganizationMembersInvite409JSONResponse{N409JSONResponse: entitlementConflict(inviteErr)}, nil
 			default:
 				return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 					Message: inviteErr.Error(),
@@ -358,6 +364,8 @@ func (c *organizationController) V1OrganizationMembersInvite(ctx context.Context
 				return api.V1OrganizationMembersInvite403JSONResponse{N403JSONResponse: permissionDenied}, nil
 			case http.StatusNotFound:
 				return api.V1OrganizationMembersInvite404JSONResponse{N404JSONResponse: notFound}, nil
+			case http.StatusConflict:
+				return api.V1OrganizationMembersInvite409JSONResponse{N409JSONResponse: entitlementConflict(inviteErr)}, nil
 			default:
 				return api.V1OrganizationMembersInvite500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 					Message: inviteErr.Error(),
@@ -391,6 +399,8 @@ func (c *organizationController) V1OrganizationMemberRemove(ctx context.Context,
 			return api.V1OrganizationMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationMemberRemove409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -421,6 +431,8 @@ func (c *organizationController) V1OrganizationMemberInviteRevoke(ctx context.Co
 			return api.V1OrganizationMemberInviteRevoke403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationMemberInviteRevoke404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationMemberInviteRevoke409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationMemberInviteRevoke500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -459,6 +471,8 @@ func (c *organizationController) V1OrganizationMembersAccept(ctx context.Context
 			return api.V1OrganizationMembersAccept400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationMembersAccept404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationMembersAccept409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationMembersAccept500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -497,6 +511,8 @@ func (c *organizationController) V1OrganizationRolesCreate(ctx context.Context, 
 			return api.V1OrganizationRolesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationRolesCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationRolesCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationRolesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -607,6 +623,8 @@ func (c *organizationController) V1OrganizationRoleUpdate(ctx context.Context, r
 			return api.V1OrganizationRoleUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationRoleUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationRoleUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationRoleUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -637,6 +655,8 @@ func (c *organizationController) V1OrganizationRoleDelete(ctx context.Context, r
 			return api.V1OrganizationRoleDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationRoleDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationRoleDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationRoleDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -667,6 +687,8 @@ func (c *organizationController) V1OrganizationTeamsCreate(ctx context.Context, 
 			return api.V1OrganizationTeamsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationTeamsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationTeamsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationTeamsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -776,6 +798,8 @@ func (c *organizationController) V1OrganizationTeamUpdate(ctx context.Context, r
 			return api.V1OrganizationTeamUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationTeamUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationTeamUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationTeamUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -806,6 +830,8 @@ func (c *organizationController) V1OrganizationTeamDelete(ctx context.Context, r
 			return api.V1OrganizationTeamDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationTeamDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationTeamDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationTeamDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -891,6 +917,8 @@ func (c *organizationController) V1OrganizationTeamMembersAdd(ctx context.Contex
 			return api.V1OrganizationTeamMembersAdd403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationTeamMembersAdd404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationTeamMembersAdd409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationTeamMembersAdd500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -928,6 +956,8 @@ func (c *organizationController) V1OrganizationTeamMemberRemove(ctx context.Cont
 			return api.V1OrganizationTeamMemberRemove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationTeamMemberRemove404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationTeamMemberRemove409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationTeamMemberRemove500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

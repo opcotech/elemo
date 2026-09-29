@@ -33,10 +33,10 @@ func TestNamespaceService_Create_IndexesSearch(t *testing.T) {
 	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 	namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-	namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
+	namespaceRepo.EXPECT().Create(gomock.Any(), repository.CreateNamespaceOpts{
 		Name:        opts.Name,
 		Slug:        opts.Slug,
 		Description: opts.Description,
@@ -45,20 +45,16 @@ func TestNamespaceService_Create_IndexesSearch(t *testing.T) {
 	}).Return(ns, nil)
 
 	permSvc := mocksvc.NewMockPermissionService(ctrl)
-	permSvc.EXPECT().CtxUserHas(ctx, orgID, gomock.Any()).Return(true, nil)
+	permSvc.EXPECT().CtxUserHas(gomock.Any(), orgID, gomock.Any()).Return(true, nil)
 	permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
 	searchSvc := mocksvc.NewMockSearchService(ctrl)
-	searchSvc.EXPECT().EnqueueIndex(ctx, ns.ID).Return(nil)
+	searchSvc.EXPECT().EnqueueIndex(gomock.Any(), ns.ID).Return(nil)
 
 	svc := func() service.NamespaceService {
 		svc, err := service.NewNamespaceService(
 			namespaceRepo,
 			permSvc,
-			licenseSvc,
 			searchSvc,
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(tracer),
@@ -83,25 +79,21 @@ func TestNamespaceService_Delete_DeletesSearchByScope(t *testing.T) {
 	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
 	namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-	namespaceRepo.EXPECT().Delete(ctx, id).Return(nil)
+	namespaceRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 	permSvc := mocksvc.NewMockPermissionService(ctrl)
-	permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-	licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+	permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 	searchSvc := mocksvc.NewMockSearchService(ctrl)
-	searchSvc.EXPECT().DeleteByScope(ctx, id).Return(nil)
+	searchSvc.EXPECT().DeleteByScope(gomock.Any(), id).Return(nil)
 
 	svc := func() service.NamespaceService {
 		svc, err := service.NewNamespaceService(
 			namespaceRepo,
 			permSvc,
-			licenseSvc,
 			searchSvc,
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(tracer),
@@ -124,19 +116,16 @@ func TestIssueService_Delete_DeletesSearch(t *testing.T) {
 	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 	issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-	issueRepo.EXPECT().Delete(ctx, id).Return(nil)
+	issueRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 	permSvc := mocksvc.NewMockPermissionService(ctrl)
-	permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-	licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-	licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+	permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 	searchSvc := mocksvc.NewMockSearchService(ctrl)
-	searchSvc.EXPECT().Delete(ctx, id).Return(nil)
+	searchSvc.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 	svc := func() service.IssueService {
 		svc, err := service.NewIssueService(
@@ -144,7 +133,6 @@ func TestIssueService_Delete_DeletesSearch(t *testing.T) {
 			mockrepo.NewMockAssignmentRepository(ctrl),
 			mockrepo.NewMockLabelRepository(ctrl),
 			permSvc,
-			licenseSvc,
 			searchSvc,
 			nopCustomFieldService{},
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),

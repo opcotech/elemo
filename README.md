@@ -91,4 +91,7 @@ Elemo is **source-available** under [FSL-1.1-ALv2](LICENSE):
 
 A [commercial license](LICENSE-COMMERCIAL) is available if you need Competing Use rights (OEM, white-label, or third-party hosting). Contact **info@opcotech.com**.
 
+Self-hosted Elemo has no runtime license file. The commercial AirGap artifact
+enforces vendor-signed human seats; see [AirGap operations](docs/operations/airgap.md).
+
 Git tags published before this FSL switch remain available under AGPL-3.0 as originally licensed.

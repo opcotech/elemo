@@ -64,6 +64,8 @@ func (c *issueController) V1ProjectsIssuesCreate(ctx context.Context, request ap
 			return api.V1ProjectsIssuesCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectsIssuesCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectsIssuesCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectsIssuesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -310,6 +312,8 @@ func (c *issueController) V1IssueUpdate(ctx context.Context, request api.V1Issue
 			return api.V1IssueUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssueUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssueUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssueUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -337,6 +341,8 @@ func (c *issueController) V1IssueDelete(ctx context.Context, request api.V1Issue
 			return api.V1IssueDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssueDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssueDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssueDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -419,6 +425,8 @@ func (c *issueController) V1IssueRelationsCreate(ctx context.Context, request ap
 			return api.V1IssueRelationsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssueRelationsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssueRelationsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssueRelationsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -460,6 +468,8 @@ func (c *issueController) V1IssueRelationUpdate(ctx context.Context, request api
 			return api.V1IssueRelationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssueRelationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssueRelationUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssueRelationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -492,6 +502,8 @@ func (c *issueController) V1IssueRelationDelete(ctx context.Context, request api
 			return api.V1IssueRelationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssueRelationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssueRelationDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssueRelationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

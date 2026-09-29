@@ -39,6 +39,8 @@ func (c *permissionController) V1PermissionsCreate(ctx context.Context, request 
 			return api.V1PermissionsCreate400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 		case http.StatusForbidden:
 			return api.V1PermissionsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusConflict:
+			return api.V1PermissionsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PermissionsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -90,6 +92,8 @@ func (c *permissionController) V1PermissionDelete(ctx context.Context, request a
 			return api.V1PermissionDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PermissionDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PermissionDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PermissionDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

@@ -6,8 +6,13 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
+)
+
+const (
+	LicenseExpiryReminderInterval = 24 * time.Hour
+	LicenseExpiryReminderWindow   = 7 * 24 * time.Hour
+	licenseExpiryReminderTaskID   = "system:license_expiry:daily"
 )
 
 // HealthCheckTaskPayload is the payload for the health check task.
@@ -26,31 +31,17 @@ func NewSystemHealthCheckTask() (*asynq.Task, error) {
 	), nil
 }
 
-// LicenseExpiryTaskPayload is the payload for the license expiry check task.
-type LicenseExpiryTaskPayload struct {
-	LicenseID           string
-	LicenseEmail        string
-	LicenseOrganization string
-	LicenseExpiresAt    time.Time
-}
-
-// NewSystemLicenseExpiryTask creates a new license expiry check task.
-func NewSystemLicenseExpiryTask(l *license.License) (*asynq.Task, error) {
-	if l == nil {
-		return nil, license.ErrNoLicense
-	}
-
-	payload, _ := json.Marshal(LicenseExpiryTaskPayload{
-		LicenseID:           l.ID.String(),
-		LicenseEmail:        l.Email,
-		LicenseOrganization: l.Organization,
-		LicenseExpiresAt:    l.ExpiresAt,
-	})
-
+// NewSystemLicenseExpiryTask creates a periodic License expiration
+// reminder task. Task ID retention prevents successful reminders from being
+// enqueued more than once per day; Unique also suppresses concurrent copies.
+func NewSystemLicenseExpiryTask() (*asynq.Task, error) {
 	return asynq.NewTask(
 		TaskTypeSystemLicenseExpiry.String(),
-		payload,
-		asynq.Timeout(DefaultTaskTimeout),
+		nil,
+		asynq.TaskID(licenseExpiryReminderTaskID),
+		asynq.Timeout(30*time.Second),
+		asynq.Retention(LicenseExpiryReminderInterval),
+		asynq.Unique(LicenseExpiryReminderInterval),
 		asynq.Queue(MessageQueueHighPriority),
 	), nil
 }

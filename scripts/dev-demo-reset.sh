@@ -172,7 +172,7 @@ function loadDemoData() {
   log "loading demo data"
   if [ "${ELEMO_PREFILL_DOCKER:-}" = "1" ] || ! type go >/dev/null 2>&1; then
     checkInstalled "docker"
-    # Overlay host configs so relative license/signing paths in config.yml resolve.
+    # Overlay host configs so relative paths in config.yml resolve.
     docker run --rm \
       --network "${ELEMO_COMPOSE_NETWORK:-elemo-network}" \
       --volume "${ROOT_DIR}:/src" \

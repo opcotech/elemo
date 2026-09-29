@@ -13,7 +13,7 @@ export CONFIG_DIR="${ROOT_DIR}/configs/development"
 export PLUGINS_DIR="${ROOT_DIR}/plugins"
 export DOCKER_DEPLOY_DIR="${ROOT_DIR}/deploy/docker"
 export PACKAGE_DIR="${ROOT_DIR}/web/src/lib/client"
-export QUERIES_DIR="${ROOT_DIR}/assets/queries"
+export QUERIES_DIR="${ROOT_DIR}/scripts/queries"
 export SCRIPTS_DIR="${ROOT_DIR}/scripts"
 export TOOLS_DIR="${ROOT_DIR}/tools"
 export WEB_DIR="${ROOT_DIR}/web"
@@ -107,11 +107,9 @@ function generateConfigIfMissing() {
   fi
 
   # Ensure config files have correct permissions for the nonroot user in container (UID 65532)
-  local license_file="${CONFIG_DIR}/license.gen.key"
   local signing_key="${CONFIG_DIR}/signing-key.gen.pem"
   local signing_cert="${CONFIG_DIR}/signing-cert.gen.pem"
 
-  [ -f "${license_file}" ] && chmod 0644 "${license_file}"
   [ -f "${signing_key}" ] && chmod 0644 "${signing_key}"
   [ -f "${signing_cert}" ] && chmod 0644 "${signing_cert}"
 }

@@ -26,7 +26,7 @@ func TestResolvedListScopeIDs(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		perm := mocksvc.NewMockPermissionService(ctrl)
-		perm.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return(nil, nil)
+		perm.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionProjectRead).Return(nil, nil)
 
 		scopeIDs, allowed, err := service.ResolvedListScopeIDs(ctx, perm, root, model.ActionProjectRead)
 		require.NoError(t, err)
@@ -38,8 +38,8 @@ func TestResolvedListScopeIDs(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		perm := mocksvc.NewMockPermissionService(ctrl)
-		perm.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{org}, nil)
-		perm.EXPECT().ListScopeAncestry(ctx, root).Return([]model.ID{root, org}, nil)
+		perm.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionProjectRead).Return([]model.ID{org}, nil)
+		perm.EXPECT().ListScopeAncestry(gomock.Any(), root).Return([]model.ID{root, org}, nil)
 
 		scopeIDs, allowed, err := service.ResolvedListScopeIDs(ctx, perm, root, model.ActionProjectRead)
 		require.NoError(t, err)
@@ -51,8 +51,8 @@ func TestResolvedListScopeIDs(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 		perm := mocksvc.NewMockPermissionService(ctrl)
-		perm.EXPECT().CtxUserListGrantScopes(ctx, model.ActionProjectRead).Return([]model.ID{other}, nil)
-		perm.EXPECT().ListScopeAncestry(ctx, root).Return([]model.ID{root, org}, nil)
+		perm.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionProjectRead).Return([]model.ID{other}, nil)
+		perm.EXPECT().ListScopeAncestry(gomock.Any(), root).Return([]model.ID{root, org}, nil)
 
 		scopeIDs, allowed, err := service.ResolvedListScopeIDs(ctx, perm, root, model.ActionProjectRead)
 		require.NoError(t, err)

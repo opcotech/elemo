@@ -61,6 +61,18 @@
         example:
           value:
             message: The requested resource already exists
+        seat_limit_reached:
+          value:
+            message: Licensed seat limit reached
+            code: seat_limit_reached
+        activation_denied:
+          value:
+            message: User activation is not entitled
+            code: activation_denied
+        entitlement_read_only:
+          value:
+            message: Installation is read-only
+            code: entitlement_read_only
 "500":
   description: Internal Server Error
   content:

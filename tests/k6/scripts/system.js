@@ -12,9 +12,9 @@ export function getSystemHealth() {
       'response body': r => deepEqual(JSON.parse(r.body), {
           'cache_database': 'healthy',
           'graph_database': 'healthy',
-          'license': 'healthy',
           'message_queue': 'healthy',
           'relational_database': 'healthy',
+          'search': 'healthy',
       }),
     });
   });

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -28,7 +27,6 @@ type customFieldServiceDeps struct {
 	tracer            tracing.Tracer
 	repo              repository.CustomFieldRepository
 	permissionService service.PermissionService
-	licenseService    service.LicenseService
 }
 
 func newCustomFieldServiceForTest(deps customFieldServiceDeps) service.CustomFieldService {
@@ -37,9 +35,6 @@ func newCustomFieldServiceForTest(deps customFieldServiceDeps) service.CustomFie
 	}
 	if deps.permissionService == nil {
 		deps.permissionService = mocksvc.NewMockPermissionService(nil)
-	}
-	if deps.licenseService == nil {
-		deps.licenseService = mocksvc.NewMockLicenseService(nil)
 	}
 	var opts []service.Option
 	if deps.logger != nil {
@@ -51,7 +46,6 @@ func newCustomFieldServiceForTest(deps customFieldServiceDeps) service.CustomFie
 	svc, err := service.NewCustomFieldService(
 		deps.repo,
 		deps.permissionService,
-		deps.licenseService,
 		opts...,
 	)
 	if err != nil {
@@ -71,7 +65,6 @@ func TestNewCustomFieldService(t *testing.T) {
 		svc, err := service.NewCustomFieldService(
 			mockrepo.NewMockCustomFieldRepository(ctrl),
 			mocksvc.NewMockPermissionService(ctrl),
-			mocksvc.NewMockLicenseService(ctrl),
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 		)
@@ -87,7 +80,6 @@ func TestNewCustomFieldService(t *testing.T) {
 		_, err := service.NewCustomFieldService(
 			nil,
 			mocksvc.NewMockPermissionService(ctrl),
-			mocksvc.NewMockLicenseService(ctrl),
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 		)
@@ -99,7 +91,6 @@ func TestNewCustomFieldService(t *testing.T) {
 		_, err := service.NewCustomFieldService(
 			mockrepo.NewMockCustomFieldRepository(nil),
 			mocksvc.NewMockPermissionService(nil),
-			mocksvc.NewMockLicenseService(nil),
 			service.WithLogger(nil),
 		)
 		assert.ErrorIs(t, err, log.ErrNoLogger)
@@ -113,26 +104,10 @@ func TestNewCustomFieldService(t *testing.T) {
 		_, err := service.NewCustomFieldService(
 			mockrepo.NewMockCustomFieldRepository(ctrl),
 			nil,
-			mocksvc.NewMockLicenseService(ctrl),
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(mocktrace.NewMockTracer(ctrl)),
 		)
 		assert.ErrorIs(t, err, service.ErrNoPermissionService)
-	})
-
-	t.Run("no license service", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		_, err := service.NewCustomFieldService(
-			mockrepo.NewMockCustomFieldRepository(ctrl),
-			mocksvc.NewMockPermissionService(ctrl),
-			nil,
-			service.WithLogger(mocklog.NewMockLogger(ctrl)),
-			service.WithTracer(mocktrace.NewMockTracer(ctrl)),
-		)
-		assert.ErrorIs(t, err, service.ErrNoLicenseService)
 	})
 }
 
@@ -159,19 +134,16 @@ func TestCustomFieldService_CreateDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		created := testModel.NewIntegerCustomFieldDefinition(projectID, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().NextSortOrder(ctx, projectID, model.ResourceTypeIssue).Return(4, nil)
-		repo.EXPECT().CreateDefinition(ctx, gomock.Any()).DoAndReturn(
+		repo.EXPECT().NextSortOrder(gomock.Any(), projectID, model.ResourceTypeIssue).Return(4, nil)
+		repo.EXPECT().CreateDefinition(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, def *model.CustomFieldDefinition) (*model.CustomFieldDefinition, error) {
 				assert.Equal(t, 4, def.SortOrder)
 				return created, nil
@@ -183,7 +155,6 @@ func TestCustomFieldService_CreateDefinition(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		got, err := s.CreateDefinition(ctx, opts)
 		require.NoError(t, err)
@@ -199,18 +170,15 @@ func TestCustomFieldService_CreateDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		created := testModel.NewIntegerCustomFieldDefinition(projectID, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().CreateDefinition(ctx, gomock.Any()).DoAndReturn(
+		repo.EXPECT().CreateDefinition(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, def *model.CustomFieldDefinition) (*model.CustomFieldDefinition, error) {
 				assert.Equal(t, 0, def.SortOrder)
 				return created, nil
@@ -222,36 +190,12 @@ func TestCustomFieldService_CreateDefinition(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		createOpts := opts
 		createOpts.SortOrder = optional.Some(0)
 		got, err := s.CreateDefinition(ctx, createOpts)
 		require.NoError(t, err)
 		assert.Equal(t, created.ID, got.ID)
-	})
-
-	t.Run("feature unavailable", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ctx := context.WithValue(context.Background(), pkg.CtxKeyUserID, userID)
-		span := mocktrace.NewMockSpan(ctrl)
-		span.EXPECT().End(gomock.Len(0))
-		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(false, nil)
-
-		s := newCustomFieldServiceForTest(customFieldServiceDeps{
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
-		})
-		_, err := s.CreateDefinition(ctx, opts)
-		assert.ErrorIs(t, err, service.ErrFeatureDisabled)
 	})
 
 	t.Run("no permission", func(t *testing.T) {
@@ -263,19 +207,15 @@ func TestCustomFieldService_CreateDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/CreateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(false, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		_, err := s.CreateDefinition(ctx, opts)
 		assert.ErrorIs(t, err, service.ErrNoPermission)
@@ -298,17 +238,14 @@ func TestCustomFieldService_ArchiveDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0)).AnyTimes()
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().UpdateDefinition(ctx, gomock.Any()).DoAndReturn(
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().UpdateDefinition(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, updated *model.CustomFieldDefinition) (*model.CustomFieldDefinition, error) {
 				assert.True(t, updated.Archived)
 				return updated, nil
@@ -320,7 +257,6 @@ func TestCustomFieldService_ArchiveDefinition(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		got, err := s.ArchiveDefinition(ctx, def.ID)
 		require.NoError(t, err)
@@ -345,17 +281,14 @@ func TestCustomFieldService_UpdateDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().UpdateDefinition(ctx, gomock.Any()).DoAndReturn(
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().UpdateDefinition(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, updated *model.CustomFieldDefinition) (*model.CustomFieldDefinition, error) {
 				assert.Equal(t, 0, updated.SortOrder)
 				return updated, nil
@@ -367,7 +300,6 @@ func TestCustomFieldService_UpdateDefinition(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		got, err := s.UpdateDefinition(ctx, def.ID, service.UpdateCustomFieldOpts{
 			SortOrder: optional.Some(0),
@@ -393,24 +325,20 @@ func TestCustomFieldService_DeleteDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/DeleteDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/DeleteDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().CountValues(ctx, def.ID).Return(int64(2), nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().CountValues(gomock.Any(), def.ID).Return(int64(2), nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.DeleteDefinition(ctx, def.ID)
 		assert.ErrorIs(t, err, model.ErrCustomFieldInUse)
@@ -425,25 +353,21 @@ func TestCustomFieldService_DeleteDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/DeleteDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/DeleteDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().CountValues(ctx, def.ID).Return(int64(0), nil)
-		repo.EXPECT().DeleteDefinition(ctx, def.ID).Return(nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().CountValues(gomock.Any(), def.ID).Return(int64(0), nil)
+		repo.EXPECT().DeleteDefinition(gomock.Any(), def.ID).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		require.NoError(t, s.DeleteDefinition(ctx, def.ID))
 	})
@@ -465,23 +389,19 @@ func TestCustomFieldService_UpdateDefinitionIdentityFrozen(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/UpdateDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		_, err := s.UpdateDefinition(ctx, def.ID, service.UpdateCustomFieldOpts{
 			Schema: optional.Some(model.CustomFieldSchema{
@@ -514,15 +434,15 @@ func TestCustomFieldService_ReconcilePending(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().ListScopeAncestry(ctx, resourceID).Return([]model.ID{resourceID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), resourceID).Return([]model.ID{resourceID}, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListPendingOperations(ctx, gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
-		repo.EXPECT().CommitValues(ctx, resourceID).Return(nil)
-		repo.EXPECT().UpdateOperationStatus(ctx, op.ID, repository.CustomFieldOpCommitted).Return(nil)
+		repo.EXPECT().ListPendingOperations(gomock.Any(), gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
+		repo.EXPECT().CommitValues(gomock.Any(), resourceID).Return(nil)
+		repo.EXPECT().UpdateOperationStatus(gomock.Any(), op.ID, repository.CustomFieldOpCommitted).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -542,15 +462,15 @@ func TestCustomFieldService_ReconcilePending(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().ListScopeAncestry(ctx, resourceID).Return(nil, repository.ErrNotFound)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), resourceID).Return(nil, repository.ErrNotFound)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListPendingOperations(ctx, gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
-		repo.EXPECT().AbortValues(ctx, resourceID).Return(nil)
-		repo.EXPECT().UpdateOperationStatus(ctx, op.ID, repository.CustomFieldOpAborted).Return(nil)
+		repo.EXPECT().ListPendingOperations(gomock.Any(), gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
+		repo.EXPECT().AbortValues(gomock.Any(), resourceID).Return(nil)
+		repo.EXPECT().UpdateOperationStatus(gomock.Any(), op.ID, repository.CustomFieldOpAborted).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -570,15 +490,15 @@ func TestCustomFieldService_ReconcilePending(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().ListScopeAncestry(ctx, resourceID).Return([]model.ID{}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), resourceID).Return([]model.ID{}, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListPendingOperations(ctx, gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
-		repo.EXPECT().AbortValues(ctx, resourceID).Return(nil)
-		repo.EXPECT().UpdateOperationStatus(ctx, op.ID, repository.CustomFieldOpAborted).Return(nil)
+		repo.EXPECT().ListPendingOperations(gomock.Any(), gomock.Any(), 100).Return([]repository.CustomFieldOperation{op}, nil)
+		repo.EXPECT().AbortValues(gomock.Any(), resourceID).Return(nil)
+		repo.EXPECT().UpdateOperationStatus(gomock.Any(), op.ID, repository.CustomFieldOpAborted).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -598,7 +518,7 @@ func TestCustomFieldService_ReconcilePending(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ReconcilePending", gomock.Len(0)).Return(ctx, span)
 
 		deleteOp := repository.CustomFieldOperation{
 			ID:         "op-delete",
@@ -607,9 +527,9 @@ func TestCustomFieldService_ReconcilePending(t *testing.T) {
 			ResourceID: resourceID,
 		}
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListPendingOperations(ctx, gomock.Any(), 100).Return([]repository.CustomFieldOperation{deleteOp}, nil)
-		repo.EXPECT().DeleteForResource(ctx, resourceID).Return(nil)
-		repo.EXPECT().UpdateOperationStatus(ctx, deleteOp.ID, repository.CustomFieldOpCommitted).Return(nil)
+		repo.EXPECT().ListPendingOperations(gomock.Any(), gomock.Any(), 100).Return([]repository.CustomFieldOperation{deleteOp}, nil)
+		repo.EXPECT().DeleteForResource(gomock.Any(), resourceID).Return(nil)
+		repo.EXPECT().UpdateOperationStatus(gomock.Any(), deleteOp.ID, repository.CustomFieldOpCommitted).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger: mocklog.NewMockLogger(ctrl),
@@ -639,25 +559,21 @@ func TestCustomFieldService_SetValue(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueUpdate).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{issueID, projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueUpdate).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID}, nil)
 
 		foreign := testModel.NewCustomFieldDefinition(otherProject, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, foreign.ID).Return(foreign, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), foreign.ID).Return(foreign, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.SetValue(ctx, issueID, foreign.ID, value)
 		assert.ErrorIs(t, err, repository.ErrNotFound)
@@ -672,26 +588,22 @@ func TestCustomFieldService_SetValue(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueUpdate).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{issueID, projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueUpdate).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID}, nil)
 
 		def := testModel.NewCustomFieldDefinition(projectID, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().ReplaceValues(ctx, def, issueID, gomock.Any(), true).Return(nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().ReplaceValues(gomock.Any(), def, issueID, gomock.Any(), true).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		require.NoError(t, s.SetValue(ctx, issueID, def.ID, value))
 	})
@@ -705,26 +617,22 @@ func TestCustomFieldService_SetValue(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/SetValue", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueUpdate).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{issueID, projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueUpdate).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID}, nil)
 
 		def := testModel.NewCustomFieldDefinition(projectID, userID)
 		def.Archived = true
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.SetValue(ctx, issueID, def.ID, value)
 		assert.ErrorIs(t, err, model.ErrCustomFieldArchived)
@@ -747,19 +655,19 @@ func TestCustomFieldService_ListEffective(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ListEffective", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ListEffective", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueRead).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueRead).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{projectID}, nil)
 
 		archived := testModel.NewCustomFieldDefinition(projectID, userID)
 		archived.Archived = true
 		active := testModel.NewCustomFieldDefinition(projectID, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListDefinitions(ctx, []model.ID{projectID}, model.ResourceTypeIssue, false).
+		repo.EXPECT().ListDefinitions(gomock.Any(), []model.ID{projectID}, model.ResourceTypeIssue, false).
 			Return([]*model.CustomFieldDefinition{archived, active}, nil)
-		repo.EXPECT().ListValues(ctx, issueID, false).Return(nil, nil)
+		repo.EXPECT().ListValues(gomock.Any(), issueID, false).Return(nil, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -790,18 +698,15 @@ func TestCustomFieldService_StageForResource(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/StageForResource", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/StageForResource", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		required := testModel.NewCustomFieldDefinition(projectID, userID)
 		required.Required = true
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListDefinitions(ctx, []model.ID{projectID}, model.ResourceTypeIssue, false).
+		repo.EXPECT().ListDefinitions(gomock.Any(), []model.ID{projectID}, model.ResourceTypeIssue, false).
 			Return([]*model.CustomFieldDefinition{required}, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
@@ -809,7 +714,6 @@ func TestCustomFieldService_StageForResource(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.StageForResource(ctx, projectID, issueID, nil)
 		assert.ErrorIs(t, err, model.ErrCustomFieldRequired)
@@ -824,16 +728,13 @@ func TestCustomFieldService_StageForResource(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/StageForResource", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/StageForResource", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListDefinitions(ctx, []model.ID{projectID}, model.ResourceTypeIssue, false).
+		repo.EXPECT().ListDefinitions(gomock.Any(), []model.ID{projectID}, model.ResourceTypeIssue, false).
 			Return([]*model.CustomFieldDefinition{}, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
@@ -841,7 +742,6 @@ func TestCustomFieldService_StageForResource(t *testing.T) {
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		require.NoError(t, s.StageForResource(ctx, projectID, issueID, nil))
 	})
@@ -863,13 +763,13 @@ func TestCustomFieldService_GetDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/GetDefinition", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/GetDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -891,14 +791,14 @@ func TestCustomFieldService_GetDefinition(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/GetDefinition", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/GetDefinition", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(false, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionProjectRead).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionProjectRead).Return(true, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -928,14 +828,14 @@ func TestCustomFieldService_ListDefinitions(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ListDefinitions", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ListDefinitions", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListDefinitions(ctx, []model.ID{projectID}, model.ResourceTypeIssue, true).
+		repo.EXPECT().ListDefinitions(gomock.Any(), []model.ID{projectID}, model.ResourceTypeIssue, true).
 			Return([]*model.CustomFieldDefinition{def}, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
@@ -958,15 +858,15 @@ func TestCustomFieldService_ListDefinitions(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/ListDefinitions", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/ListDefinitions", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionCustomFieldManage).Return(false, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionProjectRead).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionCustomFieldManage).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionProjectRead).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().ListDefinitions(ctx, []model.ID{projectID}, model.ResourceTypeIssue, false).
+		repo.EXPECT().ListDefinitions(gomock.Any(), []model.ID{projectID}, model.ResourceTypeIssue, false).
 			Return([]*model.CustomFieldDefinition{def}, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
@@ -997,26 +897,22 @@ func TestCustomFieldService_DeleteValue(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/DeleteValue", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/DeleteValue", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueUpdate).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{issueID, projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueUpdate).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID}, nil)
 
 		def := testModel.NewCustomFieldDefinition(projectID, userID)
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-		repo.EXPECT().DeleteValues(ctx, def.ID, issueID).Return(nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+		repo.EXPECT().DeleteValues(gomock.Any(), def.ID, issueID).Return(nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		require.NoError(t, s.DeleteValue(ctx, issueID, def.ID))
 	})
@@ -1030,26 +926,22 @@ func TestCustomFieldService_DeleteValue(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.customFieldService/DeleteValue", gomock.Len(0)).Return(ctx, span)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureCustomFields).Return(true, nil)
+		tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/DeleteValue", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, model.ActionIssueUpdate).Return(true, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, issueID).Return([]model.ID{issueID, projectID}, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, model.ActionIssueUpdate).Return(true, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), issueID).Return([]model.ID{issueID, projectID}, nil)
 
 		def := testModel.NewCustomFieldDefinition(projectID, userID)
 		def.Required = true
 		repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-		repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
+		repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
 
 		s := newCustomFieldServiceForTest(customFieldServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			repo:              repo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.DeleteValue(ctx, issueID, def.ID)
 		assert.ErrorIs(t, err, model.ErrCustomFieldRequired)
@@ -1073,15 +965,15 @@ func TestCustomFieldService_Search(t *testing.T) {
 	span := mocktrace.NewMockSpan(ctrl)
 	span.EXPECT().End(gomock.Len(0))
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.customFieldService/Search", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.customFieldService/Search", gomock.Len(0)).Return(ctx, span)
 
 	permSvc := mocksvc.NewMockPermissionService(ctrl)
-	permSvc.EXPECT().CtxUserHas(ctx, allowed, model.ActionIssueRead).Return(true, nil)
-	permSvc.EXPECT().CtxUserHas(ctx, denied, model.ActionIssueRead).Return(false, nil)
+	permSvc.EXPECT().CtxUserHas(gomock.Any(), allowed, model.ActionIssueRead).Return(true, nil)
+	permSvc.EXPECT().CtxUserHas(gomock.Any(), denied, model.ActionIssueRead).Return(false, nil)
 
 	repo := mockrepo.NewMockCustomFieldRepository(ctrl)
-	repo.EXPECT().GetDefinition(ctx, def.ID).Return(def, nil)
-	repo.EXPECT().Search(ctx, def.ID, gomock.Any(), 10).Return([]model.ID{allowed, denied}, nil)
+	repo.EXPECT().GetDefinition(gomock.Any(), def.ID).Return(def, nil)
+	repo.EXPECT().Search(gomock.Any(), def.ID, gomock.Any(), 10).Return([]model.ID{allowed, denied}, nil)
 
 	s := newCustomFieldServiceForTest(customFieldServiceDeps{
 		logger:            mocklog.NewMockLogger(ctrl),

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -76,7 +75,6 @@ type teamService struct {
 	runtime
 	teamRepo          repository.TeamRepository
 	permissionService PermissionService
-	licenseService    LicenseService
 }
 
 func teamFromRepository(t *repository.Team) *Team {
@@ -119,8 +117,9 @@ func (s *teamService) Create(ctx context.Context, belongsTo model.ID, opts Creat
 	ctx, span := s.tracer.Start(ctx, "service.teamService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrTeamCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrTeamCreate, err)
 	}
 
 	if err := belongsTo.Validate(); err != nil {
@@ -244,8 +243,9 @@ func (s *teamService) Update(ctx context.Context, id, belongsTo model.ID, opts U
 	ctx, span := s.tracer.Start(ctx, "service.teamService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrTeamUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrTeamUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -275,8 +275,9 @@ func (s *teamService) AddMember(ctx context.Context, teamID, memberID, belongsTo
 	ctx, span := s.tracer.Start(ctx, "service.teamService/AddMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrTeamAddMember, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrTeamAddMember, err)
 	}
 
 	if err := teamID.Validate(); err != nil {
@@ -310,8 +311,9 @@ func (s *teamService) RemoveMember(ctx context.Context, teamID, memberID, belong
 	ctx, span := s.tracer.Start(ctx, "service.teamService/RemoveMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrTeamRemoveMember, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrTeamRemoveMember, err)
 	}
 
 	if err := teamID.Validate(); err != nil {
@@ -345,8 +347,9 @@ func (s *teamService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 	ctx, span := s.tracer.Start(ctx, "service.teamService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrTeamDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrTeamDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -373,7 +376,6 @@ func (s *teamService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 func NewTeamService(
 	teamRepo repository.TeamRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	opts ...Option,
 ) (TeamService, error) {
 	rt, err := newRuntime(opts...)
@@ -385,7 +387,6 @@ func NewTeamService(
 		runtime:           rt,
 		teamRepo:          teamRepo,
 		permissionService: permissionService,
-		licenseService:    licenseService,
 	}
 
 	if svc.teamRepo == nil {
@@ -394,10 +395,6 @@ func NewTeamService(
 
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	return svc, nil

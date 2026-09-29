@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -189,24 +188,6 @@ func TestIssueController_V1ProjectsIssuesCreate(t *testing.T) {
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1ProjectsIssuesCreate404JSONResponse)
-		assert.True(t, ok)
-	})
-
-	t.Run("license expired", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		is := mocksvc.NewMockIssueService(ctrl)
-		is.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, license.ErrLicenseExpired)
-
-		c, _, _ := newTestIssueController(t, ctrl, is)
-		resp, err := c.V1ProjectsIssuesCreate(context.Background(), api.V1ProjectsIssuesCreateRequestObject{
-			ProjectId: projectID.String(),
-			Body:      &api.V1ProjectsIssuesCreateJSONRequestBody{Kind: api.IssueKindStory, Title: "Implement authentication"},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1ProjectsIssuesCreate403JSONResponse)
 		assert.True(t, ok)
 	})
 
@@ -799,24 +780,6 @@ func TestIssueController_V1IssueUpdate(t *testing.T) {
 
 		is := mocksvc.NewMockIssueService(ctrl)
 		is.EXPECT().Update(gomock.Any(), issue.ID, gomock.Any()).Return(nil, service.ErrNoPermission)
-
-		c, _, _ := newTestIssueController(t, ctrl, is)
-		resp, err := c.V1IssueUpdate(context.Background(), api.V1IssueUpdateRequestObject{
-			Id:   issue.ID.String(),
-			Body: &api.V1IssueUpdateJSONRequestBody{Title: optional.Some(title)},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1IssueUpdate403JSONResponse)
-		assert.True(t, ok)
-	})
-
-	t.Run("quota exceeded", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		is := mocksvc.NewMockIssueService(ctrl)
-		is.EXPECT().Update(gomock.Any(), issue.ID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
 
 		c, _, _ := newTestIssueController(t, ctrl, is)
 		resp, err := c.V1IssueUpdate(context.Background(), api.V1IssueUpdateRequestObject{

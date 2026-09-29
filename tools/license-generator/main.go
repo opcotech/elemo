@@ -1,95 +1,73 @@
 package main
 
 import (
+	"crypto/ed25519"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"log"
+	"math"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/goccy/go-json"
+	"github.com/google/uuid"
 
-	"github.com/hyperboloide/lk"
-	"github.com/rs/xid"
-
-	elemoLicense "github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement/license"
 )
 
 var (
-	licenseEmail          string
-	licenseOrganization   string
-	licenseValidityPeriod int
-	licenseFeatures       = elemoLicense.DefaultFeatures
-	licenseQuotas         = elemoLicense.DefaultQuotas
-
-	privateKeyFile    string
-	outputLicenseFile string
+	keyID           string
+	privateKeyFile  string
+	outputLicense   string
+	customer        string
+	installationID  string
+	seats           uint
+	validityDays    int
+	notBeforeOffset time.Duration
 )
 
 func parseFlags() error {
-	// Company information and validity period
-	flag.StringVar(&licenseEmail, "email", "", "License email")
-	flag.StringVar(&licenseOrganization, "organization", "", "License organization")
-	flag.IntVar(&licenseValidityPeriod, "validity-period", elemoLicense.DefaultValidityPeriod, "License validity period in days")
-
-	// Features
-	features := flag.String("features", "", "Comma-separated list of features")
-
-	// Quotas
-	quotas := flag.String("quota", "", "Comma-separated key-value pairs of quotas")
-
-	// License keys
-	flag.StringVar(&privateKeyFile, "private-key", "", "The private key to use")
-	flag.StringVar(&outputLicenseFile, "license", "license.key", "Output license file")
+	flag.StringVar(&keyID, "key-id", license.ProductionKeyID, "Signing key identifier")
+	flag.StringVar(&privateKeyFile, "private-key", "", "Hex-encoded Ed25519 private key file")
+	flag.StringVar(&outputLicense, "license", "license.json", "Output license file")
+	flag.StringVar(&customer, "customer", "", "Customer name")
+	flag.StringVar(&installationID, "installation-id", "", "Logical installation UUID")
+	flag.UintVar(&seats, "seats", 0, "Active human seat count")
+	flag.IntVar(&validityDays, "validity-period", 365, "License validity period in days from not-before")
+	flag.DurationVar(&notBeforeOffset, "not-before-offset", 0, "Offset from now for not_before (may be negative)")
 	flag.Parse()
 
-	if licenseEmail == "" {
-		return errors.New("email is required")
-	}
+	return validateOptions()
+}
 
-	if licenseOrganization == "" {
-		return errors.New("organization is required")
-	}
-
-	if licenseValidityPeriod <= 0 {
-		return errors.New("validity period must be greater than 0 days")
-	}
-
+func validateOptions() error {
 	if privateKeyFile == "" {
-		return errors.New("no private key provided")
+		return errors.New("private-key is required")
 	}
-
-	if outputLicenseFile == "" {
-		return errors.New("no output license provided")
+	if customer == "" {
+		return errors.New("customer is required")
 	}
-
-	if *features != "" {
-		licenseFeatures = make([]elemoLicense.Feature, 0)
-		for _, feature := range strings.Split(*features, ",") {
-			licenseFeatures = append(licenseFeatures, elemoLicense.Feature(feature))
-		}
+	parsedInstallationID, err := uuid.Parse(installationID)
+	if err != nil {
+		return errors.New("installation-id must be a UUID")
 	}
-
-	if *quotas != "" {
-		for _, quota := range strings.Split(*quotas, ",") {
-			quotaParts := strings.Split(quota, "=")
-			if len(quotaParts) != 2 {
-				return errors.New("invalid quota format")
-			}
-
-			quotaKey := elemoLicense.Quota(quotaParts[0])
-			parsedQuota, parseErr := strconv.ParseUint(quotaParts[1], 10, 32)
-			if parseErr != nil {
-				return errors.New("invalid quota value")
-			}
-
-			quotaValue := uint32(parsedQuota)
-			licenseQuotas[quotaKey] = quotaValue
-		}
+	installationID = parsedInstallationID.String()
+	if seats < 1 {
+		return errors.New("seats must be at least 1")
 	}
-
+	if uint64(seats) > math.MaxUint32 {
+		return errors.New("seats must not exceed 4294967295")
+	}
+	if validityDays <= 0 {
+		return errors.New("validity-period must be greater than 0 days")
+	}
+	if outputLicense == "" {
+		return errors.New("license output path is required")
+	}
+	if keyID == "" {
+		return errors.New("key-id is required")
+	}
 	return nil
 }
 
@@ -98,47 +76,38 @@ func main() {
 		log.Fatal(err)
 	}
 
-	privateKey, err := os.ReadFile(privateKeyFile) //
+	raw, err := os.ReadFile(privateKeyFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	key, err := lk.PrivateKeyFromB32String(string(privateKey))
+	decoded, err := hex.DecodeString(strings.TrimSpace(string(raw)))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	license := elemoLicense.License{
-		ID:           xid.New(),
-		Email:        licenseEmail,
-		Organization: licenseOrganization,
-		Features:     licenseFeatures,
-		Quotas:       licenseQuotas,
-		ExpiresAt:    time.Now().UTC().AddDate(0, 0, licenseValidityPeriod),
+	if len(decoded) != ed25519.PrivateKeySize {
+		log.Fatalf("private key has invalid length %d", len(decoded))
 	}
 
-	if !license.Valid() {
-		log.Fatalf("invalid license: %+v", license)
+	now := time.Now().UTC().Truncate(time.Second)
+	notBefore := now.Add(notBeforeOffset)
+	payload := license.Payload{
+		ID:             uuid.NewString(),
+		Customer:       customer,
+		InstallationID: installationID,
+		Seats:          uint32(seats), //nolint:gosec // parseFlags bounds seats to uint32.
+		IssuedAt:       now,
+		NotBefore:      notBefore,
+		ExpiresAt:      notBefore.AddDate(0, 0, validityDays),
 	}
 
-	licenseBytes, err := json.Marshal(&license)
+	signed, err := license.Sign(keyID, ed25519.PrivateKey(decoded), payload)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	l, err := lk.NewLicense(key, licenseBytes)
-	if err != nil {
+	if err := license.WriteFile(outputLicense, signed); err != nil {
 		log.Fatal(err)
 	}
 
-	licenseData, err := l.ToB32String()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := os.WriteFile(outputLicenseFile, []byte(licenseData), 0o600); err != nil { // #nosec G703 -- CLI output path from flag
-		log.Fatal(err)
-	}
-
-	log.Printf("License generated: %s", outputLicenseFile)
+	log.Printf("License generated: %s", outputLicense)
+	log.Printf("license_id=%s installation_id=%s seats=%d expires_at=%s", payload.ID, payload.InstallationID, payload.Seats, payload.ExpiresAt.Format(time.RFC3339))
 }

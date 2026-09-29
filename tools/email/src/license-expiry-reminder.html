@@ -30,7 +30,7 @@
                               class="va-middle"
                               width="32"
                               height="32"
-                              alt="lock-open"
+                              alt="License certificate"
                             />
                           </center>
                         </v:roundrect>
@@ -44,7 +44,7 @@
                               class="va-middle"
                               width="32"
                               height="32"
-                              alt="lock-open"
+                              alt="License certificate"
                             />
                           </td>
                         </tr>
@@ -57,15 +57,14 @@
 
                   <tr>
                     <td class="content pb-0">
-                      <p>Hello {{ .LicenseOrganization }},</p>
+                      <p>Hello {{ .Customer }},</p>
                       <p>
-                        Your license for {{ .ServerURL }} expires at
-                        <strong class="strong">{{ .LicenseExpiresAt }}</strong>.
+                        Your Elemo License is currently <strong class="strong">{{ .LicenseState }}</strong> and
+                        expires at <strong class="strong">{{ .LicenseExpires }}</strong>.
                       </p>
                       <p>
-                        You can renew the license anytime by sending an email to
-                        <a href="mailto:{{ .RenewEmail }}">{{ .RenewEmail }}</a> and we will get in touch with you about
-                        the details. Please find your license details below.
+                        The grace period ends at <strong class="strong">{{ .GraceEnds }}</strong>. After that time, new
+                        human activations will be denied until the license is replaced.
                       </p>
                     </td>
                   </tr>
@@ -78,32 +77,53 @@
                           <td><code>{{ .LicenseID }}</code></td>
                         </tr>
                         <tr style="text-align: left">
-                          <th class="strong">Licensee:</th>
-                          <td>{{ .LicenseOrganization }}</td>
+                          <th class="strong">Customer:</th>
+                          <td>{{ .Customer }}</td>
                         </tr>
                         <tr style="text-align: left">
-                          <th class="strong">Licensee Email:</th>
-                          <td>{{ .LicenseEmail }}</td>
+                          <th class="strong">Licensed seats:</th>
+                          <td>{{ .SeatsLicensed }}</td>
                         </tr>
                         <tr style="text-align: left">
-                          <th class="strong">License Expiry:</th>
-                          <td>{{ .LicenseExpiresAt }}</td>
+                          <th class="strong">License expiry:</th>
+                          <td>{{ .LicenseExpires }}</td>
                         </tr>
                       </table>
                     </td>
                   </tr>
 
                   <tr>
-                    <td class="content pt-0 pb-0">
-                      <p>
-                        This process will be simplified soon, so you can renew licenses on your own. Until then, thank
-                        you for your patience.
-                      </p>
+                    <td class="content text-center pt-0">
+                      <table cellspacing="0" cellpadding="0" role="presentation">
+                        <tr>
+                          <td align="center">
+                            <table
+                              cellpadding="0"
+                              cellspacing="0"
+                              border="0"
+                              class="bg-primary rounded-lg w-auto"
+                              role="presentation"
+                            >
+                              <tr>
+                                <td align="center" valign="top" class="lh-1">
+                                  <a href="{{ .SettingsURL }}" class="btn bg-primary border-primary">
+                                    <span class="btn-span">Review entitlement status</span>
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
 
                   <tr>
                     <td class="content pt-0">
+                      <p>
+                        Contact <a href="mailto:{{ .SupportEmail }}">{{ .SupportEmail }}</a> to arrange a replacement
+                        license.
+                      </p>
                       <p>Sincerely,<br />The Elemo team</p>
                     </td>
                   </tr>

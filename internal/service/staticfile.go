@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/pkg/safepath"
 	"github.com/opcotech/elemo/internal/repository"
 )
@@ -33,7 +32,6 @@ type StaticFileService interface {
 
 type staticFileService struct {
 	runtime
-	licenseService LicenseService
 	staticFileRepo repository.StaticFileRepository
 }
 
@@ -41,8 +39,9 @@ func (s *staticFileService) Create(ctx context.Context, path string, data []byte
 	ctx, span := s.tracer.Start(ctx, "service.staticFileService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrStaticFileCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrStaticFileCreate, err)
 	}
 
 	safePath, err := safepath.Normalize(staticFileRoot, path)
@@ -78,8 +77,9 @@ func (s *staticFileService) Update(ctx context.Context, path string, data []byte
 	ctx, span := s.tracer.Start(ctx, "service.staticFileService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrStaticFileUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrStaticFileUpdate, err)
 	}
 
 	safePath, err := safepath.Normalize(staticFileRoot, path)
@@ -98,8 +98,9 @@ func (s *staticFileService) Delete(ctx context.Context, path string) error {
 	ctx, span := s.tracer.Start(ctx, "service.staticFileService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrStaticFileDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrStaticFileDelete, err)
 	}
 
 	safePath, err := safepath.Normalize(staticFileRoot, path)
@@ -115,7 +116,7 @@ func (s *staticFileService) Delete(ctx context.Context, path string) error {
 }
 
 // NewStaticFileService returns a new instance of the StaticFileService interface.
-func NewStaticFileService(repo repository.StaticFileRepository, licenseService LicenseService, opts ...Option) (StaticFileService, error) {
+func NewStaticFileService(repo repository.StaticFileRepository, opts ...Option) (StaticFileService, error) {
 	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
@@ -123,12 +124,7 @@ func NewStaticFileService(repo repository.StaticFileRepository, licenseService L
 
 	svc := &staticFileService{
 		runtime:        rt,
-		licenseService: licenseService,
 		staticFileRepo: repo,
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.staticFileRepo == nil {

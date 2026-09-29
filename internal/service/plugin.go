@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/event"
@@ -105,7 +104,6 @@ type pluginService struct {
 	repo              repository.PluginRepository
 	extensionRepo     repository.ExtensionRepository
 	permissionService PermissionService
-	licenseService    LicenseService
 	registry          *elemoplugin.Registry
 	host              elemoplugin.Host
 	bus               *event.Bus
@@ -113,24 +111,15 @@ type pluginService struct {
 	eventWG           sync.WaitGroup
 }
 
-func (s *pluginService) requireFeature(ctx context.Context, wrap error) error {
-	ok, err := s.licenseService.HasFeature(ctx, license.FeaturePlugins)
-	if err != nil {
-		return errors.Join(wrap, err)
-	}
-	if !ok {
-		return errors.Join(wrap, ErrFeatureDisabled)
-	}
-	return nil
-}
-
 func (s *pluginService) Install(ctx context.Context, zip []byte) (*model.PluginInstallation, error) {
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Install")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginInstall); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginInstall, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionPluginInstall); err != nil {
 		return nil, errors.Join(ErrPluginInstall, err)
 	}
@@ -199,9 +188,11 @@ func (s *pluginService) Upgrade(ctx context.Context, pluginID string, zip []byte
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Upgrade")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginUpgrade); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginUpgrade, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionPluginInstall); err != nil {
 		return nil, errors.Join(ErrPluginUpgrade, err)
 	}
@@ -273,9 +264,11 @@ func (s *pluginService) Uninstall(ctx context.Context, pluginID string) error {
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Uninstall")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginUninstall); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginUninstall, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionPluginInstall); err != nil {
 		return errors.Join(ErrPluginUninstall, err)
 	}
@@ -304,9 +297,11 @@ func (s *pluginService) Enable(ctx context.Context, pluginID string, scope model
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Enable")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginEnable); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginEnable, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, scope, model.ActionPluginManage); err != nil {
 		return errors.Join(ErrPluginEnable, err)
 	}
@@ -340,9 +335,11 @@ func (s *pluginService) Disable(ctx context.Context, pluginID string, scope mode
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Disable")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginDisable); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginDisable, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, scope, model.ActionPluginManage); err != nil {
 		return errors.Join(ErrPluginDisable, err)
 	}
@@ -372,9 +369,6 @@ func (s *pluginService) Get(ctx context.Context, pluginID string) (*model.Plugin
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Get")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGet); err != nil {
-		return nil, err
-	}
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionPluginInstall); err != nil {
 		return nil, errors.Join(ErrPluginGet, err)
 	}
@@ -393,9 +387,6 @@ func (s *pluginService) List(ctx context.Context) ([]*model.PluginInstallation, 
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/List")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginList); err != nil {
-		return nil, err
-	}
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionPluginInstall); err != nil {
 		return nil, errors.Join(ErrPluginList, err)
 	}
@@ -416,9 +407,6 @@ func (s *pluginService) ListManaged(ctx context.Context, scope model.ID) ([]Plug
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/ListManaged")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginList); err != nil {
-		return nil, err
-	}
 	if err := requireAction(ctx, s.permissionService, scope, model.ActionPluginManage); err != nil {
 		return nil, errors.Join(ErrPluginList, err)
 	}
@@ -450,9 +438,6 @@ func (s *pluginService) ListFrontend(ctx context.Context, scope model.ID) ([]Fro
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/ListFrontend")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginList); err != nil {
-		return nil, err
-	}
 	read, ok := model.ReadActionFor(scope.Type)
 	if !ok {
 		return nil, errors.Join(ErrPluginList, model.ErrInvalidResourceType)
@@ -505,9 +490,6 @@ func (s *pluginService) GetConfig(ctx context.Context, pluginID string, scope mo
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/GetConfig")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGet); err != nil {
-		return nil, err
-	}
 	act, err := s.nearestActivation(ctx, pluginID, scope)
 	if err != nil {
 		return nil, errors.Join(ErrPluginGet, err)
@@ -522,9 +504,6 @@ func (s *pluginService) GetManagedConfig(ctx context.Context, pluginID string, s
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/GetManagedConfig")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGet); err != nil {
-		return nil, err
-	}
 	if err := requireAction(ctx, s.permissionService, scope, model.ActionPluginManage); err != nil {
 		return nil, errors.Join(ErrPluginGet, err)
 	}
@@ -545,9 +524,11 @@ func (s *pluginService) SetConfig(ctx context.Context, pluginID string, scope mo
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/SetConfig")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginConfig); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginConfig, err)
 	}
+
 	if err := requireAction(ctx, s.permissionService, scope, model.ActionPluginManage); err != nil {
 		return errors.Join(ErrPluginConfig, err)
 	}
@@ -577,9 +558,11 @@ func (s *pluginService) Invoke(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Invoke")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginInvoke); err != nil {
-		return elemoplugin.InvokeResponse{}, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return elemoplugin.InvokeResponse{}, errors.Join(ErrPluginInvoke, err)
 	}
+
 	scope, err := parseScopeID(req.ScopeID)
 	if err != nil {
 		return elemoplugin.InvokeResponse{}, errors.Join(ErrPluginInvoke, err)

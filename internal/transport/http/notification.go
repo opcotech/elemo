@@ -117,6 +117,8 @@ func (c *notificationController) V1NotificationUpdate(ctx context.Context, reque
 			return api.V1NotificationUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NotificationUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NotificationUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NotificationUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -147,6 +149,8 @@ func (c *notificationController) V1NotificationDelete(ctx context.Context, reque
 			return api.V1NotificationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NotificationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NotificationDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NotificationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

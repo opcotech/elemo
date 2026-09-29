@@ -117,7 +117,7 @@ func (c *pluginController) V1PluginsCreate(
 		case http.StatusForbidden:
 			return api.V1PluginsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusConflict:
-			return api.V1PluginsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{Message: err.Error()}}, nil
+			return api.V1PluginsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -202,6 +202,8 @@ func (c *pluginController) V1PluginDelete(
 			return api.V1PluginDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -238,6 +240,8 @@ func (c *pluginController) V1PluginEnable(
 			return api.V1PluginEnable403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginEnable404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginEnable409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginEnable500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -267,6 +271,8 @@ func (c *pluginController) V1PluginDisable(
 			return api.V1PluginDisable403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginDisable404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginDisable409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginDisable500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -327,6 +333,8 @@ func (c *pluginController) V1PluginConfigPatch(
 			return api.V1PluginConfigPatch403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginConfigPatch404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginConfigPatch409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginConfigPatch500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -354,6 +362,8 @@ func (c *pluginController) V1PluginUpgrade(
 			return api.V1PluginUpgrade403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginUpgrade404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginUpgrade409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginUpgrade500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -388,6 +398,8 @@ func (c *pluginController) V1PluginInvoke(
 			return api.V1PluginInvoke403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginInvoke404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginInvoke409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginInvoke500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -493,7 +505,7 @@ func (c *pluginController) V1PluginGraphNodesCreate(
 		case http.StatusNotFound:
 			return api.V1PluginGraphNodesCreate404JSONResponse{N404JSONResponse: notFound}, nil
 		case http.StatusConflict:
-			return api.V1PluginGraphNodesCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{Message: err.Error()}}, nil
+			return api.V1PluginGraphNodesCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphNodesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -553,6 +565,8 @@ func (c *pluginController) V1PluginGraphNodeUpdate(
 			return api.V1PluginGraphNodeUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginGraphNodeUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginGraphNodeUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphNodeUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -577,6 +591,8 @@ func (c *pluginController) V1PluginGraphNodeDelete(
 			return api.V1PluginGraphNodeDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginGraphNodeDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginGraphNodeDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphNodeDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -611,6 +627,8 @@ func (c *pluginController) V1PluginGraphNodeMove(
 			return api.V1PluginGraphNodeMove403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginGraphNodeMove404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginGraphNodeMove409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphNodeMove500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -697,7 +715,7 @@ func (c *pluginController) V1PluginGraphRelationsCreate(
 		case http.StatusNotFound:
 			return api.V1PluginGraphRelationsCreate404JSONResponse{N404JSONResponse: notFound}, nil
 		case http.StatusConflict:
-			return api.V1PluginGraphRelationsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{Message: err.Error()}}, nil
+			return api.V1PluginGraphRelationsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphRelationsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -718,6 +736,8 @@ func (c *pluginController) V1PluginGraphRelationDelete(
 			return api.V1PluginGraphRelationDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1PluginGraphRelationDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1PluginGraphRelationDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1PluginGraphRelationDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}

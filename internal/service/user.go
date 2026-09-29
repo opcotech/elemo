@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/auth"
@@ -167,9 +167,36 @@ type UserService interface {
 // userService is the concrete implementation of the UserService interface.
 type userService struct {
 	runtime
-	userRepo       repository.UserRepository
-	userTokenRepo  repository.UserTokenRepository
-	licenseService LicenseService
+	userRepo      repository.UserRepository
+	userTokenRepo repository.UserTokenRepository
+	seats         entitlement.SeatPolicy
+}
+
+// userUpdateIsReadOnlyExempt reports whether the update is limited to
+// password reset and/or deactivation (inactive or deleted) and may proceed
+// while the instance is otherwise read-only. Profile changes, activation,
+// and pending transitions are not exempt.
+func userUpdateIsReadOnlyExempt(opts UpdateUserOpts) bool {
+	if opts.Username.Defined || opts.Email.Defined || opts.FirstName.Defined ||
+		opts.LastName.Defined || opts.Picture.Defined || opts.Title.Defined ||
+		opts.Bio.Defined || opts.Phone.Defined || opts.Address.Defined ||
+		opts.Links.Defined || opts.Languages.Defined {
+		return false
+	}
+
+	password := opts.Password.Defined
+	if opts.Status.Defined {
+		if opts.Status.Value == nil {
+			return false
+		}
+		switch *opts.Status.Value {
+		case model.UserStatusInactive, model.UserStatusDeleted:
+		default:
+			return false
+		}
+	}
+
+	return password || opts.Status.Defined
 }
 
 func userFromRepository(u *repository.User) *User {
@@ -221,24 +248,16 @@ func (s *userService) Create(ctx context.Context, opts CreateUserOpts) (*User, e
 	ctx, span := s.tracer.Start(ctx, "service.userService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrUserCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrUserCreate, err)
 	}
 
 	if err := opts.Validate(); err != nil {
 		return nil, errors.Join(ErrUserCreate, err)
 	}
 
-	// If the newly created user is not active, e.g. a company is migrating
-	// ex-employees, do not check the license quota as that only counts
-	// against active users.
-	if opts.Status == model.UserStatusActive {
-		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
-			return nil, errors.Join(ErrUserCreate, ErrQuotaExceeded)
-		}
-	}
-
-	user, err := s.userRepo.Create(ctx, repository.CreateUserOpts{
+	user, err := createUserWithSeats(ctx, s.userRepo, s.seats, repository.CreateUserOpts{
 		Username:  opts.Username,
 		Email:     opts.Email,
 		Password:  opts.Password,
@@ -317,8 +336,12 @@ func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOp
 	ctx, span := s.tracer.Start(ctx, "service.userService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrUserUpdate, license.ErrLicenseExpired)
+	if !userUpdateIsReadOnlyExempt(opts) {
+		var err error
+		ctx, err = s.requireMutation(ctx)
+		if err != nil {
+			return nil, errors.Join(ErrUserUpdate, err)
+		}
 	}
 
 	if err := id.Validate(); err != nil {
@@ -334,16 +357,7 @@ func (s *userService) Update(ctx context.Context, id model.ID, opts UpdateUserOp
 		return nil, errors.Join(ErrUserUpdate, ErrNoPermission)
 	}
 
-	// Check if the user is being activated is within the license quota. It
-	// could be a possible loophole to activate a previously deleted user to
-	// bypass the quota check.
-	if opts.Status.Defined && opts.Status.Value != nil && *opts.Status.Value == model.UserStatusActive {
-		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaUsers); !ok || err != nil {
-			return nil, errors.Join(ErrUserUpdate, ErrQuotaExceeded)
-		}
-	}
-
-	user, err := s.userRepo.Update(ctx, id, repository.UpdateUserOpts{
+	user, err := activateUserWithSeats(ctx, s.userRepo, s.seats, id, repository.UpdateUserOpts{
 		Username:  opts.Username,
 		Email:     opts.Email,
 		Password:  opts.Password,
@@ -369,10 +383,6 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 	ctx, span := s.tracer.Start(ctx, "service.userService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrUserUpdate, license.ErrLicenseExpired)
-	}
-
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrUserDelete, err)
 	}
@@ -387,6 +397,10 @@ func (s *userService) Delete(ctx context.Context, id model.ID, force bool) error
 	}
 
 	if force {
+		ctx, err = s.requireMutation(ctx)
+		if err != nil {
+			return errors.Join(ErrUserDelete, err)
+		}
 		if err := s.userRepo.Delete(ctx, id); err != nil {
 			return errors.Join(ErrUserDelete, err)
 		}
@@ -422,7 +436,7 @@ func (s *userService) CreateToken(ctx context.Context, id model.ID, sendTo strin
 	}
 
 	tokenData := pkg.MergeMaps(data, map[string]any{"user_id": id.String()})
-	public, secret, err := auth.GenerateToken(tokenContext.String(), tokenData)
+	public, tokenHash, err := auth.GenerateToken(tokenContext.String(), tokenData)
 	if err != nil {
 		return "", errors.Join(ErrUserCreateUserToken, err)
 	}
@@ -430,7 +444,7 @@ func (s *userService) CreateToken(ctx context.Context, id model.ID, sendTo strin
 	createOpts := CreateUserTokenOpts{
 		UserID:  id,
 		SentTo:  sendTo,
-		Token:   secret,
+		Token:   tokenHash,
 		Context: tokenContext,
 	}
 	if err := createOpts.Validate(); err != nil {
@@ -455,7 +469,11 @@ func (s *userService) VerifyToken(ctx context.Context, public string) (map[strin
 
 	kind, _, tokenData := auth.SplitToken(public)
 
-	userID, err := model.NewIDFromString(tokenData["user_id"].(string), model.ResourceTypeUser.String())
+	userIDRaw, ok := tokenData["user_id"].(string)
+	if !ok {
+		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
+	}
+	userID, err := model.NewIDFromString(userIDRaw, model.ResourceTypeUser.String())
 	if err != nil {
 		return nil, errors.Join(ErrUserVerifyToken, ErrInvalidToken)
 	}
@@ -487,7 +505,7 @@ func (s *userService) VerifyToken(ctx context.Context, public string) (map[strin
 	}
 
 	if time.Now().After(confirmation.CreatedAt.Add(deadline)) {
-		return nil, errors.Join(ErrUserVerifyToken, ErrExpiredToken)
+		return tokenData, errors.Join(ErrUserVerifyToken, ErrExpiredToken)
 	}
 
 	return tokenData, nil
@@ -512,7 +530,7 @@ func (s *userService) DeleteToken(ctx context.Context, id model.ID, tokenContext
 func NewUserService(
 	userRepo repository.UserRepository,
 	userTokenRepo repository.UserTokenRepository,
-	licenseService LicenseService,
+	seats entitlement.SeatPolicy,
 	opts ...Option,
 ) (UserService, error) {
 	rt, err := newRuntime(opts...)
@@ -521,10 +539,10 @@ func NewUserService(
 	}
 
 	svc := &userService{
-		runtime:        rt,
-		userRepo:       userRepo,
-		userTokenRepo:  userTokenRepo,
-		licenseService: licenseService,
+		runtime:       rt,
+		userRepo:      userRepo,
+		userTokenRepo: userTokenRepo,
+		seats:         seats,
 	}
 
 	if svc.userRepo == nil {
@@ -535,8 +553,8 @@ func NewUserService(
 		return nil, ErrNoUserTokenRepository
 	}
 
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
+	if svc.seats == nil {
+		return nil, entitlement.ErrNoSeatPolicy
 	}
 
 	return svc, nil

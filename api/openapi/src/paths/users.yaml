@@ -40,6 +40,8 @@
         $ref: "#/components/responses/401"
       "403":
         $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     requestBody:
@@ -82,6 +84,8 @@
         $ref: "#/components/responses/400"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     operationId: v1UserResetPassword
@@ -132,6 +136,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Delete a user by its ID. The user is not deleted irreversibly until the "force" parameter is set to true.
@@ -160,6 +166,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Update the given user.

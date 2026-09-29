@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
@@ -160,9 +160,10 @@ func TestClassifyServiceError(t *testing.T) {
 		{name: "no permission", err: service.ErrNoPermission, status: http.StatusForbidden},
 		{name: "invalid grant", err: model.ErrInvalidGrant, status: http.StatusBadRequest},
 		{name: "wrapped permission", err: errors.Join(service.ErrProjectGet, service.ErrNoPermission), status: http.StatusForbidden},
-		{name: "license expired", err: license.ErrLicenseExpired, status: http.StatusForbidden},
-		{name: "quota exceeded", err: service.ErrQuotaExceeded, status: http.StatusForbidden},
-		{name: "feature disabled", err: service.ErrFeatureDisabled, status: http.StatusForbidden},
+		{name: "invitation password required", err: service.ErrOrganizationInvitePassword, status: http.StatusBadRequest},
+		{name: "seat limit reached", err: entitlement.ErrSeatLimitReached, status: http.StatusConflict},
+		{name: "activation denied", err: entitlement.ErrActivationDenied, status: http.StatusConflict},
+		{name: "mutation denied", err: entitlement.ErrMutationDenied, status: http.StatusConflict},
 		{name: "not found", err: repository.ErrNotFound, status: http.StatusNotFound},
 		{name: "slug conflict", err: repository.ErrSlugConflict, status: http.StatusConflict},
 		{name: "custom field key conflict", err: repository.ErrCustomFieldKeyConflict, status: http.StatusConflict},

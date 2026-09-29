@@ -117,6 +117,13 @@ components:
         message:
           type: string
           description: Description of the error.
+        code:
+          type: string
+          description: Machine-readable error code when applicable.
+          enum:
+            - seat_limit_reached
+            - activation_denied
+            - entitlement_read_only
       required:
         - message
       description: HTTP error description.
@@ -3243,15 +3250,6 @@ components:
           minLength: 7
           maxLength: 9
           description: Health of the relational database.
-        license:
-          type: string
-          enum:
-            - healthy
-            - unhealthy
-            - unknown
-          minLength: 7
-          maxLength: 9
-          description: Health of the license.
         message_queue:
           type: string
           enum:
@@ -3274,7 +3272,6 @@ components:
         - cache_database
         - graph_database
         - relational_database
-        - license
         - message_queue
         - search
       x-examples:
@@ -3282,7 +3279,6 @@ components:
           cache_database: healthy
           graph_database: healthy
           relational_database: healthy
-          license: healthy
           message_queue: healthy
           search: healthy
     SystemVersion:
@@ -3310,81 +3306,80 @@ components:
         - commit
         - date
         - go_version
-    SystemLicense:
-      title: SystemLicense
+    SystemEntitlements:
+      title: SystemEntitlements
       type: object
+      description: Deployment mode and AirGap seat entitlement status.
       properties:
-        id:
+        deployment_mode:
           type: string
-          description: Unique ID identifying the license.
-        organization:
+          enum:
+            - self_hosted
+            - airgap
+          description: Compile-time deployment mode of this binary.
+        airgap:
+          $ref: "#/components/schemas/SystemAirGapEntitlement"
+          description: AirGap entitlement details. Omitted for normal self-hosted deployments.
+          nullable: true
+      required:
+        - deployment_mode
+    SystemAirGapEntitlement:
+      title: SystemAirGapEntitlement
+      type: object
+      description: AirGap human-seat entitlement as evaluated on this installation.
+      properties:
+        state:
           type: string
-          description: Name of the organization the license belongs to.
-        email:
+          enum:
+            - valid
+            - grace
+            - expired
+            - not_yet_valid
+            - invalid
+            - missing
+          description: Lifecycle state of the License.
+        reason:
           type: string
-          format: email
-          example: info@example.com
-          minLength: 6
-          maxLength: 254
-          description: Email address of the licensee.
-        quotas:
-          type: object
-          description: Quotas available for the license.
-          required:
-            - documents
-            - namespaces
-            - organizations
-            - projects
-            - roles
-            - users
-          properties:
-            documents:
-              type: integer
-              minimum: 1
-              description: Number of documents can exist in the system.
-            namespaces:
-              type: integer
-              minimum: 1
-              description: Number of namespaces can exist in the system.
-            organizations:
-              type: integer
-              minimum: 1
-              description: Number of organizations active can exist in the system.
-            projects:
-              type: integer
-              minimum: 1
-              description: Number of projects can exist in the system.
-            roles:
-              type: integer
-              minimum: 1
-              description: Number of roles can exist in the system.
-            users:
-              type: integer
-              minimum: 1
-              description: Number of active or pending users can exist in the system.
-        features:
-          type: array
-          uniqueItems: true
-          description: Features enabled by the license.
-          items:
-            type: string
-            enum:
-              - components
-              - custom_statuses
-              - custom_fields
-              - multiple_assignees
-              - releases
+          description: Human-readable evaluation reason when the license is not valid.
+        installation_id:
+          type: string
+          format: uuid
+          description: Logical installation identity used for license binding.
+        license_id:
+          type: string
+          format: uuid
+          description: Identifier of the verified license when available.
+        customer:
+          type: string
+          description: Customer name from the verified license.
+        key_id:
+          type: string
+          description: Signing key identifier of the verified license.
+        seats_licensed:
+          type: integer
+          minimum: 0
+          description: Licensed active-human seat count when a payload was verified.
+        seats_active:
+          type: integer
+          minimum: 0
+          description: Current number of active human users.
+        issued_at:
+          type: string
+          format: date-time
+        not_before:
+          type: string
+          format: date-time
         expires_at:
           type: string
           format: date-time
-          description: Date and time when the license expires.
+        grace_ends_at:
+          type: string
+          format: date-time
+          description: End of the 30-day grace window after expiration.
       required:
-        - id
-        - organization
-        - email
-        - quotas
-        - features
-        - expires_at
+        - state
+        - installation_id
+        - seats_active
   examples: {}
   securitySchemes:
     oauth2:
@@ -3539,6 +3534,18 @@ components:
             example:
               value:
                 message: The requested resource already exists
+            seat_limit_reached:
+              value:
+                message: Licensed seat limit reached
+                code: seat_limit_reached
+            activation_denied:
+              value:
+                message: User activation is not entitled
+                code: activation_denied
+            entitlement_read_only:
+              value:
+                message: Installation is read-only
+                code: entitlement_read_only
     "500":
       description: Internal Server Error
       content:
@@ -5130,6 +5137,8 @@ paths:
           $ref: "#/components/responses/401"
         "403":
           $ref: "#/components/responses/403"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       requestBody:
@@ -5172,6 +5181,8 @@ paths:
           $ref: "#/components/responses/400"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       operationId: v1UserResetPassword
@@ -5222,6 +5233,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete a user by its ID. The user is not deleted irreversibly until the "force" parameter is set to true.
@@ -5250,6 +5263,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the given user.
@@ -5371,6 +5386,8 @@ paths:
           $ref: "#/components/responses/401"
         "403":
           $ref: "#/components/responses/403"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new todo item.
@@ -5424,6 +5441,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       tags:
@@ -5452,6 +5471,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the given todo
@@ -5537,6 +5558,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the given user.
@@ -5561,6 +5584,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete a notification by its ID.
@@ -5662,6 +5687,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the organization by its ID.
@@ -5690,6 +5717,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the organization by its ID.
@@ -5748,6 +5777,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Add an existing user to an organization.
@@ -5786,6 +5817,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Send an invitation email to a user to join the organization. If the user doesn't exist, a pending user will be created.
@@ -5836,6 +5869,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Removes a member from the organization
@@ -5869,6 +5904,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Revoke an invitation for a user to join the organization
@@ -5895,6 +5932,8 @@ paths:
           $ref: "#/components/responses/401"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Accept an invitation to join an organization using an invitation token. If the user is pending, they will be activated.
@@ -5952,6 +5991,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new role and assign it to the organization.
@@ -6020,6 +6061,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the organization role by its ID.
@@ -6049,6 +6092,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Deletes a role that is assigned to the organization.
@@ -6103,6 +6148,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new team and assign it to the organization.
@@ -6169,6 +6216,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the organization team by its ID.
@@ -6197,6 +6246,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Deletes a team that belongs to the organization.
@@ -6259,6 +6310,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Add an existing user to an organization's team.
@@ -6312,6 +6365,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Removes a member from the organization's team.
@@ -6461,6 +6516,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the namespace by its organization-scoped ref. Slug cannot be patched.
@@ -6485,6 +6542,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the namespace by its organization-scoped ref.
@@ -6636,6 +6695,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the project by its xid. Key cannot be patched.
@@ -6660,6 +6721,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the project by its xid.
@@ -6796,6 +6859,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new issue in the project.
@@ -6855,6 +6920,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the issue by its ID.
@@ -6879,6 +6946,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the issue by its ID.
@@ -6937,6 +7006,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
@@ -6969,6 +7040,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
@@ -6993,6 +7066,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete a relation of the issue by its relation ID.
@@ -7055,6 +7130,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new document in the organization library.
@@ -7122,6 +7199,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new document in the namespace library.
@@ -7186,6 +7265,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new document in the namespace library, related to the project.
@@ -7216,6 +7297,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Relate an existing document to the project.
@@ -7240,6 +7323,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Remove the relation between the document and the project.
@@ -7297,6 +7382,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the document by its ID. Optional library_id moves the document to another library and clears its folder. Optional folder_id moves it within the library; JSON null removes it from the folder.
@@ -7321,6 +7408,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the document by its ID.
@@ -7381,6 +7470,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new document in the namespace library, related to the issue.
@@ -7411,6 +7502,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Relate an existing document to the issue.
@@ -7435,6 +7528,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Remove the relation between the document and the issue.
@@ -7498,6 +7593,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new folder in the organization library.
@@ -7564,6 +7661,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new folder in the namespace library.
@@ -7623,6 +7722,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Update the folder by its ID. JSON null parent_id moves it to the library root.
@@ -7647,6 +7748,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete the folder by its ID. Child folders and documents are reparented one level up.
@@ -7668,6 +7771,8 @@ paths:
           $ref: "#/components/responses/401"
         "403":
           $ref: "#/components/responses/403"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
@@ -7694,6 +7799,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
       description: Delete a grant by its ID.
@@ -7891,6 +7998,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/custom-fields/{id}":
@@ -7947,6 +8056,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
     delete:
@@ -7969,6 +8080,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/custom-fields/{id}/archive":
@@ -7998,6 +8111,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/resources/{resourceType}/{id}/custom-fields":
@@ -8070,6 +8185,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
     delete:
@@ -8091,6 +8208,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins":
@@ -8247,6 +8366,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/enable":
@@ -8273,6 +8394,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/disable":
@@ -8299,6 +8422,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/config":
@@ -8380,6 +8505,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/upgrade":
@@ -8410,6 +8537,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/invoke":
@@ -8441,6 +8570,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/graph/nodes":
@@ -8589,6 +8720,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
     delete:
@@ -8608,6 +8741,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/graph/nodes/{id}/move":
@@ -8639,6 +8774,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   "/v1/plugins/{pluginId}/graph/relations":
@@ -8743,6 +8880,8 @@ paths:
           $ref: "#/components/responses/403"
         "404":
           $ref: "#/components/responses/404"
+        "409":
+          $ref: "#/components/responses/409"
         "500":
           $ref: "#/components/responses/500"
   /v1/system/health:
@@ -8781,9 +8920,9 @@ paths:
       operationId: v1SystemHeartbeat
       description: Returns 200 OK if the service is reachable.
       security: []
-  /v1/system/license:
+  /v1/system/entitlements:
     get:
-      summary: Get license info
+      summary: Get entitlement status
       tags:
         - System
       responses:
@@ -8792,13 +8931,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SystemLicense"
+                $ref: "#/components/schemas/SystemEntitlements"
+        "401":
+          $ref: "#/components/responses/401"
         "403":
           $ref: "#/components/responses/403"
         "500":
           $ref: "#/components/responses/500"
-      operationId: v1SystemLicense
-      description: Return the license information. The license information is only available to entitled users.
+      operationId: v1SystemEntitlements
+      description: Return deployment mode and AirGap seat entitlement status. Available only to installation administrators.
       security:
         - oauth2: []
   /v1/system/version:

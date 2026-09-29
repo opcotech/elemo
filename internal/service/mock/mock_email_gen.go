@@ -12,9 +12,9 @@ package mocksvc
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
 	email "github.com/opcotech/elemo/internal/email"
+	entitlement "github.com/opcotech/elemo/internal/entitlement"
 	model "github.com/opcotech/elemo/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -57,6 +57,20 @@ func (mr *MockEmailServiceMockRecorder) SendAuthPasswordResetEmail(ctx, recipien
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendAuthPasswordResetEmail", reflect.TypeOf((*MockEmailService)(nil).SendAuthPasswordResetEmail), ctx, recipient, token)
 }
 
+// SendLicenseExpiryEmail mocks base method.
+func (m *MockEmailService) SendLicenseExpiryEmail(ctx context.Context, recipient string, status entitlement.AirGapStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendLicenseExpiryEmail", ctx, recipient, status)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendLicenseExpiryEmail indicates an expected call of SendLicenseExpiryEmail.
+func (mr *MockEmailServiceMockRecorder) SendLicenseExpiryEmail(ctx, recipient, status any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendLicenseExpiryEmail", reflect.TypeOf((*MockEmailService)(nil).SendLicenseExpiryEmail), ctx, recipient, status)
+}
+
 // SendOrganizationInvitationEmail mocks base method.
 func (m *MockEmailService) SendOrganizationInvitationEmail(ctx context.Context, organizationID model.ID, organizationName string, recipient email.Recipient, token string) error {
 	m.ctrl.T.Helper()
@@ -69,20 +83,6 @@ func (m *MockEmailService) SendOrganizationInvitationEmail(ctx context.Context, 
 func (mr *MockEmailServiceMockRecorder) SendOrganizationInvitationEmail(ctx, organizationID, organizationName, recipient, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOrganizationInvitationEmail", reflect.TypeOf((*MockEmailService)(nil).SendOrganizationInvitationEmail), ctx, organizationID, organizationName, recipient, token)
-}
-
-// SendSystemLicenseExpiryEmail mocks base method.
-func (m *MockEmailService) SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendSystemLicenseExpiryEmail", ctx, licenseID, licenseEmail, licenseOrganization, licenseExpiresAt)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendSystemLicenseExpiryEmail indicates an expected call of SendSystemLicenseExpiryEmail.
-func (mr *MockEmailServiceMockRecorder) SendSystemLicenseExpiryEmail(ctx, licenseID, licenseEmail, licenseOrganization, licenseExpiresAt any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendSystemLicenseExpiryEmail", reflect.TypeOf((*MockEmailService)(nil).SendSystemLicenseExpiryEmail), ctx, licenseID, licenseEmail, licenseOrganization, licenseExpiresAt)
 }
 
 // SendUserWelcomeEmail mocks base method.

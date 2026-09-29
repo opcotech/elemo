@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	neo4jBootstrapScript, _ = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.cypher")
-	pgBootstrapScript, _    = os.ReadFile(testConfig.RootDir + "/assets/queries/bootstrap.sql")
+	neo4jBootstrapScript, _ = os.ReadFile(testConfig.RootDir + "/scripts/queries/bootstrap.cypher")
+	pgBootstrapScript, _    = os.ReadFile(testConfig.RootDir + "/scripts/queries/bootstrap.sql")
 	s3TestBucketName        = "test-bucket"
 )
 

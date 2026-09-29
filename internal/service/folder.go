@@ -119,6 +119,11 @@ func (s *folderService) Create(ctx context.Context, libraryID model.ID, opts Cre
 	ctx, span := s.tracer.Start(ctx, "service.folderService/Create")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrFolderCreate, err)
+	}
+
 	if err := libraryID.Validate(); err != nil {
 		return nil, errors.Join(ErrFolderCreate, err)
 	}
@@ -227,6 +232,11 @@ func (s *folderService) Update(ctx context.Context, id model.ID, opts UpdateFold
 	ctx, span := s.tracer.Start(ctx, "service.folderService/Update")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrFolderUpdate, err)
+	}
+
 	if err := id.Validate(); err != nil {
 		return nil, errors.Join(ErrFolderUpdate, err)
 	}
@@ -254,6 +264,11 @@ func (s *folderService) Update(ctx context.Context, id model.ID, opts UpdateFold
 func (s *folderService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.folderService/Delete")
 	defer span.End()
+
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrFolderDelete, err)
+	}
 
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrFolderDelete, err)

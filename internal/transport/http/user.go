@@ -49,6 +49,8 @@ func (c *userController) V1UsersCreate(ctx context.Context, request api.V1UsersC
 		switch classifyServiceError(err) {
 		case http.StatusForbidden:
 			return api.V1UsersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusConflict:
+			return api.V1UsersCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1UsersCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -187,6 +189,8 @@ func (c *userController) V1UserUpdate(ctx context.Context, request api.V1UserUpd
 			return api.V1UserUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1UserUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1UserUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1UserUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -212,6 +216,8 @@ func (c *userController) V1UserDelete(ctx context.Context, request api.V1UserDel
 			return api.V1UserDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1UserDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1UserDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1UserDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -277,7 +283,12 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 		return api.V1UserResetPassword400JSONResponse{N400JSONResponse: formatBadRequest(verifyErr)}, nil
 	}
 
-	userID, err := model.NewIDFromString(tokenData["user_id"].(string), model.ResourceTypeUser.String())
+	userIDStr, ok := tokenData["user_id"].(string)
+	if !ok || userIDStr == "" {
+		return api.V1UserResetPassword400JSONResponse{N400JSONResponse: formatBadRequest(service.ErrInvalidToken)}, nil
+	}
+
+	userID, err := model.NewIDFromString(userIDStr, model.ResourceTypeUser.String())
 	if err != nil {
 		return api.V1UserResetPassword400JSONResponse{N400JSONResponse: formatBadRequest(err)}, nil
 	}
@@ -287,6 +298,8 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 		switch classifyServiceError(err) {
 		case http.StatusNotFound:
 			return api.V1UserResetPassword404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1UserResetPassword409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1UserResetPassword500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -329,11 +342,16 @@ func (c *userController) V1UserResetPassword(ctx context.Context, request api.V1
 	if _, err = c.userService.Update(ctx, user.ID, service.UpdateUserOpts{
 		Password: optional.Some(auth.HashPassword(request.Body.Password)),
 	}); err != nil {
-		return api.V1UserResetPassword500JSONResponse{
-			N500JSONResponse: api.N500JSONResponse{
-				Message: err.Error(),
-			},
-		}, nil
+		switch classifyServiceError(err) {
+		case http.StatusConflict:
+			return api.V1UserResetPassword409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
+		default:
+			return api.V1UserResetPassword500JSONResponse{
+				N500JSONResponse: api.N500JSONResponse{
+					Message: err.Error(),
+				},
+			}, nil
+		}
 	}
 
 	if err := c.userService.DeleteToken(ctx, userID, model.UserTokenContextResetPassword); err != nil {

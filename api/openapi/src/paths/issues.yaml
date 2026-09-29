@@ -126,6 +126,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new issue in the project.
@@ -185,6 +187,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Update the issue by its ID.
@@ -209,6 +213,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Delete the issue by its ID.
@@ -267,6 +273,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create an outgoing relation from the issue in the URL to another issue. Self-relations and the reserved "subtask of" kind are rejected.
@@ -299,6 +307,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Change the relation kind from this issue's point of view by replacing the edge with a new outgoing relation. Self-relations and the reserved "subtask of" kind are rejected.
@@ -323,6 +333,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Delete a relation of the issue by its relation ID.

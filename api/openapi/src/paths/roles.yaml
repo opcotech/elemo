@@ -46,6 +46,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new role and assign it to the organization.
@@ -114,6 +116,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Update the organization role by its ID.
@@ -143,6 +147,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Deletes a role that is assigned to the organization.
