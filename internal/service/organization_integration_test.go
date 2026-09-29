@@ -11,6 +11,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -56,13 +57,6 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 	)
 	s.Require().NoError(err)
 
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
 	ctrl := gomock.NewController(s.T())
 	s.emailSender = mocksvc.NewMockEmailSender(ctrl)
 	s.capturedTokens = make(map[string]string)
@@ -98,7 +92,7 @@ func (s *OrganizationServiceIntegrationTestSuite) SetupSuite() {
 		s.UserTokenRepository,
 		s.RoleRepo,
 		permissionService,
-		licenseService,
+		entitlement.Unrestricted(),
 		s.emailService,
 		notificationService,
 		searchService,

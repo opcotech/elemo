@@ -41,17 +41,9 @@ func (s *TeamServiceIntegrationTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.permissionService = permissionService
 
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
 	s.teamService, err = service.NewTeamService(
 		s.TeamRepo,
 		permissionService,
-		licenseService,
 	)
 	s.Require().NoError(err)
 }

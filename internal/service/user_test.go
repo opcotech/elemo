@@ -4,18 +4,17 @@ import (
 	"context"
 	"testing"
 
+	"github.com/opcotech/elemo/internal/entitlement"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
 	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
 	"github.com/opcotech/elemo/internal/service"
-	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 
 	"go.uber.org/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -66,36 +65,36 @@ func TestNewUserService(t *testing.T) {
 		{
 			name: "new user service",
 			build: func(ctrl *gomock.Controller) (service.UserService, error) {
-				return service.NewUserService(mockrepo.NewMockUserRepository(nil), mockrepo.NewMockUserTokenRepository(nil), mocksvc.NewMockLicenseService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
+				return service.NewUserService(mockrepo.NewMockUserRepository(nil), mockrepo.NewMockUserTokenRepository(nil), entitlement.Unrestricted(), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
 		},
 		{
 			name: "new user service with no user repository",
 			build: func(ctrl *gomock.Controller) (service.UserService, error) {
-				return service.NewUserService(nil, mockrepo.NewMockUserTokenRepository(nil), mocksvc.NewMockLicenseService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
+				return service.NewUserService(nil, mockrepo.NewMockUserTokenRepository(nil), entitlement.Unrestricted(), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
 			wantErr: service.ErrNoUserRepository,
 		},
 		{
 			name: "new user service with no user token repository",
 			build: func(ctrl *gomock.Controller) (service.UserService, error) {
-				return service.NewUserService(mockrepo.NewMockUserRepository(nil), nil, mocksvc.NewMockLicenseService(nil), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
+				return service.NewUserService(mockrepo.NewMockUserRepository(nil), nil, entitlement.Unrestricted(), service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
 			wantErr: service.ErrNoUserTokenRepository,
 		},
 		{
-			name: "new user service with no license service",
+			name: "new user service with invalid options",
+			build: func(_ *gomock.Controller) (service.UserService, error) {
+				return service.NewUserService(mockrepo.NewMockUserRepository(nil), mockrepo.NewMockUserTokenRepository(nil), entitlement.Unrestricted(), service.WithLogger(nil))
+			},
+			wantErr: log.ErrNoLogger,
+		},
+		{
+			name: "new user service with no seat policy",
 			build: func(ctrl *gomock.Controller) (service.UserService, error) {
 				return service.NewUserService(mockrepo.NewMockUserRepository(nil), mockrepo.NewMockUserTokenRepository(nil), nil, service.WithLogger(mocklog.NewMockLogger(ctrl)), service.WithTracer(mocktrace.NewMockTracer(ctrl)))
 			},
-			wantErr: service.ErrNoLicenseService,
-		},
-		{
-			name: "new user service with invalid options",
-			build: func(_ *gomock.Controller) (service.UserService, error) {
-				return service.NewUserService(mockrepo.NewMockUserRepository(nil), mockrepo.NewMockUserTokenRepository(nil), mocksvc.NewMockLicenseService(nil), service.WithLogger(nil))
-			},
-			wantErr: log.ErrNoLogger,
+			wantErr: entitlement.ErrNoSeatPolicy,
 		},
 	}
 	for _, tt := range tests {
@@ -136,20 +135,16 @@ func TestUserService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(&repository.User{}, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(true, nil)
+					userRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&repository.User{}, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -173,16 +168,13 @@ func TestUserService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -208,20 +200,16 @@ func TestUserService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Create", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, assert.AnError)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(true, nil)
+					userRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -237,109 +225,6 @@ func TestUserService_Create(t *testing.T) {
 				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
 			},
 			wantErr: service.ErrUserCreate,
-		},
-		{
-			name: "create user out of quota",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ service.CreateUserOpts) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(false, nil)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
-			},
-			wantErr: service.ErrQuotaExceeded,
-		},
-		{
-			name: "create user with expired license",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ service.CreateUserOpts) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "create user with license expired error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ service.CreateUserOpts) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:  context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				opts: createUserOptsFromRepo(testModel.NewCreateUserOpts()),
-			},
-			wantErr: license.ErrLicenseExpired,
 		},
 	}
 	for _, tt := range tests {
@@ -377,16 +262,16 @@ func TestUserService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, id, repository.UserDetailProjection()).Return(user, nil)
+					userRepo.EXPECT().Get(gomock.Any(), id, repository.UserDetailProjection()).Return(user, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -411,13 +296,13 @@ func TestUserService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -442,16 +327,16 @@ func TestUserService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Get", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Get(ctx, id, repository.UserDetailProjection()).Return(nil, assert.AnError)
+					userRepo.EXPECT().Get(gomock.Any(), id, repository.UserDetailProjection()).Return(nil, assert.AnError)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -509,16 +394,16 @@ func TestUserService_GetByEmail(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(user, nil)
+					userRepo.EXPECT().GetByEmail(gomock.Any(), email, repository.UserDetailProjection()).Return(user, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -543,13 +428,13 @@ func TestUserService_GetByEmail(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -574,16 +459,16 @@ func TestUserService_GetByEmail(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/GetByEmail", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().GetByEmail(ctx, email, repository.UserDetailProjection()).Return(nil, assert.AnError)
+					userRepo.EXPECT().GetByEmail(gomock.Any(), email, repository.UserDetailProjection()).Return(nil, assert.AnError)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -641,16 +526,16 @@ func TestUserService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().List(ctx, page, repository.UserListProjection()).Return(repository.Page[*repository.User]{Items: users}, nil)
+					userRepo.EXPECT().List(gomock.Any(), page, repository.UserListProjection()).Return(repository.Page[*repository.User]{Items: users}, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -674,13 +559,13 @@ func TestUserService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -705,13 +590,13 @@ func TestUserService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -736,13 +621,13 @@ func TestUserService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -767,16 +652,16 @@ func TestUserService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/List", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().List(ctx, page, repository.UserListProjection()).Return(repository.Page[*repository.User]{}, assert.AnError)
+					userRepo.EXPECT().List(gomock.Any(), page, repository.UserListProjection()).Return(repository.Page[*repository.User]{}, assert.AnError)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -838,20 +723,16 @@ func TestUserService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(user, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(true, nil)
+					userRepo.EXPECT().Activate(gomock.Any(), id, gomock.Any(), repository.UnrestrictedActivation()).Return(user, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -880,18 +761,15 @@ func TestUserService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -919,16 +797,13 @@ func TestUserService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -956,19 +831,16 @@ func TestUserService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, repository.ErrNotFound)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					userRepo.EXPECT().Update(gomock.Any(), id, gomock.Any()).Return(nil, repository.ErrNotFound)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -989,45 +861,6 @@ func TestUserService_Update(t *testing.T) {
 			wantErr: service.ErrUserUpdate,
 		},
 		{
-			name: "update user out of quota",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateUserOpts, _ *repository.User) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaUsers).Return(false, nil)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:  userID,
-				opts: service.UpdateUserOpts{
-					Email:  optional.Some("test2@example.com"),
-					Status: optional.Some(model.UserStatusActive),
-				},
-			},
-			wantErr: service.ErrQuotaExceeded,
-		},
-		{
 			name: "update user with no context user id",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateUserOpts, _ *repository.User) service.UserService {
@@ -1035,16 +868,13 @@ func TestUserService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1063,82 +893,6 @@ func TestUserService_Update(t *testing.T) {
 				},
 			},
 			wantErr: service.ErrNoUser,
-		},
-		{
-			name: "update user with expired license",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateUserOpts, _ *repository.User) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:  userID,
-				opts: service.UpdateUserOpts{
-					Email:  optional.Some("test2@example.com"),
-					Status: optional.Some(model.UserStatusActive),
-				},
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "update user with expired license error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateUserOpts, _ *repository.User) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx: context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:  userID,
-				opts: service.UpdateUserOpts{
-					Email:  optional.Some("test2@example.com"),
-					Status: optional.Some(model.UserStatusActive),
-				},
-			},
-			wantErr: license.ErrLicenseExpired,
 		},
 	}
 	for _, tt := range tests {
@@ -1183,19 +937,16 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(new(repository.User), nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					userRepo.EXPECT().Update(gomock.Any(), id, gomock.Any()).Return(new(repository.User), nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1220,19 +971,16 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Delete(ctx, id).Return(nil).Times(1)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					userRepo.EXPECT().Delete(gomock.Any(), id).Return(nil).Times(1)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1250,76 +998,6 @@ func TestUserService_Delete(t *testing.T) {
 			},
 		},
 		{
-			name: "delete user with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
-				force: true,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "delete user with license expired error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.UserService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.UserService {
-						svc, err := service.NewUserService(
-							mockrepo.NewMockUserRepository(ctrl),
-							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				id:    model.MustNewID(model.ResourceTypeUser),
-				force: true,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "soft delete another user",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.UserService {
@@ -1327,18 +1005,15 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1364,18 +1039,15 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1401,16 +1073,13 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1436,19 +1105,16 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Update(ctx, id, gomock.Any()).Return(nil, assert.AnError)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					userRepo.EXPECT().Update(gomock.Any(), id, gomock.Any()).Return(nil, assert.AnError)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1474,19 +1140,16 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					userRepo := mockrepo.NewMockUserRepository(ctrl)
-					userRepo.EXPECT().Delete(ctx, id).Return(assert.AnError).Times(1)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					userRepo.EXPECT().Delete(gomock.Any(), id).Return(assert.AnError).Times(1)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							userRepo,
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1512,16 +1175,13 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1547,16 +1207,13 @@ func TestUserService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.userService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.UserService {
 						svc, err := service.NewUserService(
 							mockrepo.NewMockUserRepository(ctrl),
 							mockrepo.NewMockUserTokenRepository(ctrl),
-							licenseSvc,
+							entitlement.Unrestricted(),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)

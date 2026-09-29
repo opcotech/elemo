@@ -95,7 +95,7 @@ func (c *customFieldController) V1CustomFieldsCreate(
 		case http.StatusForbidden:
 			return api.V1CustomFieldsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusConflict:
-			return api.V1CustomFieldsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{Message: err.Error()}}, nil
+			return api.V1CustomFieldsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1CustomFieldsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -129,6 +129,8 @@ func (c *customFieldController) V1CustomFieldsSearch(
 			return api.V1CustomFieldsSearch403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1CustomFieldsSearch404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1CustomFieldsSearch409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1CustomFieldsSearch500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -199,6 +201,8 @@ func (c *customFieldController) V1CustomFieldUpdate(
 			return api.V1CustomFieldUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1CustomFieldUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1CustomFieldUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1CustomFieldUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -231,6 +235,8 @@ func (c *customFieldController) V1CustomFieldDelete(
 			return api.V1CustomFieldDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1CustomFieldDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1CustomFieldDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1CustomFieldDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -259,6 +265,8 @@ func (c *customFieldController) V1CustomFieldArchive(
 			return api.V1CustomFieldArchive403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1CustomFieldArchive404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1CustomFieldArchive409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1CustomFieldArchive500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -339,6 +347,8 @@ func (c *customFieldController) V1ResourceCustomFieldValuePut(
 			return api.V1ResourceCustomFieldValuePut403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ResourceCustomFieldValuePut404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ResourceCustomFieldValuePut409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ResourceCustomFieldValuePut500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}
@@ -370,6 +380,8 @@ func (c *customFieldController) V1ResourceCustomFieldValueDelete(
 			return api.V1ResourceCustomFieldValueDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ResourceCustomFieldValueDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ResourceCustomFieldValueDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ResourceCustomFieldValueDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{Message: err.Error()}}, nil
 		}

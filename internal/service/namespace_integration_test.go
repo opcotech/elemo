@@ -42,13 +42,6 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupSuite() {
 	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
 	searchService, err := service.NewSearchService(
 		s.SearchRepo,
 		permissionService,
@@ -59,7 +52,6 @@ func (s *NamespaceServiceIntegrationTestSuite) SetupSuite() {
 	s.namespaceService, err = service.NewNamespaceService(
 		s.NamespaceRepo,
 		permissionService,
-		licenseService,
 		searchService,
 	)
 	s.Require().NoError(err)

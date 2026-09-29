@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -93,7 +92,6 @@ type roleService struct {
 	runtime
 	roleRepo            repository.RoleRepository
 	permissionService   PermissionService
-	licenseService      LicenseService
 	organizationRepo    repository.OrganizationRepository
 	notificationService NotificationService
 }
@@ -128,8 +126,9 @@ func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opt
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrRoleCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrRoleCreate, err)
 	}
 
 	if err := opts.Validate(); err != nil {
@@ -138,10 +137,6 @@ func (s *roleService) Create(ctx context.Context, owner, belongsTo model.ID, opt
 
 	if err := requireAction(ctx, s.permissionService, belongsTo, model.ActionRoleManage); err != nil {
 		return nil, errors.Join(ErrRoleCreate, err)
-	}
-
-	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaRoles); !ok || err != nil {
-		return nil, errors.Join(ErrRoleCreate, ErrQuotaExceeded)
 	}
 
 	role, err := s.roleRepo.Create(ctx, repository.CreateRoleOpts{
@@ -213,8 +208,9 @@ func (s *roleService) Update(ctx context.Context, id, belongsTo model.ID, opts U
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrRoleUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrRoleUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -279,8 +275,9 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 	ctx, span := s.tracer.Start(ctx, "service.roleService/AddMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleAddMember, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrRoleAddMember, err)
 	}
 
 	if err := roleID.Validate(); err != nil {
@@ -295,7 +292,7 @@ func (s *roleService) AddMember(ctx context.Context, roleID, memberID, belongsTo
 		return errors.Join(ErrRoleAddMember, err)
 	}
 
-	err := s.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
+	err = s.roleRepo.AddMember(ctx, roleID, memberID, belongsToID)
 	if err != nil {
 		return errors.Join(ErrRoleAddMember, err)
 	}
@@ -336,8 +333,9 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 	ctx, span := s.tracer.Start(ctx, "service.roleService/RemoveMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleRemoveMember, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
 	if err := roleID.Validate(); err != nil {
@@ -352,7 +350,7 @@ func (s *roleService) RemoveMember(ctx context.Context, roleID, memberID, belong
 		return errors.Join(ErrRoleRemoveMember, err)
 	}
 
-	err := s.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
+	err = s.roleRepo.RemoveMember(ctx, roleID, memberID, belongsToID)
 	if err != nil {
 		return errors.Join(ErrRoleRemoveMember, err)
 	}
@@ -393,8 +391,9 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 	ctx, span := s.tracer.Start(ctx, "service.roleService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrRoleDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrRoleDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -405,7 +404,7 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 		return errors.Join(ErrRoleDelete, err)
 	}
 
-	err := s.roleRepo.Delete(ctx, id, belongsTo)
+	err = s.roleRepo.Delete(ctx, id, belongsTo)
 	if err != nil {
 		return errors.Join(ErrRoleDelete, err)
 	}
@@ -418,7 +417,6 @@ func (s *roleService) Delete(ctx context.Context, id, belongsTo model.ID) error 
 func NewRoleService(
 	roleRepo repository.RoleRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	organizationRepo repository.OrganizationRepository,
 	notificationService NotificationService,
 	opts ...Option,
@@ -432,7 +430,6 @@ func NewRoleService(
 		runtime:             rt,
 		roleRepo:            roleRepo,
 		permissionService:   permissionService,
-		licenseService:      licenseService,
 		organizationRepo:    organizationRepo,
 		notificationService: notificationService,
 	}
@@ -443,10 +440,6 @@ func NewRoleService(
 
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.organizationRepo == nil {

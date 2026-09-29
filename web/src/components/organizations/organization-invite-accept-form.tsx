@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { entitlementActivationErrorMessage } from "@/lib/api/errors";
 import { v1OrganizationMembersAcceptMutation } from "@/lib/api/mutation-options";
 import { v1OrganizationMembersAccept } from "@/lib/api/sdk";
 import type { Options, V1OrganizationMembersAcceptData } from "@/lib/api/types";
@@ -65,13 +66,21 @@ export function OrganizationInviteAcceptForm() {
     PasswordFormData
   >({
     mutationFn: async (variables) => {
-      const { data } = await v1OrganizationMembersAccept({
-        path: variables.path,
-        body: variables.body,
-        auth: () => undefined,
-        throwOnError: true,
-      });
-      return data;
+      try {
+        const { data } = await v1OrganizationMembersAccept({
+          path: variables.path,
+          body: variables.body,
+          auth: () => undefined,
+          throwOnError: true,
+        });
+        return data;
+      } catch (error) {
+        const message = entitlementActivationErrorMessage(error);
+        if (message) {
+          throw new Error(message, { cause: error });
+        }
+        throw error;
+      }
     },
     form,
     successMessage: "Invitation accepted",
@@ -97,7 +106,10 @@ export function OrganizationInviteAcceptForm() {
       };
     },
     onError: (error) => {
-      const errorMessage = error.message || "Failed to accept invitation";
+      const errorMessage =
+        entitlementActivationErrorMessage(error) ||
+        error.message ||
+        "Failed to accept invitation";
 
       // Check if error indicates password is required for pending users
       if (

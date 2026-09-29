@@ -28,6 +28,9 @@ export const zPageInfo = z.object({
  */
 export const zHttpError = z.object({
   message: z.string(),
+  code: z
+    .enum(["seat_limit_reached", "activation_denied", "entitlement_read_only"])
+    .optional(),
 });
 
 /**
@@ -1688,7 +1691,6 @@ export const zSystemHealth = z.object({
   cache_database: z.enum(["healthy", "unhealthy", "unknown"]),
   graph_database: z.enum(["healthy", "unhealthy", "unknown"]),
   relational_database: z.enum(["healthy", "unhealthy", "unknown"]),
-  license: z.enum(["healthy", "unhealthy", "unknown"]),
   message_queue: z.enum(["healthy", "unhealthy", "unknown"]),
   search: z.enum(["healthy", "unhealthy", "unknown"]),
 });
@@ -1712,30 +1714,40 @@ export const zSystemVersion = z.object({
 });
 
 /**
- * SystemLicense
+ * SystemAirGapEntitlement
+ *
+ * AirGap human-seat entitlement as evaluated on this installation.
  */
-export const zSystemLicense = z.object({
-  id: z.string(),
-  organization: z.string(),
-  email: z.email().min(6).max(254),
-  quotas: z.object({
-    documents: z.int().gte(1),
-    namespaces: z.int().gte(1),
-    organizations: z.int().gte(1),
-    projects: z.int().gte(1),
-    roles: z.int().gte(1),
-    users: z.int().gte(1),
-  }),
-  features: z.array(
-    z.enum([
-      "components",
-      "custom_statuses",
-      "custom_fields",
-      "multiple_assignees",
-      "releases",
-    ])
-  ),
-  expires_at: z.iso.datetime(),
+export const zSystemAirGapEntitlement = z.object({
+  state: z.enum([
+    "valid",
+    "grace",
+    "expired",
+    "not_yet_valid",
+    "invalid",
+    "missing",
+  ]),
+  reason: z.string().optional(),
+  installation_id: z.uuid(),
+  license_id: z.uuid().optional(),
+  customer: z.string().optional(),
+  key_id: z.string().optional(),
+  seats_licensed: z.int().gte(0).optional(),
+  seats_active: z.int().gte(0),
+  issued_at: z.iso.datetime().optional(),
+  not_before: z.iso.datetime().optional(),
+  expires_at: z.iso.datetime().optional(),
+  grace_ends_at: z.iso.datetime().optional(),
+});
+
+/**
+ * SystemEntitlements
+ *
+ * Deployment mode and AirGap seat entitlement status.
+ */
+export const zSystemEntitlements = z.object({
+  deployment_mode: z.enum(["self_hosted", "airgap"]),
+  airgap: zSystemAirGapEntitlement.optional(),
 });
 
 /**
@@ -3712,7 +3724,7 @@ export const zV1SystemHeartbeatResponse = z.enum(["OK"]);
 /**
  * OK
  */
-export const zV1SystemLicenseResponse = zSystemLicense;
+export const zV1SystemEntitlementsResponse = zSystemEntitlements;
 
 /**
  * OK

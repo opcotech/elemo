@@ -220,7 +220,7 @@ func TestDemoCypherRoleTemplatesMatch(t *testing.T) {
 
 	_, file, _, ok := runtime.Caller(0)
 	require.True(t, ok)
-	path := filepath.Join(filepath.Dir(file), "..", "..", "assets", "queries", "demo.cypher")
+	path := filepath.Join(filepath.Dir(file), "..", "..", "scripts", "queries", "demo.cypher")
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
 

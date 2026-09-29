@@ -2,9 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   ApiError,
+  entitlementActivationErrorMessage,
+  entitlementReadOnlyErrorMessage,
+  isActivationDenied,
   isConflict,
+  isEntitlementReadOnly,
   isNotFound,
   isPermissionDenied,
+  isSeatLimitReached,
   throwIfApiFailed,
   toApiError,
 } from "@/lib/api/errors";
@@ -14,7 +19,50 @@ describe("api error helpers", () => {
     expect(isNotFound(new ApiError(404, "missing"))).toBe(true);
     expect(isPermissionDenied(new ApiError(403, "denied"))).toBe(true);
     expect(isConflict(new ApiError(409, "taken"))).toBe(true);
+    expect(
+      isSeatLimitReached(
+        new ApiError(409, "limit", { code: "seat_limit_reached" })
+      )
+    ).toBe(true);
+    expect(
+      isActivationDenied(
+        new ApiError(409, "denied", { code: "activation_denied" })
+      )
+    ).toBe(true);
+    expect(
+      isEntitlementReadOnly(
+        new ApiError(409, "read-only", { code: "entitlement_read_only" })
+      )
+    ).toBe(true);
+    expect(isSeatLimitReached(new ApiError(409, "taken"))).toBe(false);
+    expect(isPermissionDenied(new ApiError(409, "limit"))).toBe(false);
     expect(isNotFound(new ApiError(500, "boom"))).toBe(false);
+  });
+
+  it("provides actionable entitlement conflict messages", () => {
+    expect(
+      entitlementActivationErrorMessage(
+        new ApiError(409, "limit", { code: "seat_limit_reached" })
+      )
+    ).toMatch(/free a seat/i);
+    expect(
+      entitlementActivationErrorMessage(
+        new ApiError(409, "denied", { code: "activation_denied" })
+      )
+    ).toMatch(/valid license/i);
+    expect(
+      entitlementActivationErrorMessage(new ApiError(500, "boom"))
+    ).toBeNull();
+    expect(
+      entitlementReadOnlyErrorMessage(
+        new ApiError(409, "read-only", { code: "entitlement_read_only" })
+      )
+    ).toMatch(/read-only/i);
+    expect(
+      entitlementReadOnlyErrorMessage(
+        new ApiError(409, "denied", { code: "activation_denied" })
+      )
+    ).toMatch(/valid license/i);
   });
 
   it("detects plain objects that carry a numeric status", () => {

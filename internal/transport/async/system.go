@@ -3,12 +3,16 @@ package async
 import (
 	"context"
 	"errors"
+	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/goccy/go-json"
 
 	"github.com/hibiken/asynq"
 
+	"github.com/opcotech/elemo/internal/entitlement"
+	"github.com/opcotech/elemo/internal/entitlement/license"
 	"github.com/opcotech/elemo/internal/queue"
 )
 
@@ -44,47 +48,65 @@ func NewSystemHealthCheckTaskHandler(opts ...TaskHandlerOption) (*SystemHealthCh
 	return &SystemHealthCheckTaskHandler{h}, nil
 }
 
-// SystemLicenseExpiryTaskHandler is the license expiry check task. If the
-// license is about to expire, it sends an email to the licensee.
+// SystemLicenseExpiryTaskHandler sends License expiration reminders.
 type SystemLicenseExpiryTaskHandler struct {
 	*baseTaskHandler
 }
 
-// ProcessTask unmarshals the task payload and checks if the license is about
-// to expire. If the license is about to expire, it sends an email to the
-// licensee. Otherwise, it skips the task.
-func (h *SystemLicenseExpiryTaskHandler) ProcessTask(ctx context.Context, task *asynq.Task) error {
+// ProcessTask evaluates the current entitlement and sends a reminder when the
+// verified License is close to expiration, in grace, or expired.
+func (h *SystemLicenseExpiryTaskHandler) ProcessTask(ctx context.Context, _ *asynq.Task) error {
 	ctx, span := h.tracer.Start(ctx, "transport.asynq.SystemLicenseExpiryTaskHandler/ProcessTask")
 	defer span.End()
 
-	var payload queue.LicenseExpiryTaskPayload
-	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
-		return errors.Join(ErrTaskPayloadUnmarshal, err, asynq.SkipRetry)
-	}
-
-	// If the license is not about to expire, skip the task.
-	if payload.LicenseExpiresAt.After(time.Now().Add(7 * 24 * time.Hour)) {
+	recipient := strings.TrimSpace(h.billingEmail)
+	address, err := mail.ParseAddress(recipient)
+	if err != nil || address.Address != recipient {
+		if recipient != "" {
+			h.logger.Warn(ctx, "airgap billing email is invalid; license expiration reminder skipped")
+		}
 		return nil
 	}
 
-	return h.emailService.SendSystemLicenseExpiryEmail(
-		ctx,
-		payload.LicenseID,
-		payload.LicenseEmail,
-		payload.LicenseOrganization,
-		payload.LicenseExpiresAt,
-	)
+	status, err := h.entitlementReporter.Status(ctx)
+	if err != nil {
+		return err
+	}
+	if !shouldSendLicenseExpiryReminder(status, time.Now().UTC()) {
+		return nil
+	}
+
+	return h.emailService.SendLicenseExpiryEmail(ctx, recipient, *status.AirGap)
 }
 
-// NewSystemLicenseExpiryTaskHandler creates a new license expiry check task handler.
+func shouldSendLicenseExpiryReminder(status entitlement.Status, now time.Time) bool {
+	if status.AirGap == nil {
+		return false
+	}
+
+	switch status.AirGap.State {
+	case license.StateValid:
+		return status.AirGap.ExpiresAt != nil &&
+			!status.AirGap.ExpiresAt.After(now.Add(queue.LicenseExpiryReminderWindow))
+	case license.StateGrace, license.StateExpired:
+		return true
+	default:
+		return false
+	}
+}
+
+// NewSystemLicenseExpiryTaskHandler creates a license expiration reminder task
+// handler.
 func NewSystemLicenseExpiryTaskHandler(opts ...TaskHandlerOption) (*SystemLicenseExpiryTaskHandler, error) {
 	h, err := newBaseTaskHandler(opts...)
 	if err != nil {
 		return nil, err
 	}
-
 	if h.emailService == nil {
 		return nil, ErrNoEmailService
+	}
+	if h.entitlementReporter == nil {
+		return nil, ErrNoEntitlementReporter
 	}
 
 	return &SystemLicenseExpiryTaskHandler{h}, nil

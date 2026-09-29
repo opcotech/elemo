@@ -29,15 +29,6 @@ SystemHealth:
       minLength: 7
       maxLength: 9
       description: Health of the relational database.
-    license:
-      type: string
-      enum:
-        - healthy
-        - unhealthy
-        - unknown
-      minLength: 7
-      maxLength: 9
-      description: Health of the license.
     message_queue:
       type: string
       enum:
@@ -60,7 +51,6 @@ SystemHealth:
     - cache_database
     - graph_database
     - relational_database
-    - license
     - message_queue
     - search
   x-examples:
@@ -68,7 +58,6 @@ SystemHealth:
       cache_database: healthy
       graph_database: healthy
       relational_database: healthy
-      license: healthy
       message_queue: healthy
       search: healthy
 SystemVersion:
@@ -96,78 +85,77 @@ SystemVersion:
     - commit
     - date
     - go_version
-SystemLicense:
-  title: SystemLicense
+SystemEntitlements:
+  title: SystemEntitlements
   type: object
+  description: Deployment mode and AirGap seat entitlement status.
   properties:
-    id:
+    deployment_mode:
       type: string
-      description: Unique ID identifying the license.
-    organization:
+      enum:
+        - self_hosted
+        - airgap
+      description: Compile-time deployment mode of this binary.
+    airgap:
+      $ref: "#/components/schemas/SystemAirGapEntitlement"
+      description: AirGap entitlement details. Omitted for normal self-hosted deployments.
+      nullable: true
+  required:
+    - deployment_mode
+SystemAirGapEntitlement:
+  title: SystemAirGapEntitlement
+  type: object
+  description: AirGap human-seat entitlement as evaluated on this installation.
+  properties:
+    state:
       type: string
-      description: Name of the organization the license belongs to.
-    email:
+      enum:
+        - valid
+        - grace
+        - expired
+        - not_yet_valid
+        - invalid
+        - missing
+      description: Lifecycle state of the License.
+    reason:
       type: string
-      format: email
-      example: info@example.com
-      minLength: 6
-      maxLength: 254
-      description: Email address of the licensee.
-    quotas:
-      type: object
-      description: Quotas available for the license.
-      required:
-        - documents
-        - namespaces
-        - organizations
-        - projects
-        - roles
-        - users
-      properties:
-        documents:
-          type: integer
-          minimum: 1
-          description: Number of documents can exist in the system.
-        namespaces:
-          type: integer
-          minimum: 1
-          description: Number of namespaces can exist in the system.
-        organizations:
-          type: integer
-          minimum: 1
-          description: Number of organizations active can exist in the system.
-        projects:
-          type: integer
-          minimum: 1
-          description: Number of projects can exist in the system.
-        roles:
-          type: integer
-          minimum: 1
-          description: Number of roles can exist in the system.
-        users:
-          type: integer
-          minimum: 1
-          description: Number of active or pending users can exist in the system.
-    features:
-      type: array
-      uniqueItems: true
-      description: Features enabled by the license.
-      items:
-        type: string
-        enum:
-          - components
-          - custom_statuses
-          - custom_fields
-          - multiple_assignees
-          - releases
+      description: Human-readable evaluation reason when the license is not valid.
+    installation_id:
+      type: string
+      format: uuid
+      description: Logical installation identity used for license binding.
+    license_id:
+      type: string
+      format: uuid
+      description: Identifier of the verified license when available.
+    customer:
+      type: string
+      description: Customer name from the verified license.
+    key_id:
+      type: string
+      description: Signing key identifier of the verified license.
+    seats_licensed:
+      type: integer
+      minimum: 0
+      description: Licensed active-human seat count when a payload was verified.
+    seats_active:
+      type: integer
+      minimum: 0
+      description: Current number of active human users.
+    issued_at:
+      type: string
+      format: date-time
+    not_before:
+      type: string
+      format: date-time
     expires_at:
       type: string
       format: date-time
-      description: Date and time when the license expires.
+    grace_ends_at:
+      type: string
+      format: date-time
+      description: End of the 30-day grace window after expiration.
   required:
-    - id
-    - organization
-    - email
-    - quotas
-    - features
-    - expires_at
+    - state
+    - installation_id
+    - seats_active

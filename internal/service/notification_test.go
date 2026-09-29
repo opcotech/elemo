@@ -165,7 +165,7 @@ func TestNotificationService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -179,9 +179,9 @@ func TestNotificationService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
+					repo.EXPECT().Create(gomock.Any(), repository.CreateNotificationOpts{
 						Title:       opts.Title,
 						Description: opts.Description,
 						Recipient:   opts.Recipient,
@@ -202,7 +202,7 @@ func TestNotificationService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -216,9 +216,9 @@ func TestNotificationService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, opts service.CreateNotificationOpts) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Create(ctx, repository.CreateNotificationOpts{
+					repo.EXPECT().Create(gomock.Any(), repository.CreateNotificationOpts{
 						Title:       opts.Title,
 						Description: opts.Description,
 						Recipient:   opts.Recipient,
@@ -240,7 +240,7 @@ func TestNotificationService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -309,7 +309,7 @@ func TestNotificationService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -323,9 +323,9 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID, notification *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(notification, nil)
+					repo.EXPECT().Get(gomock.Any(), id, recipient, repository.NotificationDetailProjection()).Return(notification, nil)
 					return repo
 				},
 			},
@@ -355,7 +355,7 @@ func TestNotificationService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -369,9 +369,9 @@ func TestNotificationService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID, _ *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Get(ctx, id, recipient, repository.NotificationDetailProjection()).Return(nil, assert.AnError)
+					repo.EXPECT().Get(gomock.Any(), id, recipient, repository.NotificationDetailProjection()).Return(nil, assert.AnError)
 					return repo
 				},
 			},
@@ -390,7 +390,7 @@ func TestNotificationService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -423,7 +423,7 @@ func TestNotificationService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -456,7 +456,7 @@ func TestNotificationService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -524,7 +524,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -538,9 +538,9 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, recipient model.ID, page service.CursorPage, notifications []*repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{Items: notifications}, nil)
+					repo.EXPECT().ListByRecipient(gomock.Any(), recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{Items: notifications}, nil)
 					return repo
 				},
 			},
@@ -586,7 +586,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -600,9 +600,9 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, recipient model.ID, page service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, recipient model.ID, page service.CursorPage, _ []*repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().ListByRecipient(ctx, recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{}, assert.AnError)
+					repo.EXPECT().ListByRecipient(gomock.Any(), recipient, page, repository.NotificationListProjection()).Return(repository.Page[*repository.Notification]{}, assert.AnError)
 					return repo
 				},
 			},
@@ -621,7 +621,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -654,7 +654,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -687,7 +687,7 @@ func TestNotificationService_ListByRecipient(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/ListByRecipient", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -765,7 +765,7 @@ func TestNotificationService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -779,9 +779,9 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, notification *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(notification, nil)
+					repo.EXPECT().Update(gomock.Any(), id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(notification, nil)
 					return repo
 				},
 			},
@@ -814,7 +814,7 @@ func TestNotificationService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -828,9 +828,9 @@ func TestNotificationService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID, opts service.UpdateNotificationOpts, _ *repository.Notification) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Update(ctx, id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(nil, assert.AnError)
+					repo.EXPECT().Update(gomock.Any(), id, recipient, repository.UpdateNotificationOpts{Read: opts.Read}).Return(nil, assert.AnError)
 					return repo
 				},
 			},
@@ -850,7 +850,7 @@ func TestNotificationService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -884,7 +884,7 @@ func TestNotificationService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -918,7 +918,7 @@ func TestNotificationService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -986,7 +986,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -1000,9 +1000,9 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, recipient).Return(nil).Times(1)
+					repo.EXPECT().Delete(gomock.Any(), id, recipient).Return(nil).Times(1)
 					return repo
 				},
 			},
@@ -1020,7 +1020,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -1034,9 +1034,9 @@ func TestNotificationService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				newNotificationRepo: func(ctrl *gomock.Controller, ctx context.Context, id, recipient model.ID) repository.NotificationRepository {
+				newNotificationRepo: func(ctrl *gomock.Controller, _ context.Context, id, recipient model.ID) repository.NotificationRepository {
 					repo := mockrepo.NewMockNotificationRepository(ctrl)
-					repo.EXPECT().Delete(ctx, id, recipient).Return(assert.AnError).Times(1)
+					repo.EXPECT().Delete(gomock.Any(), id, recipient).Return(assert.AnError).Times(1)
 					return repo
 				},
 			},
@@ -1055,7 +1055,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -1088,7 +1088,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(
@@ -1121,7 +1121,7 @@ func TestNotificationService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.notificationService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NotificationService {
 						svc, err := service.NewNotificationService(

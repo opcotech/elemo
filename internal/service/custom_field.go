@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -98,27 +97,17 @@ type customFieldService struct {
 	runtime
 	repo              repository.CustomFieldRepository
 	permissionService PermissionService
-	licenseService    LicenseService
-}
-
-func (s *customFieldService) requireFeature(ctx context.Context, wrap error) error {
-	ok, err := s.licenseService.HasFeature(ctx, license.FeatureCustomFields)
-	if err != nil {
-		return errors.Join(wrap, err)
-	}
-	if !ok {
-		return errors.Join(wrap, ErrFeatureDisabled)
-	}
-	return nil
 }
 
 func (s *customFieldService) CreateDefinition(ctx context.Context, opts CreateCustomFieldOpts) (*model.CustomFieldDefinition, error) {
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/CreateDefinition")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldCreate); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrCustomFieldCreate, err)
 	}
+
 	if err := opts.Validate(); err != nil {
 		return nil, errors.Join(ErrCustomFieldCreate, err)
 	}
@@ -228,9 +217,11 @@ func (s *customFieldService) UpdateDefinition(
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/UpdateDefinition")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldUpdate); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrCustomFieldUpdate, err)
 	}
+
 	current, err := s.repo.GetDefinition(ctx, id)
 	if err != nil {
 		return nil, errors.Join(ErrCustomFieldUpdate, err)
@@ -291,9 +282,11 @@ func (s *customFieldService) DeleteDefinition(ctx context.Context, id model.ID) 
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/DeleteDefinition")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldDelete); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldDelete, err)
 	}
+
 	def, err := s.repo.GetDefinition(ctx, id)
 	if err != nil {
 		return errors.Join(ErrCustomFieldDelete, err)
@@ -370,9 +363,11 @@ func (s *customFieldService) SetValue(
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/SetValue")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldValueSet); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldValueSet, err)
 	}
+
 	def, err := s.writableDefinition(ctx, resourceID, definitionID, ErrCustomFieldValueSet)
 	if err != nil {
 		return err
@@ -397,9 +392,11 @@ func (s *customFieldService) DeleteValue(ctx context.Context, resourceID, defini
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/DeleteValue")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldValueDelete); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldValueDelete, err)
 	}
+
 	def, err := s.writableDefinition(ctx, resourceID, definitionID, ErrCustomFieldValueDelete)
 	if err != nil {
 		return err
@@ -451,8 +448,9 @@ func (s *customFieldService) StageForResource(
 	ctx, span := s.tracer.Start(ctx, "service.customFieldService/StageForResource")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrCustomFieldValueSet); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldValueSet, err)
 	}
 
 	ancestry, err := s.permissionService.ListScopeAncestry(ctx, scope)
@@ -518,6 +516,10 @@ func (s *customFieldService) StageForResource(
 }
 
 func (s *customFieldService) CommitForResource(ctx context.Context, resourceID model.ID) error {
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldValueSet, err)
+	}
 	if err := s.repo.CommitValues(ctx, resourceID); err != nil {
 		return errors.Join(ErrCustomFieldValueSet, err)
 	}
@@ -528,6 +530,10 @@ func (s *customFieldService) CommitForResource(ctx context.Context, resourceID m
 }
 
 func (s *customFieldService) AbortForResource(ctx context.Context, resourceID model.ID) error {
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldValueSet, err)
+	}
 	if err := s.repo.AbortValues(ctx, resourceID); err != nil {
 		return errors.Join(ErrCustomFieldValueSet, err)
 	}
@@ -538,6 +544,10 @@ func (s *customFieldService) AbortForResource(ctx context.Context, resourceID mo
 }
 
 func (s *customFieldService) DeleteForResource(ctx context.Context, resourceID model.ID) error {
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrCustomFieldDelete, err)
+	}
 	if err := s.repo.DeleteForResource(ctx, resourceID); err != nil {
 		_, opErr := s.repo.CreateOperation(ctx, repository.CustomFieldOperation{
 			Kind:       repository.CustomFieldOpDeleteResource,
@@ -700,7 +710,6 @@ func groupStoredValues(stored []repository.CustomFieldStoredValue) map[string][]
 func NewCustomFieldService(
 	repo repository.CustomFieldRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	opts ...Option,
 ) (CustomFieldService, error) {
 	rt, err := newRuntime(opts...)
@@ -711,16 +720,12 @@ func NewCustomFieldService(
 		runtime:           rt,
 		repo:              repo,
 		permissionService: permissionService,
-		licenseService:    licenseService,
 	}
 	if svc.repo == nil {
 		return nil, ErrNoCustomFieldRepository
 	}
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 	return svc, nil
 }

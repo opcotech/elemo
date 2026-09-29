@@ -92,6 +92,8 @@ func (c *documentController) V1ProjectsDocumentsCreate(ctx context.Context, requ
 			return api.V1ProjectsDocumentsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectsDocumentsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectsDocumentsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectsDocumentsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -123,6 +125,8 @@ func (c *documentController) V1ProjectsDocumentsRelate(ctx context.Context, requ
 			return api.V1ProjectsDocumentsRelate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectsDocumentsRelate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectsDocumentsRelate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectsDocumentsRelate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -154,6 +158,8 @@ func (c *documentController) V1ProjectsDocumentsUnrelate(ctx context.Context, re
 			return api.V1ProjectsDocumentsUnrelate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectsDocumentsUnrelate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectsDocumentsUnrelate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectsDocumentsUnrelate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -223,6 +229,8 @@ func (c *documentController) V1NamespacesDocumentsCreate(ctx context.Context, re
 			return api.V1NamespacesDocumentsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NamespacesDocumentsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NamespacesDocumentsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NamespacesDocumentsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -292,6 +300,8 @@ func (c *documentController) V1OrganizationsDocumentsCreate(ctx context.Context,
 			return api.V1OrganizationsDocumentsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationsDocumentsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationsDocumentsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationsDocumentsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -356,6 +366,8 @@ func (c *documentController) V1IssuesDocumentsCreate(ctx context.Context, reques
 			return api.V1IssuesDocumentsCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssuesDocumentsCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssuesDocumentsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssuesDocumentsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -387,6 +399,8 @@ func (c *documentController) V1IssuesDocumentsRelate(ctx context.Context, reques
 			return api.V1IssuesDocumentsRelate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssuesDocumentsRelate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssuesDocumentsRelate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssuesDocumentsRelate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -418,6 +432,8 @@ func (c *documentController) V1IssuesDocumentsUnrelate(ctx context.Context, requ
 			return api.V1IssuesDocumentsUnrelate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1IssuesDocumentsUnrelate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1IssuesDocumentsUnrelate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1IssuesDocumentsUnrelate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -482,6 +498,8 @@ func (c *documentController) V1DocumentUpdate(ctx context.Context, request api.V
 			return api.V1DocumentUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1DocumentUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1DocumentUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1DocumentUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -509,6 +527,8 @@ func (c *documentController) V1DocumentDelete(ctx context.Context, request api.V
 			return api.V1DocumentDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1DocumentDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1DocumentDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1DocumentDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

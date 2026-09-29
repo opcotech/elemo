@@ -24,6 +24,13 @@ HTTPError:
     message:
       type: string
       description: Description of the error.
+    code:
+      type: string
+      description: Machine-readable error code when applicable.
+      enum:
+        - seat_limit_reached
+        - activation_denied
+        - entitlement_read_only
   required:
     - message
   description: HTTP error description.

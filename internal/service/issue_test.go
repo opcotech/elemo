@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/convert"
@@ -42,7 +41,6 @@ type issueServiceDeps struct {
 	assignmentRepo     repository.AssignmentRepository
 	labelRepo          repository.LabelRepository
 	permissionService  service.PermissionService
-	licenseService     service.LicenseService
 	searchService      service.SearchService
 	customFieldService service.CustomFieldService
 }
@@ -59,9 +57,6 @@ func newIssueServiceForTest(deps issueServiceDeps) service.IssueService {
 	}
 	if deps.permissionService == nil {
 		deps.permissionService = mocksvc.NewMockPermissionService(nil)
-	}
-	if deps.licenseService == nil {
-		deps.licenseService = mocksvc.NewMockLicenseService(nil)
 	}
 	if deps.searchService == nil {
 		deps.searchService = mocksvc.NewMockSearchService(nil)
@@ -81,7 +76,6 @@ func newIssueServiceForTest(deps issueServiceDeps) service.IssueService {
 		deps.assignmentRepo,
 		deps.labelRepo,
 		deps.permissionService,
-		deps.licenseService,
 		deps.searchService,
 		deps.customFieldService,
 		opts...,
@@ -106,7 +100,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					mocksvc.NewMockCustomFieldService(nil),
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -122,7 +115,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(nil),
@@ -138,7 +130,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -155,7 +146,6 @@ func TestNewIssueService(t *testing.T) {
 					nil,
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -172,7 +162,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					nil,
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -189,7 +178,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					nil,
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -199,23 +187,6 @@ func TestNewIssueService(t *testing.T) {
 			wantErr: service.ErrNoPermissionService,
 		},
 		{
-			name: "new issue service with no license service",
-			build: func(ctrl *gomock.Controller) (service.IssueService, error) {
-				return service.NewIssueService(
-					mockrepo.NewMockIssueRepository(nil),
-					mockrepo.NewMockAssignmentRepository(nil),
-					mockrepo.NewMockLabelRepository(nil),
-					mocksvc.NewMockPermissionService(nil),
-					nil,
-					mocksvc.NewMockSearchService(nil),
-					nil,
-					service.WithLogger(mocklog.NewMockLogger(ctrl)),
-					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
-				)
-			},
-			wantErr: service.ErrNoLicenseService,
-		},
-		{
 			name: "new issue service with no search service",
 			build: func(ctrl *gomock.Controller) (service.IssueService, error) {
 				return service.NewIssueService(
@@ -223,7 +194,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					nil,
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -240,7 +210,6 @@ func TestNewIssueService(t *testing.T) {
 					mockrepo.NewMockAssignmentRepository(nil),
 					mockrepo.NewMockLabelRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
@@ -295,11 +264,11 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Create(ctx, gomock.Cond(func(o repository.CreateIssueOpts) bool {
+					issueRepo.EXPECT().Create(gomock.Any(), gomock.Cond(func(o repository.CreateIssueOpts) bool {
 						return o.ProjectID == projectID &&
 							o.Kind == opts.Kind &&
 							o.Title == opts.Title &&
@@ -312,10 +281,7 @@ func TestIssueService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -323,7 +289,6 @@ func TestIssueService_Create(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -341,11 +306,11 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					creatorID := ctx.Value(pkg.CtxKeyUserID).(model.ID)
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Create(ctx, gomock.Cond(func(o repository.CreateIssueOpts) bool {
+					issueRepo.EXPECT().Create(gomock.Any(), gomock.Cond(func(o repository.CreateIssueOpts) bool {
 						return o.ProjectID == projectID &&
 							o.Status == opts.Status &&
 							o.Priority == opts.Priority &&
@@ -355,10 +320,7 @@ func TestIssueService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -366,7 +328,6 @@ func TestIssueService_Create(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -384,34 +345,6 @@ func TestIssueService_Create(t *testing.T) {
 			},
 		},
 		{
-			name: "create issue with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.CreateIssueOpts) issueServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				projectID: projectID,
-				opts:      opts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "create issue with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, projectID model.ID, _ service.CreateIssueOpts) issueServiceDeps {
@@ -419,21 +352,17 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -452,16 +381,12 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -480,16 +405,12 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -508,17 +429,14 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrIssueCreate)
+					issueRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, repository.ErrIssueCreate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -526,7 +444,6 @@ func TestIssueService_Create(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -545,21 +462,17 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -578,22 +491,18 @@ func TestIssueService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
-					permSvc.EXPECT().CtxUserHas(ctx, *opts.Parent, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), *opts.Parent, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -647,21 +556,18 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(repoIssue, nil)
+		issueRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repoIssue, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionIssueCreate).Return(true, nil)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
 		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
-		cfSvc.EXPECT().CommitForResource(ctx, gomock.Any()).Return(nil)
+		cfSvc.EXPECT().StageForResource(gomock.Any(), projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().CommitForResource(gomock.Any(), gomock.Any()).Return(nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:      mockSearchIndex(ctrl),
@@ -669,7 +575,6 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 			tracer:             tracer,
 			issueRepo:          issueRepo,
 			permissionService:  permSvc,
-			licenseService:     licenseSvc,
 			customFieldService: cfSvc,
 		})
 		_, err := s.Create(ctx, projectID, opts)
@@ -684,20 +589,17 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrNotFound)
+		issueRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, repository.ErrNotFound)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionIssueCreate).Return(true, nil)
 
 		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
-		cfSvc.EXPECT().AbortForResource(ctx, gomock.Any()).Return(nil)
+		cfSvc.EXPECT().StageForResource(gomock.Any(), projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().AbortForResource(gomock.Any(), gomock.Any()).Return(nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:      mocksvc.NewMockSearchService(ctrl),
@@ -705,7 +607,6 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 			tracer:             tracer,
 			issueRepo:          issueRepo,
 			permissionService:  permSvc,
-			licenseService:     licenseSvc,
 			customFieldService: cfSvc,
 		})
 		_, err := s.Create(ctx, projectID, opts)
@@ -720,21 +621,18 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(repoIssue, nil)
+		issueRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(repoIssue, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionIssueCreate).Return(true, nil)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-
 		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
-		cfSvc.EXPECT().CommitForResource(ctx, gomock.Any()).Return(assert.AnError)
+		cfSvc.EXPECT().StageForResource(gomock.Any(), projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().CommitForResource(gomock.Any(), gomock.Any()).Return(assert.AnError)
 
 		logger := mocklog.NewMockLogger(ctrl)
 		logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
@@ -745,7 +643,6 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 			tracer:             tracer,
 			issueRepo:          issueRepo,
 			permissionService:  permSvc,
-			licenseService:     licenseSvc,
 			customFieldService: cfSvc,
 		})
 		_, err := s.Create(ctx, projectID, opts)
@@ -760,16 +657,13 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionIssueCreate).Return(true, nil)
 
 		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(assert.AnError)
+		cfSvc.EXPECT().StageForResource(gomock.Any(), projectID, gomock.Any(), opts.CustomFields).Return(assert.AnError)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:      mocksvc.NewMockSearchService(ctrl),
@@ -777,7 +671,6 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 			tracer:             tracer,
 			issueRepo:          mockrepo.NewMockIssueRepository(ctrl),
 			permissionService:  permSvc,
-			licenseService:     licenseSvc,
 			customFieldService: cfSvc,
 		})
 		_, err := s.Create(ctx, projectID, opts)
@@ -793,20 +686,17 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Create", gomock.Len(0)).Return(ctx, span)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil, repository.ErrNotFound)
+		issueRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, repository.ErrNotFound)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, model.ActionIssueCreate).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, model.ActionIssueCreate).Return(true, nil)
 
 		cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-		cfSvc.EXPECT().StageForResource(ctx, projectID, gomock.Any(), opts.CustomFields).Return(nil)
-		cfSvc.EXPECT().AbortForResource(ctx, gomock.Any()).Return(assert.AnError)
+		cfSvc.EXPECT().StageForResource(gomock.Any(), projectID, gomock.Any(), opts.CustomFields).Return(nil)
+		cfSvc.EXPECT().AbortForResource(gomock.Any(), gomock.Any()).Return(assert.AnError)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:      mocksvc.NewMockSearchService(ctrl),
@@ -814,7 +704,6 @@ func TestIssueService_CreateCustomFields(t *testing.T) {
 			tracer:             tracer,
 			issueRepo:          issueRepo,
 			permissionService:  permSvc,
-			licenseService:     licenseSvc,
 			customFieldService: cfSvc,
 		})
 		_, err := s.Create(ctx, projectID, opts)
@@ -853,14 +742,14 @@ func TestIssueService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Get(ctx, id, repository.IssueDetailProjection()).Return(repoIssue, nil)
+					issueRepo.EXPECT().Get(gomock.Any(), id, repository.IssueDetailProjection()).Return(repoIssue, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -885,11 +774,11 @@ func TestIssueService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -913,7 +802,7 @@ func TestIssueService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -936,14 +825,14 @@ func TestIssueService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Get", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Get(ctx, id, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueRead)
+					issueRepo.EXPECT().Get(gomock.Any(), id, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueRead)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1015,14 +904,14 @@ func TestIssueService_GetByKey(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.IssueDetailProjection()).Return(repoIssue, nil)
+					issueRepo.EXPECT().GetByKey(gomock.Any(), namespaceID, key, repository.IssueDetailProjection()).Return(repoIssue, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1048,14 +937,14 @@ func TestIssueService_GetByKey(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.IssueDetailProjection()).Return(repoIssue, nil)
+					issueRepo.EXPECT().GetByKey(gomock.Any(), namespaceID, key, repository.IssueDetailProjection()).Return(repoIssue, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1081,7 +970,7 @@ func TestIssueService_GetByKey(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1105,7 +994,7 @@ func TestIssueService_GetByKey(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1129,10 +1018,10 @@ func TestIssueService_GetByKey(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/GetByKey", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().GetByKey(ctx, namespaceID, key, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueRead)
+					issueRepo.EXPECT().GetByKey(gomock.Any(), namespaceID, key, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueRead)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1246,10 +1135,10 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().ListForProject(ctx, repository.IssueListQuery{
+					issueRepo.EXPECT().ListForProject(gomock.Any(), repository.IssueListQuery{
 						ProjectID:  projectID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
@@ -1262,8 +1151,8 @@ func TestIssueService_List(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
-					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+					permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1289,11 +1178,11 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					otherProjectID := model.MustNewID(model.ResourceTypeProject)
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().ListForProject(ctx, repository.IssueListQuery{
+					issueRepo.EXPECT().ListForProject(gomock.Any(), repository.IssueListQuery{
 						ProjectID:  projectID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
@@ -1306,8 +1195,8 @@ func TestIssueService_List(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return([]model.ID{otherProjectID}, nil)
-					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+					permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionIssueRead).Return([]model.ID{otherProjectID}, nil)
+					permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1333,7 +1222,7 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1357,7 +1246,7 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1381,7 +1270,7 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1405,10 +1294,10 @@ func TestIssueService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/List", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().ListForProject(ctx, repository.IssueListQuery{
+					issueRepo.EXPECT().ListForProject(gomock.Any(), repository.IssueListQuery{
 						ProjectID:  projectID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
@@ -1421,8 +1310,8 @@ func TestIssueService_List(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
-					permSvc.EXPECT().ListScopeAncestry(ctx, projectID).Return([]model.ID{projectID}, nil)
+					permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(gomock.Any(), projectID).Return([]model.ID{projectID}, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1521,10 +1410,10 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().ListForNamespace(ctx, repository.IssueListForNamespaceQuery{
+					issueRepo.EXPECT().ListForNamespace(gomock.Any(), repository.IssueListForNamespaceQuery{
 						NamespaceID: namespaceID,
 						ActorID:     userID,
 						Action:      model.ActionIssueRead,
@@ -1537,8 +1426,8 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
-					permSvc.EXPECT().ListScopeAncestry(ctx, namespaceID).Return([]model.ID{namespaceID}, nil)
+					permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().ListScopeAncestry(gomock.Any(), namespaceID).Return([]model.ID{namespaceID}, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1564,7 +1453,7 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1588,7 +1477,7 @@ func TestIssueService_ListByNamespace(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByNamespace", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1685,10 +1574,10 @@ func TestIssueService_ListByUser(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().ListForUser(ctx, repository.IssueListForUserQuery{
+					issueRepo.EXPECT().ListForUser(gomock.Any(), repository.IssueListForUserQuery{
 						UserID:     userID,
 						ActorID:    userID,
 						Action:     model.ActionIssueRead,
@@ -1700,7 +1589,7 @@ func TestIssueService_ListByUser(t *testing.T) {
 					}).Return(repository.Page[*repository.PartialIssue]{Items: repoIssues}, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
-					permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionIssueRead).Return(scopeIDs, nil)
+					permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionIssueRead).Return(scopeIDs, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1726,7 +1615,7 @@ func TestIssueService_ListByUser(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1750,7 +1639,7 @@ func TestIssueService_ListByUser(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1774,7 +1663,7 @@ func TestIssueService_ListByUser(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1798,7 +1687,7 @@ func TestIssueService_ListByUser(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/ListByUser", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1870,19 +1759,16 @@ func TestIssueService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Update(ctx, id, repository.UpdateIssueOpts{
+					issueRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateIssueOpts{
 						Title: opts.Title,
 					}, repository.IssueDetailProjection()).Return(repoIssue, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -1890,7 +1776,6 @@ func TestIssueService_Update(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1902,34 +1787,6 @@ func TestIssueService_Update(t *testing.T) {
 			want: want,
 		},
 		{
-			name: "update issue with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateIssueOpts) issueServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				id:   issueID,
-				opts: opts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "update issue with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateIssueOpts) issueServiceDeps {
@@ -1937,21 +1794,17 @@ func TestIssueService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1970,16 +1823,12 @@ func TestIssueService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -1998,19 +1847,16 @@ func TestIssueService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Update(ctx, id, repository.UpdateIssueOpts{
+					issueRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateIssueOpts{
 						Title: opts.Title,
 					}, repository.IssueDetailProjection()).Return(nil, repository.ErrIssueUpdate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -2018,7 +1864,6 @@ func TestIssueService_Update(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2068,21 +1913,21 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		existingAssignmentID := model.MustNewID(model.ResourceTypeAssignment)
 		staleAssigneeID := model.MustNewID(model.ResourceTypeUser)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Update(ctx, issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
+		issueRepo.EXPECT().Update(gomock.Any(), issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
 		updated := *repoIssue
 		updated.Assignments = []repository.PartialAssignee{
 			{ID: assigneeID, Kind: model.AssignmentKindAssignee},
 		}
-		issueRepo.EXPECT().Get(ctx, issueID, repository.IssueDetailProjection()).Return(&updated, nil)
+		issueRepo.EXPECT().Get(gomock.Any(), issueID, repository.IssueDetailProjection()).Return(&updated, nil)
 
 		assignmentRepo := mockrepo.NewMockAssignmentRepository(ctrl)
-		assignmentRepo.EXPECT().ListByResource(ctx, issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{
+		assignmentRepo.EXPECT().ListByResource(gomock.Any(), issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{
 			{
 				ID:       existingAssignmentID,
 				Kind:     model.AssignmentKindAssignee,
@@ -2096,8 +1941,8 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 				Resource: issueID,
 			},
 		}}, nil)
-		assignmentRepo.EXPECT().Delete(ctx, existingAssignmentID).Return(nil)
-		assignmentRepo.EXPECT().Create(ctx, repository.CreateAssignmentOpts{
+		assignmentRepo.EXPECT().Delete(gomock.Any(), existingAssignmentID).Return(nil)
+		assignmentRepo.EXPECT().Create(gomock.Any(), repository.CreateAssignmentOpts{
 			Kind:     model.AssignmentKindAssignee,
 			User:     assigneeID,
 			Resource: issueID,
@@ -2105,10 +1950,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -2118,7 +1960,6 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 			assignmentRepo:    assignmentRepo,
 			labelRepo:         mockrepo.NewMockLabelRepository(nil),
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		got, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2139,19 +1980,19 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Update(ctx, issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
+		issueRepo.EXPECT().Update(gomock.Any(), issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
 		updated := *repoIssue
 		updated.Assignments = []repository.PartialAssignee{
 			{ID: reviewerID, Kind: model.AssignmentKindReviewer},
 		}
-		issueRepo.EXPECT().Get(ctx, issueID, repository.IssueDetailProjection()).Return(&updated, nil)
+		issueRepo.EXPECT().Get(gomock.Any(), issueID, repository.IssueDetailProjection()).Return(&updated, nil)
 
 		assignmentRepo := mockrepo.NewMockAssignmentRepository(ctrl)
-		assignmentRepo.EXPECT().ListByResource(ctx, issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{}}, nil)
-		assignmentRepo.EXPECT().Create(ctx, repository.CreateAssignmentOpts{
+		assignmentRepo.EXPECT().ListByResource(gomock.Any(), issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{}}, nil)
+		assignmentRepo.EXPECT().Create(gomock.Any(), repository.CreateAssignmentOpts{
 			Kind:     model.AssignmentKindReviewer,
 			User:     reviewerID,
 			Resource: issueID,
@@ -2159,10 +2000,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -2172,7 +2010,6 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 			assignmentRepo:    assignmentRepo,
 			labelRepo:         mockrepo.NewMockLabelRepository(nil),
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		got, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2184,43 +2021,6 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 		}, got.Assignments)
 	})
 
-	t.Run("reject multiple assignees without license feature", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ctx := context.Background()
-		span := mocktrace.NewMockSpan(ctrl)
-		span.EXPECT().End(gomock.Len(0))
-		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
-
-		permSvc := mocksvc.NewMockPermissionService(ctrl)
-		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureMultipleAssignees).Return(false, nil)
-
-		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:     mocksvc.NewMockSearchService(ctrl),
-			logger:            mocklog.NewMockLogger(ctrl),
-			tracer:            tracer,
-			permissionService: permSvc,
-			licenseService:    licenseSvc,
-		})
-
-		_, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
-			Assignees: optional.Some([]model.ID{
-				model.MustNewID(model.ResourceTypeUser),
-				model.MustNewID(model.ResourceTypeUser),
-			}),
-		})
-		require.Error(t, err)
-		assert.ErrorIs(t, err, service.ErrQuotaExceeded)
-	})
-
 	t.Run("allow multiple assignees with license feature", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
@@ -2230,28 +2030,28 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		assigneeA := model.MustNewID(model.ResourceTypeUser)
 		assigneeB := model.MustNewID(model.ResourceTypeUser)
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Update(ctx, issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
+		issueRepo.EXPECT().Update(gomock.Any(), issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
 		updated := *repoIssue
 		updated.Assignments = []repository.PartialAssignee{
 			{ID: assigneeA, Kind: model.AssignmentKindAssignee},
 			{ID: assigneeB, Kind: model.AssignmentKindAssignee},
 		}
-		issueRepo.EXPECT().Get(ctx, issueID, repository.IssueDetailProjection()).Return(&updated, nil)
+		issueRepo.EXPECT().Get(gomock.Any(), issueID, repository.IssueDetailProjection()).Return(&updated, nil)
 
 		assignmentRepo := mockrepo.NewMockAssignmentRepository(ctrl)
-		assignmentRepo.EXPECT().ListByResource(ctx, issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{}}, nil)
-		assignmentRepo.EXPECT().Create(ctx, repository.CreateAssignmentOpts{
+		assignmentRepo.EXPECT().ListByResource(gomock.Any(), issueID, repository.CursorPage{Size: service.AssignmentSyncPageSize}, repository.AssignmentListProjection()).Return(repository.Page[*repository.Assignment]{Items: []*repository.Assignment{}}, nil)
+		assignmentRepo.EXPECT().Create(gomock.Any(), repository.CreateAssignmentOpts{
 			Kind:     model.AssignmentKindAssignee,
 			User:     assigneeA,
 			Resource: issueID,
 		}).Return(&repository.Assignment{}, nil)
-		assignmentRepo.EXPECT().Create(ctx, repository.CreateAssignmentOpts{
+		assignmentRepo.EXPECT().Create(gomock.Any(), repository.CreateAssignmentOpts{
 			Kind:     model.AssignmentKindAssignee,
 			User:     assigneeB,
 			Resource: issueID,
@@ -2259,11 +2059,7 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-		licenseSvc.EXPECT().HasFeature(ctx, license.FeatureMultipleAssignees).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -2273,7 +2069,6 @@ func TestIssueService_UpdateAssignments(t *testing.T) {
 			assignmentRepo:    assignmentRepo,
 			labelRepo:         mockrepo.NewMockLabelRepository(nil),
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		got, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2303,7 +2098,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		parent := &repository.PartialIssue{
 			ID:          parentID,
@@ -2316,23 +2111,20 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		}
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Update(ctx, issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
-		issueRepo.EXPECT().AddRelation(ctx, repository.CreateIssueRelationOpts{
+		issueRepo.EXPECT().Update(gomock.Any(), issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(repoIssue, nil)
+		issueRepo.EXPECT().AddRelation(gomock.Any(), repository.CreateIssueRelationOpts{
 			Source: issueID,
 			Target: parentID,
 			Kind:   model.IssueRelationKindSubtaskOf,
 		}).Return(&repository.IssueRelation{}, nil)
 		updated := *repoIssue
 		updated.Parent = parent
-		issueRepo.EXPECT().Get(ctx, issueID, repository.IssueDetailProjection()).Return(&updated, nil)
+		issueRepo.EXPECT().Get(gomock.Any(), issueID, repository.IssueDetailProjection()).Return(&updated, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, parentID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), parentID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -2340,7 +2132,6 @@ func TestIssueService_UpdateParent(t *testing.T) {
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		got, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2360,7 +2151,7 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		currentParentID := model.MustNewID(model.ResourceTypeIssue)
 		current := *repoIssue
@@ -2375,18 +2166,15 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		}
 
 		issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-		issueRepo.EXPECT().Update(ctx, issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(&current, nil)
-		issueRepo.EXPECT().RemoveRelation(ctx, issueID, currentParentID, model.IssueRelationKindSubtaskOf).Return(nil)
+		issueRepo.EXPECT().Update(gomock.Any(), issueID, repository.UpdateIssueOpts{}, repository.IssueDetailProjection()).Return(&current, nil)
+		issueRepo.EXPECT().RemoveRelation(gomock.Any(), issueID, currentParentID, model.IssueRelationKindSubtaskOf).Return(nil)
 		cleared := current
 		cleared.Parent = nil
-		issueRepo.EXPECT().Get(ctx, issueID, repository.IssueDetailProjection()).Return(&cleared, nil)
+		issueRepo.EXPECT().Get(gomock.Any(), issueID, repository.IssueDetailProjection()).Return(&cleared, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -2394,7 +2182,6 @@ func TestIssueService_UpdateParent(t *testing.T) {
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		got, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2413,21 +2200,17 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		_, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2446,22 +2229,18 @@ func TestIssueService_UpdateParent(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.issueService/Update", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, issueID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, parentID, gomock.Any()).Return(false, nil)
-
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), parentID, gomock.Any()).Return(false, nil)
 
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 
 		_, err := s.Update(ctx, issueID, service.UpdateIssueOpts{
@@ -2496,17 +2275,14 @@ func TestIssueService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Delete(ctx, id).Return(nil)
+					issueRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mockSearchDelete(ctrl),
@@ -2514,7 +2290,6 @@ func TestIssueService_Delete(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2522,33 +2297,6 @@ func TestIssueService_Delete(t *testing.T) {
 				ctx: context.Background(),
 				id:  issueID,
 			},
-		},
-		{
-			name: "delete issue with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) issueServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				id:  issueID,
-			},
-			wantErr: license.ErrLicenseExpired,
 		},
 		{
 			name: "delete issue with no permission",
@@ -2558,21 +2306,17 @@ func TestIssueService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2590,16 +2334,12 @@ func TestIssueService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return issueServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -2617,17 +2357,14 @@ func TestIssueService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Delete(ctx, id).Return(repository.ErrIssueDelete)
+					issueRepo.EXPECT().Delete(gomock.Any(), id).Return(repository.ErrIssueDelete)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return issueServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -2635,7 +2372,6 @@ func TestIssueService_Delete(t *testing.T) {
 						tracer:            tracer,
 						issueRepo:         issueRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -2653,20 +2389,17 @@ func TestIssueService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.issueService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					issueRepo := mockrepo.NewMockIssueRepository(ctrl)
-					issueRepo.EXPECT().Delete(ctx, id).Return(nil)
+					issueRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					cfSvc := mocksvc.NewMockCustomFieldService(ctrl)
-					cfSvc.EXPECT().DeleteForResource(ctx, id).Return(assert.AnError)
+					cfSvc.EXPECT().DeleteForResource(gomock.Any(), id).Return(assert.AnError)
 
 					logger := mocklog.NewMockLogger(ctrl)
 					logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
@@ -2677,7 +2410,6 @@ func TestIssueService_Delete(t *testing.T) {
 						tracer:             tracer,
 						issueRepo:          issueRepo,
 						permissionService:  permSvc,
-						licenseService:     licenseSvc,
 						customFieldService: cfSvc,
 					}
 				},
@@ -2853,16 +2585,12 @@ func TestIssueService_AddRelation(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), relatedID, gomock.Any()).Return(true, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		got, err := s.AddRelation(context.Background(), issueID, relatedID, model.IssueRelationKindBlocks)
 		require.NoError(t, err)
@@ -2881,14 +2609,10 @@ func TestIssueService_AddRelation(t *testing.T) {
 		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(gomock.Any(), "service.issueService/AddRelation", gomock.Len(0)).Return(context.Background(), span)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:  mocksvc.NewMockSearchService(ctrl),
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
+			searchService: mocksvc.NewMockSearchService(ctrl),
+			logger:        mocklog.NewMockLogger(ctrl),
+			tracer:        tracer,
 		})
 		_, err := s.AddRelation(context.Background(), issueID, issueID, model.IssueRelationKindBlocks)
 		assert.ErrorIs(t, err, service.ErrIssueSelfRelation)
@@ -2904,14 +2628,10 @@ func TestIssueService_AddRelation(t *testing.T) {
 		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(gomock.Any(), "service.issueService/AddRelation", gomock.Len(0)).Return(context.Background(), span)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:  mocksvc.NewMockSearchService(ctrl),
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
+			searchService: mocksvc.NewMockSearchService(ctrl),
+			logger:        mocklog.NewMockLogger(ctrl),
+			tracer:        tracer,
 		})
 		_, err := s.AddRelation(context.Background(), issueID, relatedID, model.IssueRelationKindSubtaskOf)
 		assert.ErrorIs(t, err, service.ErrIssueReservedRelationKind)
@@ -2927,14 +2647,10 @@ func TestIssueService_AddRelation(t *testing.T) {
 		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(gomock.Any(), "service.issueService/AddRelation", gomock.Len(0)).Return(context.Background(), span)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:  mocksvc.NewMockSearchService(ctrl),
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
+			searchService: mocksvc.NewMockSearchService(ctrl),
+			logger:        mocklog.NewMockLogger(ctrl),
+			tracer:        tracer,
 		})
 		_, err := s.AddRelation(context.Background(), issueID, relatedID, model.IssueRelationKindDependsOn)
 		assert.ErrorIs(t, err, service.ErrIssueReservedRelationKind)
@@ -2954,15 +2670,11 @@ func TestIssueService_AddRelation(t *testing.T) {
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(false, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		_, err := s.AddRelation(context.Background(), issueID, relatedID, model.IssueRelationKindBlocks)
 		assert.ErrorIs(t, err, service.ErrNoPermission)
@@ -3016,16 +2728,12 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), relatedID, gomock.Any()).Return(true, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		got, err := s.UpdateRelation(context.Background(), issueID, relationID, model.IssueRelationKindRelatedTo)
 		require.NoError(t, err)
@@ -3056,16 +2764,12 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		_, err := s.UpdateRelation(context.Background(), issueID, relationID, model.IssueRelationKindRelatedTo)
 		assert.ErrorIs(t, err, repository.ErrNotFound)
@@ -3081,14 +2785,10 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(gomock.Any(), "service.issueService/UpdateRelation", gomock.Len(0)).Return(context.Background(), span)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:  mocksvc.NewMockSearchService(ctrl),
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
+			searchService: mocksvc.NewMockSearchService(ctrl),
+			logger:        mocklog.NewMockLogger(ctrl),
+			tracer:        tracer,
 		})
 		_, err := s.UpdateRelation(context.Background(), issueID, relationID, model.IssueRelationKindSubtaskOf)
 		assert.ErrorIs(t, err, service.ErrIssueReservedRelationKind)
@@ -3104,14 +2804,10 @@ func TestIssueService_UpdateRelation(t *testing.T) {
 		tracer := mocktrace.NewMockTracer(ctrl)
 		tracer.EXPECT().Start(gomock.Any(), "service.issueService/UpdateRelation", gomock.Len(0)).Return(context.Background(), span)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
-			searchService:  mocksvc.NewMockSearchService(ctrl),
-			logger:         mocklog.NewMockLogger(ctrl),
-			tracer:         tracer,
-			licenseService: licenseSvc,
+			searchService: mocksvc.NewMockSearchService(ctrl),
+			logger:        mocklog.NewMockLogger(ctrl),
+			tracer:        tracer,
 		})
 		_, err := s.UpdateRelation(context.Background(), issueID, relationID, model.IssueRelationKindDependsOn)
 		assert.ErrorIs(t, err, service.ErrIssueReservedRelationKind)
@@ -3147,16 +2843,12 @@ func TestIssueService_RemoveRelation(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), relatedID, gomock.Any()).Return(true, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		require.NoError(t, s.RemoveRelation(context.Background(), issueID, relationID))
 	})
@@ -3184,16 +2876,12 @@ func TestIssueService_RemoveRelation(t *testing.T) {
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), issueID, gomock.Any()).Return(true, nil)
 		permSvc.EXPECT().CtxUserHas(gomock.Any(), relatedID, gomock.Any()).Return(false, nil)
 
-		licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-		licenseSvc.EXPECT().Expired(gomock.Any()).Return(false, nil)
-
 		s := newIssueServiceForTest(issueServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
 			logger:            mocklog.NewMockLogger(ctrl),
 			tracer:            tracer,
 			issueRepo:         issueRepo,
 			permissionService: permSvc,
-			licenseService:    licenseSvc,
 		})
 		err := s.RemoveRelation(context.Background(), issueID, relationID)
 		assert.ErrorIs(t, err, service.ErrNoPermission)

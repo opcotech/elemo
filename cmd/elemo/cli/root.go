@@ -17,9 +17,7 @@ import (
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/opcotech/elemo/assets/keys"
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	elemoSMTP "github.com/opcotech/elemo/internal/pkg/smtp"
@@ -279,30 +277,4 @@ func initSMTPClient(smtpConf *config.SMTPConfig) (*elemoSMTP.Client, error) {
 	}
 
 	return client, nil
-}
-
-func parseLicense(licenseConf *config.LicenseConfig) (*license.License, error) {
-	if licenseConf == nil {
-		return nil, license.ErrNoLicense
-	}
-
-	data, err := os.ReadFile(licenseConf.File)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := license.NewLicense(string(data), keys.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info(
-		context.Background(),
-		"license parsed",
-		slog.String("id", l.ID.String()),
-		slog.String("licensee", l.Organization),
-		slog.String("expires_at", l.ExpiresAt.String()),
-	)
-
-	return l, nil
 }

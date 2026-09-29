@@ -13,7 +13,6 @@ var (
 	ErrNoFolderService       = errors.New("no folder service provided")       // no folder service provided
 	ErrNoIssueService        = errors.New("no issue service provided")        // no issue service provided
 	ErrNoLabelService        = errors.New("no label service provided")        // no label service provided
-	ErrNoLicenseService      = errors.New("no license service provided")      // no license service provided
 	ErrNoLogger              = errors.New("no logger provided")               // no logger provided
 	ErrNoNamespaceService    = errors.New("no namespace service provided")    // no namespace service provided
 	ErrNoNotificationService = errors.New("no notification service provided") // no notification service provided

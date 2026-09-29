@@ -51,6 +51,8 @@ func (c *todoController) V1TodosCreate(ctx context.Context, request api.V1TodosC
 		switch classifyServiceError(err) {
 		case http.StatusForbidden:
 			return api.V1TodosCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
+		case http.StatusConflict:
+			return api.V1TodosCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1TodosCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -144,6 +146,8 @@ func (c *todoController) V1TodoUpdate(ctx context.Context, request api.V1TodoUpd
 			return api.V1TodoUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1TodoUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1TodoUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1TodoUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -169,6 +173,8 @@ func (c *todoController) V1TodoDelete(ctx context.Context, request api.V1TodoDel
 			return api.V1TodoDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1TodoDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1TodoDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1TodoDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

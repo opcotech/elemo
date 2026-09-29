@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/viper"
 
-	"github.com/opcotech/elemo/assets/keys"
 	"github.com/opcotech/elemo/internal/config"
-	elemoLicense "github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
@@ -77,33 +75,9 @@ func loadConfig(path string) (*config.Config, error) {
 	return &cfg, nil
 }
 
-func parseLicense(ctx context.Context, logger log.Logger, licenseConf *config.LicenseConfig) (*elemoLicense.License, error) {
-	if licenseConf == nil {
-		return nil, elemoLicense.ErrNoLicense
-	}
-
-	data, err := os.ReadFile(licenseConf.File)
-	if err != nil {
-		return nil, fmt.Errorf("read license: %w", err)
-	}
-
-	l, err := elemoLicense.NewLicense(string(data), keys.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("parse license: %w", err)
-	}
-
-	logger.Info(ctx, "license parsed", log.WithValue(l.ID.String()))
-	return l, nil
-}
-
 func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, error) {
 	tracer := tracing.NoopTracer()
 	d := &deps{cfg: cfg, logger: logger, tracer: tracer}
-
-	lic, err := parseLicense(ctx, logger, &cfg.License)
-	if err != nil {
-		return nil, err
-	}
 
 	graphDB, err := initGraphDatabase(ctx, cfg, logger, tracer)
 	if err != nil {
@@ -163,10 +137,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	if err != nil {
 		return nil, fmt.Errorf("permission repository: %w", err)
 	}
-	licenseRepo, err := repository.NewNeo4jLicenseRepository(neo4jOpts("license_repository")...)
-	if err != nil {
-		return nil, fmt.Errorf("license repository: %w", err)
-	}
 	organizationRepo, err := repository.NewNeo4jOrganizationRepository(neo4jOpts("organization_repository")...)
 	if err != nil {
 		return nil, fmt.Errorf("organization repository: %w", err)
@@ -221,22 +191,12 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		roleRepo,
 		service.WithLogger(logger.Named("permission_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("permission service: %w", err)
 	}
 	d.permissions = permissionService
-
-	licenseService, err := service.NewLicenseService(
-		lic,
-		licenseRepo,
-		permissionService,
-		service.WithLogger(logger.Named("license_service")),
-		service.WithTracer(tracer),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("license service: %w", err)
-	}
 
 	noopSearch := noopSearchService{}
 	realSearch, err := service.NewSearchService(
@@ -245,6 +205,7 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		nil,
 		service.WithLogger(logger.Named("search_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("search service: %w", err)
@@ -253,9 +214,9 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 
 	staticFileService, err := service.NewStaticFileService(
 		staticFileRepo,
-		licenseService,
 		service.WithLogger(logger.Named("static_file_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("static file service: %w", err)
@@ -267,13 +228,14 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		return []service.Option{
 			service.WithLogger(logger.Named(name)),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(entitlement.Unrestricted()),
 		}
 	}
 
 	d.users, err = service.NewUserService(
 		userRepo,
 		userTokenRepo,
-		licenseService,
+		entitlement.Unrestricted(),
 		namedOpts("user_service")...,
 	)
 	if err != nil {
@@ -285,7 +247,7 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		userTokenRepo,
 		roleRepo,
 		permissionService,
-		licenseService,
+		entitlement.Unrestricted(),
 		discardEmailService{},
 		notificationService,
 		noopSearch,
@@ -297,7 +259,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	d.teams, err = service.NewTeamService(
 		teamRepo,
 		permissionService,
-		licenseService,
 		namedOpts("team_service")...,
 	)
 	if err != nil {
@@ -306,7 +267,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	d.roles, err = service.NewRoleService(
 		roleRepo,
 		permissionService,
-		licenseService,
 		organizationRepo,
 		notificationService,
 		namedOpts("role_service")...,
@@ -317,7 +277,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	d.namespaces, err = service.NewNamespaceService(
 		namespaceRepo,
 		permissionService,
-		licenseService,
 		noopSearch,
 		namedOpts("namespace_service")...,
 	)
@@ -327,7 +286,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	d.projects, err = service.NewProjectService(
 		projectRepo,
 		permissionService,
-		licenseService,
 		noopSearch,
 		namedOpts("project_service")...,
 	)
@@ -345,7 +303,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	customFieldService, err := service.NewCustomFieldService(
 		customFieldRepo,
 		permissionService,
-		licenseService,
 		namedOpts("custom_field_service")...,
 	)
 	if err != nil {
@@ -356,7 +313,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 		assignmentRepo,
 		labelRepo,
 		permissionService,
-		licenseService,
 		noopSearch,
 		customFieldService,
 		namedOpts("issue_service")...,
@@ -366,7 +322,6 @@ func wire(ctx context.Context, cfg *config.Config, logger log.Logger) (*deps, er
 	}
 	d.documents, err = service.NewDocumentService(
 		documentRepo,
-		licenseService,
 		permissionService,
 		staticFileService,
 		noopSearch,

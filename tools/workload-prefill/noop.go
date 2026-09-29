@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"time"
 
 	"github.com/opcotech/elemo/internal/email"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
@@ -31,10 +31,10 @@ func (discardEmailService) SendOrganizationInvitationEmail(
 	return nil
 }
 
-func (discardEmailService) SendSystemLicenseExpiryEmail(
+func (discardEmailService) SendLicenseExpiryEmail(
 	_ context.Context,
-	_, _, _ string,
-	_ time.Time,
+	_ string,
+	_ entitlement.AirGapStatus,
 ) error {
 	return nil
 }

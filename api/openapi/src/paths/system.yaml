@@ -34,9 +34,9 @@
     operationId: v1SystemHeartbeat
     description: Returns 200 OK if the service is reachable.
     security: []
-/v1/system/license:
+/v1/system/entitlements:
   get:
-    summary: Get license info
+    summary: Get entitlement status
     tags:
       - System
     responses:
@@ -45,13 +45,15 @@
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SystemLicense"
+              $ref: "#/components/schemas/SystemEntitlements"
+      "401":
+        $ref: "#/components/responses/401"
       "403":
         $ref: "#/components/responses/403"
       "500":
         $ref: "#/components/responses/500"
-    operationId: v1SystemLicense
-    description: Return the license information. The license information is only available to entitled users.
+    operationId: v1SystemEntitlements
+    description: Return deployment mode and AirGap seat entitlement status. Available only to installation administrators.
     security:
       - oauth2: []
 /v1/system/version:

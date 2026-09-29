@@ -10,6 +10,8 @@ import {
 import type React from "react";
 import type { ReactNode } from "react";
 
+import { AirGapEntitlementBanner } from "@/components/settings/airgap-entitlement-banner";
+
 import {
   Sidebar,
   SidebarContent,
@@ -192,6 +194,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
 
             <SidebarInset className="overflow-auto">
               <div className="w-full px-4 py-6 sm:px-6 md:px-8 md:py-8">
+                <AirGapEntitlementBanner />
                 {children}
               </div>
             </SidebarInset>
