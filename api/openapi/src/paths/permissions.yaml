@@ -11,6 +11,8 @@
         $ref: "#/components/responses/401"
       "403":
         $ref: "#/components/responses/403"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Create a new grant for a principal on the given scope. Either role_id or actions is required. Grants are immutable; delete and recreate to change them.
@@ -37,6 +39,8 @@
         $ref: "#/components/responses/403"
       "404":
         $ref: "#/components/responses/404"
+      "409":
+        $ref: "#/components/responses/409"
       "500":
         $ref: "#/components/responses/500"
     description: Delete a grant by its ID.

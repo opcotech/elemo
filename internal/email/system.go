@@ -1,16 +1,17 @@
 package email
 
-// LicenseExpiryTemplateData represents the data needed to render the password
-// reset email template.
+// LicenseExpiryTemplateData represents the data needed to render an AirGap
+// license expiration reminder.
 type LicenseExpiryTemplateData struct {
-	Subject             string `validate:"required,min=3,max=50"`
-	LicenseID           string `validate:"required"`
-	LicenseEmail        string `validate:"required,email"`
-	LicenseOrganization string `validate:"required"`
-	LicenseExpiresAt    string `validate:"required"`
-	ServerURL           string `validate:"required,url"`
-	RenewEmail          string `validate:"required,email"`
-	SupportEmail        string `validate:"required,email"`
+	Subject        string `validate:"required,min=3,max=170"`
+	Customer       string `validate:"required,max=256"`
+	LicenseID      string `validate:"required"`
+	LicenseState   string `validate:"required"`
+	LicenseExpires string `validate:"required"`
+	GraceEnds      string `validate:"required"`
+	SeatsLicensed  int    `validate:"gte=0"`
+	SettingsURL    string `validate:"required,url"`
+	SupportEmail   string `validate:"required,email"`
 }
 
 // Get returns the license expiration email template data.

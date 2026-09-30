@@ -222,6 +222,11 @@ func (s *permissionService) Create(ctx context.Context, opts CreateGrantOpts) (*
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Create")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
+	}
+
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
@@ -254,6 +259,11 @@ func (s *permissionService) heldActions(ctx context.Context, actor, scope model.
 func (s *permissionService) CtxUserCreate(ctx context.Context, opts CreateGrantOpts) (*Grant, error) {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserCreate")
 	defer span.End()
+
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPermissionCreate, err)
+	}
 
 	userID, err := ctxUserID(ctx)
 	if err != nil {
@@ -335,6 +345,11 @@ func (s *permissionService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/Delete")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPermissionDelete, err)
+	}
+
 	if err := s.permissionRepo.Delete(ctx, id); err != nil {
 		return errors.Join(ErrPermissionDelete, err)
 	}
@@ -344,6 +359,11 @@ func (s *permissionService) Delete(ctx context.Context, id model.ID) error {
 func (s *permissionService) CtxUserDelete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/CtxUserDelete")
 	defer span.End()
+
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPermissionDelete, err)
+	}
 
 	if _, err := ctxUserID(ctx); err != nil {
 		return errors.Join(ErrPermissionDelete, err)
@@ -365,6 +385,11 @@ func (s *permissionService) LinkInScopeOf(ctx context.Context, child, parent mod
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/LinkInScopeOf")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPermissionCreate, err)
+	}
+
 	if err := s.permissionRepo.LinkInScopeOf(ctx, child, parent); err != nil {
 		return errors.Join(ErrPermissionCreate, err)
 	}
@@ -375,7 +400,12 @@ func (s *permissionService) BootstrapCreator(ctx context.Context, creator, resou
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/BootstrapCreator")
 	defer span.End()
 
-	_, err := s.Create(ctx, CreateGrantOpts{
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPermissionCreate, err)
+	}
+
+	_, err = s.Create(ctx, CreateGrantOpts{
 		Principal: creator,
 		Scope:     resource,
 		Actions:   actions,
@@ -387,7 +417,12 @@ func (s *permissionService) GrantRole(ctx context.Context, principal, scope mode
 	ctx, span := s.tracer.Start(ctx, "service.permissionService/GrantRole")
 	defer span.End()
 
-	_, err := s.Create(ctx, CreateGrantOpts{
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPermissionCreate, err)
+	}
+
+	_, err = s.Create(ctx, CreateGrantOpts{
 		Principal: principal,
 		Scope:     scope,
 		RoleID:    &roleID,

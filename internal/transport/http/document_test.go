@@ -190,27 +190,6 @@ func TestDocumentController_V1ProjectsDocumentsCreate(t *testing.T) {
 		_, ok := resp.(api.V1ProjectsDocumentsCreate404JSONResponse)
 		assert.True(t, ok)
 	})
-
-	t.Run("quota exceeded", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ds := mocksvc.NewMockDocumentService(ctrl)
-		ds.EXPECT().Create(gomock.Any(), projectID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
-
-		c, _, _ := newTestDocumentController(t, ctrl, ds)
-		resp, err := c.V1ProjectsDocumentsCreate(context.Background(), api.V1ProjectsDocumentsCreateRequestObject{
-			ProjectId: projectID.String(),
-			Body: &api.V1ProjectsDocumentsCreateJSONRequestBody{
-				Title:   "Project Plan",
-				Content: optional.Some("# Project Plan"),
-			},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1ProjectsDocumentsCreate403JSONResponse)
-		assert.True(t, ok)
-	})
 }
 
 func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
@@ -332,30 +311,6 @@ func TestDocumentController_V1NamespacesDocumentsCreate(t *testing.T) {
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1NamespacesDocumentsCreate404JSONResponse)
-		assert.True(t, ok)
-	})
-
-	t.Run("quota exceeded", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ds := mocksvc.NewMockDocumentService(ctrl)
-		ds.EXPECT().Create(gomock.Any(), namespaceID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
-
-		c, os, ns := newTestDocumentController(t, ctrl, ds)
-		stubOrganizationResolve(os, orgID)
-		stubNamespaceResolve(ns, orgID, namespaceID)
-		resp, err := c.V1NamespacesDocumentsCreate(context.Background(), api.V1NamespacesDocumentsCreateRequestObject{
-			OrganizationRef: orgID.String(),
-			NamespaceRef:    namespaceID.String(),
-			Body: &api.V1NamespacesDocumentsCreateJSONRequestBody{
-				Title:   "Project Plan",
-				Content: optional.Some("# Project Plan"),
-			},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1NamespacesDocumentsCreate403JSONResponse)
 		assert.True(t, ok)
 	})
 }
@@ -574,28 +529,6 @@ func TestDocumentController_V1OrganizationsDocumentsCreate(t *testing.T) {
 		_, ok := resp.(api.V1OrganizationsDocumentsCreate404JSONResponse)
 		assert.True(t, ok)
 	})
-
-	t.Run("quota exceeded", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ds := mocksvc.NewMockDocumentService(ctrl)
-		ds.EXPECT().Create(gomock.Any(), organizationID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
-
-		c, os, _ := newTestDocumentController(t, ctrl, ds)
-		stubOrganizationResolve(os, organizationID)
-		resp, err := c.V1OrganizationsDocumentsCreate(context.Background(), api.V1OrganizationsDocumentsCreateRequestObject{
-			OrganizationRef: organizationID.String(),
-			Body: &api.V1OrganizationsDocumentsCreateJSONRequestBody{
-				Title:   "Project Plan",
-				Content: optional.Some("# Project Plan"),
-			},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1OrganizationsDocumentsCreate403JSONResponse)
-		assert.True(t, ok)
-	})
 }
 
 func TestDocumentController_V1IssuesDocumentsGet(t *testing.T) {
@@ -780,27 +713,6 @@ func TestDocumentController_V1IssuesDocumentsCreate(t *testing.T) {
 		})
 		require.NoError(t, err)
 		_, ok := resp.(api.V1IssuesDocumentsCreate404JSONResponse)
-		assert.True(t, ok)
-	})
-
-	t.Run("quota exceeded", func(t *testing.T) {
-		t.Parallel()
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		ds := mocksvc.NewMockDocumentService(ctrl)
-		ds.EXPECT().Create(gomock.Any(), issueID, gomock.Any()).Return(nil, service.ErrQuotaExceeded)
-
-		c, _, _ := newTestDocumentController(t, ctrl, ds)
-		resp, err := c.V1IssuesDocumentsCreate(context.Background(), api.V1IssuesDocumentsCreateRequestObject{
-			Id: issueID.String(),
-			Body: &api.V1IssuesDocumentsCreateJSONRequestBody{
-				Title:   "Project Plan",
-				Content: optional.Some("# Project Plan"),
-			},
-		})
-		require.NoError(t, err)
-		_, ok := resp.(api.V1IssuesDocumentsCreate403JSONResponse)
 		assert.True(t, ok)
 	})
 }

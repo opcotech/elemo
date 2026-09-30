@@ -1,6 +1,7 @@
 package async
 
 import (
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
 	"github.com/opcotech/elemo/internal/repository"
@@ -18,6 +19,26 @@ func WithTaskEmailService(emailService service.EmailService) TaskHandlerOption {
 		}
 
 		t.emailService = emailService
+		return nil
+	}
+}
+
+// WithTaskEntitlementReporter sets the entitlement reporter for the worker.
+func WithTaskEntitlementReporter(reporter entitlement.Reporter) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		if reporter == nil {
+			return ErrNoEntitlementReporter
+		}
+
+		t.entitlementReporter = reporter
+		return nil
+	}
+}
+
+// WithTaskBillingEmail sets the AirGap billing email for reminder tasks.
+func WithTaskBillingEmail(billingEmail string) TaskHandlerOption {
+	return func(t *baseTaskHandler) error {
+		t.billingEmail = billingEmail
 		return nil
 	}
 }
@@ -108,12 +129,14 @@ type baseTaskHandler struct {
 	logger log.Logger
 	tracer tracing.Tracer
 
-	emailService       service.EmailService
-	searchService      service.SearchService
-	customFieldService service.CustomFieldService
-	graphDB            *repository.Neo4jDatabase
-	queueClient        service.SearchTaskEnqueuer
-	reindexBatchSize   int
+	emailService        service.EmailService
+	entitlementReporter entitlement.Reporter
+	billingEmail        string
+	searchService       service.SearchService
+	customFieldService  service.CustomFieldService
+	graphDB             *repository.Neo4jDatabase
+	queueClient         service.SearchTaskEnqueuer
+	reindexBatchSize    int
 }
 
 // newBaseTaskHandler creates a new base task handler.

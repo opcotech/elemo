@@ -9,9 +9,7 @@ import (
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/queue"
-	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
-	"github.com/opcotech/elemo/internal/testutil"
 	testRepo "github.com/opcotech/elemo/internal/testutil/repository"
 )
 
@@ -19,29 +17,6 @@ import (
 func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgDBConf *config.RelationalDatabaseConfig, workerConf *config.WorkerConfig) service.SystemService {
 	neo4jDB, _ := testRepo.NewNeo4jDatabase(t, neo4jDBConf)
 	pgDB, _ := testRepo.NewPgDatabase(t, pgDBConf)
-
-	licenseRepo, err := repository.NewNeo4jLicenseRepository(
-		repository.WithNeo4jDatabase(neo4jDB),
-	)
-	require.NoError(t, err)
-
-	permissionRepo, err := repository.NewNeo4jPermissionRepository(
-		repository.WithNeo4jDatabase(neo4jDB),
-	)
-	require.NoError(t, err)
-
-	permissionSvc, err := service.NewPermissionService(
-		permissionRepo,
-		nil,
-	)
-	require.NoError(t, err)
-
-	licenseSvc, err := service.NewLicenseService(
-		testutil.ParseLicense(t),
-		licenseRepo,
-		permissionSvc,
-	)
-	require.NoError(t, err)
 
 	queueClient, err := queue.NewClient(
 		queue.WithClientConfig(workerConf),
@@ -52,7 +27,6 @@ func NewSystemService(t *testing.T, neo4jDBConf *config.GraphDatabaseConfig, pgD
 		map[model.HealthCheckComponent]service.Pingable{
 			model.HealthCheckComponentGraphDB:      neo4jDB,
 			model.HealthCheckComponentRelationalDB: pgDB,
-			model.HealthCheckComponentLicense:      licenseSvc,
 			model.HealthCheckComponentMessageQueue: queueClient,
 		},
 		&model.VersionInfo{

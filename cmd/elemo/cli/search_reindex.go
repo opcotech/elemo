@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
@@ -67,6 +68,7 @@ func initSearchService() (*repository.Neo4jDatabase, service.SearchService, erro
 		roleRepo,
 		service.WithLogger(logger.Named("permission_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, nil, err
@@ -78,6 +80,7 @@ func initSearchService() (*repository.Neo4jDatabase, service.SearchService, erro
 		nil,
 		service.WithLogger(logger.Named("search_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, nil, err

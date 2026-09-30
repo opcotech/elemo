@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormMutation } from "@/hooks/use-form-mutation";
+import { entitlementActivationErrorMessage } from "@/lib/api/errors";
 import {
   v1OrganizationMembersGetOptions,
   v1OrganizationRolesGetOptions,
@@ -70,11 +71,19 @@ export function OrganizationMemberInviteDialog({
     InviteFormValues
   >({
     mutationFn: async (variables) => {
-      const { data } = await v1OrganizationMembersInvite({
-        ...variables,
-        throwOnError: true,
-      });
-      return data;
+      try {
+        const { data } = await v1OrganizationMembersInvite({
+          ...variables,
+          throwOnError: true,
+        });
+        return data;
+      } catch (error) {
+        const message = entitlementActivationErrorMessage(error);
+        if (message) {
+          throw new Error(message, { cause: error });
+        }
+        throw error;
+      }
     },
     form,
     successMessage: "Invitation sent",

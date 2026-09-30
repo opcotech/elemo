@@ -114,9 +114,28 @@ run = "pnpm --dir web typecheck"
 description = "Lint backend and frontend"
 depends = ["lint-backend", "lint-frontend"]
 
+[tasks.build-airgap]
+description = "Compile the AirGap artifact"
+run = "go build -tags airgap -o bin/elemo-airgap ./cmd/elemo"
+
+[tasks.check-airgap]
+description = "Compile and test default and AirGap artifacts"
+run = '''
+go build -o /dev/null ./cmd/elemo
+go build -tags airgap -o /dev/null ./cmd/elemo
+go vet ./...
+go vet -tags airgap ./...
+go test -short -tags airgap ./...
+'''
+
 [tasks.lint-backend]
 description = "Lint backend"
-run = "golangci-lint run --timeout 5m"
+run = [
+  "golangci-lint run --timeout 5m",
+  "golangci-lint run --build-tags airgap --timeout 5m",
+  "mise run generate-server-check",
+  "mise run check-airgap",
+]
 
 [tasks.lint-web]
 description = "Lint the web app"
@@ -225,6 +244,22 @@ if [ ! -x web/node_modules/.bin/openapi-ts ]; then
   pnpm --dir web install --frozen-lockfile
 fi
 pnpm --dir web generate:check
+'''
+
+[tasks.generate-server-check]
+description = "Fail if the assembled OpenAPI spec or generated Go server drifted"
+run = '''
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+go -C tools/openapi-assemble run . \
+  -src "$PWD/api/openapi/src" \
+  -out "$tmp_dir/openapi.yaml"
+go tool oapi-codegen \
+  -config "$PWD/api/openapi/generator.config.yml" \
+  -o "$tmp_dir/server.go" \
+  "$tmp_dir/openapi.yaml"
+diff -u "$PWD/api/openapi/openapi.yaml" "$tmp_dir/openapi.yaml"
+diff -u "$PWD/internal/transport/http/api/server.go" "$tmp_dir/server.go"
 '''
 
 [tasks.generate-email]

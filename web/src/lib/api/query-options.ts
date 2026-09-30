@@ -18,6 +18,7 @@ import {
   v1ProjectsIssuesGetOptions as generatedProjectsIssuesGetOptions,
   v1ResourceCustomFieldsGetOptions as generatedResourceCustomFieldsGetOptions,
   v1SearchGetOptions as generatedSearchGetOptions,
+  v1SystemEntitlementsOptions as generatedSystemEntitlementsOptions,
   v1TodosGetOptions as generatedTodosGetOptions,
   v1UsersIssuesGetOptions as generatedUsersIssuesGetOptions,
 } from "@/lib/client/@tanstack/react-query.gen";
@@ -200,5 +201,15 @@ export function v1PluginsFrontendGetOptions(
     ...generatedPluginsFrontendGetOptions(...args),
     ...cacheProfiles.volatile,
     refetchOnWindowFocus: true,
+  };
+}
+
+export function v1SystemEntitlementsOptions(
+  ...args: Parameters<typeof generatedSystemEntitlementsOptions>
+) {
+  return {
+    ...generatedSystemEntitlementsOptions(...args),
+    ...cacheProfiles.volatile,
+    retry: false,
   };
 }

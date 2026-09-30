@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -86,8 +85,7 @@ type TodoService interface {
 // todoService is the concrete implementation of the TodoService interface.
 type todoService struct {
 	runtime
-	todoRepo       repository.TodoRepository
-	licenseService LicenseService
+	todoRepo repository.TodoRepository
 }
 
 func todoFromRepository(t *repository.Todo) *Todo {
@@ -112,8 +110,9 @@ func (s *todoService) Create(ctx context.Context, opts CreateTodoOpts) (*Todo, e
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrTodoCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrTodoCreate, err)
 	}
 
 	if err := opts.Validate(); err != nil {
@@ -187,8 +186,9 @@ func (s *todoService) Update(ctx context.Context, id model.ID, opts UpdateTodoOp
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrTodoUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrTodoUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -217,8 +217,9 @@ func (s *todoService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.todoService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrTodoDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrTodoDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -254,24 +255,19 @@ func (s *todoService) ownedTodo(ctx context.Context, id model.ID) (*repository.T
 }
 
 // NewTodoService returns a new instance of the TodoService interface.
-func NewTodoService(todoRepo repository.TodoRepository, licenseService LicenseService, opts ...Option) (TodoService, error) {
+func NewTodoService(todoRepo repository.TodoRepository, opts ...Option) (TodoService, error) {
 	rt, err := newRuntime(opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	svc := &todoService{
-		runtime:        rt,
-		todoRepo:       todoRepo,
-		licenseService: licenseService,
+		runtime:  rt,
+		todoRepo: todoRepo,
 	}
 
 	if svc.todoRepo == nil {
 		return nil, ErrNoTodoRepository
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	return svc, nil

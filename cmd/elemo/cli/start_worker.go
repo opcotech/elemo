@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/queue"
 	"github.com/opcotech/elemo/internal/repository"
 	"github.com/opcotech/elemo/internal/service"
@@ -25,43 +25,12 @@ configured port.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		initTracer("worker")
 
-		license, err := parseLicense(&cfg.License)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to parse license", slog.Any("error", err))
-		}
-
-		smtpClient, err := initSMTPClient(&cfg.SMTP)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize SMTP client", slog.Any("error", err))
-		}
-
-		emailService, err := service.NewEmailService(
-			smtpClient,
-			cfg.Template.Directory,
-			&cfg.SMTP,
-			service.WithLogger(logger.Named("email_service")),
-			service.WithTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
-		}
-		_ = emailService
-
 		systemHealthCheckHandler, err := async.NewSystemHealthCheckTaskHandler(
 			async.WithTaskLogger(logger.Named("system_health_check_task")),
 			async.WithTaskTracer(tracer),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize system health check task handler", slog.Any("error", err))
-		}
-
-		systemLicenseExpiryTaskHandler, err := async.NewSystemLicenseExpiryTaskHandler(
-			async.WithTaskEmailService(emailService),
-			async.WithTaskLogger(logger.Named("system_license_expiry_task")),
-			async.WithTaskTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize system license expiry task handler", slog.Any("error", err))
 		}
 
 		graphDB, searchService, err := initSearchService()
@@ -111,15 +80,20 @@ configured port.`,
 			logger.Fatal(context.Background(), "failed to initialize search reindex batch task handler", slog.Any("error", err))
 		}
 
-		customFieldReconcileHandler, err := initCustomFieldReconcileHandler(graphDB, license)
+		customFieldReconcileHandler, err := initCustomFieldReconcileHandler(graphDB)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize custom field reconcile task handler", slog.Any("error", err))
+		}
+
+		systemLicenseExpiryHandler, err := initSystemLicenseExpiryHandler(graphDB)
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize license expiry task handler", slog.Any("error", err))
 		}
 
 		async.SetRateLimiter(cfg.Worker.RateLimit, cfg.Worker.RateLimitBurst)
 		worker, err := async.NewWorker(
 			async.WithWorkerTaskHandler(queue.TaskTypeSystemHealthCheck, systemHealthCheckHandler),
-			async.WithWorkerTaskHandler(queue.TaskTypeSystemLicenseExpiry, systemLicenseExpiryTaskHandler),
+			async.WithWorkerTaskHandler(queue.TaskTypeSystemLicenseExpiry, systemLicenseExpiryHandler),
 			async.WithWorkerTaskHandler(queue.TaskTypeSearchIndex, searchIndexHandler),
 			async.WithWorkerTaskHandler(queue.TaskTypeSearchReindex, searchReindexHandler),
 			async.WithWorkerTaskHandler(queue.TaskTypeSearchReindexBatch, searchReindexBatchHandler),
@@ -142,7 +116,6 @@ func init() {
 
 func initCustomFieldReconcileHandler(
 	graphDB *repository.Neo4jDatabase,
-	lic *license.License,
 ) (*async.CustomFieldReconcileTaskHandler, error) {
 	relDB, _, err := initRelationalDatabase()
 	if err != nil {
@@ -181,26 +154,7 @@ func initCustomFieldReconcileHandler(
 		roleRepo,
 		service.WithLogger(logger.Named("permission_service")),
 		service.WithTracer(tracer),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	licenseRepo, err := repository.NewNeo4jLicenseRepository(
-		repository.WithNeo4jDatabase(graphDB),
-		repository.WithNeo4jRepositoryLogger(logger.Named("license_repository")),
-		repository.WithNeo4jRepositoryTracer(tracer),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	licenseService, err := service.NewLicenseService(
-		lic,
-		licenseRepo,
-		permissionService,
-		service.WithLogger(logger.Named("license_service")),
-		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, err
@@ -209,9 +163,9 @@ func initCustomFieldReconcileHandler(
 	customFieldService, err := service.NewCustomFieldService(
 		customFieldRepo,
 		permissionService,
-		licenseService,
 		service.WithLogger(logger.Named("custom_field_service")),
 		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
 	)
 	if err != nil {
 		return nil, err
@@ -220,6 +174,45 @@ func initCustomFieldReconcileHandler(
 	return async.NewCustomFieldReconcileTaskHandler(
 		async.WithTaskCustomFieldService(customFieldService),
 		async.WithTaskLogger(logger.Named("custom_field_reconcile_task")),
+		async.WithTaskTracer(tracer),
+	)
+}
+
+func initSystemLicenseExpiryHandler(
+	graphDB *repository.Neo4jDatabase,
+) (*async.SystemLicenseExpiryTaskHandler, error) {
+	userRepo, err := repository.NewNeo4jUserRepository(
+		repository.WithNeo4jDatabase(graphDB),
+		repository.WithNeo4jRepositoryLogger(logger.Named("user_repository")),
+		repository.WithNeo4jRepositoryTracer(tracer),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	policy := loadEntitlementPolicy(context.Background(), graphDB, userRepo)
+
+	smtpClient, err := initSMTPClient(&cfg.SMTP)
+	if err != nil {
+		return nil, err
+	}
+	emailService, err := service.NewEmailService(
+		smtpClient,
+		cfg.Template.Directory,
+		&cfg.SMTP,
+		service.WithLogger(logger.Named("email_service")),
+		service.WithTracer(tracer),
+		service.WithMutationPolicy(entitlement.Unrestricted()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return async.NewSystemLicenseExpiryTaskHandler(
+		async.WithTaskEmailService(emailService),
+		async.WithTaskEntitlementReporter(policy),
+		async.WithTaskBillingEmail(cfg.AirGap.BillingEmail),
+		async.WithTaskLogger(logger.Named("system_license_expiry_task")),
 		async.WithTaskTracer(tracer),
 	)
 }

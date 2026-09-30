@@ -4,7 +4,7 @@ Destructive demo seeder that wipes Neo4j, Meilisearch, Redis, Postgres
 tokens, and plugin installations, then fills a mature-company world through
 Elemo's internal services.
 
-This does **not** replace `assets/queries/demo.cypher`. Use
+This does **not** replace `scripts/queries/demo.cypher`. Use
 `scripts/dev-demo-init.sh --yes` for the small ACME workspace, and this tool
 when you need a large tenant for product demos.
 
@@ -13,10 +13,10 @@ when you need a large tenant for product demos.
 - Backend stack running (`mise run start`) with LocalStack, Neo4j,
   Postgres, Redis, and Meilisearch
 - Config file, usually `configs/development/config.local.gen.yml`
-- Run from the repository root so relative license, query, and S3 paths resolve
+- Run from the repository root so relative query and S3 paths resolve
 
-The generated development license already has quotas of 99999, which is enough
-for the full profile.
+Normal self-hosted development builds have no human-seat ceiling. Do not
+configure `airgap.license_file` unless you are compiling with `-tags airgap`.
 
 ## Usage
 
@@ -41,7 +41,7 @@ tables, removes extracted plugin packages (source trees with a root
 | `-concurrency` | 8 | Parallel project issue seeding |
 | `-seed` | 42 | RNG seed |
 | `-password` | `AppleTree123` | Password for every user |
-| `-queries-dir` | `assets/queries` | `bootstrap.cypher` / `bootstrap.sql` |
+| `-queries-dir` | `scripts/queries` | `bootstrap.cypher` / `bootstrap.sql` |
 | `-skip-reindex` | false | Skip Meilisearch rebuild |
 
 `smoke` seeds the same six organizations and demo login users as `full`,

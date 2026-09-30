@@ -77,9 +77,7 @@ func (c *namespaceController) V1OrganizationsNamespacesCreate(ctx context.Contex
 		case http.StatusNotFound:
 			return api.V1OrganizationsNamespacesCreate404JSONResponse{N404JSONResponse: notFound}, nil
 		case http.StatusConflict:
-			return api.V1OrganizationsNamespacesCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
-				Message: err.Error(),
-			}}, nil
+			return api.V1OrganizationsNamespacesCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationsNamespacesCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -191,6 +189,8 @@ func (c *namespaceController) V1NamespaceUpdate(ctx context.Context, request api
 			return api.V1NamespaceUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NamespaceUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NamespaceUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NamespaceUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -216,6 +216,8 @@ func (c *namespaceController) V1NamespaceDelete(ctx context.Context, request api
 			return api.V1NamespaceDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NamespaceDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NamespaceDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NamespaceDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

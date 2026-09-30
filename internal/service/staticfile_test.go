@@ -8,13 +8,11 @@ import (
 	mocktrace "github.com/opcotech/elemo/internal/pkg/tracing/mock"
 	mockrepo "github.com/opcotech/elemo/internal/repository/mock"
 	"github.com/opcotech/elemo/internal/service"
-	mocksvc "github.com/opcotech/elemo/internal/service/mock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/repository"
 )
@@ -28,29 +26,22 @@ func TestNewStaticFileService(t *testing.T) {
 		{
 			name: "new static file service",
 			build: func() (service.StaticFileService, error) {
-				return service.NewStaticFileService(mockrepo.NewMockStaticFileRepository(nil), mocksvc.NewMockLicenseService(nil), service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
+				return service.NewStaticFileService(mockrepo.NewMockStaticFileRepository(nil), service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
 		},
 		{
 			name: "new static file service with invalid options",
 			build: func() (service.StaticFileService, error) {
-				return service.NewStaticFileService(mockrepo.NewMockStaticFileRepository(nil), mocksvc.NewMockLicenseService(nil), service.WithLogger(nil), service.WithTracer(mocktrace.NewMockTracer(nil)))
+				return service.NewStaticFileService(mockrepo.NewMockStaticFileRepository(nil), service.WithLogger(nil), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
 			wantErr: log.ErrNoLogger,
 		},
 		{
 			name: "new static file service with no static file repository",
 			build: func() (service.StaticFileService, error) {
-				return service.NewStaticFileService(nil, mocksvc.NewMockLicenseService(nil), service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
+				return service.NewStaticFileService(nil, service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
 			},
 			wantErr: service.ErrNoStaticFileRepository,
-		},
-		{
-			name: "new static file service with no license service",
-			build: func() (service.StaticFileService, error) {
-				return service.NewStaticFileService(mockrepo.NewMockStaticFileRepository(nil), nil, service.WithLogger(mocklog.NewMockLogger(nil)), service.WithTracer(mocktrace.NewMockTracer(nil)))
-			},
-			wantErr: service.ErrNoLicenseService,
 		},
 	}
 	for _, tt := range tests {
@@ -73,8 +64,8 @@ func TestStaticFileService_Create(t *testing.T) {
 		data []byte
 	}
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService
-		staticFileRepo func(ctrl *gomock.Controller, ctx context.Context, path string, data []byte) repository.StaticFileRepository
+		baseService    func(ctrl *gomock.Controller, _ context.Context) service.StaticFileService
+		staticFileRepo func(ctrl *gomock.Controller, _ context.Context, path string, data []byte) repository.StaticFileRepository
 	}
 	tests := []struct {
 		name    string
@@ -90,15 +81,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -108,9 +95,9 @@ func TestStaticFileService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Create(ctx, "/assets/logo.png", data).Return(nil)
+					repo.EXPECT().Create(gomock.Any(), "/assets/logo.png", data).Return(nil)
 					return repo
 				},
 			},
@@ -128,15 +115,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -146,9 +129,9 @@ func TestStaticFileService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Create(ctx, "/bar.txt", data).Return(nil)
+					repo.EXPECT().Create(gomock.Any(), "/bar.txt", data).Return(nil)
 					return repo
 				},
 			},
@@ -166,15 +149,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -184,9 +163,9 @@ func TestStaticFileService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Create(ctx, "/assets/logo.png", data).Return(nil)
+					repo.EXPECT().Create(gomock.Any(), "/assets/logo.png", data).Return(nil)
 					return repo
 				},
 			},
@@ -204,15 +183,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -222,9 +197,9 @@ func TestStaticFileService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Create(ctx, "/assets/logo.png", data).Return(nil)
+					repo.EXPECT().Create(gomock.Any(), "/assets/logo.png", data).Return(nil)
 					return repo
 				},
 			},
@@ -242,15 +217,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -279,15 +250,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -309,80 +276,6 @@ func TestStaticFileService_Create(t *testing.T) {
 			wantErr: service.ErrStaticFileInvalidPath,
 		},
 		{
-			name: "create static file with expired license",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ []byte) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-				data: []byte("file-content"),
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "create static file with license service error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ []byte) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-				data: []byte("file-content"),
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "create static file with repository error",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
@@ -390,15 +283,11 @@ func TestStaticFileService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -408,9 +297,9 @@ func TestStaticFileService_Create(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Create(ctx, "/assets/logo.png", data).Return(assert.AnError)
+					repo.EXPECT().Create(gomock.Any(), "/assets/logo.png", data).Return(assert.AnError)
 					return repo
 				},
 			},
@@ -442,8 +331,8 @@ func TestStaticFileService_Get(t *testing.T) {
 		path string
 	}
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService
-		staticFileRepo func(ctrl *gomock.Controller, ctx context.Context, path string) repository.StaticFileRepository
+		baseService    func(ctrl *gomock.Controller, _ context.Context) service.StaticFileService
+		staticFileRepo func(ctrl *gomock.Controller, _ context.Context, path string) repository.StaticFileRepository
 	}
 	tests := []struct {
 		name    string
@@ -460,12 +349,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -475,9 +363,9 @@ func TestStaticFileService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Get(ctx, "/assets/logo.png").Return([]byte("file-content"), nil)
+					repo.EXPECT().Get(gomock.Any(), "/assets/logo.png").Return([]byte("file-content"), nil)
 					return repo
 				},
 			},
@@ -495,12 +383,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -510,9 +397,9 @@ func TestStaticFileService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Get(ctx, "/bar.txt").Return([]byte("file-content"), nil)
+					repo.EXPECT().Get(gomock.Any(), "/bar.txt").Return([]byte("file-content"), nil)
 					return repo
 				},
 			},
@@ -530,12 +417,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -563,12 +449,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -596,12 +481,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -611,9 +495,9 @@ func TestStaticFileService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Get(ctx, "/assets/logo.png").Return(nil, assert.AnError)
+					repo.EXPECT().Get(gomock.Any(), "/assets/logo.png").Return(nil, assert.AnError)
 					return repo
 				},
 			},
@@ -631,12 +515,11 @@ func TestStaticFileService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -646,9 +529,9 @@ func TestStaticFileService_Get(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Get(ctx, "/missing.txt").Return(nil, repository.ErrNotFound)
+					repo.EXPECT().Get(gomock.Any(), "/missing.txt").Return(nil, repository.ErrNotFound)
 					return repo
 				},
 			},
@@ -681,8 +564,8 @@ func TestStaticFileService_Update(t *testing.T) {
 		data []byte
 	}
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService
-		staticFileRepo func(ctrl *gomock.Controller, ctx context.Context, path string, data []byte) repository.StaticFileRepository
+		baseService    func(ctrl *gomock.Controller, _ context.Context) service.StaticFileService
+		staticFileRepo func(ctrl *gomock.Controller, _ context.Context, path string, data []byte) repository.StaticFileRepository
 	}
 	tests := []struct {
 		name    string
@@ -698,15 +581,11 @@ func TestStaticFileService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -716,9 +595,9 @@ func TestStaticFileService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Update(ctx, "/assets/logo.png", data).Return(nil)
+					repo.EXPECT().Update(gomock.Any(), "/assets/logo.png", data).Return(nil)
 					return repo
 				},
 			},
@@ -736,15 +615,11 @@ func TestStaticFileService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -754,9 +629,9 @@ func TestStaticFileService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Update(ctx, "/assets/logo.png", data).Return(nil)
+					repo.EXPECT().Update(gomock.Any(), "/assets/logo.png", data).Return(nil)
 					return repo
 				},
 			},
@@ -774,15 +649,11 @@ func TestStaticFileService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -811,15 +682,11 @@ func TestStaticFileService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -841,80 +708,6 @@ func TestStaticFileService_Update(t *testing.T) {
 			wantErr: service.ErrStaticFileInvalidPath,
 		},
 		{
-			name: "update static file with expired license",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ []byte) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-				data: []byte("updated-content"),
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "update static file with license service error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, _ []byte) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-				data: []byte("updated-content"),
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "update static file with repository error",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
@@ -922,15 +715,11 @@ func TestStaticFileService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -940,9 +729,9 @@ func TestStaticFileService_Update(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string, data []byte) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string, data []byte) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Update(ctx, "/assets/logo.png", data).Return(assert.AnError)
+					repo.EXPECT().Update(gomock.Any(), "/assets/logo.png", data).Return(assert.AnError)
 					return repo
 				},
 			},
@@ -974,8 +763,8 @@ func TestStaticFileService_Delete(t *testing.T) {
 		path string
 	}
 	type fields struct {
-		baseService    func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService
-		staticFileRepo func(ctrl *gomock.Controller, ctx context.Context, path string) repository.StaticFileRepository
+		baseService    func(ctrl *gomock.Controller, _ context.Context) service.StaticFileService
+		staticFileRepo func(ctrl *gomock.Controller, _ context.Context, path string) repository.StaticFileRepository
 	}
 	tests := []struct {
 		name    string
@@ -991,15 +780,11 @@ func TestStaticFileService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1009,9 +794,9 @@ func TestStaticFileService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Delete(ctx, "/assets/logo.png").Return(nil)
+					repo.EXPECT().Delete(gomock.Any(), "/assets/logo.png").Return(nil)
 					return repo
 				},
 			},
@@ -1028,15 +813,11 @@ func TestStaticFileService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1064,15 +845,11 @@ func TestStaticFileService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1093,78 +870,6 @@ func TestStaticFileService_Delete(t *testing.T) {
 			wantErr: service.ErrStaticFileInvalidPath,
 		},
 		{
-			name: "delete static file with expired license",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "delete static file with license service error",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, assert.AnError)
-
-					return func() service.StaticFileService {
-						svc, err := service.NewStaticFileService(
-							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
-					return mockrepo.NewMockStaticFileRepository(ctrl)
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				path: "assets/logo.png",
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "delete static file with repository error",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context) service.StaticFileService {
@@ -1172,15 +877,11 @@ func TestStaticFileService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.staticFileService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.StaticFileService {
 						svc, err := service.NewStaticFileService(
 							mockrepo.NewMockStaticFileRepository(ctrl),
-							licenseSvc,
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
 						)
@@ -1190,9 +891,9 @@ func TestStaticFileService_Delete(t *testing.T) {
 						return svc
 					}()
 				},
-				staticFileRepo: func(ctrl *gomock.Controller, ctx context.Context, _ string) repository.StaticFileRepository {
+				staticFileRepo: func(ctrl *gomock.Controller, _ context.Context, _ string) repository.StaticFileRepository {
 					repo := mockrepo.NewMockStaticFileRepository(ctrl)
-					repo.EXPECT().Delete(ctx, "/assets/logo.png").Return(assert.AnError)
+					repo.EXPECT().Delete(gomock.Any(), "/assets/logo.png").Return(assert.AnError)
 					return repo
 				},
 			},

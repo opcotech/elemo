@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/validate"
@@ -88,6 +88,7 @@ func isClientValidationError(err error) bool {
 		errors.Is(err, service.ErrExpiredToken) ||
 		errors.Is(err, service.ErrOrganizationMemberAlreadyExists) ||
 		errors.Is(err, service.ErrOrganizationMemberInvalidStatus) ||
+		errors.Is(err, service.ErrOrganizationInvitePassword) ||
 		errors.Is(err, service.ErrIssueSelfRelation) ||
 		errors.Is(err, service.ErrIssueReservedRelationKind) ||
 		errors.Is(err, repository.ErrFolderNameConflict) ||
@@ -142,14 +143,14 @@ func isConflictError(err error) bool {
 		errors.Is(err, repository.ErrProjectKeyConflict) ||
 		errors.Is(err, repository.ErrCustomFieldKeyConflict) ||
 		errors.Is(err, repository.ErrPluginConflict) ||
-		errors.Is(err, model.ErrPluginRelationCardinality)
+		errors.Is(err, model.ErrPluginRelationCardinality) ||
+		errors.Is(err, entitlement.ErrSeatLimitReached) ||
+		errors.Is(err, entitlement.ErrActivationDenied) ||
+		errors.Is(err, entitlement.ErrMutationDenied)
 }
 
 func isForbiddenError(err error) bool {
 	return errors.Is(err, service.ErrNoPermission) ||
-		errors.Is(err, license.ErrLicenseExpired) ||
-		errors.Is(err, service.ErrFeatureDisabled) ||
-		errors.Is(err, service.ErrQuotaExceeded) ||
 		errors.Is(err, model.ErrPrivilegeEscalation)
 }
 

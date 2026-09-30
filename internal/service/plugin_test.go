@@ -17,7 +17,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/event"
@@ -156,7 +155,6 @@ func (r *recordingRuntime) callCount(function string) int {
 func newPluginServiceHarness(t *testing.T) (
 	context.Context,
 	model.ID,
-	*mocksvc.MockLicenseService,
 	*mocksvc.MockPermissionService,
 	*mockrepo.MockPluginRepository,
 	service.PluginService,
@@ -175,7 +173,6 @@ func newPluginServiceHarness(t *testing.T) (
 	logger := mocklog.NewMockLogger(ctrl)
 	logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
 	perm := mocksvc.NewMockPermissionService(ctrl)
 	repo := mockrepo.NewMockPluginRepository(ctrl)
 
@@ -184,13 +181,12 @@ func newPluginServiceHarness(t *testing.T) (
 		repo,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		perm,
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(logger),
 		service.WithTracer(tracer),
 	)
 	require.NoError(t, err)
-	return ctx, orgID, lic, perm, repo, svc
+	return ctx, orgID, perm, repo, svc
 }
 
 func putRegistryPlugin(
@@ -260,7 +256,6 @@ func TestNewPluginService(t *testing.T) {
 		nil,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		mocksvc.NewMockPermissionService(ctrl),
-		mocksvc.NewMockLicenseService(ctrl),
 		nil, nil, nil, nil,
 	)
 	assert.ErrorIs(t, err, service.ErrNoPluginRepository)
@@ -280,21 +275,17 @@ func TestPluginService_InvokeDisabled(t *testing.T) {
 	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(gomock.Any(), gomock.Any(), gomock.Len(0)).Return(ctx, span).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
-	lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-
 	perm := mocksvc.NewMockPermissionService(ctrl)
-	perm.EXPECT().ListScopeAncestry(ctx, orgID).Return([]model.ID{orgID}, nil)
+	perm.EXPECT().ListScopeAncestry(gomock.Any(), orgID).Return([]model.ID{orgID}, nil)
 
 	repo := mockrepo.NewMockPluginRepository(ctrl)
-	repo.EXPECT().ListActivationsByScope(ctx, []model.ID{orgID}).Return([]*model.PluginActivation{}, nil)
+	repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{orgID}).Return([]*model.PluginActivation{}, nil)
 
 	svc, err := service.NewPluginService(
 		config.PluginConfig{Directory: t.TempDir()},
 		repo,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		perm,
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(mocklog.NewMockLogger(ctrl)),
 		service.WithTracer(tracer),
@@ -327,17 +318,14 @@ func TestPluginService_InvokeLogsGuestError(t *testing.T) {
 	logger := mocklog.NewMockLogger(ctrl)
 	logger.EXPECT().Warn(gomock.Any(), "plugin invoke failed", gomock.Any())
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
-	lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-
 	perm := mocksvc.NewMockPermissionService(ctrl)
-	perm.EXPECT().ListScopeAncestry(ctx, orgID).Return([]model.ID{orgID}, nil)
+	perm.EXPECT().ListScopeAncestry(gomock.Any(), orgID).Return([]model.ID{orgID}, nil)
 
 	manifest := frontendPluginManifest()
 	require.NoError(t, manifest.Validate())
 
 	repo := mockrepo.NewMockPluginRepository(ctrl)
-	repo.EXPECT().ListActivationsByScope(ctx, []model.ID{orgID}).Return([]*model.PluginActivation{
+	repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{orgID}).Return([]*model.PluginActivation{
 		{PluginID: manifest.ID, ScopeID: orgID, Enabled: true},
 	}, nil)
 
@@ -346,7 +334,6 @@ func TestPluginService_InvokeLogsGuestError(t *testing.T) {
 		repo,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		perm,
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(logger),
 		service.WithTracer(tracer),
@@ -409,9 +396,6 @@ func TestPluginService_CreateNodeRequiresCapability(t *testing.T) {
 	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(gomock.Any(), gomock.Any(), gomock.Len(0)).Return(ctx, span).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
-	lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-
 	manifest := model.PluginManifest{
 		SchemaVersion: 1,
 		ID:            "com.elemo.timetracking",
@@ -424,7 +408,7 @@ func TestPluginService_CreateNodeRequiresCapability(t *testing.T) {
 	require.NoError(t, manifest.Validate())
 
 	repo := mockrepo.NewMockPluginRepository(ctrl)
-	repo.EXPECT().GetInstallation(ctx, manifest.ID).Return(&model.PluginInstallation{
+	repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 		PluginID: manifest.ID,
 		Version:  manifest.Version,
 		Status:   model.PluginStatusActive,
@@ -436,7 +420,6 @@ func TestPluginService_CreateNodeRequiresCapability(t *testing.T) {
 		repo,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		mocksvc.NewMockPermissionService(ctrl),
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(mocklog.NewMockLogger(ctrl)),
 		service.WithTracer(tracer),
@@ -475,20 +458,19 @@ func TestPluginService_ListFrontend(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+			ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 			m := manifest
 			if !tt.frontend {
 				m.Frontend = nil
 				m.Backend = &model.PluginBackendDecl{Entry: model.PluginBackendWASMPath}
 			}
 
-			lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-			perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionOrganizationRead).Return(true, nil)
-			perm.EXPECT().ListScopeAncestry(ctx, orgID).Return([]model.ID{orgID}, nil)
-			repo.EXPECT().ListActivationsByScope(ctx, []model.ID{orgID}).Return([]*model.PluginActivation{
+			perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionOrganizationRead).Return(true, nil)
+			perm.EXPECT().ListScopeAncestry(gomock.Any(), orgID).Return([]model.ID{orgID}, nil)
+			repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{orgID}).Return([]*model.PluginActivation{
 				{PluginID: m.ID, ScopeID: orgID, Enabled: true},
 			}, nil)
-			repo.EXPECT().GetInstallation(ctx, m.ID).Return(&model.PluginInstallation{
+			repo.EXPECT().GetInstallation(gomock.Any(), m.ID).Return(&model.PluginInstallation{
 				PluginID: m.ID,
 				Version:  m.Version,
 				Status:   tt.status,
@@ -517,7 +499,7 @@ func TestPluginService_ListFrontend(t *testing.T) {
 func TestPluginService_ListManaged(t *testing.T) {
 	t.Parallel()
 
-	ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+	ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 	inst := &model.PluginInstallation{
 		PluginID: "com.elemo.timetracking",
 		Version:  "1.1.0",
@@ -525,10 +507,9 @@ func TestPluginService_ListManaged(t *testing.T) {
 		Manifest: frontendPluginManifest(),
 	}
 
-	lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-	perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionPluginManage).Return(true, nil)
+	perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionPluginManage).Return(true, nil)
 	repo.EXPECT().ListInstallations(ctx).Return([]*model.PluginInstallation{inst}, nil)
-	repo.EXPECT().GetActivation(ctx, inst.PluginID, orgID).Return(nil, repository.ErrNotFound)
+	repo.EXPECT().GetActivation(gomock.Any(), inst.PluginID, orgID).Return(nil, repository.ErrNotFound)
 
 	got, err := svc.ListManaged(ctx, orgID)
 	require.NoError(t, err)
@@ -563,7 +544,7 @@ func TestPluginService_AssetPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx, _, _, _, _, svc := newPluginServiceHarness(t)
+			ctx, _, _, _, svc := newPluginServiceHarness(t)
 			root := writeFrontendAsset(t)
 			rt := elemoplugin.Runtime(elemoplugin.NoopRuntime{})
 			if tt.status == model.PluginStatusFailed {
@@ -593,7 +574,7 @@ func TestPluginService_OpenAsset(t *testing.T) {
 
 	t.Run("reads confined file", func(t *testing.T) {
 		t.Parallel()
-		ctx, _, _, _, _, svc := newPluginServiceHarness(t)
+		ctx, _, _, _, svc := newPluginServiceHarness(t)
 		root := writeFrontendAsset(t)
 		putRegistryPlugin(t, svc, nil, manifest, root, model.PluginStatusInstalled)
 
@@ -610,7 +591,7 @@ func TestPluginService_OpenAsset(t *testing.T) {
 
 	t.Run("rejects traversal", func(t *testing.T) {
 		t.Parallel()
-		ctx, _, _, _, _, svc := newPluginServiceHarness(t)
+		ctx, _, _, _, svc := newPluginServiceHarness(t)
 		root := writeFrontendAsset(t)
 		putRegistryPlugin(t, svc, nil, manifest, root, model.PluginStatusInstalled)
 
@@ -627,22 +608,21 @@ func TestPluginService_Enable(t *testing.T) {
 
 	t.Run("starts then persists", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 		manifest := frontendPluginManifest()
 		require.NoError(t, manifest.Validate())
 		rt := &stubRuntime{}
 		putRegistryPlugin(t, svc, rt, manifest, t.TempDir(), model.PluginStatusInstalled)
 
-		lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-		perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionPluginManage).Return(true, nil)
-		repo.EXPECT().GetInstallation(ctx, manifest.ID).Return(&model.PluginInstallation{
+		perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionPluginManage).Return(true, nil)
+		repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID,
 			Version:  manifest.Version,
 			Status:   model.PluginStatusInstalled,
 			Manifest: manifest,
 		}, nil)
-		repo.EXPECT().GetActivation(ctx, manifest.ID, orgID).Return(nil, repository.ErrNotFound)
-		repo.EXPECT().UpsertActivation(ctx, &model.PluginActivation{
+		repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, orgID).Return(nil, repository.ErrNotFound)
+		repo.EXPECT().UpsertActivation(gomock.Any(), &model.PluginActivation{
 			PluginID: manifest.ID, ScopeID: orgID, Enabled: true,
 		}).Return(&model.PluginActivation{
 			PluginID: manifest.ID, ScopeID: orgID, Enabled: true,
@@ -654,21 +634,20 @@ func TestPluginService_Enable(t *testing.T) {
 
 	t.Run("does not persist when start fails", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 		manifest := frontendPluginManifest()
 		require.NoError(t, manifest.Validate())
 		rt := &stubRuntime{startErr: errors.New("start failed")}
 		putRegistryPlugin(t, svc, rt, manifest, t.TempDir(), model.PluginStatusInstalled)
 
-		lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-		perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionPluginManage).Return(true, nil)
-		repo.EXPECT().GetInstallation(ctx, manifest.ID).Return(&model.PluginInstallation{
+		perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionPluginManage).Return(true, nil)
+		repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID,
 			Version:  manifest.Version,
 			Status:   model.PluginStatusInstalled,
 			Manifest: manifest,
 		}, nil)
-		repo.EXPECT().GetActivation(ctx, manifest.ID, orgID).Return(nil, repository.ErrNotFound)
+		repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, orgID).Return(nil, repository.ErrNotFound)
 		repo.EXPECT().UpsertActivation(gomock.Any(), gomock.Any()).Times(0)
 
 		err := svc.Enable(ctx, manifest.ID, orgID, nil)
@@ -679,7 +658,7 @@ func TestPluginService_Enable(t *testing.T) {
 
 	t.Run("rejects incompatible graph binding", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 		manifest := accountingEnableManifest()
 		require.NoError(t, manifest.Validate())
 		owner := timeSourceOwnerManifest()
@@ -687,13 +666,12 @@ func TestPluginService_Enable(t *testing.T) {
 		rt := &stubRuntime{}
 		putRegistryPlugin(t, svc, rt, manifest, t.TempDir(), model.PluginStatusInstalled)
 
-		lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-		perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionPluginManage).Return(true, nil)
-		repo.EXPECT().GetInstallation(ctx, manifest.ID).Return(&model.PluginInstallation{
+		perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionPluginManage).Return(true, nil)
+		repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID, Version: manifest.Version, Status: model.PluginStatusInstalled, Manifest: manifest,
 		}, nil)
-		repo.EXPECT().GetActivation(ctx, manifest.ID, orgID).Return(nil, repository.ErrNotFound)
-		repo.EXPECT().GetInstallation(ctx, owner.ID).Return(&model.PluginInstallation{
+		repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, orgID).Return(nil, repository.ErrNotFound)
+		repo.EXPECT().GetInstallation(gomock.Any(), owner.ID).Return(&model.PluginInstallation{
 			PluginID: owner.ID, Version: owner.Version, Status: model.PluginStatusActive, Manifest: owner,
 		}, nil)
 		repo.EXPECT().UpsertActivation(gomock.Any(), gomock.Any()).Times(0)
@@ -707,7 +685,7 @@ func TestPluginService_Enable(t *testing.T) {
 
 	t.Run("accepts compatible graph binding", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, lic, perm, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, perm, repo, svc := newPluginServiceHarness(t)
 		manifest := accountingEnableManifest()
 		require.NoError(t, manifest.Validate())
 		owner := timeSourceOwnerManifest()
@@ -716,20 +694,19 @@ func TestPluginService_Enable(t *testing.T) {
 		putRegistryPlugin(t, svc, rt, manifest, t.TempDir(), model.PluginStatusInstalled)
 		cfg := json.RawMessage(`{"time_source":{"plugin_id":"com.elemo.timetracking","kind":"TimeEntry"}}`)
 
-		lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-		perm.EXPECT().CtxUserHas(ctx, orgID, model.ActionPluginManage).Return(true, nil)
-		repo.EXPECT().GetInstallation(ctx, manifest.ID).Return(&model.PluginInstallation{
+		perm.EXPECT().CtxUserHas(gomock.Any(), orgID, model.ActionPluginManage).Return(true, nil)
+		repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID, Version: manifest.Version, Status: model.PluginStatusInstalled, Manifest: manifest,
 		}, nil)
-		repo.EXPECT().GetActivation(ctx, manifest.ID, orgID).Return(nil, repository.ErrNotFound)
-		repo.EXPECT().GetInstallation(ctx, owner.ID).Return(&model.PluginInstallation{
+		repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, orgID).Return(nil, repository.ErrNotFound)
+		repo.EXPECT().GetInstallation(gomock.Any(), owner.ID).Return(&model.PluginInstallation{
 			PluginID: owner.ID, Version: owner.Version, Status: model.PluginStatusActive, Manifest: owner,
 		}, nil)
-		perm.EXPECT().ListScopeAncestry(ctx, orgID).Return([]model.ID{orgID}, nil)
-		repo.EXPECT().ListActivationsByScope(ctx, []model.ID{orgID}).Return([]*model.PluginActivation{{
+		perm.EXPECT().ListScopeAncestry(gomock.Any(), orgID).Return([]model.ID{orgID}, nil)
+		repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{orgID}).Return([]*model.PluginActivation{{
 			PluginID: owner.ID, ScopeID: orgID, Enabled: true,
 		}}, nil)
-		repo.EXPECT().UpsertActivation(ctx, gomock.AssignableToTypeOf(&model.PluginActivation{})).DoAndReturn(
+		repo.EXPECT().UpsertActivation(gomock.Any(), gomock.AssignableToTypeOf(&model.PluginActivation{})).DoAndReturn(
 			func(_ context.Context, act *model.PluginActivation) (*model.PluginActivation, error) {
 				assert.True(t, act.Enabled)
 				assert.JSONEq(t, string(cfg), string(act.Config))
@@ -747,7 +724,7 @@ func TestPluginService_Restore(t *testing.T) {
 
 	t.Run("puts even when wasm is missing then starts if enabled", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, _, _, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, _, repo, svc := newPluginServiceHarness(t)
 		manifest := frontendPluginManifest()
 		manifest.Backend = &model.PluginBackendDecl{Entry: model.PluginBackendWASMPath}
 		require.NoError(t, manifest.Validate())
@@ -763,7 +740,7 @@ func TestPluginService_Restore(t *testing.T) {
 			Manifest: manifest,
 		}
 		repo.EXPECT().ListInstallations(ctx).Return([]*model.PluginInstallation{inst}, nil)
-		repo.EXPECT().ListActivations(ctx, manifest.ID).Return([]*model.PluginActivation{
+		repo.EXPECT().ListActivations(gomock.Any(), manifest.ID).Return([]*model.PluginActivation{
 			{PluginID: manifest.ID, ScopeID: orgID, Enabled: true},
 		}, nil)
 
@@ -775,7 +752,7 @@ func TestPluginService_Restore(t *testing.T) {
 
 	t.Run("puts even when load fails then starts if enabled", func(t *testing.T) {
 		t.Parallel()
-		ctx, orgID, _, _, repo, svc := newPluginServiceHarness(t)
+		ctx, orgID, _, repo, svc := newPluginServiceHarness(t)
 		manifest := frontendPluginManifest()
 		require.NoError(t, manifest.Validate())
 
@@ -790,7 +767,7 @@ func TestPluginService_Restore(t *testing.T) {
 			Manifest: manifest,
 		}
 		repo.EXPECT().ListInstallations(ctx).Return([]*model.PluginInstallation{inst}, nil)
-		repo.EXPECT().ListActivations(ctx, manifest.ID).Return([]*model.PluginActivation{
+		repo.EXPECT().ListActivations(gomock.Any(), manifest.ID).Return([]*model.PluginActivation{
 			{PluginID: manifest.ID, ScopeID: orgID, Enabled: true},
 		}, nil)
 
@@ -819,7 +796,6 @@ func TestPluginService_DispatchExtensionEvent(t *testing.T) {
 		logger := mocklog.NewMockLogger(ctrl)
 		logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-		lic := mocksvc.NewMockLicenseService(ctrl)
 		perm := mocksvc.NewMockPermissionService(ctrl)
 		repo := mockrepo.NewMockPluginRepository(ctrl)
 		bus := event.NewBus()
@@ -830,7 +806,6 @@ func TestPluginService_DispatchExtensionEvent(t *testing.T) {
 			repo,
 			mockrepo.NewMockExtensionRepository(ctrl),
 			perm,
-			lic,
 			nil, nil, nil, bus,
 			service.WithLogger(logger),
 			service.WithTracer(tracer),
@@ -872,7 +847,6 @@ func TestPluginService_DispatchExtensionEvent(t *testing.T) {
 		logger := mocklog.NewMockLogger(ctrl)
 		logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-		lic := mocksvc.NewMockLicenseService(ctrl)
 		perm := mocksvc.NewMockPermissionService(ctrl)
 		repo := mockrepo.NewMockPluginRepository(ctrl)
 		bus := event.NewBus()
@@ -883,7 +857,6 @@ func TestPluginService_DispatchExtensionEvent(t *testing.T) {
 			repo,
 			mockrepo.NewMockExtensionRepository(ctrl),
 			perm,
-			lic,
 			nil, nil, nil, bus,
 			service.WithLogger(logger),
 			service.WithTracer(tracer),
@@ -950,18 +923,15 @@ func TestPluginService_InvokeDoesNotDeadlockOnExtensionEvent(t *testing.T) {
 	logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
-	lic.EXPECT().HasFeature(ctx, license.FeaturePlugins).Return(true, nil)
-
 	perm := mocksvc.NewMockPermissionService(ctrl)
-	perm.EXPECT().ListScopeAncestry(ctx, orgID).Return([]model.ID{orgID}, nil)
+	perm.EXPECT().ListScopeAncestry(gomock.Any(), orgID).Return([]model.ID{orgID}, nil)
 
 	manifest := frontendPluginManifest()
 	manifest.Events = []model.PluginEventType{model.PluginEventExtensionCreated}
 	require.NoError(t, manifest.Validate())
 
 	repo := mockrepo.NewMockPluginRepository(ctrl)
-	repo.EXPECT().ListActivationsByScope(ctx, []model.ID{orgID}).Return([]*model.PluginActivation{
+	repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{orgID}).Return([]*model.PluginActivation{
 		{PluginID: manifest.ID, ScopeID: orgID, Enabled: true},
 	}, nil)
 
@@ -973,7 +943,6 @@ func TestPluginService_InvokeDoesNotDeadlockOnExtensionEvent(t *testing.T) {
 		repo,
 		mockrepo.NewMockExtensionRepository(ctrl),
 		perm,
-		lic,
 		nil, nil, nil, bus,
 		service.WithLogger(logger),
 		service.WithTracer(tracer),

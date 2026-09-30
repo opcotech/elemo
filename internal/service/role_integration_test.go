@@ -38,20 +38,12 @@ func (s *RoleServiceIntegrationTestSuite) SetupSuite() {
 	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
 	notificationService, err := service.NewNotificationService(s.NotificationRepo)
 	s.Require().NoError(err)
 
 	s.roleService, err = service.NewRoleService(
 		s.RoleRepo,
 		permissionService,
-		licenseService,
 		s.OrganizationRepo,
 		notificationService,
 	)

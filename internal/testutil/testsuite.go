@@ -56,7 +56,6 @@ type Neo4jContainerIntegrationTestSuite struct {
 	FolderRepo       *repository.Neo4jFolderRepository
 	IssueRepo        *repository.Neo4jIssueRepository
 	LabelRepo        *repository.Neo4jLabelRepository
-	LicenseRepo      *repository.Neo4jLicenseRepository
 	NamespaceRepo    *repository.Neo4jNamespaceRepository
 	OrganizationRepo *repository.Neo4jOrganizationRepository
 	PermissionRepo   *repository.Neo4jPermissionRepository
@@ -64,7 +63,7 @@ type Neo4jContainerIntegrationTestSuite struct {
 	RoleRepo         *repository.Neo4jRoleRepository
 	TeamRepo         *repository.Neo4jTeamRepository
 	TodoRepo         *repository.Neo4jTodoRepository
-	UserRepo         *repository.Neo4jUserRepository
+	UserRepo         repository.UserRepository
 	ExtensionRepo    *repository.Neo4jExtensionRepository
 }
 
@@ -99,9 +98,6 @@ func (s *Neo4jContainerIntegrationTestSuite) SetupNeo4j(ts *ContainerIntegration
 	ts.Require().NoError(err)
 
 	s.LabelRepo, err = repository.NewNeo4jLabelRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
-	ts.Require().NoError(err)
-
-	s.LicenseRepo, err = repository.NewNeo4jLicenseRepository(repository.WithNeo4jDatabase(s.Neo4jDB))
 	ts.Require().NoError(err)
 
 	s.NamespaceRepo, err = repository.NewNeo4jNamespaceRepository(repository.WithNeo4jDatabase(s.Neo4jDB))

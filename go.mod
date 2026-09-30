@@ -20,7 +20,6 @@ require (
 	github.com/goccy/go-json v0.10.6
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
-	github.com/hyperboloide/lk v0.0.0-20251220053519-b291812e3216
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/meilisearch/meilisearch-go v0.36.3
 	github.com/neo4j/neo4j-go-driver/v6 v6.2.0

@@ -7,6 +7,7 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/pkg/convert"
 	"github.com/opcotech/elemo/internal/transport/http/api"
 )
@@ -18,7 +19,32 @@ var (
 	permissionDenied = api.N403JSONResponse{
 		Message: "The requested operation is forbidden",
 	}
+	seatLimitReached = api.N409JSONResponse{
+		Message: "Licensed seat limit reached",
+		Code:    convert.ToPointer(api.HTTPErrorCodeSeatLimitReached),
+	}
+	activationDenied = api.N409JSONResponse{
+		Message: "User activation is not entitled",
+		Code:    convert.ToPointer(api.HTTPErrorCodeActivationDenied),
+	}
+	mutationDenied = api.N409JSONResponse{
+		Message: "Installation is read-only",
+		Code:    convert.ToPointer(api.HTTPErrorCodeEntitlementReadOnly),
+	}
 )
+
+func entitlementConflict(err error) api.N409JSONResponse {
+	switch {
+	case errors.Is(err, entitlement.ErrMutationDenied):
+		return mutationDenied
+	case errors.Is(err, entitlement.ErrActivationDenied):
+		return activationDenied
+	case errors.Is(err, entitlement.ErrSeatLimitReached):
+		return seatLimitReached
+	default:
+		return api.N409JSONResponse{Message: err.Error()}
+	}
+}
 
 func formatBadRequest(err error) api.N400JSONResponse {
 	return api.N400JSONResponse{

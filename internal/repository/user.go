@@ -9,6 +9,7 @@ import (
 
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/convert"
+	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
 )
 
@@ -17,6 +18,10 @@ var (
 	ErrUserDelete = errors.New("failed to delete user") // user cannot be deleted
 	ErrUserRead   = errors.New("failed to read user")   // user cannot be read
 	ErrUserUpdate = errors.New("failed to update user") // user cannot be updated
+
+	ErrUserActivationPolicy = errors.New("active user mutation requires an explicit seat policy")
+	ErrUserActivationStatus = errors.New("user status does not allow activation")
+	ErrUserAcceptInvitation = errors.New("failed to activate user and accept organization invitation")
 )
 
 // PartialUser is a lean user used on issue and document reads.
@@ -49,6 +54,31 @@ type User struct {
 	UpdatedAt     *time.Time       `json:"updated_at"`
 }
 
+// ActivationAuthorization is the explicit seat decision for creating or
+// activating a human user. The zero value is invalid. Nil on CreateUserOpts
+// means no activation was requested, never unrestricted.
+type ActivationAuthorization struct {
+	unlimited bool
+	limit     uint32
+}
+
+// UnrestrictedActivation is self-hosted or otherwise unlimited activation.
+func UnrestrictedActivation() ActivationAuthorization {
+	return ActivationAuthorization{unlimited: true}
+}
+
+// FiniteActivation authorizes activation up to limit active humans.
+func FiniteActivation(limit uint32) ActivationAuthorization {
+	return ActivationAuthorization{limit: limit}
+}
+
+func (a ActivationAuthorization) params() (unlimited bool, limit int64) {
+	if a.unlimited {
+		return true, 0
+	}
+	return false, int64(a.limit)
+}
+
 // CreateUserOpts holds the data required to create a user.
 type CreateUserOpts struct {
 	Username  string
@@ -64,6 +94,9 @@ type CreateUserOpts struct {
 	Address   string
 	Links     []string
 	Languages []model.Language
+	// Activation is required when Status is active (including zero Status).
+	// nil means no activation was requested and is rejected for active users.
+	Activation *ActivationAuthorization
 }
 
 // UpdateUserOpts holds the fields that can be updated on a user.
@@ -165,12 +198,23 @@ func (o UpdateUserOpts) patch() map[string]any {
 
 //go:generate go tool mockgen -source=user.go -destination=mock/mock_user_gen.go -package=mockrepo
 type UserRepository interface {
+	// Create persists a user. Active users (including zero Status) require
+	// Activation; nil means no activation was requested and is rejected.
+	// Pending and inactive users skip the seat lock.
 	Create(ctx context.Context, opts CreateUserOpts) (*User, error)
 	Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error)
 	GetByEmail(ctx context.Context, email string, proj UserProjection) (*User, error)
 	List(ctx context.Context, page CursorPage, proj UserProjection) (Page[*User], error)
 	Update(ctx context.Context, id model.ID, opts UpdateUserOpts) (*User, error)
 	Delete(ctx context.Context, id model.ID) error
+	Activate(ctx context.Context, id model.ID, opts UpdateUserOpts, auth ActivationAuthorization) (*User, error)
+	// AcceptInvitation is the persistence used by
+	// OrganizationService.AcceptInvitation. It atomically activates the
+	// user when entitled, deletes the invitation edge, creates membership,
+	// and optionally grants a role. OrganizationRepository still owns
+	// invite/revoke edges.
+	AcceptInvitation(ctx context.Context, userID, orgID model.ID, password string, activation *ActivationAuthorization, roleID *model.ID) (*User, error)
+	ActiveHumanCount(ctx context.Context) (int, error)
 }
 
 // Neo4jUserRepository is a repository for managing users.
@@ -208,32 +252,24 @@ func (r *Neo4jUserRepository) scan(up string, proj UserProjection) func(rec *neo
 	}
 }
 
-// Create creates a new user if it does not already exist.
 func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (*User, error) {
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Create")
 	defer span.End()
 
-	createdAt := time.Now().UTC()
-	id := model.MustNewID(model.ResourceTypeUser)
+	if opts.Status == 0 {
+		opts.Status = model.UserStatusActive
+	}
+	if opts.Status == model.UserStatusActive {
+		if opts.Activation == nil {
+			return nil, errors.Join(ErrUserCreate, ErrUserActivationPolicy)
+		}
+		return r.createActive(ctx, opts)
+	}
+	return r.createNonActive(ctx, opts)
+}
 
-	status := opts.Status
-	if status == 0 {
-		status = model.UserStatusActive
-	}
-
-	links := opts.Links
-	if links == nil {
-		links = make([]string, 0)
-	}
-
-	languages := opts.Languages
-	if languages == nil {
-		languages = make([]model.Language, 0)
-	}
-	languageValues := make([]string, len(languages))
-	for i, language := range languages {
-		languageValues[i] = language.String()
-	}
+func (r *Neo4jUserRepository) createNonActive(ctx context.Context, opts CreateUserOpts) (*User, error) {
+	id, params := userCreateParams(opts)
 
 	cypher := `
 	MERGE (u:` + id.Label() + ` {id: $id})
@@ -243,24 +279,6 @@ func (r *Neo4jUserRepository) Create(ctx context.Context, opts CreateUserOpts) (
 		links: $links, languages: $languages, created_at: datetime($created_at)
 	}
 	SET u:` + model.LabelPrincipal
-
-	params := map[string]any{
-		"id":         id.String(),
-		"username":   opts.Username,
-		"email":      opts.Email,
-		"password":   opts.Password,
-		"status":     status.String(),
-		"first_name": opts.FirstName,
-		"last_name":  opts.LastName,
-		"picture":    opts.Picture,
-		"title":      opts.Title,
-		"bio":        opts.Bio,
-		"phone":      opts.Phone,
-		"address":    opts.Address,
-		"links":      links,
-		"languages":  languageValues,
-		"created_at": createdAt.Format(time.RFC3339Nano),
-	}
 
 	if err := Neo4jExecuteWriteAndConsume(ctx, r.db, cypher, params); err != nil {
 		return nil, errors.Join(ErrUserCreate, err)
@@ -429,6 +447,10 @@ func (r *Neo4jUserRepository) Update(ctx context.Context, id model.ID, opts Upda
 	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Update")
 	defer span.End()
 
+	if opts.Status.Defined && opts.Status.Value != nil && *opts.Status.Value == model.UserStatusActive {
+		return nil, errors.Join(ErrUserUpdate, ErrUserActivationPolicy)
+	}
+
 	cypher := `
 	MATCH (u:` + id.Label() + ` {id: $id})
 	SET u += $patch
@@ -468,6 +490,376 @@ func (r *Neo4jUserRepository) Delete(ctx context.Context, id model.ID) error {
 	}
 
 	return nil
+}
+
+func userCreateParams(opts CreateUserOpts) (model.ID, map[string]any) {
+	createdAt := time.Now().UTC()
+	id := model.MustNewID(model.ResourceTypeUser)
+
+	status := opts.Status
+	if status == 0 {
+		status = model.UserStatusActive
+	}
+
+	links := opts.Links
+	if links == nil {
+		links = make([]string, 0)
+	}
+
+	languages := opts.Languages
+	if languages == nil {
+		languages = make([]model.Language, 0)
+	}
+	languageValues := make([]string, len(languages))
+	for i, language := range languages {
+		languageValues[i] = language.String()
+	}
+
+	return id, map[string]any{
+		"id":         id.String(),
+		"username":   opts.Username,
+		"email":      opts.Email,
+		"password":   opts.Password,
+		"status":     status.String(),
+		"first_name": opts.FirstName,
+		"last_name":  opts.LastName,
+		"picture":    opts.Picture,
+		"title":      opts.Title,
+		"bio":        opts.Bio,
+		"phone":      opts.Phone,
+		"address":    opts.Address,
+		"links":      links,
+		"languages":  languageValues,
+		"created_at": createdAt.Format(time.RFC3339Nano),
+	}
+}
+
+func (r *Neo4jUserRepository) createActive(ctx context.Context, opts CreateUserOpts) (*User, error) {
+	id, params := userCreateParams(opts)
+	bindSeatParams(params, *opts.Activation)
+
+	cypher := seatLockCypher() + `
+	WITH i
+	OPTIONAL MATCH (n:` + model.ResourceTypeUser.String() + ` {status: $active_status})
+	WITH i, count(n) AS active_count
+	WITH i, i IS NOT NULL AS installation_found,
+		CASE WHEN $unlimited OR (i IS NOT NULL AND active_count < $limit) THEN true ELSE false END AS allowed
+	FOREACH (_ IN CASE WHEN allowed THEN [1] ELSE [] END |
+		CREATE (u:` + id.Label() + ` {id: $id})
+		SET u += {
+			username: $username, email: $email, password: $password, status: $status, first_name: $first_name,
+			last_name: $last_name, picture: $picture, title: $title, bio: $bio, phone: $phone, address: $address,
+			links: $links, languages: $languages, created_at: datetime($created_at)
+		}
+		SET u:` + model.LabelPrincipal + `
+	)
+	RETURN installation_found, allowed
+	`
+
+	type createResult struct {
+		InstallationFound bool
+		Allowed           bool
+	}
+	result, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*createResult, error) {
+		installationFound, _, err := neo4j.GetRecordValue[bool](rec, "installation_found")
+		if err != nil {
+			return nil, err
+		}
+		allowed, _, err := neo4j.GetRecordValue[bool](rec, "allowed")
+		if err != nil {
+			return nil, err
+		}
+		return &createResult{InstallationFound: installationFound, Allowed: allowed}, nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserCreate, mapUniquenessError(err))
+	}
+	if !opts.Activation.unlimited && !result.InstallationFound {
+		return nil, errors.Join(ErrUserCreate, ErrInstallationRead, ErrNotFound)
+	}
+	if !result.Allowed {
+		return nil, errors.Join(ErrUserCreate, ErrSeatLimitReached)
+	}
+
+	return r.Get(ctx, id, UserDetailProjection())
+}
+
+func (r *Neo4jUserRepository) Activate(ctx context.Context, id model.ID, opts UpdateUserOpts, auth ActivationAuthorization) (*User, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/Activate")
+	defer span.End()
+
+	if !opts.Status.Defined || opts.Status.Value == nil || *opts.Status.Value != model.UserStatusActive {
+		return nil, errors.Join(ErrUserUpdate, ErrUserActivationStatus)
+	}
+
+	params := map[string]any{
+		"id":              id.String(),
+		"patch":           opts.patch(),
+		"pending_status":  model.UserStatusPending.String(),
+		"inactive_status": model.UserStatusInactive.String(),
+	}
+	bindSeatParams(params, auth)
+
+	cypher := seatLockCypher() + `
+	WITH i
+	OPTIONAL MATCH (u:` + id.Label() + ` {id: $id})
+	WITH i, u, u.status AS prev
+	OPTIONAL MATCH (n:` + model.ResourceTypeUser.String() + ` {status: $active_status})
+	WITH i, u, prev, count(n) AS active_count
+	WITH i, u, prev, i IS NOT NULL AS installation_found, u IS NOT NULL AS user_found,
+		CASE WHEN prev IN [$active_status, $pending_status, $inactive_status] THEN true ELSE false END AS status_allowed,
+		CASE
+			WHEN u IS NULL THEN false
+			WHEN NOT (prev IN [$active_status, $pending_status, $inactive_status]) THEN false
+			WHEN NOT $unlimited AND i IS NULL THEN false
+			WHEN prev = $active_status THEN true
+			WHEN $unlimited THEN true
+			ELSE active_count < $limit
+		END AS allowed
+	FOREACH (_ IN CASE WHEN allowed THEN [1] ELSE [] END |
+		SET u += $patch
+		SET u.updated_at = datetime.statement()
+	)
+	RETURN installation_found, user_found, status_allowed, allowed
+	`
+
+	type activateResult struct {
+		InstallationFound bool
+		UserFound         bool
+		StatusAllowed     bool
+		Allowed           bool
+	}
+
+	result, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*activateResult, error) {
+		installationFound, _, err := neo4j.GetRecordValue[bool](rec, "installation_found")
+		if err != nil {
+			return nil, err
+		}
+		userFound, _, err := neo4j.GetRecordValue[bool](rec, "user_found")
+		if err != nil {
+			return nil, err
+		}
+		statusAllowed, _, err := neo4j.GetRecordValue[bool](rec, "status_allowed")
+		if err != nil {
+			return nil, err
+		}
+		allowed, _, err := neo4j.GetRecordValue[bool](rec, "allowed")
+		if err != nil {
+			return nil, err
+		}
+		return &activateResult{
+			InstallationFound: installationFound,
+			UserFound:         userFound,
+			StatusAllowed:     statusAllowed,
+			Allowed:           allowed,
+		}, nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserUpdate, err)
+	}
+	if !auth.unlimited && !result.InstallationFound {
+		return nil, errors.Join(ErrUserUpdate, ErrInstallationRead, ErrNotFound)
+	}
+	if !result.UserFound {
+		return nil, errors.Join(ErrUserUpdate, ErrNotFound)
+	}
+	if !result.StatusAllowed {
+		return nil, errors.Join(ErrUserUpdate, ErrUserActivationStatus)
+	}
+	if !result.Allowed {
+		return nil, errors.Join(ErrUserUpdate, ErrSeatLimitReached)
+	}
+
+	return r.Get(ctx, id, UserDetailProjection())
+}
+
+func bindSeatParams(params map[string]any, auth ActivationAuthorization) {
+	params["installation_id"] = model.InstallationID().String()
+	params["unlimited"], params["limit"] = auth.params()
+	params["active_status"] = model.UserStatusActive.String()
+}
+
+func seatLockCypher() string {
+	return `
+	OPTIONAL MATCH (i:` + model.ResourceTypeInstallation.String() + ` {id: $installation_id})
+	FOREACH (_ IN CASE WHEN i IS NULL THEN [] ELSE [1] END |
+		SET i.seat_lock = timestamp()
+	)`
+}
+
+// AcceptInvitation atomically activates a user, removes the invitation,
+// creates organization membership, and optionally grants a role while
+// holding the installation seat lock.
+func (r *Neo4jUserRepository) AcceptInvitation(
+	ctx context.Context,
+	userID, orgID model.ID,
+	hashedPassword string,
+	activation *ActivationAuthorization,
+	roleID *model.ID,
+) (*User, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/AcceptInvitation")
+	defer span.End()
+
+	allowActivation := activation != nil
+	auth := UnrestrictedActivation()
+	if activation != nil {
+		auth = *activation
+	}
+
+	roleIDValue := ""
+	grantID := ""
+	if roleID != nil && !roleID.IsNil() {
+		roleIDValue = roleID.String()
+		grantID = model.MustNewID(model.ResourceTypePermission).String()
+	}
+
+	params := map[string]any{
+		"user_id":          userID.String(),
+		"org_id":           orgID.String(),
+		"password":         hashedPassword,
+		"pending_status":   model.UserStatusPending.String(),
+		"membership_id":    model.NewRawID(),
+		"now":              time.Now().UTC().Format(time.RFC3339Nano),
+		"allow_activation": allowActivation,
+		"role_id":          roleIDValue,
+		"grant_id":         grantID,
+	}
+	bindSeatParams(params, auth)
+
+	cypher := seatLockCypher() + `
+	WITH i
+	OPTIONAL MATCH (u:` + model.ResourceTypeUser.String() + ` {id: $user_id})
+	OPTIONAL MATCH (o:` + model.ResourceTypeOrganization.String() + ` {id: $org_id})
+	OPTIONAL MATCH (u)-[invitation:` + EdgeKindInvitedTo.String() + `]->(o)
+	OPTIONAL MATCH (role:` + model.ResourceTypeRole.String() + ` {id: $role_id})
+	WITH i, u, o, invitation, role, u.status AS prev
+	OPTIONAL MATCH (n:` + model.ResourceTypeUser.String() + ` {status: $active_status})
+	WITH i, u, o, invitation, role, prev, count(n) AS active_count
+	WITH i, u, o, invitation, role, prev,
+		i IS NOT NULL AS installation_found,
+		u IS NOT NULL AS user_found,
+		o IS NOT NULL AS organization_found,
+		invitation IS NOT NULL AS invitation_found,
+		($role_id = "" OR role IS NOT NULL) AS role_found,
+		CASE WHEN prev IN [$active_status, $pending_status] THEN true ELSE false END AS status_allowed,
+		CASE
+			WHEN u IS NULL OR o IS NULL OR invitation IS NULL THEN false
+			WHEN $role_id <> "" AND role IS NULL THEN false
+			WHEN NOT (prev IN [$active_status, $pending_status]) THEN false
+			WHEN NOT $unlimited AND i IS NULL THEN false
+			WHEN prev = $active_status THEN true
+			WHEN NOT $allow_activation THEN false
+			WHEN $unlimited THEN true
+			ELSE active_count < $limit
+		END AS allowed
+	FOREACH (_ IN CASE WHEN allowed THEN [1] ELSE [] END |
+		SET u.status = $active_status
+		SET u.password = CASE WHEN prev = $pending_status THEN $password ELSE u.password END
+		SET u.updated_at = datetime($now)
+		DELETE invitation
+		MERGE (u)-[membership:` + EdgeKindMemberOf.String() + `]->(o)
+		ON CREATE SET membership.id = $membership_id, membership.created_at = datetime($now)
+		ON MATCH SET membership.updated_at = datetime($now)
+	)
+	FOREACH (_ IN CASE WHEN allowed AND $role_id <> "" THEN [1] ELSE [] END |
+		CREATE (u)-[g:` + EdgeKindGranted.String() + ` {
+			id: $grant_id,
+			role_id: $role_id,
+			actions: [],
+			created_at: datetime($now)
+		}]->(o)
+	)
+	RETURN installation_found, user_found, organization_found, invitation_found, role_found, status_allowed, allowed, u,
+		COUNT { (u)-[:` + EdgeKindCreated.String() + `]->(:` + model.ResourceTypeDocument.String() + `) } AS document_count
+	`
+
+	type acceptResult struct {
+		InstallationFound bool
+		UserFound         bool
+		OrganizationFound bool
+		InvitationFound   bool
+		RoleFound         bool
+		StatusAllowed     bool
+		Allowed           bool
+		User              *User
+	}
+	result, err := Neo4jExecuteWriteAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*acceptResult, error) {
+		values := make([]bool, 0, 7)
+		for _, field := range []string{
+			"installation_found", "user_found", "organization_found",
+			"invitation_found", "role_found", "status_allowed", "allowed",
+		} {
+			value, _, err := neo4j.GetRecordValue[bool](rec, field)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+		}
+		result := &acceptResult{
+			InstallationFound: values[0],
+			UserFound:         values[1],
+			OrganizationFound: values[2],
+			InvitationFound:   values[3],
+			RoleFound:         values[4],
+			StatusAllowed:     values[5],
+			Allowed:           values[6],
+		}
+		if result.Allowed {
+			user, scanErr := r.scan("u", UserDetailProjection())(rec)
+			if scanErr != nil {
+				return nil, scanErr
+			}
+			result.User = user
+		}
+		return result, nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrUserAcceptInvitation, err)
+	}
+	if allowActivation && !auth.unlimited && !result.InstallationFound {
+		return nil, errors.Join(ErrUserAcceptInvitation, ErrInstallationRead, ErrNotFound)
+	}
+	if !result.UserFound || !result.OrganizationFound || !result.InvitationFound {
+		return nil, errors.Join(ErrUserAcceptInvitation, ErrNotFound)
+	}
+	if !result.RoleFound {
+		return nil, errors.Join(ErrUserAcceptInvitation, ErrNotFound)
+	}
+	if !result.StatusAllowed {
+		return nil, errors.Join(ErrUserAcceptInvitation, ErrUserActivationStatus)
+	}
+	if !result.Allowed {
+		if !allowActivation {
+			return nil, errors.Join(ErrUserAcceptInvitation, ErrUserActivationStatus)
+		}
+		return nil, errors.Join(ErrUserAcceptInvitation, ErrSeatLimitReached)
+	}
+
+	return result.User, nil
+}
+
+func (r *Neo4jUserRepository) ActiveHumanCount(ctx context.Context) (int, error) {
+	ctx, span := r.tracer.Start(ctx, "repository.neo4j.UserRepository/ActiveHumanCount")
+	defer span.End()
+
+	cypher := `MATCH (n:` + model.ResourceTypeUser.String() + ` {status: $status}) RETURN count(n) AS c`
+	params := map[string]any{
+		"status": model.UserStatusActive.String(),
+	}
+
+	count, err := Neo4jExecuteReadAndReadSingle(ctx, r.db, cypher, params, func(rec *neo4j.Record) (*int, error) {
+		val, _, err := neo4j.GetRecordValue[int64](rec, "c")
+		if err != nil {
+			return nil, err
+		}
+		n := int(val)
+		return &n, nil
+	})
+	if err != nil {
+		return 0, errors.Join(ErrReadResourceCount, err)
+	}
+
+	return *count, nil
 }
 
 // NewNeo4jUserRepository creates a new user neo4jBaseRepository.
@@ -532,6 +924,71 @@ func (r *RedisCachedUserRepository) Create(ctx context.Context, opts CreateUserO
 	}
 
 	return r.userRepo.Create(ctx, opts)
+}
+
+func (r *RedisCachedUserRepository) Activate(ctx context.Context, id model.ID, opts UpdateUserOpts, auth ActivationAuthorization) (*User, error) {
+	user, err := r.userRepo.Activate(ctx, id, opts, auth)
+	if err != nil {
+		return nil, err
+	}
+
+	r.invalidateAfterWrite(ctx, "failed to invalidate cache after user activation",
+		func() error {
+			key := composeCacheKey(model.ResourceTypeUser.String(), "Get", id.String(), projectionCacheValue(UserDetailProjection()))
+			return r.cacheRepo.Set(ctx, key, user)
+		},
+		func() error { return clearUsersByEmail(ctx, r.cacheRepo, user.Email) },
+		func() error { return clearUserAll(ctx, r.cacheRepo) },
+		func() error { return bumpIssueListUserGeneration(ctx, r.cacheRepo, id) },
+		func() error { return bumpIssueListProjectionEpoch(ctx, r.cacheRepo) },
+	)
+
+	return user, nil
+}
+
+func (r *RedisCachedUserRepository) AcceptInvitation(
+	ctx context.Context,
+	userID, orgID model.ID,
+	hashedPassword string,
+	activation *ActivationAuthorization,
+	roleID *model.ID,
+) (*User, error) {
+	user, err := r.userRepo.AcceptInvitation(ctx, userID, orgID, hashedPassword, activation, roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	r.invalidateAfterWrite(ctx, "failed to invalidate cache after accepting invitation",
+		func() error { return clearUsersKey(ctx, r.cacheRepo, userID) },
+		func() error { return clearUsersAllByEmail(ctx, r.cacheRepo) },
+		func() error { return clearUserAll(ctx, r.cacheRepo) },
+		func() error { return clearOrganizationsPattern(ctx, r.cacheRepo, "*") },
+		func() error { return bumpIssueListUserGeneration(ctx, r.cacheRepo, userID) },
+		func() error { return bumpIssueListProjectionEpoch(ctx, r.cacheRepo) },
+		func() error { return clearPermissionAllCrossCache(ctx, r.cacheRepo) },
+		func() error { return r.bumpAuthzGeneration(ctx, userID) },
+	)
+
+	return user, nil
+}
+
+func (r *RedisCachedUserRepository) bumpAuthzGeneration(ctx context.Context, principal model.ID) error {
+	key := authzGenKey(principal)
+	var gen int64
+	_ = r.cacheRepo.Get(ctx, key, &gen)
+	return r.cacheRepo.Set(ctx, key, gen+1)
+}
+
+func (r *RedisCachedUserRepository) invalidateAfterWrite(ctx context.Context, message string, invalidations ...func() error) {
+	for _, invalidate := range invalidations {
+		if err := invalidate(); err != nil {
+			r.cacheRepo.logger.Warn(ctx, message, log.WithError(err))
+		}
+	}
+}
+
+func (r *RedisCachedUserRepository) ActiveHumanCount(ctx context.Context) (int, error) {
+	return r.userRepo.ActiveHumanCount(ctx)
 }
 
 func (r *RedisCachedUserRepository) Get(ctx context.Context, id model.ID, proj UserProjection) (*User, error) {

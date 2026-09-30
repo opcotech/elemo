@@ -76,6 +76,8 @@ export type {
   RolePatch,
   SearchPage,
   SearchResult,
+  SystemAirGapEntitlement,
+  SystemEntitlements,
   Team,
   TeamCreate,
   Todo,

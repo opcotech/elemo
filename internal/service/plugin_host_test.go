@@ -10,7 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
@@ -101,7 +100,6 @@ func newPluginHostHarness(t *testing.T, manifest model.PluginManifest) pluginHos
 	logger := mocklog.NewMockLogger(ctrl)
 	logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
 	perm := mocksvc.NewMockPermissionService(ctrl)
 	repo := mockrepo.NewMockPluginRepository(ctrl)
 	extRepo := mockrepo.NewMockExtensionRepository(ctrl)
@@ -114,7 +112,6 @@ func newPluginHostHarness(t *testing.T, manifest model.PluginManifest) pluginHos
 		repo,
 		extRepo,
 		perm,
-		lic,
 		issues,
 		projects,
 		users,
@@ -124,7 +121,6 @@ func newPluginHostHarness(t *testing.T, manifest model.PluginManifest) pluginHos
 	)
 	require.NoError(t, err)
 
-	lic.EXPECT().HasFeature(gomock.Any(), license.FeaturePlugins).Return(true, nil).AnyTimes()
 	repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 		PluginID: manifest.ID,
 		Version:  manifest.Version,
@@ -201,7 +197,7 @@ func TestPluginHost_Call(t *testing.T) {
 				ID: model.MustNewID(model.ResourceTypeProject),
 			},
 		}
-		h.issues.EXPECT().Get(h.ctx, h.issueID).Return(issue, nil)
+		h.issues.EXPECT().Get(gomock.Any(), h.issueID).Return(issue, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "issues.get",
 			Payload: mustJSON(t, map[string]string{"id": h.issueID.String()}),
@@ -215,7 +211,7 @@ func TestPluginHost_Call(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
 		projectID := model.MustNewID(model.ResourceTypeProject)
-		h.issues.EXPECT().List(h.ctx, projectID, service.CursorPage{Size: 50}, service.IssueListOptions{}).Return(service.Page[*service.PartialIssue]{
+		h.issues.EXPECT().List(gomock.Any(), projectID, service.CursorPage{Size: 50}, service.IssueListOptions{}).Return(service.Page[*service.PartialIssue]{
 			Items: []*service.PartialIssue{{ID: h.issueID, Key: "TT-1", Title: "Track time"}},
 		}, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
@@ -229,7 +225,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("issues.update", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.issues.EXPECT().Update(h.ctx, h.issueID, gomock.Any()).Return(&service.Issue{
+		h.issues.EXPECT().Update(gomock.Any(), h.issueID, gomock.Any()).Return(&service.Issue{
 			ID:    h.issueID,
 			Title: "Updated",
 		}, nil)
@@ -245,7 +241,7 @@ func TestPluginHost_Call(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
 		projectID := model.MustNewID(model.ResourceTypeProject)
-		h.projects.EXPECT().Get(h.ctx, projectID).Return(&service.Project{
+		h.projects.EXPECT().Get(gomock.Any(), projectID).Return(&service.Project{
 			ID:   projectID,
 			Key:  "TT",
 			Name: "Time",
@@ -262,7 +258,7 @@ func TestPluginHost_Call(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
 		nsID := model.MustNewID(model.ResourceTypeNamespace)
-		h.projects.EXPECT().List(h.ctx, nsID, service.CursorPage{Size: 50}).Return(service.Page[*service.Project]{
+		h.projects.EXPECT().List(gomock.Any(), nsID, service.CursorPage{Size: 50}).Return(service.Page[*service.Project]{
 			Items: []*service.Project{{ID: model.MustNewID(model.ResourceTypeProject), Key: "TT", Name: "Time"}},
 		}, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
@@ -276,7 +272,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("users.get", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.users.EXPECT().Get(h.ctx, h.userID).Return(&service.User{
+		h.users.EXPECT().Get(gomock.Any(), h.userID).Return(&service.User{
 			ID:        h.userID,
 			FirstName: "Ada",
 			LastName:  "Lovelace",
@@ -308,7 +304,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("plugin.storage.get", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.repo.EXPECT().GetStorage(h.ctx, manifest.ID, h.orgID, "timer").Return(&model.PluginStorageEntry{
+		h.repo.EXPECT().GetStorage(gomock.Any(), manifest.ID, h.orgID, "timer").Return(&model.PluginStorageEntry{
 			PluginID: manifest.ID,
 			ScopeID:  h.orgID,
 			Key:      "timer",
@@ -327,7 +323,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("plugin.storage.set", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.repo.EXPECT().SetStorage(h.ctx, gomock.Any()).Return(&model.PluginStorageEntry{}, nil)
+		h.repo.EXPECT().SetStorage(gomock.Any(), gomock.Any()).Return(&model.PluginStorageEntry{}, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "plugin.storage.set",
 			ScopeID: h.orgID.Composite(),
@@ -340,7 +336,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("plugin.storage.delete", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.repo.EXPECT().DeleteStorage(h.ctx, manifest.ID, h.orgID, "timer").Return(nil)
+		h.repo.EXPECT().DeleteStorage(gomock.Any(), manifest.ID, h.orgID, "timer").Return(nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "plugin.storage.delete",
 			ScopeID: h.orgID.Composite(),
@@ -353,7 +349,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("plugin.storage.list", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.repo.EXPECT().ListStorage(h.ctx, manifest.ID, h.orgID).Return([]*model.PluginStorageEntry{
+		h.repo.EXPECT().ListStorage(gomock.Any(), manifest.ID, h.orgID).Return([]*model.PluginStorageEntry{
 			{Key: "timer"},
 		}, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
@@ -371,7 +367,7 @@ func TestPluginHost_Call(t *testing.T) {
 		created, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
 		created.Parent = &h.issueID
-		h.extRepo.EXPECT().Create(h.ctx, gomock.Any()).Return(created, nil)
+		h.extRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(created, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method: "graph.nodes.create",
 			Payload: mustJSON(t, map[string]any{
@@ -390,7 +386,7 @@ func TestPluginHost_Call(t *testing.T) {
 		h := newPluginHostHarness(t, manifest)
 		ext, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
-		h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
+		h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "graph.nodes.get",
 			Payload: mustJSON(t, map[string]string{"id": ext.ID.String()}),
@@ -404,8 +400,8 @@ func TestPluginHost_Call(t *testing.T) {
 		h := newPluginHostHarness(t, manifest)
 		ext, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
-		h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
-		h.extRepo.EXPECT().Update(h.ctx, manifest.ID, ext.ID, gomock.Any()).Return(ext, nil)
+		h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
+		h.extRepo.EXPECT().Update(gomock.Any(), manifest.ID, ext.ID, gomock.Any()).Return(ext, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method: "graph.nodes.update",
 			Payload: mustJSON(t, map[string]any{
@@ -422,8 +418,8 @@ func TestPluginHost_Call(t *testing.T) {
 		h := newPluginHostHarness(t, manifest)
 		ext, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
-		h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
-		h.extRepo.EXPECT().Delete(h.ctx, manifest.ID, ext.ID).Return(nil)
+		h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
+		h.extRepo.EXPECT().Delete(gomock.Any(), manifest.ID, ext.ID).Return(nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "graph.nodes.delete",
 			Payload: mustJSON(t, map[string]string{"id": ext.ID.String()}),
@@ -435,7 +431,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("graph.nodes.list", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.extRepo.EXPECT().List(h.ctx, gomock.Any()).Return(repository.Page[*model.Extension]{}, nil)
+		h.extRepo.EXPECT().List(gomock.Any(), gomock.Any()).Return(repository.Page[*model.Extension]{}, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method: "graph.nodes.list",
 			Payload: mustJSON(t, map[string]any{
@@ -455,8 +451,8 @@ func TestPluginHost_Call(t *testing.T) {
 		ext, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
 		newParent := model.MustNewID(model.ResourceTypeIssue)
-		h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
-		h.extRepo.EXPECT().Move(h.ctx, gomock.Any()).Return(ext, nil)
+		h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
+		h.extRepo.EXPECT().Move(gomock.Any(), gomock.Any()).Return(ext, nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method: "graph.nodes.move",
 			Payload: mustJSON(t, map[string]string{
@@ -474,9 +470,9 @@ func TestPluginHost_Call(t *testing.T) {
 		h := newPluginHostHarness(t, manifest)
 		from, err := model.NewExtension(manifest.ID, "TimeEntry", map[string]any{"seconds": int64(12)})
 		require.NoError(t, err)
-		h.extRepo.EXPECT().Get(h.ctx, manifest.ID, from.ID).Return(from, nil)
-		h.extRepo.EXPECT().CountRelations(h.ctx, manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(0), int64(0), nil)
-		h.extRepo.EXPECT().CreateRelation(h.ctx, gomock.Any()).Return(&model.ExtensionRelation{
+		h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, from.ID).Return(from, nil)
+		h.extRepo.EXPECT().CountRelations(gomock.Any(), manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(0), int64(0), nil)
+		h.extRepo.EXPECT().CreateRelation(gomock.Any(), gomock.Any()).Return(&model.ExtensionRelation{
 			ID:   "rel-1",
 			Kind: "LOGGED_BY",
 			From: from.ID,
@@ -499,7 +495,7 @@ func TestPluginHost_Call(t *testing.T) {
 	t.Run("graph.relations.delete", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginHostHarness(t, manifest)
-		h.extRepo.EXPECT().DeleteRelation(h.ctx, manifest.ID, "rel-1").Return(nil)
+		h.extRepo.EXPECT().DeleteRelation(gomock.Any(), manifest.ID, "rel-1").Return(nil)
 		resp, err := service.CallPluginHost(h.ctx, h.svc, manifest.ID, elemoplugin.HostRequest{
 			Method:  "graph.relations.delete",
 			Payload: mustJSON(t, map[string]string{"id": "rel-1"}),
