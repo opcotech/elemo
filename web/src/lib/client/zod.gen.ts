@@ -402,6 +402,7 @@ export const zNamespace = z.object({
     .max(50)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   name: z.string().min(3).max(120),
+  logo: z.url().max(2000).nullish(),
   description: z.string().min(5).max(500).nullish(),
   project_count: z.coerce
     .bigint()
@@ -438,6 +439,7 @@ export const zAccessibleNamespace = z.object({
     .max(50)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   name: z.string().min(3).max(120),
+  logo: z.url().max(2000).nullish(),
   description: z.string().min(5).max(500).nullish(),
   project_count: z.coerce
     .bigint()
@@ -1989,6 +1991,7 @@ export const zOrganizationPatch = z.object({
 
 export const zNamespaceCreate = z.object({
   name: z.string().min(3).max(120),
+  logo: z.url().max(2000).nullish(),
   slug: z
     .string()
     .min(3)
@@ -1999,6 +2002,7 @@ export const zNamespaceCreate = z.object({
 
 export const zNamespacePatch = z.object({
   name: z.string().min(3).max(120).optional(),
+  logo: z.url().max(2000).nullish(),
   description: z.string().min(5).max(500).nullish(),
 });
 

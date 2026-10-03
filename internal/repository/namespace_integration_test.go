@@ -75,6 +75,7 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestGet() {
 	s.Assert().Equal(created.ID, ns.ID)
 	s.Assert().Equal(s.createOpts.Name, ns.Name)
 	s.Assert().Equal(s.createOpts.Description, ns.Description)
+	s.Assert().Equal(s.createOpts.Logo, ns.Logo)
 	s.Assert().WithinDuration(*created.CreatedAt, *ns.CreatedAt, 100*time.Millisecond)
 	s.Require().NotNil(ns.ProjectCount)
 	s.Assert().Equal(int64(1), *ns.ProjectCount)
@@ -139,6 +140,18 @@ func (s *NamespaceRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Assert().Equal("new name", ns.Name)
 	s.Assert().Equal("new description", ns.Description)
 	s.Assert().NotNil(ns.UpdatedAt)
+}
+
+func (s *NamespaceRepositoryIntegrationTestSuite) TestUpdateClearLogo() {
+	created, err := s.NamespaceRepo.Create(context.Background(), s.createOpts)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(created.Logo)
+
+	ns, err := s.NamespaceRepo.Update(context.Background(), created.ID, repository.UpdateNamespaceOpts{
+		Logo: optional.Null[string](),
+	})
+	s.Require().NoError(err)
+	s.Assert().Empty(ns.Logo)
 }
 
 func (s *NamespaceRepositoryIntegrationTestSuite) TestDelete() {
@@ -320,9 +333,11 @@ func (s *CachedNamespaceRepositoryIntegrationTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 	ns, err := s.namespaceRepo.Update(context.Background(), created.ID, repository.UpdateNamespaceOpts{
 		Name: optional.Some("new name"),
+		Logo: optional.Some("https://example.com/new.png"),
 	})
 	s.Require().NoError(err)
 	s.Assert().Equal("new name", ns.Name)
+	s.Assert().Equal("https://example.com/new.png", ns.Logo)
 	s.Assert().Len(cacheKeysWithoutIssueListGeneration(s.Keys(&s.ContainerIntegrationTestSuite, "*")), 1)
 }
 

@@ -50,6 +50,7 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 			Slug:          "engineering",
 			Name:          "Engineering",
 			Description:   "Engineering team namespace",
+			Logo:          "https://example.com/logo.png",
 			ProjectCount:  convert.ToPointer(int64(1)),
 			DocumentCount: convert.ToPointer(int64(1)),
 			CreatedAt:     convert.ToPointer(time.Now().UTC()),
@@ -81,6 +82,8 @@ func TestNamespaceController_V1NamespaceGet(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, namespaceID.String(), got.Id)
 		assert.Equal(t, "engineering", got.Slug)
+		require.NotNil(t, got.Logo)
+		assert.Equal(t, ns.Logo, *got.Logo)
 		require.NotNil(t, got.Description)
 		assert.Equal(t, ns.Description, *got.Description)
 		require.NotNil(t, got.ProjectCount)
@@ -182,6 +185,7 @@ func TestNamespaceController_V1NamespacesGet(t *testing.T) {
 			Slug:          "engineering",
 			Name:          "Engineering",
 			Description:   "Engineering team namespace",
+			Logo:          "https://example.com/logo.png",
 			ProjectCount:  convert.ToPointer(int64(1)),
 			DocumentCount: convert.ToPointer(int64(1)),
 			CreatedAt:     convert.ToPointer(time.Now().UTC()),
@@ -210,6 +214,8 @@ func TestNamespaceController_V1NamespacesGet(t *testing.T) {
 		got, ok := resp.(api.V1NamespacesGet200JSONResponse)
 		require.True(t, ok)
 		require.Len(t, got.Items, 1)
+		require.NotNil(t, got.Items[0].Logo)
+		assert.Equal(t, "https://example.com/logo.png", *got.Items[0].Logo)
 		assert.Equal(t, namespaceID.String(), got.Items[0].Id)
 		assert.Equal(t, orgID.String(), got.Items[0].Organization.Id)
 		assert.Equal(t, "ACME", got.Items[0].Organization.Name)
