@@ -489,6 +489,10 @@ export type Namespace = {
    */
   name: string;
   /**
+   * Logo of the namespace.
+   */
+  logo?: string | null;
+  /**
    * Description of the namespace.
    */
   description?: string | null;
@@ -528,6 +532,10 @@ export type AccessibleNamespace = {
    * Name of the namespace.
    */
   name: string;
+  /**
+   * Logo of the namespace.
+   */
+  logo?: string | null;
   /**
    * Description of the namespace.
    */
@@ -2574,6 +2582,10 @@ export type NamespaceCreate = {
    */
   name: string;
   /**
+   * Logo of the namespace.
+   */
+  logo?: string | null;
+  /**
    * Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
    */
   slug: string;
@@ -2588,6 +2600,10 @@ export type NamespacePatch = {
    * Name of the namespace.
    */
   name?: string;
+  /**
+   * Logo of the organization.
+   */
+  logo?: string | null;
   /**
    * Description of the namespace.
    */
