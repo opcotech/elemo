@@ -10,6 +10,13 @@ NamespaceCreate:
             maxLength: 120
             example: Engineering
             minLength: 3
+          logo:
+            type: string
+            description: Logo of the namespace.
+            format: uri
+            example: "https://example.com/static/logo.png"
+            maxLength: 2000
+            nullable: true
           slug:
             type: string
             description: Organization-scoped canonical kebab-case slug. Reserved value is new. Must not parse as an xid.
@@ -41,6 +48,15 @@ NamespacePatch:
             maxLength: 120
             example: Engineering
             minLength: 3
+          logo:
+            type: string
+            description: Logo of the namespace.
+            format: uri
+            example: "https://example.com/static/logo.png"
+            maxLength: 2000
+            nullable: true
+            x-go-type: "Optional[string]"
+            x-go-type-skip-optional-pointer: true
           description:
             type: string
             description: Description of the namespace.

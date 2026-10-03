@@ -29,6 +29,13 @@ Namespace:
       maxLength: 120
       example: Engineering
       minLength: 3
+    logo:
+      type: string
+      description: Logo of the namespace.
+      format: uri
+      example: "https://example.com/static/logo.png"
+      maxLength: 2000
+      nullable: true
     description:
       type: string
       description: Description of the namespace.
@@ -85,6 +92,13 @@ AccessibleNamespace:
       maxLength: 120
       example: Engineering
       minLength: 3
+    logo:
+      type: string
+      description: Logo of the namespace.
+      format: uri
+      example: "https://example.com/static/logo.png"
+      maxLength: 2000
+      nullable: true
     description:
       type: string
       description: Description of the namespace.

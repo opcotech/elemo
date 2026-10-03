@@ -322,6 +322,7 @@ export function HomePage() {
                       namespaceSlug: namespace.slug,
                     })}
                     title={namespace.name}
+                    imageUrl={namespace.logo}
                     subtitle={namespace.organizationName}
                   />
                 ))}

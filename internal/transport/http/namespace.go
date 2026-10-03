@@ -257,6 +257,10 @@ func createNamespaceJSONRequestBodyToCreateNamespaceOpts(body *api.V1Organizatio
 		opts.Description = *body.Description.Value
 	}
 
+	if body.Logo != nil {
+		opts.Logo = *body.Logo
+	}
+
 	return opts
 }
 
@@ -266,8 +270,13 @@ func updateNamespaceJSONRequestBodyToUpdateNamespaceOpts(body *api.V1NamespaceUp
 	if body.Name != nil {
 		opts.Name = optional.Some(*body.Name)
 	}
+
 	if body.Description.Defined {
 		opts.Description = body.Description
+	}
+
+	if body.Logo.Defined {
+		opts.Logo = body.Logo
 	}
 
 	return opts
@@ -286,6 +295,10 @@ func namespaceToDTO(namespace *service.Namespace) api.Namespace {
 
 	if namespace.Description != "" {
 		n.Description = &namespace.Description
+	}
+
+	if namespace.Logo != "" {
+		n.Logo = &namespace.Logo
 	}
 
 	return n
@@ -309,6 +322,10 @@ func accessibleNamespaceToDTO(namespace *service.AccessibleNamespace) api.Access
 
 	if namespace.Description != "" {
 		n.Description = &namespace.Description
+	}
+
+	if namespace.Logo != "" {
+		n.Logo = &namespace.Logo
 	}
 
 	return n

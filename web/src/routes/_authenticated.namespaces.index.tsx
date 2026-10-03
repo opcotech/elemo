@@ -231,6 +231,7 @@ function NamespacesListPage() {
                   namespaceSlug: namespace.slug,
                 })}
                 title={namespace.name}
+                imageUrl={namespace.logo}
                 subtitle={
                   <NamespaceEntitySubtitle
                     description={namespace.description}

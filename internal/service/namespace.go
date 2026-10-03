@@ -32,6 +32,7 @@ type Namespace struct {
 	ID            model.ID
 	Slug          string
 	Name          string
+	Logo          string
 	Description   string
 	ProjectCount  *int64
 	DocumentCount *int64
@@ -49,6 +50,7 @@ type AccessibleNamespace struct {
 type CreateNamespaceOpts struct {
 	Name        string `json:"name" validate:"required,min=3,max=120"`
 	Slug        string `json:"slug"`
+	Logo        string `json:"logo" validate:"omitempty,url"`
 	Description string `json:"description" validate:"omitempty,min=5,max=500"`
 }
 
@@ -67,6 +69,7 @@ func (o *CreateNamespaceOpts) Validate() error {
 // Undefined fields (Defined == false) are left unchanged.
 type UpdateNamespaceOpts struct {
 	Name        optional.Optional[string]
+	Logo        optional.Optional[string]
 	Description optional.Optional[string]
 }
 
@@ -127,6 +130,7 @@ func namespaceFromRepository(n *repository.Namespace) *Namespace {
 		ID:            n.ID,
 		Slug:          n.Slug,
 		Name:          n.Name,
+		Logo:          n.Logo,
 		Description:   n.Description,
 		ProjectCount:  n.ProjectCount,
 		DocumentCount: n.DocumentCount,
@@ -191,6 +195,7 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 	namespace, err := s.namespaceRepo.Create(ctx, repository.CreateNamespaceOpts{
 		Name:        opts.Name,
 		Slug:        opts.Slug,
+		Logo:        opts.Logo,
 		Description: opts.Description,
 		CreatorID:   userID,
 		OrgID:       orgID,
@@ -352,6 +357,7 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 
 	namespace, err := s.namespaceRepo.Update(ctx, id, repository.UpdateNamespaceOpts{
 		Name:        opts.Name,
+		Logo:        opts.Logo,
 		Description: opts.Description,
 	})
 	if err != nil {
