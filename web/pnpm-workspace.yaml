@@ -13,6 +13,6 @@ overrides:
   # and sprintf-js, which has no patched release.
   js-yaml@<3.15.0: ">=3.15.2"
   # @hey-api/json-schema-ref-parser pins js-yaml 4.2.0.
-  js-yaml@>=4.0.0 <4.3.0: ">=4.3.2"
+  js-yaml@>=4.0.0 <4.3.0: ">=5.5.0"
   # uuid 8.x (Storybook test runner, jest-junit, istanbul) has no patched 8.x release.
   uuid@<11.1.1: ">=11.1.1"
