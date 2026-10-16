@@ -38,7 +38,7 @@
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "1.170.33",
     "@tanstack/react-router-ssr-query": "1.167.2",
-    "@tanstack/react-start": "1.168.50",
+    "@tanstack/react-start": "1.168.60",
     "@tanstack/react-store": "0.11.1",
     "@tiptap/extension-code-block-lowlight": "^3.31.3",
     "@tiptap/extension-emoji": "^3.31.3",
