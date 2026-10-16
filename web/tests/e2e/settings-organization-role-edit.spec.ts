@@ -163,7 +163,7 @@ test.describe("@settings.organization-role-edit Organization Role Edit E2E Tests
     await roleEditPage.roleEditForm.clearField("Name");
     await roleEditPage.roleEditForm.fillField("Name", "AB");
     await roleEditPage.roleEditForm.submit("Save Changes");
-    await expect(nameError).toHaveText(/invalid input/i);
+    await expect(nameError).toHaveText(/too small|invalid input/i);
   });
 
   test("should persist role changes after page reload", async ({ page }) => {

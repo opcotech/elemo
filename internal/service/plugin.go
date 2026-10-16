@@ -104,6 +104,7 @@ type pluginService struct {
 	repo              repository.PluginRepository
 	extensionRepo     repository.ExtensionRepository
 	permissionService PermissionService
+	installMu         sync.Mutex
 	registry          *elemoplugin.Registry
 	host              elemoplugin.Host
 	bus               *event.Bus
@@ -114,6 +115,11 @@ type pluginService struct {
 func (s *pluginService) Install(ctx context.Context, zip []byte) (*model.PluginInstallation, error) {
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Install")
 	defer span.End()
+
+	// Package installs share one directory and installation row. Overlapping
+	// installs otherwise lose the filesystem race and return a 500.
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
 
 	ctx, err := s.requireMutation(ctx)
 	if err != nil {
@@ -187,6 +193,9 @@ func (s *pluginService) Install(ctx context.Context, zip []byte) (*model.PluginI
 func (s *pluginService) Upgrade(ctx context.Context, pluginID string, zip []byte) (*model.PluginInstallation, error) {
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/Upgrade")
 	defer span.End()
+
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
 
 	ctx, err := s.requireMutation(ctx)
 	if err != nil {

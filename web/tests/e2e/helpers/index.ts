@@ -7,5 +7,6 @@ export * from "./forms";
 export * from "./navigation";
 export * from "./pages";
 export * from "./permissions";
+export * from "./plugins";
 export * from "./toast";
 export * from "./workspace";

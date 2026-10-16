@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { createIssue } from "./api";
 import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
+import {
+  ensureInstancePlugin,
+  seedOwnerWorkspace,
+  waitForSuccessToast,
+} from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { WorkItemPage } from "./pages";
 import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
@@ -52,55 +56,8 @@ test.describe("@plugins.accounting Accounting plugin", () => {
       password: USER_DEFAULT_PASSWORD,
     });
 
-    await page.goto("/settings/plugins");
-    await expect(
-      page
-        .getByRole("button", { name: "Upgrade" })
-        .first()
-        .or(page.getByText("No plugins installed"))
-    ).toBeVisible({ timeout: 30_000 });
-    const timeTrackingPlugin = page
-      .locator("li")
-      .filter({ hasText: "com.elemo.timetracking" });
-    if ((await timeTrackingPlugin.count()) > 0) {
-      await timeTrackingPlugin.getByRole("button", { name: "Upgrade" }).click();
-      await page
-        .locator('input[type="file"]')
-        .last()
-        .setInputFiles(timeTrackingZip);
-      await waitForSuccessToast(page, "Plugin upgraded", { timeout: 30_000 });
-    } else {
-      await page.getByRole("button", { name: "Install package" }).click();
-      await page
-        .locator('input[type="file"]')
-        .first()
-        .setInputFiles(timeTrackingZip);
-      await waitForSuccessToast(page, "Plugin installed", { timeout: 30_000 });
-    }
-    const accountingPlugin = page
-      .locator("li")
-      .filter({ hasText: "com.elemo.accounting" });
-    if ((await accountingPlugin.count()) > 0) {
-      await accountingPlugin.getByRole("button", { name: "Upgrade" }).click();
-      await page
-        .locator('input[type="file"]')
-        .last()
-        .setInputFiles(accountingZip);
-      await waitForSuccessToast(page, "Plugin upgraded", { timeout: 30_000 });
-    } else {
-      await page.getByRole("button", { name: "Install package" }).click();
-      await page
-        .locator('input[type="file"]')
-        .first()
-        .setInputFiles(accountingZip);
-      await waitForSuccessToast(page, "Plugin installed", { timeout: 30_000 });
-    }
-    await expect(page.getByText("com.elemo.timetracking")).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(page.getByText("com.elemo.accounting")).toBeVisible({
-      timeout: 30_000,
-    });
+    await ensureInstancePlugin(page, "com.elemo.timetracking", timeTrackingZip);
+    await ensureInstancePlugin(page, "com.elemo.accounting", accountingZip);
 
     await page.goto(
       `/settings/organizations/${workspace.organizationSlug}/plugins`

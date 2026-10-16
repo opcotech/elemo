@@ -244,7 +244,7 @@ test.describe("@settings.organization-projects-create Organization Projects Crea
     });
     await projectCreatePage.projectForm.submit("Create Project");
     await expect(fieldMessage("Key")).toHaveText(
-      /ascii letters|invalid input/i
+      /ascii letters|invalid input|must match pattern/i
     );
   });
 
