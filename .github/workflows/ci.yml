@@ -140,7 +140,7 @@ jobs:
       - name: Execute unit tests
         run: mise run test-backend-unit
       - name: Stash test results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: "unit-test-results"
@@ -177,7 +177,7 @@ jobs:
       - name: Execute integration tests
         run: mise run test-backend-integration
       - name: Stash test results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: "integration-test-results"
@@ -273,7 +273,7 @@ jobs:
           cache-from: type=gha,scope=elemo-server
           cache-to: type=gha,mode=max,scope=elemo-server
       - name: Upload E2E image
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: elemo-server-image
           path: ${{ runner.temp }}/elemo-server.tar
@@ -304,7 +304,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
       - name: Download E2E image
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: elemo-server-image
           path: ${{ runner.temp }}
@@ -332,14 +332,14 @@ jobs:
         run: |
           pnpm --dir web test:e2e --project "${{ matrix.project }}" --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
       - name: Upload test results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "e2e-test-results-${{ matrix.project }}-shard-${{ matrix.shard }}"
           path: web/test-results
           retention-days: 7
       - name: Upload Playwright report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}"
@@ -360,17 +360,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-mise
       - name: Unstash unit test results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: "unit-test-results"
       - name: Unstash integration test results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: "integration-test-results"
       - name: Combine coverage reports
         run: ./.github/scripts/combine-backend-coverage.sh
       - name: Upload coverage report
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: .coverage.out
           token: ${{ secrets.CODECOV_TOKEN }}
