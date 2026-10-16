@@ -145,9 +145,11 @@ consumed by GitHub workflows and PR process, not local development:
   `.coverage.integration.out` into `.coverage.out`
 - `wait-for-elemo.sh` waits until the API heartbeat endpoint responds
 - `cla-sync-signatures.py` imports CLA sign-off comments from a pull request
-  into `.github/cla.json` on that PR's branch
+  into `.github/cla.json`. Same-repository pull requests are updated on the
+  head branch. Fork pull requests are updated on `cla/pr-<number>` in this
+  repository, and `--push` opens a pull request to merge that branch.
 
 ```sh
 ./.github/scripts/cla-sync-signatures.py 425           # print merged JSON; do not push
-./.github/scripts/cla-sync-signatures.py 425 --push    # commit new signers onto the PR branch
+./.github/scripts/cla-sync-signatures.py 425 --push    # commit new signers; forks also open a signature pull request
 ```
