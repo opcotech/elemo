@@ -243,7 +243,7 @@ func NewRouter(strictServer StrictServer, serverConfig *config.ServerConfig, tra
 		middleware.RequestID,
 		// Single trusted reverse-proxy hop: use the rightmost X-Forwarded-For
 		// entry. Falls back to RemoteAddr in request logging when unset.
-		middleware.ClientIPFromXFF(),
+		middleware.ClientIPFromXFFTrustedProxies(1),
 		middleware.AllowContentEncoding("deflate", "gzip"),
 		middleware.Compress(5, "text/html", "text/css", "application/json"),
 		middleware.SetHeader("X-Frame-Options", "sameorigin"),
