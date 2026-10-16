@@ -3,7 +3,7 @@
   "image": "mcr.microsoft.com/devcontainers/base:bullseye",
   "features": {
     "ghcr.io/devcontainers-extra/features/mise:1": {
-      "version": "2026.9.1"
+      "version": "2026.10.12"
     },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "version": "latest"
