@@ -16,11 +16,10 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "useUnknownInCatchVariables": false,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@elemo/plugin-sdk": ["packages/plugin-sdk/src/index.ts"],
-      "@elemo/plugin-ui": ["packages/plugin-ui/src/index.ts"]
+      "@/*": ["./src/*"],
+      "@elemo/plugin-sdk": ["./packages/plugin-sdk/src/index.ts"],
+      "@elemo/plugin-ui": ["./packages/plugin-ui/src/index.ts"]
     }
   },
   "include": [".storybook", "src", "packages", "tests", "vite.config.ts"]
