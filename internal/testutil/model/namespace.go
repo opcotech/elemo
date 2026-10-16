@@ -15,6 +15,7 @@ func NewCreateNamespaceOpts(creatorID, orgID model.ID) repository.CreateNamespac
 		Name:        pkg.GenerateRandomString(10),
 		Slug:        UniqueSlug(),
 		Description: pkg.GenerateRandomString(10),
+		Logo:        "https://example.com/logo.png",
 		CreatorID:   creatorID,
 		OrgID:       orgID,
 	}
@@ -27,6 +28,7 @@ func NewRepositoryNamespace() *repository.Namespace {
 		Slug:          UniqueSlug(),
 		Name:          pkg.GenerateRandomString(10),
 		Description:   pkg.GenerateRandomString(10),
+		Logo:          "https://example.com/logo.png",
 		ProjectCount:  convert.ToPointer(int64(0)),
 		DocumentCount: convert.ToPointer(int64(0)),
 		CreatedAt:     convert.ToPointer(time.Now().UTC()),

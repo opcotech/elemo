@@ -141,9 +141,17 @@ export function NamespaceSwitcher() {
                 />
               }
             >
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-subtle text-primary-on-subtle group-data-[collapsible=icon]:size-7">
-                <Layers3Icon className="size-4" aria-hidden />
-              </div>
+              {activeNamespace?.logo ? (
+                <img
+                  src={activeNamespace.logo}
+                  alt=""
+                  className="size-8 shrink-0 rounded-md object-cover group-data-[collapsible=icon]:size-7"
+                />
+              ) : (
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary-subtle text-primary-on-subtle group-data-[collapsible=icon]:size-7">
+                  <Layers3Icon className="size-4" aria-hidden />
+                </div>
+              )}
               <div className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="block truncate font-medium text-sm">
                   {switcherLabel}
@@ -192,9 +200,17 @@ export function NamespaceSwitcher() {
                         }
                         onSelect={() => selectNamespace(namespace)}
                       >
-                        <span className="flex size-6 items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground text-xs">
-                          {namespace.name.slice(0, 1).toUpperCase()}
-                        </span>
+                        {namespace.logo ? (
+                          <img
+                            src={namespace.logo}
+                            alt=""
+                            className="size-6 rounded-md object-cover"
+                          />
+                        ) : (
+                          <span className="flex size-6 items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground text-xs">
+                            {namespace.name.slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
                         <span className="min-w-0 flex-1 truncate">
                           {namespace.name}
                         </span>

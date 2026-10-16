@@ -38,6 +38,7 @@ type Namespace struct {
 	ID            model.ID   `json:"id"`
 	Slug          string     `json:"slug"`
 	Name          string     `json:"name"`
+	Logo          string     `json:"logo"`
 	Description   string     `json:"description"`
 	ProjectCount  *int64     `json:"project_count"`
 	DocumentCount *int64     `json:"document_count"`
@@ -55,6 +56,7 @@ type AccessibleNamespace struct {
 type CreateNamespaceOpts struct {
 	Name        string
 	Slug        string
+	Logo        string
 	Description string
 	CreatorID   model.ID
 	OrgID       model.ID
@@ -64,6 +66,7 @@ type CreateNamespaceOpts struct {
 // Undefined fields (Defined == false) are left unchanged.
 type UpdateNamespaceOpts struct {
 	Name        optional.Optional[string]
+	Logo        optional.Optional[string]
 	Description optional.Optional[string]
 }
 
@@ -79,6 +82,13 @@ func (o UpdateNamespaceOpts) patch() map[string]any {
 			p["description"] = nil
 		} else {
 			p["description"] = *o.Description.Value
+		}
+	}
+	if o.Logo.Defined {
+		if o.Logo.Value == nil {
+			p["logo"] = nil
+		} else {
+			p["logo"] = *o.Logo.Value
 		}
 	}
 
@@ -146,7 +156,7 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 	cypher := `
 	MATCH (u:` + opts.CreatorID.Label() + ` {id: $creator_id})
 	MATCH (org:` + opts.OrgID.Label() + ` {id: $org_id})
-	CREATE (ns:` + id.Label() + ` {id: $id, slug: $slug, organization_id: $org_id, name: $name, description: $description, created_at: datetime($created_at)}),
+	CREATE (ns:` + id.Label() + ` {id: $id, slug: $slug, logo: $logo, organization_id: $org_id, name: $name, description: $description, created_at: datetime($created_at)}),
 		(org)-[:` + EdgeKindHasNamespace.String() + ` {id: $has_ns_id, created_at: datetime($created_at)}]->(ns),
 		(ns)-[:` + EdgeKindInScopeOf.String() + ` {id: $scope_id, created_at: datetime($created_at)}]->(org)`
 
@@ -154,6 +164,7 @@ func (r *Neo4jNamespaceRepository) Create(ctx context.Context, opts CreateNamesp
 		"id":          id.String(),
 		"slug":        opts.Slug,
 		"name":        opts.Name,
+		"logo":        opts.Logo,
 		"description": opts.Description,
 		"created_at":  createdAt.Format(time.RFC3339Nano),
 		"creator_id":  opts.CreatorID.String(),

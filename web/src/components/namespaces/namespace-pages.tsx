@@ -98,11 +98,12 @@ export function NamespaceOverviewPage({
         type="namespace"
         eyebrow={organization?.name ?? "Namespace"}
         title={namespace.name}
+        imageUrl={namespace.logo}
         description={
           namespace.description ||
           "An operational context for projects, work, and knowledge."
         }
-        showIcon={false}
+        showIcon
         actions={
           <PageActions
             primary={
