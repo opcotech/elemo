@@ -25,25 +25,66 @@ jobs:
       github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve PR head branch
+      - name: Resolve signature branch
         id: head
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "issue_comment" ]; then
-            number="${{ github.event.issue.number }}"
+          sign_phrase="I have read the CLA Document and I hereby sign the CLA"
+          if [ "${EVENT_NAME}" = "issue_comment" ]; then
+            number="${ISSUE_NUMBER}"
           else
-            number="${{ github.event.pull_request.number }}"
+            number="${PR_NUMBER}"
           fi
-          meta="$(gh api "repos/${{ github.repository }}/pulls/${number}")"
-          head_ref="$(echo "${meta}" | jq -r .head.ref)"
-          head_repo="$(echo "${meta}" | jq -r .head.repo.full_name)"
-          if [ "${head_repo}" != "${{ github.repository }}" ]; then
-            echo "CLA signatures are committed onto the PR branch. Open the PR from a branch in ${{ github.repository }} (forks cannot receive that commit)."
-            exit 1
+          meta="$(gh api "repos/${REPOSITORY}/pulls/${number}")"
+          head_ref="$(printf '%s' "${meta}" | jq -r '.head.ref')"
+          head_repo="$(printf '%s' "${meta}" | jq -r '.head.repo.full_name // empty')"
+          base_ref="$(printf '%s' "${meta}" | jq -r '.base.ref')"
+          sig_branch="cla/pr-${number}"
+          {
+            echo "pr=${number}"
+            echo "base=${base_ref}"
+            echo "sig_branch=${sig_branch}"
+          } >> "${GITHUB_OUTPUT}"
+
+          if [ -n "${head_repo}" ] && [ "${head_repo}" = "${REPOSITORY}" ]; then
+            {
+              echo "fork=false"
+              echo "branch=${head_ref}"
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
           fi
-          echo "branch=${head_ref}" >> "${GITHUB_OUTPUT}"
+
+          echo "fork=true" >> "${GITHUB_OUTPUT}"
+          set +e
+          ref_out="$(gh api "repos/${REPOSITORY}/git/ref/heads/${sig_branch}" 2>&1)"
+          ref_status=$?
+          set -e
+          if [ "${ref_status}" -eq 0 ]; then
+            echo "branch=${sig_branch}" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          if ! printf '%s' "${ref_out}" | grep -q "Not Found"; then
+            printf '%s\n' "${ref_out}" >&2
+            exit "${ref_status}"
+          fi
+
+          if [ "${EVENT_NAME}" = "issue_comment" ] && [ "${COMMENT_BODY}" = "${sign_phrase}" ]; then
+            base_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/${base_ref}" --jq .object.sha)"
+            gh api --method POST "repos/${REPOSITORY}/git/refs" \
+              -f "ref=refs/heads/${sig_branch}" \
+              -f "sha=${base_sha}" >/dev/null
+            echo "branch=${sig_branch}" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "branch=${base_ref}" >> "${GITHUB_OUTPUT}"
 
       - name: CLA Assistant
         uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
@@ -62,3 +103,53 @@ jobs:
             Please read the [CLA](https://github.com/opcotech/elemo/blob/main/CLA.md), then reply with:
 
             I have read the CLA Document and I hereby sign the CLA
+
+      - name: Open signature pull request
+        if: success() && steps.head.outputs.fork == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          BASE: ${{ steps.head.outputs.base }}
+          SIG_BRANCH: ${{ steps.head.outputs.sig_branch }}
+          PR: ${{ steps.head.outputs.pr }}
+        run: |
+          set -euo pipefail
+          set +e
+          ref_out="$(gh api "repos/${REPOSITORY}/git/ref/heads/${SIG_BRANCH}" 2>&1)"
+          ref_status=$?
+          set -e
+          if [ "${ref_status}" -ne 0 ]; then
+            if printf '%s' "${ref_out}" | grep -q "Not Found"; then
+              echo "signature branch ${SIG_BRANCH} does not exist"
+              exit 0
+            fi
+            printf '%s\n' "${ref_out}" >&2
+            exit "${ref_status}"
+          fi
+
+          base_enc="$(jq -rn --arg v "${BASE}" '$v|@uri')"
+          head_enc="$(jq -rn --arg v "${SIG_BRANCH}" '$v|@uri')"
+          ahead="$(gh api "repos/${REPOSITORY}/compare/${base_enc}...${head_enc}" --jq .ahead_by)"
+          if [ "${ahead}" = "0" ] || [ "${ahead}" = "null" ]; then
+            echo "signature branch ${SIG_BRANCH} is not ahead of ${BASE}"
+            exit 0
+          fi
+
+          owner="${REPOSITORY%%/*}"
+          existing="$(
+            gh api "repos/${REPOSITORY}/pulls?state=open&per_page=100&base=${base_enc}&head=${owner}:${head_enc}" \
+              | jq --arg head "${SIG_BRANCH}" --arg base "${BASE}" \
+                '[.[] | select(.head.ref == $head and .base.ref == $base)] | length'
+          )"
+          if [ "${existing}" != "0" ]; then
+            echo "signature pull request already open for ${SIG_BRANCH}"
+            exit 0
+          fi
+
+          body="Signatures for #${PR} are stored on this branch because the pull request was opened from a fork. Merging this pull request updates \`.github/cla.json\` on the base branch."
+          gh pr create \
+            --repo "${REPOSITORY}" \
+            --base "${BASE}" \
+            --head "${SIG_BRANCH}" \
+            --title "chore: record CLA signature from #${PR}" \
+            --body "${body}"

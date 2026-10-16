@@ -473,8 +473,10 @@ Contributions are accepted under the [Contributor License Agreement](CLA.md). Th
 Technologies FZC license your contribution under FSL-1.1-ALv2 and under commercial terms. Signing also
 grants those licenses for your prior Elemo contributions.
 
-The CLA bot comments on pull requests with the exact reply needed to sign. Signatures are committed
-onto the PR branch as [`.github/cla.json`](.github/cla.json) (main cannot be pushed to directly). The
-bot only records PR committers; to import other matching comments, run
+The CLA bot comments on pull requests with the exact reply needed to sign. For a pull request opened
+from this repository, signatures are committed onto that pull request's branch as
+[`.github/cla.json`](.github/cla.json), because main cannot be pushed to directly. For a pull request
+opened from a fork, the bot commits the signature onto `cla/pr-<number>` in this repository and opens
+a pull request to merge it. The bot only records PR committers; to import other matching comments, run
 `./.github/scripts/cla-sync-signatures.py <pr> --push`. Corporate-owned work also requires the Corporate CLA
 section of that document.
