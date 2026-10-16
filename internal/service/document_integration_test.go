@@ -43,16 +43,8 @@ func (s *DocumentServiceIntegrationTestSuite) SetupSuite() {
 	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
 	s.Require().NoError(err)
 
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
 	s.staticFileService, err = service.NewStaticFileService(
 		s.StaticFileRepository,
-		licenseService,
 	)
 	s.Require().NoError(err)
 
@@ -65,7 +57,6 @@ func (s *DocumentServiceIntegrationTestSuite) SetupSuite() {
 
 	s.documentService, err = service.NewDocumentService(
 		s.DocumentRepo,
-		licenseService,
 		permissionService,
 		s.staticFileService,
 		searchService,

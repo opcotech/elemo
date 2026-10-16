@@ -10,7 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
@@ -99,7 +98,6 @@ func newPluginGraphHarnessWithConfig(
 	tracer := mocktrace.NewMockTracer(ctrl)
 	tracer.EXPECT().Start(gomock.Any(), gomock.Any(), gomock.Len(0)).Return(ctx, span).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
 	perm := mocksvc.NewMockPermissionService(ctrl)
 	repo := mockrepo.NewMockPluginRepository(ctrl)
 	extRepo := mockrepo.NewMockExtensionRepository(ctrl)
@@ -109,14 +107,12 @@ func newPluginGraphHarnessWithConfig(
 		repo,
 		extRepo,
 		perm,
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(mocklog.NewMockLogger(ctrl)),
 		service.WithTracer(tracer),
 	)
 	require.NoError(t, err)
 
-	lic.EXPECT().HasFeature(gomock.Any(), license.FeaturePlugins).Return(true, nil).AnyTimes()
 	repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 		PluginID: manifest.ID,
 		Version:  manifest.Version,
@@ -159,7 +155,7 @@ func TestPluginService_CreateNodeStampsUserID(t *testing.T) {
 	require.NoError(t, manifest.Validate())
 	h := newPluginGraphHarness(t, manifest)
 
-	h.extRepo.EXPECT().Create(h.ctx, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, opts repository.CreateExtensionOpts) (*model.Extension, error) {
 			assert.Equal(t, h.userID.String(), opts.Properties["user_id"])
 			assert.Equal(t, int64(60), opts.Properties["seconds"])
@@ -197,7 +193,7 @@ func TestPluginService_ListNodesReturnsParent(t *testing.T) {
 	parent := h.issueID
 	ext.Parent = &parent
 
-	h.extRepo.EXPECT().List(h.ctx, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().List(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, filter repository.ListExtensionFilter) (repository.Page[*model.Extension], error) {
 			assert.Equal(t, "TimeEntry", filter.Kind)
 			assert.Equal(t, h.issueID, filter.Scope)
@@ -238,8 +234,8 @@ func TestPluginService_MoveNodeRetargetsDomainEdges(t *testing.T) {
 	relType, err := elemoplugin.RelationType(manifest.ID, "LOGGED_ON")
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, existing.ID).Return(existing, nil)
-	h.extRepo.EXPECT().Move(h.ctx, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, existing.ID).Return(existing, nil)
+	h.extRepo.EXPECT().Move(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, opts repository.MoveExtensionOpts) (*model.Extension, error) {
 			assert.Equal(t, existing.ID, opts.ID)
 			assert.Equal(t, target, opts.Parent)
@@ -269,9 +265,9 @@ func TestPluginService_CreateRelationToCallerUser(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, from.ID).Return(from, nil)
-	h.extRepo.EXPECT().CountRelations(h.ctx, manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(0), int64(0), nil)
-	h.extRepo.EXPECT().CreateRelation(h.ctx, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, from.ID).Return(from, nil)
+	h.extRepo.EXPECT().CountRelations(gomock.Any(), manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(0), int64(0), nil)
+	h.extRepo.EXPECT().CreateRelation(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, opts repository.CreateExtensionRelationOpts) (*model.ExtensionRelation, error) {
 			assert.Equal(t, "LOGGED_BY", opts.Kind)
 			assert.Equal(t, from.ID, opts.From)
@@ -307,8 +303,8 @@ func TestPluginService_CreateRelationEnforcesCardinality(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, from.ID).Return(from, nil)
-	h.extRepo.EXPECT().CountRelations(h.ctx, manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(1), int64(0), nil)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, from.ID).Return(from, nil)
+	h.extRepo.EXPECT().CountRelations(gomock.Any(), manifest.ID, "LOGGED_BY", from.ID, h.userID).Return(int64(1), int64(0), nil)
 
 	_, err = h.svc.CreateRelation(h.ctx, manifest.ID, service.CreateExtensionRelationOpts{
 		Kind: "LOGGED_BY",
@@ -355,8 +351,8 @@ func TestPluginService_CreateRelationRejectsOtherUser(t *testing.T) {
 	require.NoError(t, err)
 	other := model.MustNewID(model.ResourceTypeUser)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, from.ID).Return(from, nil)
-	h.extRepo.EXPECT().CountRelations(h.ctx, manifest.ID, "LOGGED_BY", from.ID, other).Return(int64(0), int64(0), nil)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, from.ID).Return(from, nil)
+	h.extRepo.EXPECT().CountRelations(gomock.Any(), manifest.ID, "LOGGED_BY", from.ID, other).Return(int64(0), int64(0), nil)
 
 	_, err = h.svc.CreateRelation(h.ctx, manifest.ID, service.CreateExtensionRelationOpts{
 		Kind: "LOGGED_BY",
@@ -469,10 +465,10 @@ func TestPluginService_CreateRelationForeignBinding(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, "com.elemo.timetracking", from.ID).Return(from, nil)
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, to.ID).Return(to, nil)
-	h.extRepo.EXPECT().CountRelations(h.ctx, manifest.ID, "COUNTED_AGAINST", from.ID, to.ID).Return(int64(0), int64(0), nil)
-	h.extRepo.EXPECT().CreateRelation(h.ctx, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().Get(gomock.Any(), "com.elemo.timetracking", from.ID).Return(from, nil)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, to.ID).Return(to, nil)
+	h.extRepo.EXPECT().CountRelations(gomock.Any(), manifest.ID, "COUNTED_AGAINST", from.ID, to.ID).Return(int64(0), int64(0), nil)
+	h.extRepo.EXPECT().CreateRelation(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, opts repository.CreateExtensionRelationOpts) (*model.ExtensionRelation, error) {
 			assert.Equal(t, "COUNTED_AGAINST", opts.Kind)
 			assert.Equal(t, from.ID, opts.From)
@@ -528,7 +524,7 @@ func TestPluginService_GetNode(t *testing.T) {
 	require.NoError(t, err)
 	ext.Parent = &h.issueID
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
 
 	got, err := h.svc.GetNode(h.ctx, manifest.ID, ext.ID, "")
 	require.NoError(t, err)
@@ -543,7 +539,7 @@ func TestPluginService_GetNodeNotFound(t *testing.T) {
 	h := newPluginGraphHarness(t, manifest)
 	id := model.MustNewID(model.ResourceTypeExtension)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, id).Return(nil, repository.ErrNotFound)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, id).Return(nil, repository.ErrNotFound)
 
 	_, err := h.svc.GetNode(h.ctx, manifest.ID, id, "")
 	require.ErrorIs(t, err, repository.ErrNotFound)
@@ -562,8 +558,8 @@ func TestPluginService_UpdateNode(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
-	h.extRepo.EXPECT().Update(h.ctx, manifest.ID, ext.ID, gomock.Any()).DoAndReturn(
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
+	h.extRepo.EXPECT().Update(gomock.Any(), manifest.ID, ext.ID, gomock.Any()).DoAndReturn(
 		func(_ context.Context, _ string, _ model.ID, opts repository.UpdateExtensionOpts) (*model.Extension, error) {
 			assert.Equal(t, int64(90), opts.Properties["seconds"])
 			updated := *ext
@@ -590,8 +586,8 @@ func TestPluginService_DeleteNode(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h.extRepo.EXPECT().Get(h.ctx, manifest.ID, ext.ID).Return(ext, nil)
-	h.extRepo.EXPECT().Delete(h.ctx, manifest.ID, ext.ID).Return(nil)
+	h.extRepo.EXPECT().Get(gomock.Any(), manifest.ID, ext.ID).Return(ext, nil)
+	h.extRepo.EXPECT().Delete(gomock.Any(), manifest.ID, ext.ID).Return(nil)
 
 	require.NoError(t, h.svc.DeleteNode(h.ctx, manifest.ID, ext.ID))
 }
@@ -603,7 +599,7 @@ func TestPluginService_DeleteRelation(t *testing.T) {
 	require.NoError(t, manifest.Validate())
 	h := newPluginGraphHarness(t, manifest)
 
-	h.extRepo.EXPECT().DeleteRelation(h.ctx, manifest.ID, "rel-1").Return(nil)
+	h.extRepo.EXPECT().DeleteRelation(gomock.Any(), manifest.ID, "rel-1").Return(nil)
 	require.NoError(t, h.svc.DeleteRelation(h.ctx, manifest.ID, "rel-1"))
 }
 
@@ -614,7 +610,7 @@ func TestPluginService_DeleteRelationNotFound(t *testing.T) {
 	require.NoError(t, manifest.Validate())
 	h := newPluginGraphHarness(t, manifest)
 
-	h.extRepo.EXPECT().DeleteRelation(h.ctx, manifest.ID, "missing").Return(repository.ErrNotFound)
+	h.extRepo.EXPECT().DeleteRelation(gomock.Any(), manifest.ID, "missing").Return(repository.ErrNotFound)
 	err := h.svc.DeleteRelation(h.ctx, manifest.ID, "missing")
 	require.ErrorIs(t, err, repository.ErrNotFound)
 }

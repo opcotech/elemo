@@ -10,7 +10,7 @@ import (
 	"github.com/rs/xid"
 
 	"github.com/opcotech/elemo/internal/email"
-	"github.com/opcotech/elemo/internal/license"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/auth"
@@ -162,8 +162,9 @@ type OrganizationService interface {
 	// RevokeInvitation revokes an invitation for a user to join an organization.
 	// If the organization or user does not exist, an error is returned.
 	RevokeInvitation(ctx context.Context, orgID, userID model.ID) error
-	// AcceptInvitation accepts an invitation to join an organization using an invitation token.
-	// If the user is pending, they will be activated. If a password is provided, it will be set.
+	// AcceptInvitation is the product invitation-accept flow. Persistence
+	// of activation, invitation deletion, and membership is atomic in
+	// UserRepository.AcceptInvitation so seat accounting cannot race.
 	AcceptInvitation(ctx context.Context, orgID model.ID, opts AcceptOrganizationInvitationOpts) error
 	// Delete deletes an organization. If the organization does not exist, an
 	// error is returned.
@@ -178,7 +179,7 @@ type organizationService struct {
 	userTokenRepo       repository.UserTokenRepository
 	roleRepo            repository.RoleRepository
 	permissionService   PermissionService
-	licenseService      LicenseService
+	seats               entitlement.SeatPolicy
 	emailService        EmailService
 	notificationService NotificationService
 	searchService       SearchService
@@ -209,8 +210,9 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrOrganizationCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationCreate, err)
 	}
 
 	if err := opts.Validate(); err != nil {
@@ -219,15 +221,6 @@ func (s *organizationService) Create(ctx context.Context, owner model.ID, opts C
 
 	if err := requireAction(ctx, s.permissionService, model.InstallationID(), model.ActionOrganizationCreate); err != nil {
 		return nil, errors.Join(ErrOrganizationCreate, err)
-	}
-
-	// If the newly created organization is not active, e.g. a company is
-	// migrating ex-employees, do not check the license quota as that only
-	// counts against active organizations.
-	if opts.Status == model.OrganizationStatusActive {
-		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
-			return nil, errors.Join(ErrOrganizationCreate, ErrQuotaExceeded)
-		}
 	}
 
 	organization, err := s.organizationRepo.Create(ctx, repository.CreateOrganizationOpts{
@@ -365,8 +358,9 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrOrganizationUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrOrganizationUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -375,15 +369,6 @@ func (s *organizationService) Update(ctx context.Context, id model.ID, opts Upda
 
 	if err := requireAction(ctx, s.permissionService, id, model.ActionOrganizationUpdate); err != nil {
 		return nil, errors.Join(ErrOrganizationUpdate, err)
-	}
-
-	// Check if the organization is being activated is within the license
-	// quota. It could be a possible loophole to activate a previously deleted
-	// organization to bypass the quota check.
-	if opts.Status.Defined && opts.Status.Value != nil && *opts.Status.Value == model.OrganizationStatusActive {
-		if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaOrganizations); !ok || err != nil {
-			return nil, errors.Join(ErrOrganizationUpdate, ErrQuotaExceeded)
-		}
 	}
 
 	organization, err := s.organizationRepo.Update(ctx, id, repository.UpdateOrganizationOpts{
@@ -406,8 +391,9 @@ func (s *organizationService) Delete(ctx context.Context, id model.ID, force boo
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -443,8 +429,9 @@ func (s *organizationService) AddMember(ctx context.Context, orgID, memberID mod
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/AddMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationMemberAdd, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationMemberAdd, err)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -506,8 +493,9 @@ func (s *organizationService) RemoveMember(ctx context.Context, orgID, memberID 
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/RemoveMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationMemberRemove, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationMemberRemove, err)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -577,8 +565,9 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/InviteMember")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationMemberInvite, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -591,6 +580,30 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 
 	if err := requireAction(ctx, s.permissionService, orgID, model.ActionOrganizationMembersManage); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
+	}
+
+	if !opts.RoleID.IsNil() {
+		role, err := s.roleRepo.Get(ctx, opts.RoleID, orgID, repository.RoleDetailProjection())
+		if err != nil {
+			return errors.Join(ErrOrganizationMemberInvite, err)
+		}
+		roleActions, err := model.ParseActions(role.Actions)
+		if err != nil {
+			return errors.Join(ErrOrganizationMemberInvite, err)
+		}
+		heldActions, err := s.permissionService.CtxUserEffectiveActions(ctx, orgID)
+		if err != nil {
+			return errors.Join(ErrOrganizationMemberInvite, err)
+		}
+		held := make(map[model.Action]struct{}, len(heldActions))
+		for _, action := range heldActions {
+			held[action] = struct{}{}
+		}
+		for _, action := range roleActions {
+			if _, ok := held[action]; !ok {
+				return errors.Join(ErrOrganizationMemberInvite, model.ErrPrivilegeEscalation)
+			}
+		}
 	}
 
 	user, err := s.userRepo.GetByEmail(ctx, opts.Email, repository.UserDetailProjection())
@@ -661,7 +674,7 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 		tokenData["role_id"] = opts.RoleID.String()
 	}
 
-	public, secret, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
+	public, tokenHash, err := auth.GenerateToken(model.UserTokenContextInvite.String(), tokenData)
 	if err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
 	}
@@ -669,7 +682,7 @@ func (s *organizationService) InviteMember(ctx context.Context, orgID model.ID, 
 	if _, err := s.userTokenRepo.Create(ctx, repository.CreateUserTokenOpts{
 		UserID:  user.ID,
 		SentTo:  opts.Email,
-		Token:   secret,
+		Token:   tokenHash,
 		Context: model.UserTokenContextInvite,
 	}); err != nil {
 		return errors.Join(ErrOrganizationMemberInvite, err)
@@ -708,8 +721,9 @@ func (s *organizationService) RevokeInvitation(ctx context.Context, orgID, userI
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/RevokeInvitation")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrOrganizationInviteRevoke, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationInviteRevoke, err)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -784,6 +798,11 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 	ctx, span := s.tracer.Start(ctx, "service.organizationService/AcceptInvitation")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrOrganizationInviteAccept, err)
+	}
+
 	if err := orgID.Validate(); err != nil {
 		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
@@ -846,50 +865,40 @@ func (s *organizationService) AcceptInvitation(ctx context.Context, orgID model.
 	}
 
 	if user.Status != model.UserStatusPending && user.Status != model.UserStatusActive {
-		return errors.Join(ErrOrganizationInviteAccept, errors.New("user account is not in a valid state to accept invitations"))
+		return errors.Join(ErrOrganizationInviteAccept, ErrOrganizationMemberInvalidStatus)
 	}
 
+	var (
+		hashedPassword string
+		activation     *repository.ActivationAuthorization
+	)
 	if user.Status == model.UserStatusPending {
 		if opts.Password == "" {
-			return errors.Join(ErrOrganizationInviteAccept, errors.New("password is required for pending users"))
+			return errors.Join(ErrOrganizationInviteAccept, ErrOrganizationInvitePassword)
 		}
 
-		hashedPassword := password.HashPassword(opts.Password)
-
-		if _, err := s.userRepo.Update(ctx, userID, repository.UpdateUserOpts{
-			Status:   optional.Some(model.UserStatusActive),
-			Password: optional.Some(hashedPassword),
-		}); err != nil {
+		hashedPassword = password.HashPassword(opts.Password)
+		auth, err := activationFromPolicy(ctx, s.seats)
+		if err != nil {
 			return errors.Join(ErrOrganizationInviteAccept, err)
 		}
+		activation = auth
 	}
 
-	if err := s.organizationRepo.RemoveInvitation(ctx, orgID, userID); err != nil {
-		s.logger.Warn(ctx, "failed to remove invitation edge during acceptance",
-			log.WithError(err),
-			log.WithUserID(userID.String()),
-			slog.String("organization_id", orgID.String()))
-	}
-
-	if _, err := s.organizationRepo.Get(ctx, orgID, repository.OrganizationDetailProjection()); err != nil {
-		return errors.Join(ErrOrganizationInviteAccept, err)
-	}
-
-	if err := s.organizationRepo.AddMember(ctx, orgID, userID); err != nil {
-		return errors.Join(ErrOrganizationInviteAccept, err)
-	}
-
+	var roleID *model.ID
 	if roleIDStr, ok := tokenData["role_id"].(string); ok && roleIDStr != "" {
-		roleID, err := model.NewIDFromString(roleIDStr, model.ResourceTypeRole.String())
-		if err == nil && !roleID.IsNil() {
-			if err := s.permissionService.GrantRole(ctx, userID, orgID, roleID); err != nil {
-				s.logger.Warn(ctx, "failed to grant role during invitation acceptance",
-					log.WithError(err),
-					log.WithUserID(userID.String()),
-					slog.String("organization_id", orgID.String()),
-					slog.String("role_id", roleID.String()))
-			}
+		parsed, err := model.NewIDFromString(roleIDStr, model.ResourceTypeRole.String())
+		if err != nil || parsed.IsNil() {
+			return errors.Join(ErrOrganizationInviteAccept, ErrInvalidToken)
 		}
+		roleID = &parsed
+	}
+
+	if _, err := s.userRepo.AcceptInvitation(ctx, userID, orgID, hashedPassword, activation, roleID); err != nil {
+		if errors.Is(err, repository.ErrSeatLimitReached) {
+			err = entitlement.ErrSeatLimitReached
+		}
+		return errors.Join(ErrOrganizationInviteAccept, err)
 	}
 
 	if err := s.userTokenRepo.Delete(ctx, userID, model.UserTokenContextInvite); err != nil {
@@ -909,7 +918,7 @@ func NewOrganizationService(
 	userTokenRepo repository.UserTokenRepository,
 	roleRepo repository.RoleRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
+	seats entitlement.SeatPolicy,
 	emailService EmailService,
 	notificationService NotificationService,
 	searchService SearchService,
@@ -927,7 +936,7 @@ func NewOrganizationService(
 		userTokenRepo:       userTokenRepo,
 		roleRepo:            roleRepo,
 		permissionService:   permissionService,
-		licenseService:      licenseService,
+		seats:               seats,
 		emailService:        emailService,
 		notificationService: notificationService,
 		searchService:       searchService,
@@ -953,8 +962,8 @@ func NewOrganizationService(
 		return nil, ErrNoPermissionService
 	}
 
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
+	if svc.seats == nil {
+		return nil, entitlement.ErrNoSeatPolicy
 	}
 
 	if svc.emailService == nil {

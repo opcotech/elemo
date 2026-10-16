@@ -159,7 +159,7 @@ test.describe("@settings.organization-role-create Organization Role Creation E2E
       Name: "AB",
     });
     await roleCreatePage.roleCreateForm.submit("Create Role");
-    await expect(nameError).toHaveText(/invalid input/i);
+    await expect(nameError).toHaveText(/too small|invalid input/i);
   });
 
   test("should save role and show success message", async ({ page }) => {

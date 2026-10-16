@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -44,7 +43,6 @@ func TestNewNamespaceService(t *testing.T) {
 				return service.NewNamespaceService(
 					mockrepo.NewMockNamespaceRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
@@ -57,7 +55,6 @@ func TestNewNamespaceService(t *testing.T) {
 				return service.NewNamespaceService(
 					mockrepo.NewMockNamespaceRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					service.WithLogger(nil),
 				)
@@ -70,7 +67,6 @@ func TestNewNamespaceService(t *testing.T) {
 				return service.NewNamespaceService(
 					nil,
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
@@ -84,7 +80,6 @@ func TestNewNamespaceService(t *testing.T) {
 				return service.NewNamespaceService(
 					mockrepo.NewMockNamespaceRepository(nil),
 					nil,
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockSearchService(nil),
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
@@ -93,26 +88,11 @@ func TestNewNamespaceService(t *testing.T) {
 			wantErr: service.ErrNoPermissionService,
 		},
 		{
-			name: "new namespace service with no license service",
-			build: func(ctrl *gomock.Controller) (service.NamespaceService, error) {
-				return service.NewNamespaceService(
-					mockrepo.NewMockNamespaceRepository(nil),
-					mocksvc.NewMockPermissionService(nil),
-					nil,
-					mocksvc.NewMockSearchService(nil),
-					service.WithLogger(mocklog.NewMockLogger(ctrl)),
-					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
-				)
-			},
-			wantErr: service.ErrNoLicenseService,
-		},
-		{
 			name: "new namespace service with no search service",
 			build: func(ctrl *gomock.Controller) (service.NamespaceService, error) {
 				return service.NewNamespaceService(
 					mockrepo.NewMockNamespaceRepository(nil),
 					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockLicenseService(nil),
 					nil,
 					service.WithLogger(mocklog.NewMockLogger(ctrl)),
 					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
@@ -165,10 +145,10 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
+					namespaceRepo.EXPECT().Create(gomock.Any(), repository.CreateNamespaceOpts{
 						Name:        opts.Name,
 						Slug:        opts.Slug,
 						Description: opts.Description,
@@ -178,16 +158,12 @@ func TestNamespaceService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, orgID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), orgID, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mockSearchIndex(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -206,42 +182,6 @@ func TestNamespaceService_Create(t *testing.T) {
 			},
 		},
 		{
-			name: "create namespace with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ service.CreateNamespaceOpts) service.NamespaceService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.NamespaceService {
-						svc, err := service.NewNamespaceService(
-							mockrepo.NewMockNamespaceRepository(ctrl),
-							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
-							mocksvc.NewMockSearchService(ctrl),
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:   context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				orgID: orgID,
-				opts:  opts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "create namespace with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, orgID model.ID, _ service.CreateNamespaceOpts) service.NamespaceService {
@@ -249,20 +189,16 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, orgID, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), orgID, gomock.Any()).Return(false, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -289,16 +225,12 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -325,16 +257,12 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -361,10 +289,10 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Create(ctx, repository.CreateNamespaceOpts{
+					namespaceRepo.EXPECT().Create(gomock.Any(), repository.CreateNamespaceOpts{
 						Name:        opts.Name,
 						Slug:        opts.Slug,
 						Description: opts.Description,
@@ -374,16 +302,12 @@ func TestNamespaceService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, orgID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), orgID, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -410,20 +334,16 @@ func TestNamespaceService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, orgID, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), orgID, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -492,20 +412,19 @@ func TestNamespaceService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(repoNamespace, nil)
+					namespaceRepo.EXPECT().Get(gomock.Any(), id, repository.NamespaceDetailProjection()).Return(repoNamespace, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -531,17 +450,16 @@ func TestNamespaceService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							permSvc,
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -567,13 +485,12 @@ func TestNamespaceService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -599,20 +516,19 @@ func TestNamespaceService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Get", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Get(ctx, id, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNamespaceRead)
+					namespaceRepo.EXPECT().Get(gomock.Any(), id, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNamespaceRead)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -676,15 +592,14 @@ func TestNamespaceService_GetByRef(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
 
 		namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-		namespaceRepo.EXPECT().GetByRef(ctx, orgID, model.ID{}, repoNS.Slug, userID, repository.NamespaceDetailProjection()).Return(accessible, nil)
+		namespaceRepo.EXPECT().GetByRef(gomock.Any(), orgID, model.ID{}, repoNS.Slug, userID, repository.NamespaceDetailProjection()).Return(accessible, nil)
 
 		svc, err := service.NewNamespaceService(
 			namespaceRepo,
 			mocksvc.NewMockPermissionService(ctrl),
-			mocksvc.NewMockLicenseService(ctrl),
 			mocksvc.NewMockSearchService(ctrl),
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(tracer),
@@ -703,15 +618,14 @@ func TestNamespaceService_GetByRef(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/GetByRef", gomock.Len(0)).Return(ctx, span)
 
 		namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-		namespaceRepo.EXPECT().GetByRef(ctx, orgID, repoNS.ID, "", userID, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNotFound)
+		namespaceRepo.EXPECT().GetByRef(gomock.Any(), orgID, repoNS.ID, "", userID, repository.NamespaceDetailProjection()).Return(nil, repository.ErrNotFound)
 
 		svc, err := service.NewNamespaceService(
 			namespaceRepo,
 			mocksvc.NewMockPermissionService(ctrl),
-			mocksvc.NewMockLicenseService(ctrl),
 			mocksvc.NewMockSearchService(ctrl),
 			service.WithLogger(mocklog.NewMockLogger(ctrl)),
 			service.WithTracer(tracer),
@@ -756,10 +670,10 @@ func TestNamespaceService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().ListForOrganization(ctx, repository.NamespaceListQuery{
+					namespaceRepo.EXPECT().ListForOrganization(gomock.Any(), repository.NamespaceListQuery{
 						OrgID:      orgID,
 						ActorID:    userID,
 						Page:       repository.CursorPage{Size: 10},
@@ -774,7 +688,6 @@ func TestNamespaceService_List(t *testing.T) {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -801,13 +714,12 @@ func TestNamespaceService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -834,13 +746,12 @@ func TestNamespaceService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -867,13 +778,12 @@ func TestNamespaceService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -900,10 +810,10 @@ func TestNamespaceService_List(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/List", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().ListForOrganization(ctx, repository.NamespaceListQuery{
+					namespaceRepo.EXPECT().ListForOrganization(gomock.Any(), repository.NamespaceListQuery{
 						OrgID:      orgID,
 						ActorID:    userID,
 						Page:       repository.CursorPage{Size: 10},
@@ -918,7 +828,6 @@ func TestNamespaceService_List(t *testing.T) {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -998,10 +907,10 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().ListAccessible(ctx, repository.NamespaceListAccessibleQuery{
+					namespaceRepo.EXPECT().ListAccessible(gomock.Any(), repository.NamespaceListAccessibleQuery{
 						ActorID:    userID,
 						Page:       repository.CursorPage{Size: 10},
 						Order:      repository.SortDirectionDesc,
@@ -1012,7 +921,6 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1038,13 +946,12 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1070,13 +977,12 @@ func TestNamespaceService_ListAccessible(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/ListAccessible", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							mocksvc.NewMockLicenseService(ctrl),
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1146,26 +1052,22 @@ func TestNamespaceService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Update(ctx, id, repository.UpdateNamespaceOpts{
+					namespaceRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateNamespaceOpts{
 						Name:        opts.Name,
 						Description: opts.Description,
 					}).Return(repoNamespace, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mockSearchIndex(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1185,42 +1087,6 @@ func TestNamespaceService_Update(t *testing.T) {
 			want: want,
 		},
 		{
-			name: "update namespace with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateNamespaceOpts) service.NamespaceService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.NamespaceService {
-						svc, err := service.NewNamespaceService(
-							mockrepo.NewMockNamespaceRepository(ctrl),
-							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
-							mocksvc.NewMockSearchService(ctrl),
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				id:   namespaceID,
-				opts: opts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "update namespace with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateNamespaceOpts) service.NamespaceService {
@@ -1228,20 +1094,16 @@ func TestNamespaceService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1268,16 +1130,12 @@ func TestNamespaceService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1304,26 +1162,22 @@ func TestNamespaceService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Update", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Update(ctx, id, repository.UpdateNamespaceOpts{
+					namespaceRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateNamespaceOpts{
 						Name:        opts.Name,
 						Description: opts.Description,
 					}).Return(nil, repository.ErrNamespaceUpdate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1388,23 +1242,19 @@ func TestNamespaceService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Delete(ctx, id).Return(nil)
+					namespaceRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mockSearchDeleteByScope(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1422,41 +1272,6 @@ func TestNamespaceService_Delete(t *testing.T) {
 			},
 		},
 		{
-			name: "delete namespace with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) service.NamespaceService {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return func() service.NamespaceService {
-						svc, err := service.NewNamespaceService(
-							mockrepo.NewMockNamespaceRepository(ctrl),
-							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
-							mocksvc.NewMockSearchService(ctrl),
-							service.WithLogger(mocklog.NewMockLogger(ctrl)),
-							service.WithTracer(tracer),
-						)
-						if err != nil {
-							panic(err)
-						}
-						return svc
-					}()
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				id:  namespaceID,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "delete namespace with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) service.NamespaceService {
@@ -1464,20 +1279,16 @@ func TestNamespaceService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1503,16 +1314,12 @@ func TestNamespaceService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							mockrepo.NewMockNamespaceRepository(ctrl),
 							mocksvc.NewMockPermissionService(ctrl),
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),
@@ -1538,23 +1345,19 @@ func TestNamespaceService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.namespaceService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					namespaceRepo := mockrepo.NewMockNamespaceRepository(ctrl)
-					namespaceRepo.EXPECT().Delete(ctx, id).Return(repository.ErrNamespaceDelete)
+					namespaceRepo.EXPECT().Delete(gomock.Any(), id).Return(repository.ErrNamespaceDelete)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return func() service.NamespaceService {
 						svc, err := service.NewNamespaceService(
 							namespaceRepo,
 							permSvc,
-							licenseSvc,
 							mocksvc.NewMockSearchService(ctrl),
 							service.WithLogger(mocklog.NewMockLogger(ctrl)),
 							service.WithTracer(tracer),

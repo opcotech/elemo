@@ -633,7 +633,6 @@ func NewPluginService(
 	repo repository.PluginRepository,
 	extensionRepo repository.ExtensionRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	issueService IssueService,
 	projectService ProjectService,
 	userService UserService,
@@ -656,9 +655,6 @@ func NewPluginService(
 	if permissionService == nil {
 		return nil, ErrNoPermissionService
 	}
-	if licenseService == nil {
-		return nil, ErrNoLicenseService
-	}
 
 	svc := &pluginService{
 		runtime:           rt,
@@ -666,7 +662,6 @@ func NewPluginService(
 		repo:              repo,
 		extensionRepo:     extensionRepo,
 		permissionService: permissionService,
-		licenseService:    licenseService,
 	}
 	if bus != nil {
 		svc.eventBus = bus

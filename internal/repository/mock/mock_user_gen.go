@@ -42,6 +42,51 @@ func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 	return m.recorder
 }
 
+// AcceptInvitation mocks base method.
+func (m *MockUserRepository) AcceptInvitation(ctx context.Context, userID, orgID model.ID, password string, activation *repository.ActivationAuthorization, roleID *model.ID) (*repository.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AcceptInvitation", ctx, userID, orgID, password, activation, roleID)
+	ret0, _ := ret[0].(*repository.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AcceptInvitation indicates an expected call of AcceptInvitation.
+func (mr *MockUserRepositoryMockRecorder) AcceptInvitation(ctx, userID, orgID, password, activation, roleID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptInvitation", reflect.TypeOf((*MockUserRepository)(nil).AcceptInvitation), ctx, userID, orgID, password, activation, roleID)
+}
+
+// Activate mocks base method.
+func (m *MockUserRepository) Activate(ctx context.Context, id model.ID, opts repository.UpdateUserOpts, auth repository.ActivationAuthorization) (*repository.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Activate", ctx, id, opts, auth)
+	ret0, _ := ret[0].(*repository.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Activate indicates an expected call of Activate.
+func (mr *MockUserRepositoryMockRecorder) Activate(ctx, id, opts, auth any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockUserRepository)(nil).Activate), ctx, id, opts, auth)
+}
+
+// ActiveHumanCount mocks base method.
+func (m *MockUserRepository) ActiveHumanCount(ctx context.Context) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ActiveHumanCount", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ActiveHumanCount indicates an expected call of ActiveHumanCount.
+func (mr *MockUserRepositoryMockRecorder) ActiveHumanCount(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActiveHumanCount", reflect.TypeOf((*MockUserRepository)(nil).ActiveHumanCount), ctx)
+}
+
 // Create mocks base method.
 func (m *MockUserRepository) Create(ctx context.Context, opts repository.CreateUserOpts) (*repository.User, error) {
 	m.ctrl.T.Helper()

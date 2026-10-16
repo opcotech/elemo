@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { createIssue } from "./api";
 import { expect, test } from "./fixtures";
-import { seedOwnerWorkspace, waitForSuccessToast } from "./helpers";
+import {
+  ensureInstancePlugin,
+  seedOwnerWorkspace,
+  waitForSuccessToast,
+} from "./helpers";
 import type { OwnerWorkspace } from "./helpers/workspace";
 import { WorkItemPage } from "./pages";
 import { loginUser, USER_DEFAULT_PASSWORD } from "./utils/auth";
@@ -47,20 +51,19 @@ test.describe("@plugins.timetracking Time Tracking plugin", () => {
       password: USER_DEFAULT_PASSWORD,
     });
 
-    await page.goto("/settings/plugins");
-    await page.getByRole("button", { name: "Install package" }).click();
-    await page.locator('input[type="file"]').first().setInputFiles(pluginZip);
-    await waitForSuccessToast(page, "Plugin installed", { timeout: 30_000 });
-    await expect(page.getByText("com.elemo.timetracking")).toBeVisible({
-      timeout: 30_000,
-    });
+    await ensureInstancePlugin(page, "com.elemo.timetracking", pluginZip);
 
     await page.goto(
       `/settings/organizations/${workspace.organizationSlug}/plugins`
     );
-    await page.getByRole("button", { name: "Enable" }).click();
+    const timeTrackingRow = page
+      .locator("li")
+      .filter({ hasText: "com.elemo.timetracking" });
+    await timeTrackingRow.getByRole("button", { name: "Enable" }).click();
     await waitForSuccessToast(page, "Plugin enabled");
-    await expect(page.getByText("Enabled")).toBeVisible();
+    await expect(
+      timeTrackingRow.getByText("Enabled", { exact: true })
+    ).toBeVisible();
 
     const workItem = new WorkItemPage(page);
     await workItem.goto(
@@ -112,7 +115,9 @@ test.describe("@plugins.timetracking Time Tracking plugin", () => {
     await expect(
       filteredReport.getByTestId("timetracking-report-group")
     ).toHaveCount(1);
-    await expect(filteredReport.getByText(issue.key)).toBeVisible();
+    await expect(
+      filteredReport.getByRole("heading", { name: issue.key })
+    ).toBeVisible();
     await expect(
       filteredReport.getByTestId("timetracking-entry-note")
     ).toContainText("updated note");
@@ -152,7 +157,9 @@ test.describe("@plugins.timetracking Time Tracking plugin", () => {
     await expect(report.getByTestId("timetracking-report-group")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(report.getByText(other.key)).toBeVisible();
+    await expect(
+      report.getByRole("heading", { name: other.key })
+    ).toBeVisible();
     await report.getByRole("searchbox").fill("updated note");
     await expect(report.getByTestId("timetracking-report-group")).toHaveCount(
       1
@@ -191,9 +198,14 @@ test.describe("@plugins.timetracking Time Tracking plugin", () => {
     await page.goto(
       `/settings/organizations/${workspace.organizationSlug}/plugins`
     );
-    await page.getByRole("button", { name: "Disable" }).click();
+    const timeTrackingSettings = page
+      .locator("li")
+      .filter({ hasText: "com.elemo.timetracking" });
+    await timeTrackingSettings.getByRole("button", { name: "Disable" }).click();
     await waitForSuccessToast(page, "Plugin disabled");
-    await expect(page.getByText("Disabled")).toBeVisible();
+    await expect(
+      timeTrackingSettings.getByText("Disabled", { exact: true })
+    ).toBeVisible();
 
     await workItem.goto(
       workspace.organizationSlug,

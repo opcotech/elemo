@@ -235,7 +235,18 @@ jobs:
       - name: Storybook build
         run: pnpm --dir web storybook:build
       - name: Install Playwright Chromium for Storybook a11y
-        run: pnpm --dir web exec playwright install --with-deps chromium
+        working-directory: web
+        run: |
+          set -euo pipefail
+          cli="$(node --input-type=module -e '
+            import { createRequire } from "node:module";
+            import { dirname, join } from "node:path";
+            const require = createRequire(new URL("./package.json", import.meta.url));
+            const runnerDir = dirname(require.resolve("@storybook/test-runner/package.json"));
+            const fromRunner = createRequire(join(runnerDir, "package.json"));
+            console.log(join(dirname(fromRunner.resolve("playwright/package.json")), "cli.js"));
+          ')"
+          node "$cli" install --with-deps chromium chromium-headless-shell
       - name: Storybook a11y verification
         run: pnpm --dir web test-storybook:ci
 
@@ -305,7 +316,13 @@ jobs:
         run: |
           pnpm install --dir web --frozen-lockfile
           pnpm --dir web generate
-          pnpm --dir web exec playwright install --with-deps "${{ matrix.project }}"
+          browsers="${{ matrix.project }}"
+          if [ "$browsers" = "chromium" ]; then
+            browsers="chromium chromium-headless-shell"
+          fi
+          # Playwright 1.62 headless launches use chromium-headless-shell.
+          # shellcheck disable=SC2086
+          pnpm --dir web exec playwright install --with-deps $browsers
           ./scripts/dev-demo-init.sh --yes
           pnpm --dir web build
           sed -i s/CI=false/CI=true/g web/.env.test.local

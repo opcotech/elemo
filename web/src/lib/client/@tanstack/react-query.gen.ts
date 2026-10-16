@@ -114,9 +114,9 @@ import {
   v1ResourceCustomFieldValueDelete,
   v1ResourceCustomFieldValuePut,
   v1SearchGet,
+  v1SystemEntitlements,
   v1SystemHealth,
   v1SystemHeartbeat,
-  v1SystemLicense,
   v1SystemVersion,
   v1TodoDelete,
   v1TodoGet,
@@ -460,15 +460,15 @@ import type {
   V1SearchGetData,
   V1SearchGetError,
   V1SearchGetResponse,
+  V1SystemEntitlementsData,
+  V1SystemEntitlementsError,
+  V1SystemEntitlementsResponse,
   V1SystemHealthData,
   V1SystemHealthError,
   V1SystemHealthResponse,
   V1SystemHeartbeatData,
   V1SystemHeartbeatError,
   V1SystemHeartbeatResponse,
-  V1SystemLicenseData,
-  V1SystemLicenseError,
-  V1SystemLicenseResponse,
   V1SystemVersionData,
   V1SystemVersionError,
   V1SystemVersionResponse,
@@ -4129,26 +4129,26 @@ export const v1SystemHeartbeatOptions = (
     queryKey: v1SystemHeartbeatQueryKey(options),
   });
 
-export const v1SystemLicenseQueryKey = (
-  options?: Options<V1SystemLicenseData>
-) => createQueryKey("v1SystemLicense", options);
+export const v1SystemEntitlementsQueryKey = (
+  options?: Options<V1SystemEntitlementsData>
+) => createQueryKey("v1SystemEntitlements", options);
 
 /**
- * Get license info
+ * Get entitlement status
  *
- * Return the license information. The license information is only available to entitled users.
+ * Return deployment mode and AirGap seat entitlement status. Available only to installation administrators.
  */
-export const v1SystemLicenseOptions = (
-  options?: Options<V1SystemLicenseData>
+export const v1SystemEntitlementsOptions = (
+  options?: Options<V1SystemEntitlementsData>
 ) =>
   queryOptions<
-    V1SystemLicenseResponse,
-    V1SystemLicenseError,
-    V1SystemLicenseResponse,
-    ReturnType<typeof v1SystemLicenseQueryKey>
+    V1SystemEntitlementsResponse,
+    V1SystemEntitlementsError,
+    V1SystemEntitlementsResponse,
+    ReturnType<typeof v1SystemEntitlementsQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await v1SystemLicense({
+      const { data } = await v1SystemEntitlements({
         ...options,
         ...queryKey[0],
         signal,
@@ -4156,7 +4156,7 @@ export const v1SystemLicenseOptions = (
       });
       return data;
     },
-    queryKey: v1SystemLicenseQueryKey(options),
+    queryKey: v1SystemEntitlementsQueryKey(options),
   });
 
 export const v1SystemVersionQueryKey = (

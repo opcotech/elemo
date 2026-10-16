@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/event"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -94,7 +93,6 @@ type projectService struct {
 	runtime
 	projectRepo       repository.ProjectRepository
 	permissionService PermissionService
-	licenseService    LicenseService
 	searchService     SearchService
 }
 
@@ -145,8 +143,9 @@ func (s *projectService) Create(ctx context.Context, namespaceID model.ID, opts 
 	ctx, span := s.tracer.Start(ctx, "service.projectService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrProjectCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrProjectCreate, err)
 	}
 
 	if err := namespaceID.Validate(); err != nil {
@@ -296,8 +295,9 @@ func (s *projectService) Update(ctx context.Context, id model.ID, opts UpdatePro
 	ctx, span := s.tracer.Start(ctx, "service.projectService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrProjectUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrProjectUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -331,8 +331,9 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.projectService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrProjectDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrProjectDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -360,7 +361,6 @@ func (s *projectService) Delete(ctx context.Context, id model.ID) error {
 func NewProjectService(
 	projectRepo repository.ProjectRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	searchService SearchService,
 	opts ...Option,
 ) (ProjectService, error) {
@@ -373,7 +373,6 @@ func NewProjectService(
 		runtime:           rt,
 		projectRepo:       projectRepo,
 		permissionService: permissionService,
-		licenseService:    licenseService,
 		searchService:     searchService,
 	}
 
@@ -383,10 +382,6 @@ func NewProjectService(
 
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.searchService == nil {

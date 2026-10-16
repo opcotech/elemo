@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -103,7 +102,6 @@ type namespaceService struct {
 	runtime
 	namespaceRepo     repository.NamespaceRepository
 	permissionService PermissionService
-	licenseService    LicenseService
 	searchService     SearchService
 }
 
@@ -167,8 +165,9 @@ func (s *namespaceService) Create(ctx context.Context, orgID model.ID, opts Crea
 	ctx, span := s.tracer.Start(ctx, "service.namespaceService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrNamespaceCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceCreate, err)
 	}
 
 	if err := orgID.Validate(); err != nil {
@@ -338,8 +337,9 @@ func (s *namespaceService) Update(ctx context.Context, id model.ID, opts UpdateN
 	ctx, span := s.tracer.Start(ctx, "service.namespaceService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrNamespaceUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNamespaceUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -367,8 +367,9 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.namespaceService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrNamespaceDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrNamespaceDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -396,7 +397,6 @@ func (s *namespaceService) Delete(ctx context.Context, id model.ID) error {
 func NewNamespaceService(
 	namespaceRepo repository.NamespaceRepository,
 	permissionService PermissionService,
-	licenseService LicenseService,
 	searchService SearchService,
 	opts ...Option,
 ) (NamespaceService, error) {
@@ -409,7 +409,6 @@ func NewNamespaceService(
 		runtime:           rt,
 		namespaceRepo:     namespaceRepo,
 		permissionService: permissionService,
-		licenseService:    licenseService,
 		searchService:     searchService,
 	}
 
@@ -419,10 +418,6 @@ func NewNamespaceService(
 
 	if svc.permissionService == nil {
 		return nil, ErrNoPermissionService
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.searchService == nil {

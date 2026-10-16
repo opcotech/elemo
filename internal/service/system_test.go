@@ -76,7 +76,7 @@ func Test_systemService_GetHeartbeat(t *testing.T) {
 	span.EXPECT().End(gomock.Len(0))
 
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.systemService/GetHeartbeat", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.systemService/GetHeartbeat", gomock.Len(0)).Return(ctx, span)
 
 	s := func() service.SystemService {
 		svc, err := service.NewSystemService(
@@ -104,7 +104,7 @@ func Test_systemService_GetVersion(t *testing.T) {
 	span.EXPECT().End(gomock.Len(0))
 
 	tracer := mocktrace.NewMockTracer(ctrl)
-	tracer.EXPECT().Start(ctx, "service.systemService/GetVersion", gomock.Len(0)).Return(ctx, span)
+	tracer.EXPECT().Start(gomock.Any(), "service.systemService/GetVersion", gomock.Len(0)).Return(ctx, span)
 
 	s := func() service.SystemService {
 		svc, err := service.NewSystemService(
@@ -151,7 +151,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.SystemService {
 						svc, err := service.NewSystemService(
@@ -170,12 +170,11 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
 					resource := mocksvc.NewMockPingable(ctrl)
-					resource.EXPECT().Ping(ctx).Return(nil).MinTimes(4).MaxTimes(4)
+					resource.EXPECT().Ping(ctx).Return(nil).MinTimes(3).MaxTimes(3)
 
 					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
-						model.HealthCheckComponentLicense:      resource,
 						model.HealthCheckComponentMessageQueue: resource,
 					}
 				},
@@ -186,7 +185,6 @@ func Test_systemService_GetHealth(t *testing.T) {
 			want: map[model.HealthCheckComponent]model.HealthStatus{
 				model.HealthCheckComponentGraphDB:      model.HealthStatusHealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusHealthy,
-				model.HealthCheckComponentLicense:      model.HealthStatusHealthy,
 				model.HealthCheckComponentMessageQueue: model.HealthStatusHealthy,
 			},
 		},
@@ -198,7 +196,7 @@ func Test_systemService_GetHealth(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.systemService/GetHealth", gomock.Len(0)).Return(ctx, span)
 
 					return func() service.SystemService {
 						svc, err := service.NewSystemService(
@@ -217,12 +215,11 @@ func Test_systemService_GetHealth(t *testing.T) {
 				},
 				resources: func(ctx context.Context, ctrl *gomock.Controller) map[model.HealthCheckComponent]service.Pingable {
 					resource := mocksvc.NewMockPingable(ctrl)
-					resource.EXPECT().Ping(ctx).Return(assert.AnError).MinTimes(4).MaxTimes(4)
+					resource.EXPECT().Ping(ctx).Return(assert.AnError).MinTimes(3).MaxTimes(3)
 
 					return map[model.HealthCheckComponent]service.Pingable{
 						model.HealthCheckComponentGraphDB:      resource,
 						model.HealthCheckComponentRelationalDB: resource,
-						model.HealthCheckComponentLicense:      resource,
 						model.HealthCheckComponentMessageQueue: resource,
 					}
 				},
@@ -233,7 +230,6 @@ func Test_systemService_GetHealth(t *testing.T) {
 			want: map[model.HealthCheckComponent]model.HealthStatus{
 				model.HealthCheckComponentGraphDB:      model.HealthStatusUnhealthy,
 				model.HealthCheckComponentRelationalDB: model.HealthStatusUnhealthy,
-				model.HealthCheckComponentLicense:      model.HealthStatusUnhealthy,
 				model.HealthCheckComponentMessageQueue: model.HealthStatusUnhealthy,
 			},
 			wantErr: service.ErrSystemHealthCheck,

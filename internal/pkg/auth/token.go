@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"strings"
 
@@ -13,8 +14,8 @@ const (
 	tokenSeparator = ";"
 )
 
-// GenerateToken creates a new token and returns both the unencrypted and
-// encrypted pair.
+// GenerateToken creates a bearer token and returns the public value plus a
+// hash that authenticates the complete token, including all embedded claims.
 func GenerateToken(kind string, data map[string]any) (string, string, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -22,8 +23,9 @@ func GenerateToken(kind string, data map[string]any) (string, string, error) {
 	}
 
 	secret := pkg.GenerateRandomString(36)
-	public := []byte(strings.Join([]string{kind, secret, string(jsonData)}, tokenSeparator))
-	return base64.RawURLEncoding.EncodeToString(public), HashPassword(secret), nil
+	raw := []byte(strings.Join([]string{kind, secret, string(jsonData)}, tokenSeparator))
+	public := base64.RawURLEncoding.EncodeToString(raw)
+	return public, HashToken(public), nil
 }
 
 // SplitToken splits the token to the encapsulated data and secret.
@@ -45,9 +47,18 @@ func SplitToken(token string) (string, string, map[string]any) {
 	return parts[0], parts[1], data
 }
 
-// IsTokenMatching validates if the provided token matches the original
-// token hash.
+// HashToken returns a password-grade hash of the complete bearer token.
+func HashToken(token string) string {
+	return HashPassword(tokenDigest(token))
+}
+
+// IsTokenMatching validates the complete token, including its claims, against
+// the hash persisted at issuance.
 func IsTokenMatching(hash, token string) bool {
-	_, secret, _ := SplitToken(token)
-	return IsPasswordMatching(hash, secret)
+	return IsPasswordMatching(hash, tokenDigest(token))
+}
+
+func tokenDigest(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return base64.RawURLEncoding.EncodeToString(digest[:])
 }

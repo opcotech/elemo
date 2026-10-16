@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/tracing"
@@ -16,8 +17,9 @@ type Runtime = runtime
 
 func NewRuntimeForTest(logger log.Logger, tracer tracing.Tracer) Runtime {
 	return Runtime{
-		logger: logger,
-		tracer: tracer,
+		logger:    logger,
+		tracer:    tracer,
+		mutations: entitlement.Unrestricted(),
 	}
 }
 
@@ -86,6 +88,7 @@ func ParseTypedID(raw, typ string) (model.ID, error) {
 var (
 	CtxUserID                         = ctxUserID
 	RequireAction                     = requireAction
+	UserUpdateIsReadOnlyExempt        = userUpdateIsReadOnlyExempt
 	ResolvedListScopeIDs              = resolvedListScopeIDs
 	ListGrantCoversRoot               = listGrantCoversRoot
 	DocumentFromRepository            = documentFromRepository
@@ -108,9 +111,8 @@ var (
 const (
 	DocumentFilePrefix          = documentFilePrefix
 	AssignmentSyncPageSize      = assignmentSyncPageSize
-	RenewEmailAddress           = renewEmailAddress
+	AirGapLicenseExpiryTemplate = licenseExpiryTemplate
 	AuthPasswordResetTemplate   = authPasswordResetTemplate
 	OrganizationInviteTemplate  = organizationInviteTemplate
-	SystemLicenseExpiryTemplate = systemLicenseExpiryTemplate
 	UserWelcomeTemplate         = userWelcomeTemplate
 )

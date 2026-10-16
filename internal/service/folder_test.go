@@ -125,14 +125,14 @@ func TestFolderService_Create(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), libraryID, gomock.Any()).Return(true, nil)
 
 		folderRepo := mockrepo.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().Create(ctx, repository.CreateFolderOpts{
+		folderRepo.EXPECT().Create(gomock.Any(), repository.CreateFolderOpts{
 			Library:   libraryID,
 			Name:      opts.Name,
 			CreatedBy: userID,
@@ -160,11 +160,11 @@ func TestFolderService_Create(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, libraryID, gomock.Any()).Return(false, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), libraryID, gomock.Any()).Return(false, nil)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -184,7 +184,7 @@ func TestFolderService_Create(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Create", gomock.Len(0)).Return(ctx, span)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger: mocklog.NewMockLogger(ctrl),
@@ -211,14 +211,14 @@ func TestFolderService_Get(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Get", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Get", gomock.Len(0)).Return(ctx, span)
 
 		folderRepo := mockrepo.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().Get(ctx, repoFolder.ID).Return(repoFolder, nil)
+		folderRepo.EXPECT().Get(gomock.Any(), repoFolder.ID).Return(repoFolder, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoFolder.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoFolder.ID, gomock.Any()).Return(true, nil)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -249,15 +249,15 @@ func TestFolderService_List(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/List", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/List", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, libraryID).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), libraryID).Return([]model.ID{libraryID}, nil)
 
 		folderRepo := mockrepo.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().ListForLibrary(ctx, repository.FolderListQuery{
+		folderRepo.EXPECT().ListForLibrary(gomock.Any(), repository.FolderListQuery{
 			LibraryID: libraryID,
 			ActorID:   userID,
 			Page:      page,
@@ -287,7 +287,7 @@ func TestFolderService_List(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/List", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/List", gomock.Len(0)).Return(ctx, span)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger: mocklog.NewMockLogger(ctrl),
@@ -316,17 +316,17 @@ func TestFolderService_Update(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Update", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Update", gomock.Len(0)).Return(ctx, span)
 
 		folderRepo := mockrepo.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().Get(ctx, repoFolder.ID).Return(repoFolder, nil)
-		folderRepo.EXPECT().Update(ctx, repoFolder.ID, repository.UpdateFolderOpts{
+		folderRepo.EXPECT().Get(gomock.Any(), repoFolder.ID).Return(repoFolder, nil)
+		folderRepo.EXPECT().Update(gomock.Any(), repoFolder.ID, repository.UpdateFolderOpts{
 			Name: optional.Some("Architecture"),
 		}).Return(&updated, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoFolder.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoFolder.ID, gomock.Any()).Return(true, nil)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),
@@ -356,15 +356,15 @@ func TestFolderService_Delete(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.folderService/Delete", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.folderService/Delete", gomock.Len(0)).Return(ctx, span)
 
 		folderRepo := mockrepo.NewMockFolderRepository(ctrl)
-		folderRepo.EXPECT().Get(ctx, repoFolder.ID).Return(repoFolder, nil)
-		folderRepo.EXPECT().Delete(ctx, repoFolder.ID).Return(nil)
+		folderRepo.EXPECT().Get(gomock.Any(), repoFolder.ID).Return(repoFolder, nil)
+		folderRepo.EXPECT().Delete(gomock.Any(), repoFolder.ID).Return(nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoFolder.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoFolder.ID, gomock.Any()).Return(true, nil)
 
 		s := newFolderServiceForTest(folderServiceDeps{
 			logger:            mocklog.NewMockLogger(ctrl),

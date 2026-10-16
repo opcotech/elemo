@@ -1,8 +1,9 @@
 log:
   level: info
 
-license:
-  file: configs/test/license.key
+airgap:
+  license_file: ""
+  billing_email: billing@example.com
 
 template:
   directory: templates

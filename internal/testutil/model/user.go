@@ -14,25 +14,31 @@ import (
 
 // NewCreateUserOpts creates repository.CreateUserOpts for tests.
 func NewCreateUserOpts() repository.CreateUserOpts {
+	auth := repository.UnrestrictedActivation()
 	return repository.CreateUserOpts{
-		Username:  strings.ToLower(pkg.GenerateRandomString(10)),
-		FirstName: "Test",
-		LastName:  "User",
-		Email:     testutil.GenerateEmail(10),
-		Password:  password.HashPassword(pkg.GenerateRandomString(10)),
-		Status:    model.UserStatusActive,
-		Picture:   imageURL,
-		Title:     "Senior Test User",
-		Bio:       "I am a test user.",
-		Phone:     "+1234567890",
-		Address:   "1234 Main St, Anytown, USA",
-		Links:     []string{"https://example.com/"},
-		Languages: []model.Language{
-			model.LanguageHU,
-			model.LanguageEN,
-			model.LanguageES,
-		},
+		Username:   strings.ToLower(pkg.GenerateRandomString(10)),
+		FirstName:  "Test",
+		LastName:   "User",
+		Email:      testutil.GenerateEmail(10),
+		Password:   password.HashPassword(pkg.GenerateRandomString(10)),
+		Status:     model.UserStatusActive,
+		Picture:    imageURL,
+		Title:      "Senior Test User",
+		Bio:        "I am a test user.",
+		Phone:      "+1234567890",
+		Address:    "1234 Main St, Anytown, USA",
+		Links:      []string{"https://example.com/"},
+		Languages:  []model.Language{model.LanguageHU, model.LanguageEN, model.LanguageES},
+		Activation: &auth,
 	}
+}
+
+// NewCreateActiveUserOpts creates active-user options with the given seat authorization.
+func NewCreateActiveUserOpts(auth repository.ActivationAuthorization) repository.CreateUserOpts {
+	opts := NewCreateUserOpts()
+	opts.Status = model.UserStatusActive
+	opts.Activation = &auth
+	return opts
 }
 
 // NewRepositoryUser creates a repository.User for mock returns.

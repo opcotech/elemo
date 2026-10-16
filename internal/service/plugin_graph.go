@@ -23,9 +23,11 @@ func (s *pluginService) CreateNode(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/CreateNode")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginGraph, err)
 	}
+
 	manifest, err := s.requireGraphWrite(ctx, pluginID, opts.Parent)
 	if err != nil {
 		return nil, err
@@ -70,9 +72,6 @@ func (s *pluginService) GetNode(ctx context.Context, pluginID string, id model.I
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/GetNode")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return nil, err
-	}
 	owner := pluginID
 	if ownerPluginID != "" && ownerPluginID != pluginID {
 		if err := s.requireForeignAccess(ctx, pluginID, ownerPluginID, id); err != nil {
@@ -101,9 +100,11 @@ func (s *pluginService) UpdateNode(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/UpdateNode")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginGraph, err)
 	}
+
 	manifest, err := s.requireGraphWrite(ctx, pluginID, id)
 	if err != nil {
 		return nil, err
@@ -135,9 +136,11 @@ func (s *pluginService) DeleteNode(ctx context.Context, pluginID string, id mode
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/DeleteNode")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginGraph, err)
 	}
+
 	if _, err := s.requireGraphWrite(ctx, pluginID, id); err != nil {
 		return err
 	}
@@ -162,9 +165,6 @@ func (s *pluginService) ListNodes(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/ListNodes")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return repository.Page[*model.Extension]{}, err
-	}
 	owner := pluginID
 	if opts.OwnerPluginID != "" && opts.OwnerPluginID != pluginID {
 		if err := s.requireForeignKindAccess(ctx, pluginID, opts.OwnerPluginID, opts.Kind, opts.Scope); err != nil {
@@ -194,9 +194,11 @@ func (s *pluginService) MoveNode(ctx context.Context, pluginID string, id, paren
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/MoveNode")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginGraph, err)
 	}
+
 	manifest, err := s.requireGraphWrite(ctx, pluginID, id)
 	if err != nil {
 		return nil, err
@@ -283,9 +285,11 @@ func (s *pluginService) CreateRelation(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/CreateRelation")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return nil, err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrPluginGraph, err)
 	}
+
 	manifest, err := s.requireGraphWrite(ctx, pluginID, opts.From)
 	if err != nil {
 		return nil, err
@@ -319,9 +323,11 @@ func (s *pluginService) DeleteRelation(ctx context.Context, pluginID, relID stri
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/DeleteRelation")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return err
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrPluginGraph, err)
 	}
+
 	inst, err := s.repo.GetInstallation(ctx, pluginID)
 	if err != nil {
 		return errors.Join(ErrPluginGraph, err)
@@ -343,9 +349,6 @@ func (s *pluginService) ListRelations(
 	ctx, span := s.tracer.Start(ctx, "service.pluginService/ListRelations")
 	defer span.End()
 
-	if err := s.requireFeature(ctx, ErrPluginGraph); err != nil {
-		return repository.Page[*model.ExtensionRelation]{}, err
-	}
 	if _, err := s.requireGraphRead(ctx, pluginID, opts.Node); err != nil {
 		return repository.Page[*model.ExtensionRelation]{}, err
 	}

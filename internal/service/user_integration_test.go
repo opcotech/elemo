@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -20,6 +21,7 @@ import (
 
 func serviceCreateUserOpts() service.CreateUserOpts {
 	o := testModel.NewCreateUserOpts()
+	o.Status = model.UserStatusActive
 	return service.CreateUserOpts{
 		Username:  o.Username,
 		Email:     o.Email,
@@ -57,20 +59,11 @@ func (s *UserServiceIntegrationTestSuite) SetupSuite() {
 	s.SetupNeo4j(&s.ContainerIntegrationTestSuite, container)
 	s.SetupPg(&s.ContainerIntegrationTestSuite, container)
 
-	permissionService, err := service.NewPermissionService(s.PermissionRepo, s.RoleRepo)
-	s.Require().NoError(err)
-
-	licenseService, err := service.NewLicenseService(
-		testutil.ParseLicense(s.T()),
-		s.LicenseRepo,
-		permissionService,
-	)
-	s.Require().NoError(err)
-
+	var err error
 	s.userService, err = service.NewUserService(
 		s.UserRepo,
 		s.UserTokenRepository,
-		licenseService,
+		entitlement.Unrestricted(),
 	)
 	s.Require().NoError(err)
 }

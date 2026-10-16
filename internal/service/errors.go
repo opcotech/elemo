@@ -65,8 +65,6 @@ var (
 	ErrIssueUpdate                     = errors.New("failed to update issue")                       // failed to update issue
 	ErrIssueUpdateRelation             = errors.New("failed to update issue relation")              // failed to update issue relation
 	ErrLabelList                       = errors.New("failed to list labels")                        // failed to list labels
-	ErrLicenseGet                      = errors.New("failed to get license")                        // failed to get license
-	ErrLicensePing                     = errors.New("failed to ping license")                       // failed to ping license
 	ErrNamespaceCreate                 = errors.New("failed to create namespace")                   // failed to create namespace
 	ErrNamespaceDelete                 = errors.New("failed to delete namespace")                   // failed to delete namespace
 	ErrNamespaceGet                    = errors.New("failed to get namespace")                      // failed to get namespace
@@ -79,7 +77,6 @@ var (
 	ErrNoIssueRepository               = errors.New("no issue repository provided")                 // no issue repository provided
 	ErrNoLabelRepository               = errors.New("no label repository provided")                 // no label repository provided
 	ErrNoLabelService                  = errors.New("no label service provided")                    // no label service provided
-	ErrNoLicenseService                = errors.New("no license service provided")                  // no license service provided
 	ErrNoNamespaceRepository           = errors.New("no namespace repository provided")             // no namespace repository provided
 	ErrNoNotificationRepository        = errors.New("no notification repository provided")          // no notification repository provided
 	ErrNoNotificationService           = errors.New("no notification service provided")             // no notification service provided
@@ -111,6 +108,7 @@ var (
 	ErrOrganizationGet                 = errors.New("failed to get organization")                   // failed to get organization
 	ErrOrganizationList                = errors.New("failed to list organizations")                 // failed to list organizations
 	ErrOrganizationInviteAccept        = errors.New("failed to accept invitation")                  // failed to accept invitation
+	ErrOrganizationInvitePassword      = errors.New("password is required for pending users")       // invitation acceptance requires a password
 	ErrOrganizationInviteRevoke        = errors.New("failed to revoke invitation")                  // failed to revoke invitation
 	ErrOrganizationMemberAdd           = errors.New("failed to add member to organization")         // failed to add member to organization
 	ErrOrganizationMemberAlreadyExists = errors.New("user is already a member of the organization") // user is already a member of the organization
@@ -133,10 +131,6 @@ var (
 	ErrProjectGet                      = errors.New("failed to get project")                        // failed to get project
 	ErrProjectList                     = errors.New("failed to list projects")                      // failed to list projects
 	ErrProjectUpdate                   = errors.New("failed to update project")                     // failed to update project
-	ErrFeatureDisabled                 = errors.New("feature is not enabled")                       // license feature is not enabled
-	ErrQuotaExceeded                   = errors.New("quota exceeded")                               // quota exceeded
-	ErrQuotaInvalid                    = errors.New("invalid quota")                                // invalid quota
-	ErrQuotaUsageGet                   = errors.New("failed to get usage of quota")                 // failed to get usage of quota
 	ErrRoleAddMember                   = errors.New("failed to add member to role")                 // failed to add member to role
 	ErrRoleCreate                      = errors.New("failed to create role")                        // failed to create role
 	ErrRoleDelete                      = errors.New("failed to delete role")                        // failed to delete role

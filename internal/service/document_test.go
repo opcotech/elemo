@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	"github.com/opcotech/elemo/internal/pkg/log"
@@ -45,7 +44,6 @@ type documentServiceDeps struct {
 	tracer            tracing.Tracer
 	documentRepo      repository.DocumentRepository
 	permissionService service.PermissionService
-	licenseService    service.LicenseService
 	staticFileService service.StaticFileService
 	searchService     service.SearchService
 }
@@ -53,9 +51,6 @@ type documentServiceDeps struct {
 func newDocumentServiceForTest(deps documentServiceDeps) service.DocumentService {
 	if deps.documentRepo == nil {
 		deps.documentRepo = mockrepo.NewMockDocumentRepository(nil)
-	}
-	if deps.licenseService == nil {
-		deps.licenseService = mocksvc.NewMockLicenseService(nil)
 	}
 	if deps.permissionService == nil {
 		deps.permissionService = mocksvc.NewMockPermissionService(nil)
@@ -75,7 +70,6 @@ func newDocumentServiceForTest(deps documentServiceDeps) service.DocumentService
 	}
 	svc, err := service.NewDocumentService(
 		deps.documentRepo,
-		deps.licenseService,
 		deps.permissionService,
 		deps.staticFileService,
 		deps.searchService,
@@ -98,7 +92,6 @@ func TestNewDocumentService(t *testing.T) {
 			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					mockrepo.NewMockDocumentRepository(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockStaticFileService(nil),
 					mocksvc.NewMockSearchService(nil),
@@ -112,7 +105,6 @@ func TestNewDocumentService(t *testing.T) {
 			build: func(_ *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					mockrepo.NewMockDocumentRepository(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockStaticFileService(nil),
 					mocksvc.NewMockSearchService(nil),
@@ -126,7 +118,6 @@ func TestNewDocumentService(t *testing.T) {
 			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					nil,
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockStaticFileService(nil),
 					mocksvc.NewMockSearchService(nil),
@@ -141,7 +132,6 @@ func TestNewDocumentService(t *testing.T) {
 			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					mockrepo.NewMockDocumentRepository(nil),
-					mocksvc.NewMockLicenseService(nil),
 					nil,
 					mocksvc.NewMockStaticFileService(nil),
 					mocksvc.NewMockSearchService(nil),
@@ -152,26 +142,10 @@ func TestNewDocumentService(t *testing.T) {
 			wantErr: service.ErrNoPermissionService,
 		},
 		{
-			name: "new document service with no license service",
-			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
-				return service.NewDocumentService(
-					mockrepo.NewMockDocumentRepository(nil),
-					nil,
-					mocksvc.NewMockPermissionService(nil),
-					mocksvc.NewMockStaticFileService(nil),
-					mocksvc.NewMockSearchService(nil),
-					service.WithLogger(mocklog.NewMockLogger(ctrl)),
-					service.WithTracer(mocktrace.NewMockTracer(ctrl)),
-				)
-			},
-			wantErr: service.ErrNoLicenseService,
-		},
-		{
 			name: "new document service with no static file service",
 			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					mockrepo.NewMockDocumentRepository(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockPermissionService(nil),
 					nil,
 					mocksvc.NewMockSearchService(nil),
@@ -186,7 +160,6 @@ func TestNewDocumentService(t *testing.T) {
 			build: func(ctrl *gomock.Controller) (service.DocumentService, error) {
 				return service.NewDocumentService(
 					mockrepo.NewMockDocumentRepository(nil),
-					mocksvc.NewMockLicenseService(nil),
 					mocksvc.NewMockPermissionService(nil),
 					mocksvc.NewMockStaticFileService(nil),
 					nil,
@@ -240,13 +213,13 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Create(ctx, matchDocumentFileID(), opts.Content).Return(nil)
+					staticFileSvc.EXPECT().Create(gomock.Any(), matchDocumentFileID(), opts.Content).Return(nil)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Create(ctx, gomock.Cond(func(got repository.CreateDocumentOpts) bool {
+					documentRepo.EXPECT().Create(gomock.Any(), gomock.Cond(func(got repository.CreateDocumentOpts) bool {
 						return got.Library == belongsTo &&
 							got.Title == opts.Title &&
 							got.Excerpt == opts.Excerpt &&
@@ -256,11 +229,7 @@ func TestDocumentService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -268,7 +237,6 @@ func TestDocumentService_Create(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -280,68 +248,6 @@ func TestDocumentService_Create(t *testing.T) {
 			},
 		},
 		{
-			name: "create document with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ service.CreateDocumentOpts) documentServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return documentServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				belongsTo: belongsTo,
-				opts:      opts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
-			name: "create document with quota exceeded",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, belongsTo model.ID, _ service.CreateDocumentOpts) documentServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
-
-					permSvc := mocksvc.NewMockPermissionService(ctrl)
-					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(false, nil)
-
-					return documentServiceDeps{
-						searchService:     mocksvc.NewMockSearchService(ctrl),
-						logger:            mocklog.NewMockLogger(ctrl),
-						tracer:            tracer,
-						permissionService: permSvc,
-						licenseService:    licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:       context.WithValue(context.Background(), pkg.CtxKeyUserID, userID),
-				belongsTo: belongsTo,
-				opts:      opts,
-			},
-			wantErr: service.ErrQuotaExceeded,
-		},
-		{
 			name: "create document with invalid belongsTo",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ model.ID, _ service.CreateDocumentOpts) documentServiceDeps {
@@ -349,16 +255,12 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return documentServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -377,16 +279,12 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					return documentServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
+						searchService: mocksvc.NewMockSearchService(ctrl),
+						logger:        mocklog.NewMockLogger(ctrl),
+						tracer:        tracer,
 					}
 				},
 			},
@@ -405,13 +303,13 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Create(ctx, matchDocumentFileID(), opts.Content).Return(nil)
+					staticFileSvc.EXPECT().Create(gomock.Any(), matchDocumentFileID(), opts.Content).Return(nil)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Create(ctx, gomock.Cond(func(got repository.CreateDocumentOpts) bool {
+					documentRepo.EXPECT().Create(gomock.Any(), gomock.Cond(func(got repository.CreateDocumentOpts) bool {
 						return got.Library == belongsTo &&
 							got.Title == opts.Title &&
 							got.Excerpt == opts.Excerpt &&
@@ -421,11 +319,7 @@ func TestDocumentService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -433,7 +327,6 @@ func TestDocumentService_Create(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -454,21 +347,17 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(false, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -487,22 +376,17 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -521,25 +405,20 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Create(ctx, matchDocumentFileID(), opts.Content).Return(service.ErrStaticFileCreate)
+					staticFileSvc.EXPECT().Create(gomock.Any(), matchDocumentFileID(), opts.Content).Return(service.ErrStaticFileCreate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
 						logger:            mocklog.NewMockLogger(ctrl),
 						tracer:            tracer,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -559,14 +438,14 @@ func TestDocumentService_Create(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Create", gomock.Len(0)).Return(ctx, span)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Create(ctx, matchDocumentFileID(), opts.Content).Return(nil)
-					staticFileSvc.EXPECT().Delete(ctx, matchDocumentFileID()).Return(nil)
+					staticFileSvc.EXPECT().Create(gomock.Any(), matchDocumentFileID(), opts.Content).Return(nil)
+					staticFileSvc.EXPECT().Delete(gomock.Any(), matchDocumentFileID()).Return(nil)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Create(ctx, gomock.Cond(func(got repository.CreateDocumentOpts) bool {
+					documentRepo.EXPECT().Create(gomock.Any(), gomock.Cond(func(got repository.CreateDocumentOpts) bool {
 						return got.Library == belongsTo &&
 							got.Title == opts.Title &&
 							got.Excerpt == opts.Excerpt &&
@@ -576,11 +455,7 @@ func TestDocumentService_Create(t *testing.T) {
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, belongsTo, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
-					licenseSvc.EXPECT().WithinThreshold(ctx, license.QuotaDocuments).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), belongsTo, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -588,7 +463,6 @@ func TestDocumentService_Create(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -652,17 +526,17 @@ func TestDocumentService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Get(ctx, repoDocument.FileID).Return(content, nil)
+					staticFileSvc.EXPECT().Get(gomock.Any(), repoDocument.FileID).Return(content, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -688,7 +562,7 @@ func TestDocumentService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					return documentServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -711,14 +585,14 @@ func TestDocumentService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -743,10 +617,10 @@ func TestDocumentService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(nil, repository.ErrDocumentRead)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(nil, repository.ErrDocumentRead)
 
 					return documentServiceDeps{
 						searchService: mocksvc.NewMockSearchService(ctrl),
@@ -770,17 +644,17 @@ func TestDocumentService_Get(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Get", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Get(ctx, repoDocument.FileID).Return(nil, service.ErrStaticFileGet)
+					staticFileSvc.EXPECT().Get(gomock.Any(), repoDocument.FileID).Return(nil, service.ErrStaticFileGet)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -857,24 +731,21 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Update(ctx, id, repository.UpdateDocumentOpts{
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateDocumentOpts{
 						Title:   opts.Title,
 						Excerpt: opts.Excerpt,
 					}).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Get(ctx, repoDocument.FileID).Return(content, nil)
+					staticFileSvc.EXPECT().Get(gomock.Any(), repoDocument.FileID).Return(content, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -882,7 +753,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -902,24 +772,21 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Update(ctx, id, repository.UpdateDocumentOpts{
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateDocumentOpts{
 						Title:   opts.Title,
 						Excerpt: opts.Excerpt,
 					}).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Get(ctx, repoDocument.FileID).Return(nil, repository.ErrNotFound)
+					staticFileSvc.EXPECT().Get(gomock.Any(), repoDocument.FileID).Return(nil, repository.ErrNotFound)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -927,7 +794,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -947,21 +813,18 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Update(ctx, repoDocument.FileID, updatedContent).Return(nil)
-					staticFileSvc.EXPECT().Get(ctx, repoDocument.FileID).Return(updatedContent, nil)
+					staticFileSvc.EXPECT().Update(gomock.Any(), repoDocument.FileID, updatedContent).Return(nil)
+					staticFileSvc.EXPECT().Get(gomock.Any(), repoDocument.FileID).Return(updatedContent, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -969,7 +832,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -989,22 +851,19 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0)).Times(2)
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
-					tracer.EXPECT().Start(ctx, "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil).Times(2)
-					documentRepo.EXPECT().MoveToFolder(ctx, id, opts.FolderID.Value).Return(&movedRepoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil).Times(2)
+					documentRepo.EXPECT().MoveToFolder(gomock.Any(), id, opts.FolderID.Value).Return(&movedRepoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Get(ctx, movedRepoDocument.FileID).Return(content, nil)
+					staticFileSvc.EXPECT().Get(gomock.Any(), movedRepoDocument.FileID).Return(content, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil).Times(2)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil).Times(2)
 
 					return documentServiceDeps{
 						searchService:     mockSearchIndex(ctrl),
@@ -1012,7 +871,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -1025,34 +883,6 @@ func TestDocumentService_Update(t *testing.T) {
 			want: service.DocumentFromRepository(&movedRepoDocument, content),
 		},
 		{
-			name: "update document with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID, _ service.UpdateDocumentOpts) documentServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return documentServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx:  context.Background(),
-				id:   documentID,
-				opts: titleOpts,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "update document with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID, _ service.UpdateDocumentOpts) documentServiceDeps {
@@ -1060,17 +890,14 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1078,7 +905,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1097,20 +923,17 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Update(ctx, repoDocument.FileID, updatedContent).Return(service.ErrStaticFileUpdate)
+					staticFileSvc.EXPECT().Update(gomock.Any(), repoDocument.FileID, updatedContent).Return(service.ErrStaticFileUpdate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1118,7 +941,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -1138,21 +960,18 @@ func TestDocumentService_Update(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Update", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Update(ctx, id, repository.UpdateDocumentOpts{
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Update(gomock.Any(), id, repository.UpdateDocumentOpts{
 						Title:   opts.Title,
 						Excerpt: opts.Excerpt,
 					}).Return(nil, repository.ErrDocumentUpdate)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1160,7 +979,6 @@ func TestDocumentService_Update(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1220,21 +1038,18 @@ func TestDocumentService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Delete(ctx, id).Return(nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Delete(ctx, repoDocument.FileID).Return(nil)
+					staticFileSvc.EXPECT().Delete(gomock.Any(), repoDocument.FileID).Return(nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mockSearchDelete(ctrl),
@@ -1242,7 +1057,6 @@ func TestDocumentService_Delete(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -1253,33 +1067,6 @@ func TestDocumentService_Delete(t *testing.T) {
 			},
 		},
 		{
-			name: "delete document with license expired",
-			fields: fields{
-				baseService: func(ctrl *gomock.Controller, ctx context.Context, _ model.ID) documentServiceDeps {
-					span := mocktrace.NewMockSpan(ctrl)
-					span.EXPECT().End(gomock.Len(0))
-
-					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(true, nil)
-
-					return documentServiceDeps{
-						searchService:  mocksvc.NewMockSearchService(ctrl),
-						logger:         mocklog.NewMockLogger(ctrl),
-						tracer:         tracer,
-						licenseService: licenseSvc,
-					}
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				id:  documentID,
-			},
-			wantErr: license.ErrLicenseExpired,
-		},
-		{
 			name: "delete document with no permission",
 			fields: fields{
 				baseService: func(ctrl *gomock.Controller, ctx context.Context, id model.ID) documentServiceDeps {
@@ -1287,17 +1074,14 @@ func TestDocumentService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(false, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(false, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1305,7 +1089,6 @@ func TestDocumentService_Delete(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1323,18 +1106,15 @@ func TestDocumentService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Delete(ctx, id).Return(repository.ErrDocumentDelete)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Delete(gomock.Any(), id).Return(repository.ErrDocumentDelete)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1342,7 +1122,6 @@ func TestDocumentService_Delete(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 					}
 				},
 			},
@@ -1360,21 +1139,18 @@ func TestDocumentService_Delete(t *testing.T) {
 					span.EXPECT().End(gomock.Len(0))
 
 					tracer := mocktrace.NewMockTracer(ctrl)
-					tracer.EXPECT().Start(ctx, "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
+					tracer.EXPECT().Start(gomock.Any(), "service.documentService/Delete", gomock.Len(0)).Return(ctx, span)
 
 					documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-					documentRepo.EXPECT().Get(ctx, id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
-					documentRepo.EXPECT().Delete(ctx, id).Return(nil)
+					documentRepo.EXPECT().Get(gomock.Any(), id, repository.DocumentDetailProjection()).Return(repoDocument, nil)
+					documentRepo.EXPECT().Delete(gomock.Any(), id).Return(nil)
 
 					staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-					staticFileSvc.EXPECT().Delete(ctx, repoDocument.FileID).Return(service.ErrStaticFileDelete)
+					staticFileSvc.EXPECT().Delete(gomock.Any(), repoDocument.FileID).Return(service.ErrStaticFileDelete)
 
 					permSvc := mocksvc.NewMockPermissionService(ctrl)
 					permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-					permSvc.EXPECT().CtxUserHas(ctx, id, gomock.Any()).Return(true, nil)
-
-					licenseSvc := mocksvc.NewMockLicenseService(ctrl)
-					licenseSvc.EXPECT().Expired(ctx).Return(false, nil)
+					permSvc.EXPECT().CtxUserHas(gomock.Any(), id, gomock.Any()).Return(true, nil)
 
 					return documentServiceDeps{
 						searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1382,7 +1158,6 @@ func TestDocumentService_Delete(t *testing.T) {
 						tracer:            tracer,
 						documentRepo:      documentRepo,
 						permissionService: permSvc,
-						licenseService:    licenseSvc,
 						staticFileService: staticFileSvc,
 					}
 				},
@@ -1431,15 +1206,15 @@ func TestDocumentService_ListLibrary(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/ListLibrary", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/ListLibrary", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserListGrantScopes(ctx, model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
-		permSvc.EXPECT().ListScopeAncestry(ctx, libraryID).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().CtxUserListGrantScopes(gomock.Any(), model.ActionDocumentRead).Return([]model.ID{libraryID}, nil)
+		permSvc.EXPECT().ListScopeAncestry(gomock.Any(), libraryID).Return([]model.ID{libraryID}, nil)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().ListLibrary(ctx, libraryID, userID, nil, repository.LibraryListFilter{}, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
+		documentRepo.EXPECT().ListLibrary(gomock.Any(), libraryID, userID, nil, repository.LibraryListFilter{}, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
 			Items: []*repository.Document{repoDoc},
 		}, nil)
 
@@ -1465,7 +1240,7 @@ func TestDocumentService_ListLibrary(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/ListLibrary", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/ListLibrary", gomock.Len(0)).Return(ctx, span)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1493,14 +1268,14 @@ func TestDocumentService_ListRelated(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/ListRelated", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/ListRelated", gomock.Len(0)).Return(ctx, span)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().ListRelated(ctx, projectID, userID, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
+		documentRepo.EXPECT().ListRelated(gomock.Any(), projectID, userID, gomock.Any(), repository.DocumentSummaryProjection()).Return(repository.Page[*repository.Document]{
 			Items: []*repository.Document{repoDoc},
 		}, nil)
 
@@ -1534,16 +1309,16 @@ func TestDocumentService_Relate(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/Relate", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/Relate", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().Relate(ctx, repoDoc.ID, projectID).Return(nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().Relate(gomock.Any(), repoDoc.ID, projectID).Return(nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1572,16 +1347,16 @@ func TestDocumentService_Unrelate(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/Unrelate", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/Unrelate", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().Unrelate(ctx, repoDoc.ID, projectID).Return(nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().Unrelate(gomock.Any(), repoDoc.ID, projectID).Return(nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, projectID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), projectID, gomock.Any()).Return(true, nil)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1617,20 +1392,20 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().ResolveLibrary(ctx, newLibrary).Return(newLibrary, nil)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().MoveLibrary(ctx, repoDoc.ID, newLibrary).Return(&moved, nil)
+		documentRepo.EXPECT().ResolveLibrary(gomock.Any(), newLibrary).Return(newLibrary, nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().MoveLibrary(gomock.Any(), repoDoc.ID, newLibrary).Return(&moved, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, newLibrary, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), newLibrary, gomock.Any()).Return(true, nil)
 
 		staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-		staticFileSvc.EXPECT().Get(ctx, moved.FileID).Return(content, nil)
+		staticFileSvc.EXPECT().Get(gomock.Any(), moved.FileID).Return(content, nil)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -1654,20 +1429,20 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().ResolveLibrary(ctx, newLibrary).Return(newLibrary, nil)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().MoveLibrary(ctx, repoDoc.ID, newLibrary).Return(&moved, nil)
+		documentRepo.EXPECT().ResolveLibrary(gomock.Any(), newLibrary).Return(newLibrary, nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().MoveLibrary(gomock.Any(), repoDoc.ID, newLibrary).Return(&moved, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
-		permSvc.EXPECT().CtxUserHas(ctx, newLibrary, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), newLibrary, gomock.Any()).Return(true, nil)
 
 		staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-		staticFileSvc.EXPECT().Get(ctx, repoDoc.FileID).Return(nil, repository.ErrNotFound)
+		staticFileSvc.EXPECT().Get(gomock.Any(), repoDoc.FileID).Return(nil, repository.ErrNotFound)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mockSearchIndex(ctrl),
@@ -1692,7 +1467,7 @@ func TestDocumentService_MoveLibrary(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveLibrary", gomock.Len(0)).Return(ctx, span)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService: mocksvc.NewMockSearchService(ctrl),
@@ -1723,18 +1498,18 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().MoveToFolder(ctx, repoDoc.ID, &folderID).Return(&moved, nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().MoveToFolder(gomock.Any(), repoDoc.ID, &folderID).Return(&moved, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
 
 		staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-		staticFileSvc.EXPECT().Get(ctx, moved.FileID).Return(content, nil)
+		staticFileSvc.EXPECT().Get(gomock.Any(), moved.FileID).Return(content, nil)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1759,18 +1534,18 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().MoveToFolder(ctx, repoDoc.ID, &folderID).Return(&moved, nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().MoveToFolder(gomock.Any(), repoDoc.ID, &folderID).Return(&moved, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
 
 		staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-		staticFileSvc.EXPECT().Get(ctx, repoDoc.FileID).Return(nil, repository.ErrNotFound)
+		staticFileSvc.EXPECT().Get(gomock.Any(), repoDoc.FileID).Return(nil, repository.ErrNotFound)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),
@@ -1796,21 +1571,21 @@ func TestDocumentService_MoveToFolder(t *testing.T) {
 		span := mocktrace.NewMockSpan(ctrl)
 		span.EXPECT().End(gomock.Len(0))
 		tracer := mocktrace.NewMockTracer(ctrl)
-		tracer.EXPECT().Start(ctx, "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
+		tracer.EXPECT().Start(gomock.Any(), "service.documentService/MoveToFolder", gomock.Len(0)).Return(ctx, span)
 
 		cleared := *repoDoc
 		cleared.Folder = nil
 
 		documentRepo := mockrepo.NewMockDocumentRepository(ctrl)
-		documentRepo.EXPECT().Get(ctx, repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
-		documentRepo.EXPECT().MoveToFolder(ctx, repoDoc.ID, (*model.ID)(nil)).Return(&cleared, nil)
+		documentRepo.EXPECT().Get(gomock.Any(), repoDoc.ID, repository.DocumentDetailProjection()).Return(repoDoc, nil)
+		documentRepo.EXPECT().MoveToFolder(gomock.Any(), repoDoc.ID, (*model.ID)(nil)).Return(&cleared, nil)
 
 		permSvc := mocksvc.NewMockPermissionService(ctrl)
 		permSvc.EXPECT().BootstrapCreator(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		permSvc.EXPECT().CtxUserHas(ctx, repoDoc.ID, gomock.Any()).Return(true, nil)
+		permSvc.EXPECT().CtxUserHas(gomock.Any(), repoDoc.ID, gomock.Any()).Return(true, nil)
 
 		staticFileSvc := mocksvc.NewMockStaticFileService(ctrl)
-		staticFileSvc.EXPECT().Get(ctx, cleared.FileID).Return(content, nil)
+		staticFileSvc.EXPECT().Get(gomock.Any(), cleared.FileID).Return(content, nil)
 
 		s := newDocumentServiceForTest(documentServiceDeps{
 			searchService:     mocksvc.NewMockSearchService(ctrl),

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/log"
 	"github.com/opcotech/elemo/internal/pkg/optional"
@@ -109,7 +108,6 @@ type DocumentService interface {
 type documentService struct {
 	runtime
 	documentRepo      repository.DocumentRepository
-	licenseService    LicenseService
 	permissionService PermissionService
 	staticFileService StaticFileService
 	searchService     SearchService
@@ -197,8 +195,9 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 	ctx, span := s.tracer.Start(ctx, "service.documentService/Create")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrDocumentCreate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentCreate, err)
 	}
 
 	if err := contextID.Validate(); err != nil {
@@ -226,10 +225,6 @@ func (s *documentService) Create(ctx context.Context, contextID model.ID, opts C
 
 	if err := requireAction(ctx, s.permissionService, libraryID, model.ActionDocumentCreate); err != nil {
 		return nil, errors.Join(ErrDocumentCreate, err)
-	}
-
-	if ok, err := s.licenseService.WithinThreshold(ctx, license.QuotaDocuments); !ok || err != nil {
-		return nil, errors.Join(ErrDocumentCreate, ErrQuotaExceeded)
 	}
 
 	userID, err := ctxUserID(ctx)
@@ -374,8 +369,9 @@ func (s *documentService) Update(ctx context.Context, id model.ID, opts UpdateDo
 	ctx, span := s.tracer.Start(ctx, "service.documentService/Update")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return nil, errors.Join(ErrDocumentUpdate, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentUpdate, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -440,6 +436,11 @@ func (s *documentService) MoveLibrary(ctx context.Context, id, libraryID model.I
 	ctx, span := s.tracer.Start(ctx, "service.documentService/MoveLibrary")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
 	if err := id.Validate(); err != nil {
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
@@ -487,6 +488,11 @@ func (s *documentService) MoveToFolder(ctx context.Context, id model.ID, folderI
 	ctx, span := s.tracer.Start(ctx, "service.documentService/MoveToFolder")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrDocumentMove, err)
+	}
+
 	if err := id.Validate(); err != nil {
 		return nil, errors.Join(ErrDocumentMove, err)
 	}
@@ -525,6 +531,11 @@ func (s *documentService) Relate(ctx context.Context, id, targetID model.ID) err
 	ctx, span := s.tracer.Start(ctx, "service.documentService/Relate")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrDocumentRelate, err)
+	}
+
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrDocumentRelate, err)
 	}
@@ -560,6 +571,11 @@ func (s *documentService) Relate(ctx context.Context, id, targetID model.ID) err
 func (s *documentService) Unrelate(ctx context.Context, id, targetID model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.documentService/Unrelate")
 	defer span.End()
+
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrDocumentUnrelate, err)
+	}
 
 	if err := id.Validate(); err != nil {
 		return errors.Join(ErrDocumentUnrelate, err)
@@ -597,8 +613,9 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.documentService/Delete")
 	defer span.End()
 
-	if expired, err := s.licenseService.Expired(ctx); expired || err != nil {
-		return errors.Join(ErrDocumentDelete, license.ErrLicenseExpired)
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrDocumentDelete, err)
 	}
 
 	if err := id.Validate(); err != nil {
@@ -634,7 +651,6 @@ func (s *documentService) Delete(ctx context.Context, id model.ID) error {
 // NewDocumentService returns a new instance of the DocumentService interface.
 func NewDocumentService(
 	documentRepo repository.DocumentRepository,
-	licenseService LicenseService,
 	permissionService PermissionService,
 	staticFileService StaticFileService,
 	searchService SearchService,
@@ -648,7 +664,6 @@ func NewDocumentService(
 	svc := &documentService{
 		runtime:           rt,
 		documentRepo:      documentRepo,
-		licenseService:    licenseService,
 		permissionService: permissionService,
 		staticFileService: staticFileService,
 		searchService:     searchService,
@@ -656,10 +671,6 @@ func NewDocumentService(
 
 	if svc.documentRepo == nil {
 		return nil, ErrNoDocumentRepository
-	}
-
-	if svc.licenseService == nil {
-		return nil, ErrNoLicenseService
 	}
 
 	if svc.permissionService == nil {

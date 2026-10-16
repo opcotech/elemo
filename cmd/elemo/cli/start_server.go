@@ -30,11 +30,6 @@ var startServerCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		initTracer("server")
 
-		license, err := parseLicense(&cfg.License)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to parse license", slog.Any("error", err))
-		}
-
 		cacheDB, err := initCacheDatabase()
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize cache database", slog.Any("error", err))
@@ -90,15 +85,6 @@ var startServerCmd = &cobra.Command{
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize storage", slog.Any("error", err))
-		}
-
-		licenseRepo, err := repository.NewNeo4jLicenseRepository(
-			repository.WithNeo4jDatabase(graphDB),
-			repository.WithNeo4jRepositoryLogger(logger.Named("license_repository")),
-			repository.WithNeo4jRepositoryTracer(tracer),
-		)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize license repository", slog.Any("error", err))
 		}
 
 		var permissionRepo repository.PermissionRepository
@@ -210,6 +196,8 @@ var startServerCmd = &cobra.Command{
 				logger.Fatal(context.Background(), "failed to initialize cached user repository", slog.Any("error", err))
 			}
 		}
+
+		seatPolicy := loadEntitlementPolicy(context.Background(), graphDB, userRepo)
 
 		var userTokenRepo repository.UserTokenRepository
 		{
@@ -480,6 +468,7 @@ var startServerCmd = &cobra.Command{
 			notificationRepo,
 			service.WithLogger(logger.Named("notification_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize notification service", slog.Any("error", err))
@@ -490,6 +479,7 @@ var startServerCmd = &cobra.Command{
 			roleRepo,
 			service.WithLogger(logger.Named("permission_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize permission service", slog.Any("error", err))
@@ -501,28 +491,29 @@ var startServerCmd = &cobra.Command{
 			messageQueue,
 			service.WithLogger(logger.Named("search_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize search service", slog.Any("error", err))
 		}
 
-		licenseService, err := service.NewLicenseService(
-			license,
-			licenseRepo,
+		entitlementService, err := service.NewEntitlementService(
+			seatPolicy,
 			permissionService,
-			service.WithLogger(logger.Named("license_service")),
+			service.WithLogger(logger.Named("entitlement_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize license service", slog.Any("error", err))
+			logger.Fatal(context.Background(), "failed to initialize entitlement service", slog.Any("error", err))
 		}
 
 		customFieldService, err := service.NewCustomFieldService(
 			customFieldRepo,
 			permissionService,
-			licenseService,
 			service.WithLogger(logger.Named("custom_field_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize custom field service", slog.Any("error", err))
@@ -533,7 +524,6 @@ var startServerCmd = &cobra.Command{
 				model.HealthCheckComponentCacheDB:      cacheDB,
 				model.HealthCheckComponentGraphDB:      graphDB,
 				model.HealthCheckComponentRelationalDB: relDB,
-				model.HealthCheckComponentLicense:      licenseService,
 				model.HealthCheckComponentMessageQueue: messageQueue,
 				model.HealthCheckComponentS3Storage:    s3Storage,
 				model.HealthCheckComponentSearch:       searchDB,
@@ -541,6 +531,7 @@ var startServerCmd = &cobra.Command{
 			versionInfo,
 			service.WithLogger(logger.Named("system_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize system service", slog.Any("error", err))
@@ -549,11 +540,11 @@ var startServerCmd = &cobra.Command{
 		roleService, err := service.NewRoleService(
 			roleRepo,
 			permissionService,
-			licenseService,
 			organizationRepo,
 			notificationService,
 			service.WithLogger(logger.Named("role_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize role service", slog.Any("error", err))
@@ -562,9 +553,9 @@ var startServerCmd = &cobra.Command{
 		teamService, err := service.NewTeamService(
 			teamRepo,
 			permissionService,
-			licenseService,
 			service.WithLogger(logger.Named("team_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize team service", slog.Any("error", err))
@@ -573,9 +564,10 @@ var startServerCmd = &cobra.Command{
 		userService, err := service.NewUserService(
 			userRepo,
 			userTokenRepo,
-			licenseService,
+			seatPolicy,
 			service.WithLogger(logger.Named("user_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize user service", slog.Any("error", err))
@@ -583,9 +575,9 @@ var startServerCmd = &cobra.Command{
 
 		todoService, err := service.NewTodoService(
 			todoRepo,
-			licenseService,
 			service.WithLogger(logger.Named("todo_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize todo service", slog.Any("error", err))
@@ -597,6 +589,7 @@ var startServerCmd = &cobra.Command{
 			&cfg.SMTP,
 			service.WithLogger(logger.Named("email_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize email service", slog.Any("error", err))
@@ -604,9 +597,9 @@ var startServerCmd = &cobra.Command{
 
 		staticFileService, err := service.NewStaticFileService(
 			staticFileRepo,
-			licenseService,
 			service.WithLogger(logger.Named("static_file_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize static file service", slog.Any("error", err))
@@ -615,10 +608,10 @@ var startServerCmd = &cobra.Command{
 		namespaceService, err := service.NewNamespaceService(
 			namespaceRepo,
 			permissionService,
-			licenseService,
 			searchService,
 			service.WithLogger(logger.Named("namespace_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize namespace service", slog.Any("error", err))
@@ -627,10 +620,10 @@ var startServerCmd = &cobra.Command{
 		projectService, err := service.NewProjectService(
 			projectRepo,
 			permissionService,
-			licenseService,
 			searchService,
 			service.WithLogger(logger.Named("project_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 			service.WithEventBus(eventBus),
 		)
 		if err != nil {
@@ -642,11 +635,11 @@ var startServerCmd = &cobra.Command{
 			assignmentRepo,
 			labelRepo,
 			permissionService,
-			licenseService,
 			searchService,
 			customFieldService,
 			service.WithLogger(logger.Named("issue_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 			service.WithEventBus(eventBus),
 		)
 		if err != nil {
@@ -655,12 +648,12 @@ var startServerCmd = &cobra.Command{
 
 		documentService, err := service.NewDocumentService(
 			documentRepo,
-			licenseService,
 			permissionService,
 			staticFileService,
 			searchService,
 			service.WithLogger(logger.Named("document_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize document service", slog.Any("error", err))
@@ -671,6 +664,7 @@ var startServerCmd = &cobra.Command{
 			permissionService,
 			service.WithLogger(logger.Named("folder_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize folder service", slog.Any("error", err))
@@ -680,6 +674,7 @@ var startServerCmd = &cobra.Command{
 			labelRepo,
 			service.WithLogger(logger.Named("label_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize label service", slog.Any("error", err))
@@ -691,12 +686,13 @@ var startServerCmd = &cobra.Command{
 			userTokenRepo,
 			roleRepo,
 			permissionService,
-			licenseService,
+			seatPolicy,
 			emailService,
 			notificationService,
 			searchService,
 			service.WithLogger(logger.Named("organization_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 		)
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize organization service", slog.Any("error", err))
@@ -707,13 +703,13 @@ var startServerCmd = &cobra.Command{
 			pluginRepo,
 			extensionRepo,
 			permissionService,
-			licenseService,
 			issueService,
 			projectService,
 			userService,
 			eventBus,
 			service.WithLogger(logger.Named("plugin_service")),
 			service.WithTracer(tracer),
+			service.WithMutationPolicy(seatPolicy),
 			service.WithEventBus(eventBus),
 		)
 		if err != nil {
@@ -744,7 +740,7 @@ var startServerCmd = &cobra.Command{
 				EmailService:        emailService,
 				TodoService:         todoService,
 				SystemService:       systemService,
-				LicenseService:      licenseService,
+				EntitlementService:  entitlementService,
 				PermissionService:   permissionService,
 				NotificationService: notificationService,
 				SearchService:       searchService,
@@ -759,19 +755,19 @@ var startServerCmd = &cobra.Command{
 			logger.Fatal(context.Background(), "failed to initialize http server", slog.Any("error", err))
 		}
 
-		systemLicenseExpiryTask, err := queue.NewSystemLicenseExpiryTask(license)
-		if err != nil {
-			logger.Fatal(context.Background(), "failed to initialize system license expiry task", slog.Any("error", err))
-		}
-
 		customFieldReconcileTask, err := queue.NewCustomFieldReconcileTask()
 		if err != nil {
 			logger.Fatal(context.Background(), "failed to initialize custom field reconcile task", slog.Any("error", err))
 		}
 
+		systemLicenseExpiryTask, err := queue.NewSystemLicenseExpiryTask()
+		if err != nil {
+			logger.Fatal(context.Background(), "failed to initialize license expiry task", slog.Any("error", err))
+		}
+
 		taskScheduler, err := queue.NewScheduler(
-			queue.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
 			queue.WithSchedulerTask("@every 1m", customFieldReconcileTask),
+			queue.WithSchedulerTask("@every 1m", systemLicenseExpiryTask),
 			queue.WithSchedulerConfig(&cfg.Worker),
 			queue.WithSchedulerLogger(logger.Named("task_scheduler")),
 			queue.WithSchedulerTracer(tracer),

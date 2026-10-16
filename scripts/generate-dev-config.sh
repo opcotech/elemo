@@ -26,20 +26,6 @@ function generateSigningKey() {
   chmod 0644 "${CONFIG_DIR}/signing-key.gen.pem" "${CONFIG_DIR}/signing-cert.gen.pem"
 }
 
-function generateLicenseKey() {
-  log "generating license key"
-  go run -C "${ROOT_DIR}" ./tools/license-generator \
-    -validity-period 3650 \
-    -email info@example.com \
-    -organization "ACME Inc." \
-    -private-key "${ROOT_DIR}/configs/test/generator.key" \
-    -license "${CONFIG_DIR}/license.gen.key" \
-    -quota "users=99999,organizations=99999,documents=99999,namespaces=99999,projects=99999,roles=99999"
-
-  # Ensure files are readable by the nonroot user in the container (UID 65532)
-  chmod 0644 "${CONFIG_DIR}/license.gen.key"
-}
-
 function generateConfigFile() {
   local host="${1}"
   log "generating development configuration for ${1}"
@@ -72,8 +58,9 @@ function generateConfigFile() {
 log:
   level: info
 
-license:
-  file: configs/development/license.gen.key
+airgap:
+  license_file: ""
+  billing_email: billing@example.com
 
 template:
   directory: templates
@@ -231,7 +218,6 @@ mkdir -p "${CONFIG_DIR}"
 mkdir -p "${PLUGINS_DIR}"
 chmod 0777 "${PLUGINS_DIR}"
 generateSigningKey
-generateLicenseKey
 generateConfigFile "docker"
 generateConfigFile "127.0.0.1"
 

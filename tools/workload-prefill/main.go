@@ -14,6 +14,8 @@ import (
 	"github.com/opcotech/elemo/internal/pkg/log"
 )
 
+const defaultQueriesDir = "scripts/queries"
+
 func main() {
 	if err := parseAndRun(); err != nil {
 		fmt.Fprintf(os.Stderr, "workload-prefill: %v\n", err)
@@ -109,7 +111,7 @@ func parseOptions() (options, error) {
 		concurrency: 8,
 		seed:        42,
 		password:    defaultPassword,
-		queriesDir:  "assets/queries",
+		queriesDir:  defaultQueriesDir,
 	}
 
 	flag.StringVar(&opts.configPath, "config", opts.configPath, "path to Elemo config file (or ELEMO_CONFIG)")

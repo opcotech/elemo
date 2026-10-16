@@ -126,7 +126,7 @@ func pathFragments() []fragment {
 			keys: []string{
 				"/v1/system/health",
 				"/v1/system/heartbeat",
-				"/v1/system/license",
+				"/v1/system/entitlements",
 				"/v1/system/version",
 			},
 		},
@@ -234,7 +234,7 @@ func schemaFragments() []fragment {
 		},
 		{
 			file: "components/schemas/system.yaml",
-			keys: []string{"SystemHealth", "SystemVersion", "SystemLicense"},
+			keys: []string{"SystemHealth", "SystemVersion", "SystemEntitlements"},
 		},
 	}
 }

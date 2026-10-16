@@ -16,7 +16,9 @@ labelPRBasedOnFilePath:
     ]
   "component: license": # License implementation and supporting tools.
     [
-      "internal/license/**/*",
+      "internal/entitlement/license/**/*",
+      "internal/entitlement/**/*",
+      "internal/deployment/**/*",
       "tools/key-generator/**/*",
       "tools/license-generator/**/*",
       "tools/license-validator/**/*",

@@ -308,6 +308,22 @@ func Neo4jExecuteWriteAndConsume(ctx context.Context, db *Neo4jDatabase, query s
 	return err
 }
 
+// Neo4jExecuteWrite runs fn inside a managed write transaction.
+func Neo4jExecuteWrite(ctx context.Context, db *Neo4jDatabase, fn func(tx neo4j.ManagedTransaction) error) error {
+	session := db.WriteSession(ctx)
+	defer func(ctx context.Context, sess neo4j.Session) {
+		err := sess.Close(ctx)
+		if err != nil {
+			log.Error(ctx, err)
+		}
+	}(ctx, session)
+
+	_, err := neo4j.ExecuteWrite(ctx, session, func(tx neo4j.ManagedTransaction) (any, error) {
+		return struct{}{}, fn(tx)
+	})
+	return err
+}
+
 // Neo4jExecuteReadAndReadSingle executes a query and reads a single result.
 func Neo4jExecuteReadAndReadSingle[T any](ctx context.Context, db *Neo4jDatabase, query string, params map[string]any, reader func(record *neo4j.Record) (*T, error)) (*T, error) {
 	session := db.ReadSession(ctx)

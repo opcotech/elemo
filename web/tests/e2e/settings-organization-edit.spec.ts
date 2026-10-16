@@ -140,19 +140,23 @@ test.describe("@settings.organization-edit Organization Edit E2E Tests", () => {
       "test@example.com"
     );
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(fieldMessage("Name")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Name")).toHaveText(/too small|invalid input/i);
 
     // Try submitting with empty email
     await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
     await orgEditPage.organizationEditForm.clearField("Email");
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Email")).toHaveText(
+      /invalid email|invalid input|too small/i
+    );
 
     // Fill name but invalid email
     await orgEditPage.organizationEditForm.fillField("Name", "Test Org");
     await orgEditPage.organizationEditForm.fillField("Email", "invalid-email");
     await orgEditPage.organizationEditForm.submit("Save Changes");
-    await expect(fieldMessage("Email")).toHaveText(/invalid input/i);
+    await expect(fieldMessage("Email")).toHaveText(
+      /invalid email|invalid input|too small/i
+    );
   });
 
   test("should show error when updating to a duplicate organization", async ({

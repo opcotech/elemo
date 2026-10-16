@@ -30,9 +30,11 @@ type SMTPConfig struct {
 	SupportAddress    string        `mapstructure:"support_address"`
 }
 
-// LicenseConfig is the configuration for the license.
-type LicenseConfig struct {
-	File string `mapstructure:"file"`
+// AirGapConfig is the configuration for AirGap licensing. It is read only by
+// the AirGap artifact.
+type AirGapConfig struct {
+	LicenseFile  string `mapstructure:"license_file"`
+	BillingEmail string `mapstructure:"billing_email"`
 }
 
 // LogConfig is the configuration for the logger.
@@ -225,7 +227,7 @@ type TracingConfig struct {
 // Config is the combined configuration for the service.
 type Config struct {
 	Log                 LogConfig                `mapstructure:"log"`
-	License             LicenseConfig            `mapstructure:"license"`
+	AirGap              AirGapConfig             `mapstructure:"airgap"`
 	Server              ServerConfig             `mapstructure:"server"`
 	MetricsServer       ServerConfig             `mapstructure:"metrics_server"`
 	Worker              WorkerConfig             `mapstructure:"worker"`

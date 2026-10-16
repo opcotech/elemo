@@ -6,21 +6,21 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/opcotech/elemo/internal/config"
 	"github.com/opcotech/elemo/internal/email"
+	"github.com/opcotech/elemo/internal/entitlement"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg/smtp"
 )
 
 const (
-	renewEmailAddress = "renew@elemo.app"
-
-	authPasswordResetTemplate   = "email/password-reset.html"
-	organizationInviteTemplate  = "email/organization-invite.html"
-	systemLicenseExpiryTemplate = "email/license-expiry-reminder.html"
-	userWelcomeTemplate         = "email/user-welcome.html"
+	licenseExpiryTemplate      = "email/license-expiry-reminder.html"
+	authPasswordResetTemplate  = "email/password-reset.html"
+	organizationInviteTemplate = "email/organization-invite.html"
+	userWelcomeTemplate        = "email/user-welcome.html"
 )
 
 // EmailSender defines the interface to send emails.
@@ -38,8 +38,8 @@ type EmailService interface {
 	SendAuthPasswordResetEmail(ctx context.Context, recipient email.Recipient, token string) error
 	// SendOrganizationInvitationEmail sends an email to the invited user.
 	SendOrganizationInvitationEmail(ctx context.Context, organizationID model.ID, organizationName string, recipient email.Recipient, token string) error
-	// SendSystemLicenseExpiryEmail sends an email to the license owner when the license is about to expire.
-	SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error
+	// SendLicenseExpiryEmail sends a license expiration reminder.
+	SendLicenseExpiryEmail(ctx context.Context, recipient string, status entitlement.AirGapStatus) error
 	// SendUserWelcomeEmail sends an email to the user to welcome it to the
 	// system.
 	SendUserWelcomeEmail(ctx context.Context, recipient email.Recipient) error
@@ -99,22 +99,27 @@ func (s *emailService) SendOrganizationInvitationEmail(ctx context.Context, orga
 	return s.sendEmail(ctx, data.Subject, organizationInviteTemplate, data, recipient.Email)
 }
 
-func (s *emailService) SendSystemLicenseExpiryEmail(ctx context.Context, licenseID, licenseEmail, licenseOrganization string, licenseExpiresAt time.Time) error {
-	ctx, span := s.tracer.Start(ctx, "service.emailService/SendSystemLicenseExpiryEmail")
+func (s *emailService) SendLicenseExpiryEmail(ctx context.Context, recipient string, status entitlement.AirGapStatus) error {
+	ctx, span := s.tracer.Start(ctx, "service.emailService/SendLicenseExpiryEmail")
 	defer span.End()
 
-	data := &email.LicenseExpiryTemplateData{
-		Subject:             fmt.Sprintf("Your license for %s is about to expire", licenseOrganization),
-		LicenseID:           licenseID,
-		LicenseEmail:        licenseEmail,
-		LicenseOrganization: licenseOrganization,
-		LicenseExpiresAt:    licenseExpiresAt.Format(time.RFC850),
-		ServerURL:           fmt.Sprintf("https://%s", s.smtpConf.ClientURL),
-		RenewEmail:          renewEmailAddress,
-		SupportEmail:        s.smtpConf.SupportAddress,
+	if status.ExpiresAt == nil || status.GraceEndsAt == nil {
+		return errors.Join(ErrEmailSend, email.ErrInvalidLicenseExpiryTemplateData)
 	}
 
-	return s.sendEmail(ctx, data.Subject, systemLicenseExpiryTemplate, data, licenseEmail)
+	data := &email.LicenseExpiryTemplateData{
+		Subject:        "License expiration reminder",
+		Customer:       status.Customer,
+		LicenseID:      status.LicenseID,
+		LicenseState:   status.State.String(),
+		LicenseExpires: status.ExpiresAt.UTC().Format(time.RFC1123),
+		GraceEnds:      status.GraceEndsAt.UTC().Format(time.RFC1123),
+		SeatsLicensed:  status.SeatsLicensed,
+		SettingsURL:    strings.TrimRight(s.smtpConf.ClientURL, "/") + "/settings",
+		SupportEmail:   s.smtpConf.SupportAddress,
+	}
+
+	return s.sendEmail(ctx, data.Subject, licenseExpiryTemplate, data, recipient)
 }
 
 func (s *emailService) SendUserWelcomeEmail(ctx context.Context, recipient email.Recipient) error {

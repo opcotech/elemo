@@ -1,10 +1,30 @@
 package config
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestAirGapConfigUnmarshal(t *testing.T) {
+	t.Parallel()
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	require.NoError(t, v.ReadConfig(strings.NewReader(`
+airgap:
+  license_file: /licenses/airgap.json
+  billing_email: billing@example.com
+`)))
+
+	var cfg Config
+	require.NoError(t, v.Unmarshal(&cfg))
+	assert.Equal(t, "/licenses/airgap.json", cfg.AirGap.LicenseFile)
+	assert.Equal(t, "billing@example.com", cfg.AirGap.BillingEmail)
+}
 
 func TestRedisConfig_Address(t *testing.T) {
 	t.Parallel()

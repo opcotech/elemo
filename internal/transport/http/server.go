@@ -108,7 +108,7 @@ type ServerDeps struct {
 	EmailService        service.EmailService
 	TodoService         service.TodoService
 	SystemService       service.SystemService
-	LicenseService      service.LicenseService
+	EntitlementService  service.EntitlementService
 	PermissionService   service.PermissionService
 	NotificationService service.NotificationService
 	SearchService       service.SearchService
@@ -173,7 +173,7 @@ func NewServer(deps ServerDeps, opts ...ControllerOption) (StrictServer, error) 
 		return nil, err
 	}
 
-	if s.SystemController, err = NewSystemController(deps.SystemService, deps.LicenseService, opts...); err != nil {
+	if s.SystemController, err = NewSystemController(deps.SystemService, deps.EntitlementService, opts...); err != nil {
 		return nil, err
 	}
 

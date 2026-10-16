@@ -34,6 +34,10 @@ export type HttpError = {
    * Description of the error.
    */
   message: string;
+  /**
+   * Machine-readable error code when applicable.
+   */
+  code?: "seat_limit_reached" | "activation_denied" | "entitlement_read_only";
 };
 
 /**
@@ -2120,10 +2124,6 @@ export type SystemHealth = {
    */
   relational_database: "healthy" | "unhealthy" | "unknown";
   /**
-   * Health of the license.
-   */
-  license: "healthy" | "unhealthy" | "unknown";
-  /**
    * Health of the message queue.
    */
   message_queue: "healthy" | "unhealthy" | "unknown";
@@ -2156,64 +2156,69 @@ export type SystemVersion = {
 };
 
 /**
- * SystemLicense
+ * SystemEntitlements
+ *
+ * Deployment mode and AirGap seat entitlement status.
  */
-export type SystemLicense = {
+export type SystemEntitlements = {
   /**
-   * Unique ID identifying the license.
+   * Compile-time deployment mode of this binary.
    */
-  id: string;
+  deployment_mode: "self_hosted" | "airgap";
+  airgap?: SystemAirGapEntitlement;
+};
+
+/**
+ * SystemAirGapEntitlement
+ *
+ * AirGap human-seat entitlement as evaluated on this installation.
+ */
+export type SystemAirGapEntitlement = {
   /**
-   * Name of the organization the license belongs to.
+   * Lifecycle state of the License.
    */
-  organization: string;
+  state:
+    | "valid"
+    | "grace"
+    | "expired"
+    | "not_yet_valid"
+    | "invalid"
+    | "missing";
   /**
-   * Email address of the licensee.
+   * Human-readable evaluation reason when the license is not valid.
    */
-  email: string;
+  reason?: string;
   /**
-   * Quotas available for the license.
+   * Logical installation identity used for license binding.
    */
-  quotas: {
-    /**
-     * Number of documents can exist in the system.
-     */
-    documents: number;
-    /**
-     * Number of namespaces can exist in the system.
-     */
-    namespaces: number;
-    /**
-     * Number of organizations active can exist in the system.
-     */
-    organizations: number;
-    /**
-     * Number of projects can exist in the system.
-     */
-    projects: number;
-    /**
-     * Number of roles can exist in the system.
-     */
-    roles: number;
-    /**
-     * Number of active or pending users can exist in the system.
-     */
-    users: number;
-  };
+  installation_id: string;
   /**
-   * Features enabled by the license.
+   * Identifier of the verified license when available.
    */
-  features: Array<
-    | "components"
-    | "custom_statuses"
-    | "custom_fields"
-    | "multiple_assignees"
-    | "releases"
-  >;
+  license_id?: string;
   /**
-   * Date and time when the license expires.
+   * Customer name from the verified license.
    */
-  expires_at: string;
+  customer?: string;
+  /**
+   * Signing key identifier of the verified license.
+   */
+  key_id?: string;
+  /**
+   * Licensed active-human seat count when a payload was verified.
+   */
+  seats_licensed?: number;
+  /**
+   * Current number of active human users.
+   */
+  seats_active: number;
+  issued_at?: string;
+  not_before?: string;
+  expires_at?: string;
+  /**
+   * End of the 30-day grace window after expiration.
+   */
+  grace_ends_at?: string;
 };
 
 /**
@@ -3092,6 +3097,10 @@ export type V1UsersCreateErrors = {
    */
   403: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -3171,6 +3180,10 @@ export type V1UserResetPasswordErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -3227,6 +3240,10 @@ export type V1UserDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -3320,6 +3337,10 @@ export type V1UserUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -3549,6 +3570,10 @@ export type V1TodosCreateErrors = {
    */
   403: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -3600,6 +3625,10 @@ export type V1TodoDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -3693,6 +3722,10 @@ export type V1TodoUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -3789,6 +3822,10 @@ export type V1NotificationDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -3884,6 +3921,10 @@ export type V1NotificationUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -4035,6 +4076,10 @@ export type V1OrganizationDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4132,6 +4177,10 @@ export type V1OrganizationUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -4245,6 +4294,10 @@ export type V1OrganizationMembersAddErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4308,6 +4361,10 @@ export type V1OrganizationMembersInviteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4366,6 +4423,10 @@ export type V1OrganizationMemberRemoveErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4419,6 +4480,10 @@ export type V1OrganizationMemberInviteRevokeErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4466,6 +4531,10 @@ export type V1OrganizationMembersAcceptErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -4578,6 +4647,10 @@ export type V1OrganizationRolesCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4635,6 +4708,10 @@ export type V1OrganizationRoleDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -4741,6 +4818,10 @@ export type V1OrganizationRoleUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -4849,6 +4930,10 @@ export type V1OrganizationTeamsCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -4906,6 +4991,10 @@ export type V1OrganizationTeamDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -5012,6 +5101,10 @@ export type V1OrganizationTeamUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -5133,6 +5226,10 @@ export type V1OrganizationTeamMembersAddErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -5194,6 +5291,10 @@ export type V1OrganizationTeamMemberRemoveErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -5409,6 +5510,10 @@ export type V1NamespaceDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -5516,6 +5621,10 @@ export type V1NamespaceUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -5749,6 +5858,10 @@ export type V1ProjectDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -5843,6 +5956,10 @@ export type V1ProjectUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6134,6 +6251,10 @@ export type V1ProjectsIssuesCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6181,6 +6302,10 @@ export type V1IssueDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6274,6 +6399,10 @@ export type V1IssueUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6379,6 +6508,10 @@ export type V1IssueRelationsCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6431,6 +6564,10 @@ export type V1IssueRelationDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6482,6 +6619,10 @@ export type V1IssueRelationUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6597,6 +6738,10 @@ export type V1OrganizationsDocumentsCreateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6723,6 +6868,10 @@ export type V1NamespacesDocumentsCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6828,6 +6977,10 @@ export type V1ProjectsDocumentsCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6879,6 +7032,10 @@ export type V1ProjectsDocumentsUnrelateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -6932,6 +7089,10 @@ export type V1ProjectsDocumentsRelateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -6979,6 +7140,10 @@ export type V1DocumentDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7074,6 +7239,10 @@ export type V1DocumentUpdateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7180,6 +7349,10 @@ export type V1IssuesDocumentsCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -7232,6 +7405,10 @@ export type V1IssuesDocumentsUnrelateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -7283,6 +7460,10 @@ export type V1IssuesDocumentsRelateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7394,6 +7575,10 @@ export type V1OrganizationsFoldersCreateErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7516,6 +7701,10 @@ export type V1NamespacesFoldersCreateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -7563,6 +7752,10 @@ export type V1FolderDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7659,6 +7852,10 @@ export type V1FolderUpdateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -7697,6 +7894,10 @@ export type V1PermissionsCreateErrors = {
    * Forbidden
    */
   403: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -7750,6 +7951,10 @@ export type V1PermissionDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -8045,6 +8250,10 @@ export type V1CustomFieldsSearchErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8092,6 +8301,10 @@ export type V1CustomFieldDeleteErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -8189,6 +8402,10 @@ export type V1CustomFieldUpdateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8236,6 +8453,10 @@ export type V1CustomFieldArchiveErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -8336,6 +8557,10 @@ export type V1ResourceCustomFieldValueDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8385,6 +8610,10 @@ export type V1ResourceCustomFieldValuePutErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -8560,6 +8789,10 @@ export type V1PluginDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8651,6 +8884,10 @@ export type V1PluginEnableErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8698,6 +8935,10 @@ export type V1PluginDisableErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -8801,6 +9042,10 @@ export type V1PluginConfigPatchErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8849,6 +9094,10 @@ export type V1PluginUpgradeErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -8896,6 +9145,10 @@ export type V1PluginInvokeErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -9065,6 +9318,10 @@ export type V1PluginGraphNodeDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -9170,6 +9427,10 @@ export type V1PluginGraphNodeUpdateErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -9221,6 +9482,10 @@ export type V1PluginGraphNodeMoveErrors = {
    * The requested resource not found
    */
   404: HttpError;
+  /**
+   * Conflict
+   */
+  409: HttpError;
   /**
    * Internal Server Error
    */
@@ -9386,6 +9651,10 @@ export type V1PluginGraphRelationDeleteErrors = {
    */
   404: HttpError;
   /**
+   * Conflict
+   */
+  409: HttpError;
+  /**
    * Internal Server Error
    */
   500: HttpError;
@@ -9458,14 +9727,18 @@ export type V1SystemHeartbeatResponses = {
 export type V1SystemHeartbeatResponse =
   V1SystemHeartbeatResponses[keyof V1SystemHeartbeatResponses];
 
-export type V1SystemLicenseData = {
+export type V1SystemEntitlementsData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/v1/system/license";
+  url: "/v1/system/entitlements";
 };
 
-export type V1SystemLicenseErrors = {
+export type V1SystemEntitlementsErrors = {
+  /**
+   * Unauthorized request
+   */
+  401: HttpError;
   /**
    * Forbidden
    */
@@ -9476,18 +9749,18 @@ export type V1SystemLicenseErrors = {
   500: HttpError;
 };
 
-export type V1SystemLicenseError =
-  V1SystemLicenseErrors[keyof V1SystemLicenseErrors];
+export type V1SystemEntitlementsError =
+  V1SystemEntitlementsErrors[keyof V1SystemEntitlementsErrors];
 
-export type V1SystemLicenseResponses = {
+export type V1SystemEntitlementsResponses = {
   /**
    * OK
    */
-  200: SystemLicense;
+  200: SystemEntitlements;
 };
 
-export type V1SystemLicenseResponse =
-  V1SystemLicenseResponses[keyof V1SystemLicenseResponses];
+export type V1SystemEntitlementsResponse =
+  V1SystemEntitlementsResponses[keyof V1SystemEntitlementsResponses];
 
 export type V1SystemVersionData = {
   body?: never;

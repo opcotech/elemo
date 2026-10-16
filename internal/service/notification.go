@@ -98,6 +98,11 @@ func (s *notificationService) Create(ctx context.Context, opts CreateNotificatio
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Create")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNotificationCreate, err)
+	}
+
 	if err := opts.Validate(); err != nil {
 		return nil, errors.Join(ErrNotificationCreate, err)
 	}
@@ -179,6 +184,11 @@ func (s *notificationService) Update(ctx context.Context, id, recipient model.ID
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Update")
 	defer span.End()
 
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return nil, errors.Join(ErrNotificationUpdate, err)
+	}
+
 	userID, err := ctxUserID(ctx)
 	if err != nil || userID != recipient {
 		return nil, errors.Join(ErrNotificationUpdate, ErrNoPermission)
@@ -205,6 +215,11 @@ func (s *notificationService) Update(ctx context.Context, id, recipient model.ID
 func (s *notificationService) Delete(ctx context.Context, id, recipient model.ID) error {
 	ctx, span := s.tracer.Start(ctx, "service.notificationService/Delete")
 	defer span.End()
+
+	ctx, err := s.requireMutation(ctx)
+	if err != nil {
+		return errors.Join(ErrNotificationDelete, err)
+	}
 
 	userID, err := ctxUserID(ctx)
 	if err != nil || userID != recipient {

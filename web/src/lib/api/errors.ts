@@ -78,6 +78,54 @@ export const isNotFound = (error: unknown): boolean =>
 export const isConflict = (error: unknown): boolean =>
   getErrorStatus(error) === 409;
 
+function getErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") {
+    return undefined;
+  }
+  const record = error as Record<string, unknown>;
+  if (typeof record.code === "string") {
+    return record.code;
+  }
+  if (record.details && typeof record.details === "object") {
+    const details = record.details as Record<string, unknown>;
+    if (typeof details.code === "string") {
+      return details.code;
+    }
+  }
+  if ("cause" in error) {
+    return getErrorCode(error.cause);
+  }
+  return undefined;
+}
+
+export const isSeatLimitReached = (error: unknown): boolean =>
+  isConflict(error) && getErrorCode(error) === "seat_limit_reached";
+
+export const isActivationDenied = (error: unknown): boolean =>
+  isConflict(error) && getErrorCode(error) === "activation_denied";
+
+export const isEntitlementReadOnly = (error: unknown): boolean =>
+  isConflict(error) && getErrorCode(error) === "entitlement_read_only";
+
+export function entitlementActivationErrorMessage(
+  error: unknown
+): string | null {
+  if (isSeatLimitReached(error)) {
+    return "No active human seats remain. Ask an installation administrator to free a seat or install a license with a higher seat limit.";
+  }
+  if (isActivationDenied(error)) {
+    return "Human user activation is disabled by this installation's AirGap entitlement. Ask an installation administrator to install a valid license.";
+  }
+  return null;
+}
+
+export function entitlementReadOnlyErrorMessage(error: unknown): string | null {
+  if (isEntitlementReadOnly(error)) {
+    return "This installation is read-only until a valid License is installed and the server is restarted.";
+  }
+  return entitlementActivationErrorMessage(error);
+}
+
 export function isNotFoundOrForbidden(error: unknown): boolean {
   return isNotFound(error) || isPermissionDenied(error);
 }

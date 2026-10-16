@@ -337,15 +337,15 @@ import type {
   V1SearchGetData,
   V1SearchGetErrors,
   V1SearchGetResponses,
+  V1SystemEntitlementsData,
+  V1SystemEntitlementsErrors,
+  V1SystemEntitlementsResponses,
   V1SystemHealthData,
   V1SystemHealthErrors,
   V1SystemHealthResponses,
   V1SystemHeartbeatData,
   V1SystemHeartbeatErrors,
   V1SystemHeartbeatResponses,
-  V1SystemLicenseData,
-  V1SystemLicenseErrors,
-  V1SystemLicenseResponses,
   V1SystemVersionData,
   V1SystemVersionErrors,
   V1SystemVersionResponses,
@@ -3221,24 +3221,24 @@ export const v1SystemHeartbeat = <ThrowOnError extends boolean = false>(
   >({ url: "/v1/system/heartbeat", ...options });
 
 /**
- * Get license info
+ * Get entitlement status
  *
- * Return the license information. The license information is only available to entitled users.
+ * Return deployment mode and AirGap seat entitlement status. Available only to installation administrators.
  */
-export const v1SystemLicense = <ThrowOnError extends boolean = false>(
-  options?: Options<V1SystemLicenseData, ThrowOnError>
+export const v1SystemEntitlements = <ThrowOnError extends boolean = false>(
+  options?: Options<V1SystemEntitlementsData, ThrowOnError>
 ): RequestResult<
-  V1SystemLicenseResponses,
-  V1SystemLicenseErrors,
+  V1SystemEntitlementsResponses,
+  V1SystemEntitlementsErrors,
   ThrowOnError
 > =>
   (options?.client ?? client).get<
-    V1SystemLicenseResponses,
-    V1SystemLicenseErrors,
+    V1SystemEntitlementsResponses,
+    V1SystemEntitlementsErrors,
     ThrowOnError
   >({
     security: [{ scheme: "bearer", type: "http" }],
-    url: "/v1/system/license",
+    url: "/v1/system/entitlements",
     ...options,
   });
 

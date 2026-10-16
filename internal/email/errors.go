@@ -3,7 +3,7 @@ package email
 import "errors"
 
 var (
-	ErrInvalidLicenseExpiryTemplateData      = errors.New("invalid license expiration template data")  // invalid license expiration template data
+	ErrInvalidLicenseExpiryTemplateData      = errors.New("invalid license expiry template data")      // invalid license expiry template data
 	ErrInvalidOrganizationInviteTemplateData = errors.New("invalid organization invite template data") // invalid organization invite template data
 	ErrInvalidPasswordResetTemplateData      = errors.New("invalid password reset template data")      // invalid password reset template data
 	ErrInvalidUserWelcomeTemplateData        = errors.New("invalid welcome template data")             // invalid welcome template data

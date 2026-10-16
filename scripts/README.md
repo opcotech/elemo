@@ -79,7 +79,7 @@ sets:
 | `ELEMO_COMPOSE_OVERRIDE` | Extra Compose file (vaulted auth, no published DB ports) |
 | `ELEMO_COMPOSE_ENV_FILE` | Compose `--env-file` |
 | `ELEMO_PREFILL_CONFIG` | `config.yml` with Docker DNS names (`neo4j`, `postgres`, …) |
-| `ELEMO_CONFIGS_DIR` | Host directory mounted at `/src/configs` so relative license paths resolve |
+| `ELEMO_CONFIGS_DIR` | Host directory mounted at `/src/configs` so relative config paths resolve |
 | `ELEMO_PREFILL_DOCKER=1` | Run `workload-prefill` in `ELEMO_GOLANG_IMAGE` on `ELEMO_COMPOSE_NETWORK` |
 | `NEO4J_PASSWORD` / `NEO4J_AUTH` | cypher-shell auth (defaults to `neo4jsecret`) |
 | `POSTGRES_PASSWORD` | psql auth (defaults to `pgsecret`) |

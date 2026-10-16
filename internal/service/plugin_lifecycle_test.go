@@ -13,7 +13,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/opcotech/elemo/internal/config"
-	"github.com/opcotech/elemo/internal/license"
 	"github.com/opcotech/elemo/internal/model"
 	"github.com/opcotech/elemo/internal/pkg"
 	mocklog "github.com/opcotech/elemo/internal/pkg/log/mock"
@@ -28,7 +27,6 @@ import (
 type pluginLifecycleHarness struct {
 	ctx     context.Context
 	orgID   model.ID
-	lic     *mocksvc.MockLicenseService
 	perm    *mocksvc.MockPermissionService
 	repo    *mockrepo.MockPluginRepository
 	extRepo *mockrepo.MockExtensionRepository
@@ -50,7 +48,6 @@ func newPluginLifecycleHarness(t *testing.T) pluginLifecycleHarness {
 	logger := mocklog.NewMockLogger(ctrl)
 	logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
-	lic := mocksvc.NewMockLicenseService(ctrl)
 	perm := mocksvc.NewMockPermissionService(ctrl)
 	repo := mockrepo.NewMockPluginRepository(ctrl)
 	extRepo := mockrepo.NewMockExtensionRepository(ctrl)
@@ -60,7 +57,6 @@ func newPluginLifecycleHarness(t *testing.T) pluginLifecycleHarness {
 		repo,
 		extRepo,
 		perm,
-		lic,
 		nil, nil, nil, nil,
 		service.WithLogger(logger),
 		service.WithTracer(tracer),
@@ -70,7 +66,6 @@ func newPluginLifecycleHarness(t *testing.T) pluginLifecycleHarness {
 	return pluginLifecycleHarness{
 		ctx:     ctx,
 		orgID:   orgID,
-		lic:     lic,
 		perm:    perm,
 		repo:    repo,
 		extRepo: extRepo,
@@ -106,9 +101,8 @@ func TestPluginService_Install(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(nil, repository.ErrNotFound)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(nil, repository.ErrNotFound)
 		saved := &model.PluginInstallation{
 			ID:       "inst-1",
 			PluginID: manifest.ID,
@@ -116,7 +110,7 @@ func TestPluginService_Install(t *testing.T) {
 			Status:   model.PluginStatusInstalled,
 			Manifest: manifest,
 		}
-		h.repo.EXPECT().UpsertInstallation(h.ctx, gomock.Any()).Return(saved, nil)
+		h.repo.EXPECT().UpsertInstallation(gomock.Any(), gomock.Any()).Return(saved, nil)
 
 		got, err := h.svc.Install(h.ctx, zipBytes)
 		require.NoError(t, err)
@@ -126,9 +120,8 @@ func TestPluginService_Install(t *testing.T) {
 	t.Run("already installed", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(&model.PluginInstallation{PluginID: manifest.ID}, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{PluginID: manifest.ID}, nil)
 
 		_, err := h.svc.Install(h.ctx, zipBytes)
 		require.ErrorIs(t, err, repository.ErrPluginConflict)
@@ -137,8 +130,7 @@ func TestPluginService_Install(t *testing.T) {
 	t.Run("bad zip", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
 
 		_, err := h.svc.Install(h.ctx, []byte("not-a-zip"))
 		require.ErrorIs(t, err, service.ErrPluginInstall)
@@ -147,8 +139,7 @@ func TestPluginService_Install(t *testing.T) {
 	t.Run("no permission", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(false, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(false, nil)
 
 		_, err := h.svc.Install(h.ctx, zipBytes)
 		require.ErrorIs(t, err, service.ErrNoPermission)
@@ -165,20 +156,19 @@ func TestPluginService_Upgrade(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
 		current := &model.PluginInstallation{
 			PluginID: manifest.ID,
 			Version:  manifest.Version,
 			Status:   model.PluginStatusInstalled,
 			Manifest: manifest,
 		}
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(current, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(current, nil)
 		saved := *current
 		saved.Version = upgraded.Version
 		saved.Manifest = upgraded
-		h.repo.EXPECT().UpsertInstallation(h.ctx, gomock.Any()).Return(&saved, nil)
-		h.repo.EXPECT().ListActivations(h.ctx, manifest.ID).Return([]*model.PluginActivation{
+		h.repo.EXPECT().UpsertInstallation(gomock.Any(), gomock.Any()).Return(&saved, nil)
+		h.repo.EXPECT().ListActivations(gomock.Any(), manifest.ID).Return([]*model.PluginActivation{
 			{PluginID: manifest.ID, ScopeID: h.orgID, Enabled: true},
 		}, nil)
 
@@ -190,9 +180,8 @@ func TestPluginService_Upgrade(t *testing.T) {
 	t.Run("id mismatch", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, "com.elemo.other").Return(&model.PluginInstallation{
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), "com.elemo.other").Return(&model.PluginInstallation{
 			PluginID: "com.elemo.other",
 			Version:  "1.0.0",
 			Manifest: model.PluginManifest{
@@ -212,9 +201,8 @@ func TestPluginService_Upgrade(t *testing.T) {
 	t.Run("not found", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(nil, repository.ErrNotFound)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(nil, repository.ErrNotFound)
 
 		_, err := h.svc.Upgrade(h.ctx, manifest.ID, zipBytes)
 		require.ErrorIs(t, err, repository.ErrNotFound)
@@ -228,17 +216,16 @@ func TestPluginService_Uninstall(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(&model.PluginInstallation{
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID,
 			Version:  manifest.Version,
 			Manifest: manifest,
 		}, nil)
-		h.extRepo.EXPECT().DeleteByPlugin(h.ctx, manifest.ID).Return(nil)
-		h.repo.EXPECT().DeleteActivations(h.ctx, manifest.ID).Return(nil)
-		h.repo.EXPECT().DeleteStorageForPlugin(h.ctx, manifest.ID).Return(nil)
-		h.repo.EXPECT().DeleteInstallation(h.ctx, manifest.ID).Return(nil)
+		h.extRepo.EXPECT().DeleteByPlugin(gomock.Any(), manifest.ID).Return(nil)
+		h.repo.EXPECT().DeleteActivations(gomock.Any(), manifest.ID).Return(nil)
+		h.repo.EXPECT().DeleteStorageForPlugin(gomock.Any(), manifest.ID).Return(nil)
+		h.repo.EXPECT().DeleteInstallation(gomock.Any(), manifest.ID).Return(nil)
 
 		require.NoError(t, h.svc.Uninstall(h.ctx, manifest.ID))
 	})
@@ -246,9 +233,8 @@ func TestPluginService_Uninstall(t *testing.T) {
 	t.Run("not found", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(nil, repository.ErrNotFound)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(nil, repository.ErrNotFound)
 
 		err := h.svc.Uninstall(h.ctx, manifest.ID)
 		require.ErrorIs(t, err, repository.ErrNotFound)
@@ -262,21 +248,20 @@ func TestPluginService_Disable(t *testing.T) {
 	t.Run("stops when last activation", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, h.orgID, model.ActionPluginManage).Return(true, nil)
-		h.repo.EXPECT().GetActivation(h.ctx, manifest.ID, h.orgID).Return(&model.PluginActivation{
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), h.orgID, model.ActionPluginManage).Return(true, nil)
+		h.repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, h.orgID).Return(&model.PluginActivation{
 			PluginID: manifest.ID,
 			ScopeID:  h.orgID,
 			Enabled:  true,
 			Config:   json.RawMessage(`{}`),
 		}, nil)
-		h.repo.EXPECT().UpsertActivation(h.ctx, gomock.Any()).DoAndReturn(
+		h.repo.EXPECT().UpsertActivation(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, act *model.PluginActivation) (*model.PluginActivation, error) {
 				assert.False(t, act.Enabled)
 				return act, nil
 			},
 		)
-		h.repo.EXPECT().ListActivations(h.ctx, manifest.ID).Return([]*model.PluginActivation{
+		h.repo.EXPECT().ListActivations(gomock.Any(), manifest.ID).Return([]*model.PluginActivation{
 			{PluginID: manifest.ID, ScopeID: h.orgID, Enabled: false},
 		}, nil)
 
@@ -297,9 +282,8 @@ func TestPluginService_GetAndList(t *testing.T) {
 	t.Run("get", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(inst, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(inst, nil)
 
 		got, err := h.svc.Get(h.ctx, manifest.ID)
 		require.NoError(t, err)
@@ -309,8 +293,7 @@ func TestPluginService_GetAndList(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), model.InstallationID(), model.ActionPluginInstall).Return(true, nil)
 		h.repo.EXPECT().ListInstallations(h.ctx).Return([]*model.PluginInstallation{inst}, nil)
 
 		got, err := h.svc.List(h.ctx)
@@ -327,9 +310,8 @@ func TestPluginService_Config(t *testing.T) {
 	t.Run("get managed missing activation", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, h.orgID, model.ActionPluginManage).Return(true, nil)
-		h.repo.EXPECT().GetActivation(h.ctx, manifest.ID, h.orgID).Return(nil, repository.ErrNotFound)
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), h.orgID, model.ActionPluginManage).Return(true, nil)
+		h.repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, h.orgID).Return(nil, repository.ErrNotFound)
 
 		got, err := h.svc.GetManagedConfig(h.ctx, manifest.ID, h.orgID)
 		require.NoError(t, err)
@@ -339,9 +321,8 @@ func TestPluginService_Config(t *testing.T) {
 	t.Run("get managed", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, h.orgID, model.ActionPluginManage).Return(true, nil)
-		h.repo.EXPECT().GetActivation(h.ctx, manifest.ID, h.orgID).Return(&model.PluginActivation{
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), h.orgID, model.ActionPluginManage).Return(true, nil)
+		h.repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, h.orgID).Return(&model.PluginActivation{
 			PluginID: manifest.ID,
 			ScopeID:  h.orgID,
 			Config:   cfg,
@@ -355,9 +336,8 @@ func TestPluginService_Config(t *testing.T) {
 	t.Run("get nearest", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().ListScopeAncestry(h.ctx, h.orgID).Return([]model.ID{h.orgID}, nil)
-		h.repo.EXPECT().ListActivationsByScope(h.ctx, []model.ID{h.orgID}).Return([]*model.PluginActivation{
+		h.perm.EXPECT().ListScopeAncestry(gomock.Any(), h.orgID).Return([]model.ID{h.orgID}, nil)
+		h.repo.EXPECT().ListActivationsByScope(gomock.Any(), []model.ID{h.orgID}).Return([]*model.PluginActivation{
 			{PluginID: manifest.ID, ScopeID: h.orgID, Enabled: true, Config: cfg},
 		}, nil)
 
@@ -369,18 +349,17 @@ func TestPluginService_Config(t *testing.T) {
 	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 		h := newPluginLifecycleHarness(t)
-		h.lic.EXPECT().HasFeature(h.ctx, license.FeaturePlugins).Return(true, nil)
-		h.perm.EXPECT().CtxUserHas(h.ctx, h.orgID, model.ActionPluginManage).Return(true, nil)
-		h.repo.EXPECT().GetInstallation(h.ctx, manifest.ID).Return(&model.PluginInstallation{
+		h.perm.EXPECT().CtxUserHas(gomock.Any(), h.orgID, model.ActionPluginManage).Return(true, nil)
+		h.repo.EXPECT().GetInstallation(gomock.Any(), manifest.ID).Return(&model.PluginInstallation{
 			PluginID: manifest.ID,
 			Manifest: manifest,
 		}, nil)
-		h.repo.EXPECT().GetActivation(h.ctx, manifest.ID, h.orgID).Return(&model.PluginActivation{
+		h.repo.EXPECT().GetActivation(gomock.Any(), manifest.ID, h.orgID).Return(&model.PluginActivation{
 			PluginID: manifest.ID,
 			ScopeID:  h.orgID,
 			Enabled:  true,
 		}, nil)
-		h.repo.EXPECT().UpsertActivation(h.ctx, gomock.Any()).DoAndReturn(
+		h.repo.EXPECT().UpsertActivation(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(_ context.Context, act *model.PluginActivation) (*model.PluginActivation, error) {
 				assert.JSONEq(t, `{"k":"v"}`, string(act.Config))
 				return act, nil

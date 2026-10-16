@@ -94,6 +94,8 @@ func (c *folderController) V1OrganizationsFoldersCreate(ctx context.Context, req
 			return api.V1OrganizationsFoldersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1OrganizationsFoldersCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1OrganizationsFoldersCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1OrganizationsFoldersCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -168,6 +170,8 @@ func (c *folderController) V1NamespacesFoldersCreate(ctx context.Context, reques
 			return api.V1NamespacesFoldersCreate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1NamespacesFoldersCreate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1NamespacesFoldersCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NamespacesFoldersCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -232,6 +236,8 @@ func (c *folderController) V1FolderUpdate(ctx context.Context, request api.V1Fol
 			return api.V1FolderUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1FolderUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1FolderUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1FolderUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -259,6 +265,8 @@ func (c *folderController) V1FolderDelete(ctx context.Context, request api.V1Fol
 			return api.V1FolderDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1FolderDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1FolderDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1FolderDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),

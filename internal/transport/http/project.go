@@ -51,9 +51,7 @@ func (c *projectController) V1NamespacesProjectsCreate(ctx context.Context, requ
 		case http.StatusNotFound:
 			return api.V1NamespacesProjectsCreate404JSONResponse{N404JSONResponse: notFound}, nil
 		case http.StatusConflict:
-			return api.V1NamespacesProjectsCreate409JSONResponse{N409JSONResponse: api.N409JSONResponse{
-				Message: err.Error(),
-			}}, nil
+			return api.V1NamespacesProjectsCreate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1NamespacesProjectsCreate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -191,6 +189,8 @@ func (c *projectController) V1ProjectUpdate(ctx context.Context, request api.V1P
 			return api.V1ProjectUpdate403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectUpdate404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectUpdate409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectUpdate500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
@@ -216,6 +216,8 @@ func (c *projectController) V1ProjectDelete(ctx context.Context, request api.V1P
 			return api.V1ProjectDelete403JSONResponse{N403JSONResponse: permissionDenied}, nil
 		case http.StatusNotFound:
 			return api.V1ProjectDelete404JSONResponse{N404JSONResponse: notFound}, nil
+		case http.StatusConflict:
+			return api.V1ProjectDelete409JSONResponse{N409JSONResponse: entitlementConflict(err)}, nil
 		default:
 			return api.V1ProjectDelete500JSONResponse{N500JSONResponse: api.N500JSONResponse{
 				Message: err.Error(),
