@@ -30,7 +30,7 @@ overrides:
   follow-redirects@<=1.15.11: '>=1.16.0'
   form-data@>=4.0.0 <4.0.6: '>=4.0.6'
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
-  joi@<17.13.4: '>=17.13.7'
+  joi@<17.13.4: '>=17.13.8'
   js-yaml@<3.15.0: '>=3.15.2'
   js-yaml@>=3.0.0 <3.15.0: '>=3.15.2'
   js-yaml@>=4.0.0 <4.3.0: '>=4.3.2'
@@ -884,7 +884,7 @@ packages:
       fluentvalidation-ts: ^3.0.0
       fp-ts: ^2.7.0
       io-ts: ^2.0.0
-      joi: '>=17.13.7'
+      joi: '>=17.13.8'
       nope-validator: '>=0.12.0'
       react-hook-form: ^7.55.0
       superstruct: '>=0.12.0'
