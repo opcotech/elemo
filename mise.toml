@@ -5,14 +5,14 @@ lockfile = true
 idiomatic_version_file_enable_tools = []
 
 [tools]
-go = "1.27.1"
-node = "24.20.0"
-pnpm = "10.34.5"
+go = "1.27.2"
+node = "24.22.0"
+pnpm = "10.34.7"
 jq = "1.8.2"
-golangci-lint = "2.13.2"
+golangci-lint = "2.15.0"
 gotestsum = "1.13.0"
-k6 = "2.2.0"
-pre-commit = "4.6.2"
+k6 = "2.3.0"
+pre-commit = "4.7.0"
 
 [tasks.bootstrap]
 description = "Install tools and project dependencies without starting services"
