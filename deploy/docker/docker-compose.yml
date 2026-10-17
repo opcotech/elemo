@@ -100,7 +100,7 @@ services:
       - "traefik.enable=false"
 
   meilisearch:
-    image: getmeili/meilisearch:v1.53
+    image: getmeili/meilisearch:v1.55
     container_name: elemo-meilisearch
     ports:
       - "7700:7700"
