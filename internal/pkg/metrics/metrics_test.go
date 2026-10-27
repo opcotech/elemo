@@ -70,3 +70,27 @@ func TestObserveIssueList_incrementsCacheCounter(t *testing.T) {
 	after := testutil.ToFloat64(IssueListCacheRequests.WithLabelValues(IssueListScopeProject, ResultHit))
 	require.GreaterOrEqual(t, after, before+1)
 }
+
+func TestObserveCacheGet_incrementsCounterByResult(t *testing.T) {
+	for _, result := range []string{ResultHit, ResultMiss, ResultError} {
+		t.Run(result, func(t *testing.T) {
+			before := testutil.ToFloat64(CacheRequests.WithLabelValues(result))
+
+			ObserveCacheGet(result)
+
+			after := testutil.ToFloat64(CacheRequests.WithLabelValues(result))
+			require.GreaterOrEqual(t, after, before+1)
+		})
+	}
+}
+
+func TestSetRedisStatsFunc_reportsPoolStats(t *testing.T) {
+	SetRedisStatsFunc(func() RedisPoolStats {
+		return RedisPoolStats{Total: 10, Idle: 4, Timeouts: 2}
+	})
+
+	stats := loadRedisStats()
+	require.Equal(t, 10.0, stats.Total)
+	require.Equal(t, 4.0, stats.Idle)
+	require.Equal(t, 2.0, stats.Timeouts)
+}

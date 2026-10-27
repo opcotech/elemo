@@ -93,6 +93,18 @@ var IssueListCacheRequests = promauto.NewCounterVec(
 	[]string{"scope", "result"},
 )
 
+// Dashboard: sum by (result) (rate(elemo_cache_requests_total[5m]))
+// Dashboard: sum(rate(elemo_cache_requests_total{result="hit"}[5m])) / sum(rate(elemo_cache_requests_total[5m]))
+var CacheRequests = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: "elemo",
+		Subsystem: "cache",
+		Name:      "requests_total",
+		Help:      "Cache lookups by result.",
+	},
+	[]string{"result"},
+)
+
 func resultLabel(err error) string {
 	if err != nil {
 		return ResultError
@@ -120,4 +132,9 @@ func ObservePGQuery(operation string, duration time.Duration, err error) {
 func ObserveIssueList(scope, result string, duration time.Duration) {
 	IssueListDuration.WithLabelValues(scope, result).Observe(duration.Seconds())
 	IssueListCacheRequests.WithLabelValues(scope, result).Inc()
+}
+
+// ObserveCacheGet records a cache lookup as a hit, miss, or error.
+func ObserveCacheGet(result string) {
+	CacheRequests.WithLabelValues(result).Inc()
 }
