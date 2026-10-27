@@ -697,7 +697,9 @@ func NewRedisClient(conf *config.CacheDatabaseConfig) (redis.UniversalClient, er
 		}
 	}
 
-	return redis.NewClient(options), nil
+	client := redis.NewClient(options)
+	registerRedisPoolStats(client)
+	return client, nil
 }
 
 // RedisDatabaseOption configures a Redis database.
@@ -893,7 +895,14 @@ func (r *redisBaseRepository) Get(ctx context.Context, key string, dst any) erro
 	ctx, span := r.tracer.Start(ctx, "repository.redisBaseRepository/Get")
 	defer span.End()
 
-	if err := r.cache.Get(ctx, key, dst); err != nil && !errors.Is(err, cache.ErrCacheMiss) {
+	err := r.cache.Get(ctx, key, dst)
+	switch {
+	case err == nil:
+		metrics.ObserveCacheGet(metrics.ResultHit)
+	case errors.Is(err, cache.ErrCacheMiss):
+		metrics.ObserveCacheGet(metrics.ResultMiss)
+	default:
+		metrics.ObserveCacheGet(metrics.ResultError)
 		return errors.Join(ErrCacheRead, err)
 	}
 
