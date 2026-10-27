@@ -31,19 +31,17 @@ func init() {
 		Subsystem: "pg",
 		Name:      "pool_acquired",
 		Help:      "Postgres connections currently acquired from the pool.",
-	},
-		func() float64 {
-			return loadPGStats().Acquired
-		})
+	}, func() float64 {
+		return loadPGStats().Acquired
+	})
 	promauto.NewGaugeFunc(prometheus.GaugeOpts{
 		Namespace: "elemo",
 		Subsystem: "pg",
 		Name:      "pool_idle",
 		Help:      "Idle Postgres connections in the pool.",
-	},
-		func() float64 {
-			return loadPGStats().Idle
-		})
+	}, func() float64 {
+		return loadPGStats().Idle
+	})
 	promauto.NewGaugeFunc(prometheus.GaugeOpts{
 		Namespace: "elemo",
 		Subsystem: "pg",
