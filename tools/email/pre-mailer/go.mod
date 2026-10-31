@@ -1,10 +1,10 @@
 module github.com/opcotech/elemo-pre-mailer
 
-go 1.27.1
+go 1.27.3
 
 require (
-	github.com/tdewolff/minify/v2 v2.24.17
-	github.com/vanng822/go-premailer v1.36.0
+	github.com/tdewolff/minify/v2 v2.24.24
+	github.com/vanng822/go-premailer v1.37.0
 )
 
 require (
@@ -22,8 +22,8 @@ require (
 	github.com/olekukonko/tablewriter v1.0.7 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
-	github.com/tdewolff/parse/v2 v2.8.16 // indirect
+	github.com/tdewolff/parse/v2 v2.8.20 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
-	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
